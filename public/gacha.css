@@ -803,12 +803,13 @@ body {
   position: relative;
   display: flex;
   flex-direction: column;
-  width: 820px;
-  background: radial-gradient(circle at 50% 30%, rgba(20, 29, 53, 0.96), rgba(8, 12, 23, 0.98));
-  border: 2px solid rgba(255, 215, 0, 0.5);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(255, 215, 0, 0.35);
-  border-radius: 20px;
-  padding: 18px 24px;
+  align-items: center;
+  width: 1040px;
+  max-width: 95vw;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 10px 16px;
   z-index: 100;
   animation: multiGridEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -819,7 +820,7 @@ body {
 }
 
 @keyframes multiGridEnter {
-  0% { opacity: 0; transform: scale(0.85) translateY(30px); }
+  0% { opacity: 0; transform: scale(0.9) translateY(25px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
@@ -827,25 +828,65 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  padding-bottom: 10px;
-  margin-bottom: 14px;
+  width: 100%;
+  background: rgba(10, 16, 32, 0.85);
+  backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 215, 0, 0.45);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 25px rgba(255, 215, 0, 0.25);
+  border-radius: 40px;
+  padding: 10px 24px;
+  margin-bottom: 18px;
 }
 
 .multi-banner-tag {
   font-family: 'Cinzel', serif;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 800;
-  letter-spacing: 2px;
+  letter-spacing: 2.5px;
   color: #ffd700;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.7);
+}
+
+.multi-user-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.24), rgba(255, 255, 255, 0.08));
+  border: 1.5px solid rgba(255, 215, 0, 0.6);
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.35);
+  padding: 6px 18px;
+  border-radius: 30px;
+}
+
+.multi-user-badge .wish-user-icon {
+  font-size: 18px;
+  filter: drop-shadow(0 0 8px #ffd700);
+}
+
+.multi-user-title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #e2e8f0;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.multi-user-badge .wish-username {
+  font-family: 'Cinzel', 'Montserrat', sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 0 14px #ffd700, 0 2px 6px rgba(0, 0, 0, 0.9);
+  letter-spacing: 0.5px;
 }
 
 .multi-cards-container {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   grid-template-rows: repeat(2, 1fr);
-  gap: 12px;
+  gap: 16px;
+  width: 100%;
 }
 
 .multi-item-card {
@@ -853,84 +894,104 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: rgba(15, 23, 42, 0.7);
-  border-radius: 12px;
-  padding: 10px 8px 8px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: radial-gradient(circle at 50% 20%, rgba(30, 41, 69, 0.94), rgba(12, 18, 34, 0.98));
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 14px 10px 12px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.75);
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.2);
   animation: multiCardPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
 }
 
 @keyframes multiCardPop {
-  0% { opacity: 0; transform: scale(0.5) translateY(20px); }
+  0% { opacity: 0; transform: scale(0.6) translateY(30px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.multi-item-card:hover {
+  transform: translateY(-6px) scale(1.04);
 }
 
 .multi-item-card.card-rarity-5 {
   border: 2px solid #ffd700;
-  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
-  background: radial-gradient(circle at 50% 30%, rgba(255, 215, 0, 0.25), rgba(15, 23, 42, 0.9));
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.85), 0 0 28px rgba(255, 215, 0, 0.75), inset 0 0 16px rgba(255, 215, 0, 0.25);
+  background: radial-gradient(circle at 50% 25%, rgba(255, 215, 0, 0.3), rgba(15, 23, 42, 0.96));
 }
 
 .multi-item-card.card-rarity-4 {
-  border: 1.5px solid #c084fc;
-  box-shadow: 0 0 15px rgba(192, 132, 252, 0.45);
-  background: radial-gradient(circle at 50% 30%, rgba(192, 132, 252, 0.2), rgba(15, 23, 42, 0.9));
+  border: 2px solid #c084fc;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.85), 0 0 22px rgba(192, 132, 252, 0.65), inset 0 0 14px rgba(192, 132, 252, 0.2);
+  background: radial-gradient(circle at 50% 25%, rgba(192, 132, 252, 0.24), rgba(15, 23, 42, 0.96));
 }
 
 .multi-item-card.card-rarity-3 {
-  border: 1px solid rgba(56, 189, 248, 0.4);
-  background: radial-gradient(circle at 50% 30%, rgba(56, 189, 248, 0.12), rgba(15, 23, 42, 0.9));
+  border: 1.5px solid rgba(56, 189, 248, 0.5);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.75), 0 0 14px rgba(56, 189, 248, 0.35);
+  background: radial-gradient(circle at 50% 25%, rgba(56, 189, 248, 0.16), rgba(15, 23, 42, 0.95));
 }
 
 .multi-card-art-wrap {
-  width: 64px;
-  height: 64px;
-  border-radius: 10px;
+  width: 104px;
+  height: 104px;
+  border-radius: 14px;
   overflow: hidden;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.4);
-  margin-bottom: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.8);
+  margin-bottom: 8px;
 }
 
 .multi-card-art {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.35s ease;
+}
+
+.multi-item-card:hover .multi-card-art {
+  transform: scale(1.1);
 }
 
 .multi-card-name {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
   color: #fff;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.85);
 }
 
 .multi-card-stars {
-  font-size: 10px;
-  letter-spacing: 1px;
+  font-size: 12px;
+  letter-spacing: 2px;
 }
 
-.multi-card-stars.stars-5 { color: #ffd700; text-shadow: 0 0 6px #ffd700; }
-.multi-card-stars.stars-4 { color: #c084fc; text-shadow: 0 0 6px #c084fc; }
-.multi-card-stars.stars-3 { color: #38bdf8; }
+.multi-card-stars.stars-5 { color: #ffd700; text-shadow: 0 0 8px #ffd700; }
+.multi-card-stars.stars-4 { color: #c084fc; text-shadow: 0 0 8px #c084fc; }
+.multi-card-stars.stars-3 { color: #38bdf8; text-shadow: 0 0 6px #38bdf8; }
 
 .multi-grid-footer {
-  margin-top: 14px;
+  margin-top: 18px;
+  padding: 8px 24px;
+  background: rgba(10, 16, 32, 0.82);
+  backdrop-filter: blur(10px);
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
   text-align: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 800;
+  color: #e2e8f0;
   letter-spacing: 1px;
 }
 
