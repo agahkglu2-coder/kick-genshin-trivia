@@ -1,12 +1,10 @@
 {
-  "zerkacy": 40879165,
-  "elraenn": 25712360,
-  "wtcn": 1000890,
-  "kendinemuzisyen": 25364532,
-  "xqc": 668,
-  "mithrain": 31082592,
-  "hikaru": 85080,
-  "ibrahimhaskologlu": 25784805,
-  "alperbicen": 25381831,
-  "unlostv": 25712534
+  "zerkacy": { "chatroomId": 40879165, "broadcasterUserId": 42256338 },
+  "elraenn": { "chatroomId": 25712360, "broadcasterUserId": 27018175 },
+  "wtcn": { "chatroomId": 1000890, "broadcasterUserId": 1045493 },
+  "kendinemuzisyen": { "chatroomId": 25364532, "broadcasterUserId": 26667654 },
+  "xqc": { "chatroomId": 668, "broadcasterUserId": 676 },
+  "mithrain": { "chatroomId": 31082592, "broadcasterUserId": 32423480 },
+  "hikaru": { "chatroomId": 85080, "broadcasterUserId": 85080 },
+  "ibrahimhaskologlu": { "chatroomId": 25784805, "broadcasterUserId": 27150774 }
 }

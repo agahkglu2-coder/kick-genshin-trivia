@@ -26,11 +26,14 @@ function loadKnownChannels() {
   try {
     if (fs.existsSync(KNOWN_CHANNELS_FILE)) {
       const data = JSON.parse(fs.readFileSync(KNOWN_CHANNELS_FILE, 'utf-8'));
-      for (const [slug, id] of Object.entries(data)) {
+      for (const [slug, val] of Object.entries(data)) {
+        const cId = typeof val === 'object' ? val.chatroomId : (typeof val === 'number' ? val : parseInt(val, 10));
+        const uId = typeof val === 'object' ? val.broadcasterUserId : null;
         RESOLVED_CHANNELS_CACHE[slug.toLowerCase()] = {
-          chatroomId: typeof id === 'number' ? id : parseInt(id, 10),
+          chatroomId: cId,
+          broadcasterUserId: uId,
           slug: slug.toLowerCase(),
-          user: null
+          user: uId ? { id: uId, username: slug.toLowerCase() } : null
         };
       }
       console.log(`[KickClient] ${Object.keys(RESOLVED_CHANNELS_CACHE).length} bilinen kanal önbelleğe yüklendi.`);
@@ -40,13 +43,16 @@ function loadKnownChannels() {
   }
 }
 
-function saveKnownChannel(slug, chatroomId) {
+function saveKnownChannel(slug, chatroomId, broadcasterUserId = null) {
   try {
     let existing = {};
     if (fs.existsSync(KNOWN_CHANNELS_FILE)) {
       existing = JSON.parse(fs.readFileSync(KNOWN_CHANNELS_FILE, 'utf-8'));
     }
-    existing[slug] = chatroomId;
+    existing[slug] = {
+      chatroomId: typeof chatroomId === 'object' ? chatroomId.chatroomId : chatroomId,
+      broadcasterUserId: broadcasterUserId || (typeof chatroomId === 'object' ? chatroomId.broadcasterUserId : null)
+    };
     fs.writeFileSync(KNOWN_CHANNELS_FILE, JSON.stringify(existing, null, 2), 'utf-8');
   } catch (e) {
     console.warn('[KickClient] known_channels.json kaydedilemedi:', e.message);
@@ -144,18 +150,21 @@ class KickClient extends EventEmitter {
         if (stdout && stdout.trim().startsWith('{')) {
           const data = JSON.parse(stdout);
           const cId = data.chatroom?.id || (data.id && typeof data.id === 'number' ? data.id : null);
+          const uId = data.user_id || (data.user && data.user.id) || null;
           if (cId) {
-            console.log(`[KickClient] ✅ curl ile kanal '${slug}' (#${cId}) çözüldü.`);
+            console.log(`[KickClient] ✅ curl ile kanal '${slug}' (#${cId}, User: #${uId}) çözüldü.`);
             const res = {
               chatroomId: cId,
+              broadcasterUserId: uId,
               slug: data.slug || slug,
               user: data.user ? {
+                id: uId,
                 username: data.user.username,
                 profilePic: data.user.profile_pic
               } : null
             };
             RESOLVED_CHANNELS_CACHE[slug] = res;
-            saveKnownChannel(slug, cId);
+            saveKnownChannel(slug, cId, uId);
             return res;
           }
         }
@@ -177,18 +186,21 @@ class KickClient extends EventEmitter {
         if (res.ok) {
           const data = await res.json();
           const cId = data.chatroom?.id || (data.id && typeof data.id === 'number' ? data.id : null);
+          const uId = data.user_id || (data.user && data.user.id) || null;
           if (cId) {
-            console.log(`[KickClient] ✅ fetch ile kanal '${slug}' (#${cId}) çözüldü.`);
+            console.log(`[KickClient] ✅ fetch ile kanal '${slug}' (#${cId}, User: #${uId}) çözüldü.`);
             const result = {
               chatroomId: cId,
+              broadcasterUserId: uId,
               slug: data.slug || slug,
               user: data.user ? {
+                id: uId,
                 username: data.user.username,
                 profilePic: data.user.profile_pic
               } : null
             };
             RESOLVED_CHANNELS_CACHE[slug] = result;
-            saveKnownChannel(slug, cId);
+            saveKnownChannel(slug, cId, uId);
             return result;
           }
         }
@@ -204,7 +216,7 @@ class KickClient extends EventEmitter {
       if (match && match[1]) {
         const cId = parseInt(match[1], 10);
         console.log(`[KickClient] ✅ HTML parse ile kanal '${slug}' (#${cId}) çözüldü.`);
-        const result = { chatroomId: cId, slug, user: null };
+        const result = { chatroomId: cId, broadcasterUserId: null, slug, user: null };
         RESOLVED_CHANNELS_CACHE[slug] = result;
         saveKnownChannel(slug, cId);
         return result;
@@ -236,17 +248,19 @@ class KickClient extends EventEmitter {
 
     try {
       let cId = null;
+      let bId = null;
       let cSlug = this.channel;
 
       if (directChatroomId && /^\d+$/.test(String(directChatroomId).trim())) {
         cId = parseInt(String(directChatroomId).trim(), 10);
         if (cleaned) {
-          RESOLVED_CHANNELS_CACHE[cleaned] = { chatroomId: cId, slug: cleaned, user: null };
+          RESOLVED_CHANNELS_CACHE[cleaned] = { chatroomId: cId, broadcasterUserId: null, slug: cleaned, user: null };
           saveKnownChannel(cleaned, cId);
         }
       } else {
         const info = await this.getChatroomId(this.channel);
         cId = info.chatroomId;
+        bId = info.broadcasterUserId || null;
         cSlug = info.slug || this.channel;
       }
 
@@ -256,12 +270,14 @@ class KickClient extends EventEmitter {
       }
 
       this.chatroomId = cId;
+      this.broadcasterUserId = bId;
       this.channel = cSlug;
 
       this.emit('status', {
         connected: false,
         channel: this.channel,
         chatroomId: this.chatroomId,
+        broadcasterUserId: this.broadcasterUserId,
         message: `Kanal (#${this.chatroomId}) bulundu, Pusher'a bağlanılıyor...`
       });
 

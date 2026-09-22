@@ -42,6 +42,7 @@ function saveConfig(cfg) {
 
 const config = loadConfig();
 const app = express();
+app.enable('trust proxy');
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws' });
 
@@ -444,34 +445,7 @@ app.post('/api/bot/oauth/start', async (req, res) => {
   }
   saveConfig(config);
 
-  // 1. Try quick Client Credentials token grant
-  try {
-    const ccRes = await fetch('https://id.kick.com/oauth/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: cId,
-        client_secret: cSecret
-      }).toString()
-    });
-
-    if (ccRes.ok) {
-      const ccData = await ccRes.json();
-      if (ccData.access_token) {
-        console.log('[KickBot] ✅ Client credentials ile token başarıyla alındı!');
-        config.botToken = ccData.access_token;
-        kickBot.setToken(ccData.access_token);
-        saveConfig(config);
-        broadcast({ type: 'BOT_STATUS', status: kickBot.getStatus() });
-        return res.json({ success: true, autoConnected: true, status: kickBot.getStatus() });
-      }
-    }
-  } catch (errCc) {
-    console.warn('[KickBot] Client credentials denenirken hata:', errCc.message);
-  }
-
-  // 2. PKCE Authorization Code flow
+  // PKCE Authorization Code flow (Only this flow has chat:write permission on Kick!)
   const verifier = base64URLEncode(crypto.randomBytes(32));
   const challenge = base64URLEncode(crypto.createHash('sha256').update(verifier).digest());
   const state = base64URLEncode(crypto.randomBytes(16));
@@ -602,11 +576,16 @@ app.get('/auth/kick/callback', async (req, res) => {
   }
 });
 
-app.post('/api/bot/test-message', (req, res) => {
+app.post('/api/bot/test-message', async (req, res) => {
   const { message } = req.body || {};
   const text = message || '✨ Paimon Bot test mesajı: Sistem aktif ve çalışıyor!';
   kickBot.sendMessage(text);
-  res.json({ success: true, message: text });
+  const result = await kickBot.dispatchMessage(text);
+  if (result.success) {
+    res.json({ success: true, message: text });
+  } else {
+    res.status(400).json({ success: false, error: result.error || 'Mesaj gönderilemedi' });
+  }
 });
 
 

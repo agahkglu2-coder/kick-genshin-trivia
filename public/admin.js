@@ -86,11 +86,28 @@
   const btnBotAuthorize = document.getElementById('btn-bot-authorize');
   const btnBotTestMsg = document.getElementById('btn-bot-test-msg');
   const botFeedback = document.getElementById('bot-feedback');
+  const displayRedirectUri = document.getElementById('display-redirect-uri');
+  const btnCopyRedirectUri = document.getElementById('btn-copy-redirect-uri');
 
   // Set OBS URLs correctly based on current origin (works seamlessly on Render HTTPS & localhost)
   const currentOrigin = window.location.origin || `http://${window.location.host || 'localhost:3000'}`;
   if (obsTriviaUrl) obsTriviaUrl.value = `${currentOrigin}/trivia.html`;
   if (obsGachaUrl) obsGachaUrl.value = `${currentOrigin}/gacha.html`;
+  const defaultRedirectUri = `${currentOrigin}/auth/kick/callback`;
+  if (displayRedirectUri) displayRedirectUri.value = defaultRedirectUri;
+  if (cfgBotRedirectUri) cfgBotRedirectUri.value = defaultRedirectUri;
+
+  if (btnCopyRedirectUri && displayRedirectUri) {
+    btnCopyRedirectUri.addEventListener('click', () => {
+      displayRedirectUri.select();
+      navigator.clipboard.writeText(displayRedirectUri.value).then(() => {
+        btnCopyRedirectUri.textContent = 'Kopyalandı! ✅';
+        setTimeout(() => { btnCopyRedirectUri.textContent = 'Kopyala'; }, 2000);
+      }).catch(() => {
+        btnCopyRedirectUri.textContent = 'Ctrl+C ile alın';
+      });
+    });
+  }
 
   function formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0) return '00:00';
@@ -589,7 +606,7 @@
     btnBotAuthorize.addEventListener('click', async () => {
       const cId = cfgBotClientId?.value.trim();
       const cSecret = cfgBotClientSecret?.value.trim();
-      const rUri = cfgBotRedirectUri?.value.trim() || `${window.location.origin}/auth/kick/callback`;
+      const rUri = displayRedirectUri?.value.trim() || cfgBotRedirectUri?.value.trim() || `${window.location.origin}/auth/kick/callback`;
 
       if (!cId || !cSecret) {
         if (botFeedback) {

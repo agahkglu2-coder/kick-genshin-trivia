@@ -135,42 +135,49 @@ class KickBotService extends EventEmitter {
   }
 
   async dispatchMessage(content, replyToId = null) {
-    const targetBroadcasterId = this.broadcasterUserId || this.chatroomId;
-    if (!targetBroadcasterId) {
-      console.warn('[KickBot] Mesaj gönderilemedi: broadcasterUserId veya chatroomId bulunamadı.');
-      return;
+    if (!this.token) {
+      return { success: false, error: 'Token girilmedi (Simülasyon modunda).' };
     }
 
+    const targetBroadcasterId = this.broadcasterUserId;
+    let lastError = null;
+
     // 1. Try Official Kick Public API: POST https://api.kick.com/public/v1/chat
-    try {
-      const payload = {
-        broadcaster_user_id: parseInt(targetBroadcasterId, 10),
-        content: content,
-        type: 'bot'
-      };
-      if (replyToId) {
-        payload.reply_to_message_id = replyToId;
+    if (targetBroadcasterId) {
+      for (const msgType of ['user', 'bot']) {
+        try {
+          const payload = {
+            broadcaster_user_id: parseInt(targetBroadcasterId, 10),
+            content: content,
+            type: msgType
+          };
+          if (replyToId) {
+            payload.reply_to_message_id = replyToId;
+          }
+
+          const res = await fetch('https://api.kick.com/public/v1/chat', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${this.token}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            console.log(`[KickBot] ✅ Mesaj Kick Public API (${msgType}) ile iletildi: "${content}"`);
+            return { success: true };
+          }
+
+          const errText = await res.text();
+          lastError = `Kick Public API (${res.status}): ${errText}`;
+          console.warn(`[KickBot] ${lastError}`);
+        } catch (eOfficial) {
+          lastError = `Public API hatası: ${eOfficial.message}`;
+          console.warn(`[KickBot] ${lastError}`);
+        }
       }
-
-      const res = await fetch('https://api.kick.com/public/v1/chat', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        console.log(`[KickBot] ✅ Mesaj Kick Public API ile iletildi: "${content}"`);
-        return true;
-      }
-
-      const errText = await res.text();
-      console.warn(`[KickBot] Kick Public API yanıtı (${res.status}): ${errText}`);
-    } catch (eOfficial) {
-      console.warn(`[KickBot] Public API hatası: ${eOfficial.message}`);
     }
 
     // 2. Fallback: Classic Kick Chatroom Messages API: POST https://kick.com/api/v2/messages/send/{chatroomId}
@@ -192,14 +199,20 @@ class KickBotService extends EventEmitter {
 
         if (fallbackRes.ok) {
           console.log(`[KickBot] ✅ Mesaj Kick v2 API ile iletildi: "${content}"`);
-          return true;
+          return { success: true };
         }
+
+        const errText2 = await fallbackRes.text();
+        lastError = lastError || `Kick v2 API (${fallbackRes.status}): ${errText2}`;
       } catch (eFallback) {
-        console.warn(`[KickBot] Fallback API hatası: ${eFallback.message}`);
+        lastError = lastError || `Fallback API hatası: ${eFallback.message}`;
       }
     }
 
-    return false;
+    return {
+      success: false,
+      error: lastError || 'Kanal broadcaster_user_id veya chatroomId belirlenemedi.'
+    };
   }
 }
 

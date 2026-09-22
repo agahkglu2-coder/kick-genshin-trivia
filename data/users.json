@@ -1,7 +1,7 @@
 {
   "zerkacy": {
     "username": "zerkacy",
-    "primogems": 1420,
+    "primogems": 1580,
     "pity4": 0,
     "pity5": 13,
     "totalWishes": 13,
@@ -234,86 +234,5 @@
     "lastChatAwardTime": 1790099790287,
     "lastActiveTime": 1790099799284,
     "createdAt": "2026-09-22T17:16:56.235Z"
-  },
-  "zerktester": {
-    "username": "ZerkTester",
-    "primogems": 500,
-    "pity4": 0,
-    "pity5": 0,
-    "totalWishes": 0,
-    "fiveStarsCount": 0,
-    "fourStarsCount": 0,
-    "inventory": [],
-    "lastChatAwardTime": 1790106020151,
-    "lastActiveTime": 1790106020151,
-    "createdAt": "2026-09-22T19:39:12.093Z"
-  },
-  "testgezgin": {
-    "username": "TestGezgin",
-    "primogems": 100340,
-    "pity4": 0,
-    "pity5": 1,
-    "totalWishes": 3,
-    "fiveStarsCount": 1,
-    "fourStarsCount": 1,
-    "inventory": [
-      {
-        "name": "Cool Steel",
-        "rarity": 3,
-        "type": "weapon",
-        "element": null,
-        "weaponType": "Sword",
-        "region": null,
-        "title": null,
-        "icon": null,
-        "remoteIcon": "https://genshin.jmp.blue/weapons/cool-steel/icon",
-        "remoteIconDev": null,
-        "splashArt": "https://genshin.jmp.blue/weapons/cool-steel/icon",
-        "splashArtDev": null,
-        "portrait": null,
-        "internalName": null,
-        "slug": "cool-steel",
-        "pulledAt": "2026-09-22T19:56:56.090Z"
-      },
-      {
-        "name": "Sigewinne",
-        "rarity": 5,
-        "type": "character",
-        "element": "Hydro",
-        "weaponType": "Bow",
-        "region": "Fontaine",
-        "title": "Wondrous Dragoness",
-        "icon": "assets/characters/sigewinne.png",
-        "remoteIcon": "https://enka.network/ui/UI_AvatarIcon_Sigewinne.png",
-        "remoteIconDev": "https://genshin.jmp.blue/characters/sigewinne/icon",
-        "splashArt": "https://enka.network/ui/UI_Gacha_AvatarImg_Sigewinne.png",
-        "splashArtDev": "https://genshin.jmp.blue/characters/sigewinne/gacha-splash",
-        "portrait": "https://genshin.jmp.blue/characters/sigewinne/portrait",
-        "internalName": "Sigewinne",
-        "slug": "sigewinne",
-        "pulledAt": "2026-09-22T19:56:56.090Z"
-      },
-      {
-        "name": "Layla",
-        "rarity": 4,
-        "type": "character",
-        "element": "Cryo",
-        "weaponType": "Sword",
-        "region": "Sumeru",
-        "title": "Fantastical Evening Star",
-        "icon": "assets/characters/layla.png",
-        "remoteIcon": "https://enka.network/ui/UI_AvatarIcon_Layla.png",
-        "remoteIconDev": "https://genshin.jmp.blue/characters/layla/icon",
-        "splashArt": "https://enka.network/ui/UI_Gacha_AvatarImg_Layla.png",
-        "splashArtDev": "https://genshin.jmp.blue/characters/layla/gacha-splash",
-        "portrait": "https://genshin.jmp.blue/characters/layla/portrait",
-        "internalName": "Layla",
-        "slug": "layla",
-        "pulledAt": "2026-09-22T19:56:56.090Z"
-      }
-    ],
-    "lastChatAwardTime": 1790107016089,
-    "lastActiveTime": 1790107016092,
-    "createdAt": "2026-09-22T19:56:56.087Z"
   }
 }
