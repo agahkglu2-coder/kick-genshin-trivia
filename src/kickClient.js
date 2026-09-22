@@ -1,8 +1,12 @@
 const EventEmitter = require('events');
 const { spawn } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 const PUSHER_APP_KEY = '32cbd69e4b950bf97679';
 const PUSHER_WS_URL = `wss://ws-us2.pusher.com/app/${PUSHER_APP_KEY}?protocol=7&client=js&version=8.4.0-rc2&flash=false`;
+
+const KNOWN_CHANNELS_FILE = path.join(__dirname, '..', 'data', 'known_channels.json');
 
 function cleanChannelSlug(input) {
   if (!input) return '';
@@ -17,14 +21,56 @@ function cleanChannelSlug(input) {
 // In-memory cache for resolved channels
 const RESOLVED_CHANNELS_CACHE = {};
 
-// Helper: Execute curl directly via child_process.spawn (no shell escaping issues)
+// Load persistent known channels
+function loadKnownChannels() {
+  try {
+    if (fs.existsSync(KNOWN_CHANNELS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(KNOWN_CHANNELS_FILE, 'utf-8'));
+      for (const [slug, id] of Object.entries(data)) {
+        RESOLVED_CHANNELS_CACHE[slug.toLowerCase()] = {
+          chatroomId: typeof id === 'number' ? id : parseInt(id, 10),
+          slug: slug.toLowerCase(),
+          user: null
+        };
+      }
+      console.log(`[KickClient] ${Object.keys(RESOLVED_CHANNELS_CACHE).length} bilinen kanal önbelleğe yüklendi.`);
+    }
+  } catch (e) {
+    console.warn('[KickClient] known_channels.json okunamadı:', e.message);
+  }
+}
+
+function saveKnownChannel(slug, chatroomId) {
+  try {
+    let existing = {};
+    if (fs.existsSync(KNOWN_CHANNELS_FILE)) {
+      existing = JSON.parse(fs.readFileSync(KNOWN_CHANNELS_FILE, 'utf-8'));
+    }
+    existing[slug] = chatroomId;
+    fs.writeFileSync(KNOWN_CHANNELS_FILE, JSON.stringify(existing, null, 2), 'utf-8');
+  } catch (e) {
+    console.warn('[KickClient] known_channels.json kaydedilemedi:', e.message);
+  }
+}
+
+loadKnownChannels();
+
+// Helper: Execute curl directly via child_process.spawn (with desktop browser headers)
 function curlFetch(url, timeoutMs = 7000) {
   return new Promise((resolve, reject) => {
     const curlCmd = process.platform === 'win32' ? 'curl.exe' : 'curl';
     let stdout = '';
     let stderr = '';
 
-    const proc = spawn(curlCmd, ['-s', '-L', url]);
+    const args = [
+      '-s', '-L',
+      '-H', 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+      '-H', 'Accept: application/json, text/plain, */*',
+      '-H', 'Accept-Language: tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
+      url
+    ];
+
+    const proc = spawn(curlCmd, args);
 
     const timer = setTimeout(() => {
       try { proc.kill(); } catch (e) {}
@@ -79,7 +125,7 @@ class KickClient extends EventEmitter {
       };
     }
 
-    // 2. In-memory cache
+    // 2. In-memory & Persistent cache (0ms instant resolution)
     if (RESOLVED_CHANNELS_CACHE[slug]) {
       console.log(`[KickClient] Önbellekten yüklendi: '${slug}' (#${RESOLVED_CHANNELS_CACHE[slug].chatroomId})`);
       return RESOLVED_CHANNELS_CACHE[slug];
@@ -91,7 +137,7 @@ class KickClient extends EventEmitter {
       `https://kick.com/api/v2/channels/${slug}/chatroom`
     ];
 
-    // 3. Primary method: Spawn curl (bypasses Cloudflare on all OSs)
+    // 3. Primary method: Spawn curl with browser headers
     for (const url of endpoints) {
       try {
         const stdout = await curlFetch(url, 7000);
@@ -109,6 +155,7 @@ class KickClient extends EventEmitter {
               } : null
             };
             RESOLVED_CHANNELS_CACHE[slug] = res;
+            saveKnownChannel(slug, cId);
             return res;
           }
         }
@@ -141,6 +188,7 @@ class KickClient extends EventEmitter {
               } : null
             };
             RESOLVED_CHANNELS_CACHE[slug] = result;
+            saveKnownChannel(slug, cId);
             return result;
           }
         }
@@ -158,6 +206,7 @@ class KickClient extends EventEmitter {
         console.log(`[KickClient] ✅ HTML parse ile kanal '${slug}' (#${cId}) çözüldü.`);
         const result = { chatroomId: cId, slug, user: null };
         RESOLVED_CHANNELS_CACHE[slug] = result;
+        saveKnownChannel(slug, cId);
         return result;
       }
     } catch (eHtml) {}
@@ -165,9 +214,9 @@ class KickClient extends EventEmitter {
     throw new Error(`Kick kanalı bulunamadı (${slug}). Lütfen kullanıcı adında yazım hatası olmadığından emin olun veya kanalın Sohbet Odası (Chatroom) ID numarasını girin.`);
   }
 
-  async connect(channelSlug) {
+  async connect(channelSlug, directChatroomId = null) {
     const cleaned = cleanChannelSlug(channelSlug);
-    if (!cleaned) {
+    if (!cleaned && !directChatroomId) {
       this.emit('status', { connected: false, message: 'Kanal adı belirtilmedi.' });
       return;
     }
@@ -177,7 +226,7 @@ class KickClient extends EventEmitter {
 
     this.disconnect();
     this.manualDisconnect = false;
-    this.channel = cleaned;
+    this.channel = cleaned || `chatroom_${directChatroomId}`;
 
     this.emit('status', {
       connected: false,
@@ -186,14 +235,28 @@ class KickClient extends EventEmitter {
     });
 
     try {
-      const info = await this.getChatroomId(this.channel);
+      let cId = null;
+      let cSlug = this.channel;
+
+      if (directChatroomId && /^\d+$/.test(String(directChatroomId).trim())) {
+        cId = parseInt(String(directChatroomId).trim(), 10);
+        if (cleaned) {
+          RESOLVED_CHANNELS_CACHE[cleaned] = { chatroomId: cId, slug: cleaned, user: null };
+          saveKnownChannel(cleaned, cId);
+        }
+      } else {
+        const info = await this.getChatroomId(this.channel);
+        cId = info.chatroomId;
+        cSlug = info.slug || this.channel;
+      }
+
       if (currentSeq !== this.connectSeq) {
         // A newer connect call was initiated, discard this one
         return;
       }
 
-      this.chatroomId = info.chatroomId;
-      this.channel = info.slug || this.channel;
+      this.chatroomId = cId;
+      this.channel = cSlug;
 
       this.emit('status', {
         connected: false,

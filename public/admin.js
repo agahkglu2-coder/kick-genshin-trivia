@@ -405,15 +405,22 @@
       connectFeedback.textContent = '🔄 Kanal aranıyor ve WebSocket bağlantısı kuruluyor...';
     }
 
+    let channelName = rawVal;
+    let chatroomId = null;
+    if (/^\d+$/.test(rawVal)) {
+      chatroomId = parseInt(rawVal, 10);
+      channelName = '';
+    }
+
     try {
       const res = await fetch('/api/connect-channel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channel: rawVal })
+        body: JSON.stringify({ channel: channelName, chatroomId })
       });
       const data = await res.json();
       if (data.success) {
-        cfgChannel.value = data.channel;
+        cfgChannel.value = data.channel || rawVal;
       } else {
         if (connectFeedback) {
           connectFeedback.style.color = '#ef4444';

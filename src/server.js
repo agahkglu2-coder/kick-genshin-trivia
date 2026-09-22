@@ -257,20 +257,22 @@ app.get('/api/config', (req, res) => {
 
 // Dedicated Connect Channel Endpoint
 app.post('/api/connect-channel', (req, res) => {
-  const { channel } = req.body || {};
-  if (!channel || !channel.trim()) {
+  const { channel, chatroomId } = req.body || {};
+  if ((!channel || !channel.trim()) && !chatroomId) {
     return res.status(400).json({ error: 'Lütfen bir kanal adı veya bağlantısı girin.' });
   }
 
   const cleaned = cleanChannelSlug(channel);
-  console.log(`[Server] Yeni kanal bağlantısı istendi: ${channel} -> ${cleaned}`);
+  console.log(`[Server] Yeni kanal bağlantısı istendi: ${channel} (ID: ${chatroomId || 'auto'}) -> ${cleaned}`);
 
-  gameEngine.updateConfig({ channel: cleaned });
-  config.channel = cleaned;
-  saveConfig(config);
+  if (cleaned) {
+    gameEngine.updateConfig({ channel: cleaned });
+    config.channel = cleaned;
+    saveConfig(config);
+  }
 
-  kickClient.connect(cleaned);
-  res.json({ success: true, channel: cleaned });
+  kickClient.connect(cleaned, chatroomId);
+  res.json({ success: true, channel: cleaned || `chatroom_${chatroomId}`, chatroomId });
 });
 
 app.post('/api/config', (req, res) => {
@@ -287,7 +289,7 @@ app.post('/api/config', (req, res) => {
 
   // If channel was supplied, always ensure Kick client connects
   if (newConfig.channel && (newConfig.channel !== oldChannel || !kickClient.isConnected)) {
-    kickClient.connect(newConfig.channel);
+    kickClient.connect(newConfig.channel, newConfig.chatroomId);
   }
 
   broadcast({ type: 'CONFIG_UPDATED', config: gameEngine.config });
