@@ -40,11 +40,14 @@ class DatabaseManager {
               total_wishes INT DEFAULT 0,
               five_stars_count INT DEFAULT 0,
               four_stars_count INT DEFAULT 0,
+              three_stars_count INT DEFAULT 0,
               inventory JSONB DEFAULT '[]'::jsonb,
               last_chat_award BIGINT DEFAULT 0,
               last_active BIGINT DEFAULT 0,
               created_at TIMESTAMPTZ DEFAULT NOW()
             );
+
+            ALTER TABLE gacha_users ADD COLUMN IF NOT EXISTS three_stars_count INT DEFAULT 0;
 
             CREATE TABLE IF NOT EXISTS system_settings (
               key VARCHAR(100) PRIMARY KEY,
@@ -98,6 +101,7 @@ class DatabaseManager {
             totalWishes: row.total_wishes,
             fiveStarsCount: row.five_stars_count,
             fourStarsCount: row.four_stars_count,
+            threeStarsCount: row.three_stars_count || 0,
             inventory: typeof row.inventory === 'string' ? JSON.parse(row.inventory) : (row.inventory || []),
             lastChatAwardTime: Number(row.last_chat_award || 0),
             lastActiveTime: Number(row.last_active || 0),
@@ -208,9 +212,9 @@ class DatabaseManager {
         const query = `
           INSERT INTO gacha_users (
             username, primogems, pity4, pity5, total_wishes,
-            five_stars_count, four_stars_count, inventory,
+            five_stars_count, four_stars_count, three_stars_count, inventory,
             last_chat_award, last_active, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
           ON CONFLICT (username) DO UPDATE SET
             primogems = EXCLUDED.primogems,
             pity4 = EXCLUDED.pity4,
@@ -218,6 +222,7 @@ class DatabaseManager {
             total_wishes = EXCLUDED.total_wishes,
             five_stars_count = EXCLUDED.five_stars_count,
             four_stars_count = EXCLUDED.four_stars_count,
+            three_stars_count = EXCLUDED.three_stars_count,
             inventory = EXCLUDED.inventory,
             last_chat_award = EXCLUDED.last_chat_award,
             last_active = EXCLUDED.last_active;
@@ -230,6 +235,7 @@ class DatabaseManager {
           user.totalWishes || 0,
           user.fiveStarsCount || 0,
           user.fourStarsCount || 0,
+          user.threeStarsCount || 0,
           JSON.stringify(user.inventory || []),
           user.lastChatAwardTime || 0,
           user.lastActiveTime || Date.now(),

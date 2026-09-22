@@ -57,24 +57,24 @@ assert.strictEqual(failPull.success, false);
 assert.strictEqual(failPull.reason, 'insufficient_primogems');
 console.log('✅ Yetersiz Primogem engellemesi başarılı!');
 
-console.log('--- TEST 7: 40-Pity 5★ Garantisi Testi ---');
+console.log('--- TEST 7: 75-Pity 5★ Garantisi Testi ---');
 testUser.primogems = 100000;
-testUser.pity5 = 39; // Next pull reaches 40 hard pity
+testUser.pity5 = 74; // Next pull reaches 75 hard pity
 const pityPull = engine.pull('TestGezgin', 1);
 assert.strictEqual(pityPull.success, true);
-assert.strictEqual(pityPull.pulls[0].rarity, 5, '40. çekişte 5★ garanti olmalı');
+assert.strictEqual(pityPull.pulls[0].rarity, 5, '75. çekişte 5★ garanti olmalı');
 assert.strictEqual(testUser.pity5, 0, '5★ çıkınca 5★ pity sayacı 0 olmalı');
 assert.strictEqual(testUser.fiveStarsCount, 1);
 console.log(`✅ 5★ Pity garantisi başarıyla patladı! Çıkan: ${pityPull.pulls[0].name} (Pity sıfırlandı)`);
 
-console.log('--- TEST 8: 8-Pity 4★ Garantisi Testi ---');
-testUser.pity4 = 7; // Next pull reaches 8 hard pity
+console.log('--- TEST 8: 10-Pity 4★ Garantisi Testi ---');
+testUser.pity4 = 9; // Next pull reaches 10 hard pity
 const pity4Pull = engine.pull('TestGezgin', 1);
 assert.strictEqual(pity4Pull.success, true);
-assert(pity4Pull.pulls[0].rarity >= 4, '8. çekişte en az 4★ garanti olmalı');
+assert(pity4Pull.pulls[0].rarity >= 4, '10. çekişte en az 4★ garanti olmalı');
 console.log(`✅ 4★ Pity garantisi başarılı! Çıkan: ${pity4Pull.pulls[0].name}`);
 
-console.log('--- TEST 9: Chat Komutları Ayrıştırma (!bakiye, !envanter) ---');
+console.log('--- TEST 9: Chat Komutları Ayrıştırma (!bakiye, !envanter, !donustur) ---');
 let chatResp = null;
 engine.on('chat_response', (resp) => {
   chatResp = resp;
@@ -85,7 +85,14 @@ assert(chatResp && chatResp.message.includes('Primogem'));
 
 engine.handleChatMessage({ content: '!envanter', sender: { username: 'TestGezgin' } });
 assert(chatResp && chatResp.message.includes('5★'));
-console.log('✅ Chat komutları (!bakiye, !envanter) başarıyla çalıştı!');
+
+testUser.threeStarsCount = 7;
+const beforeForgePrimo = testUser.primogems;
+engine.handleChatMessage({ content: '!donustur', sender: { username: 'TestGezgin' } });
+assert(chatResp && chatResp.message.includes('DEMİRCİ DÖNÜŞÜMÜ'));
+assert.strictEqual(testUser.primogems, beforeForgePrimo + 160);
+assert.strictEqual(testUser.threeStarsCount, 2);
+console.log('✅ Chat komutları (!bakiye, !envanter, !donustur) başarıyla çalıştı!');
 
 console.log('--- TEST 10: Primogem Yağmuru ve Admin İşlemleri ---');
 const rainRes = engine.triggerRain(160);

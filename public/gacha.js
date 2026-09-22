@@ -680,11 +680,11 @@
     wishStars.textContent = '★'.repeat(rarity);
     wishStars.className = `wish-stars stars-${rarity}`;
 
-    if (rarity === 5 && pull.pity5AtPull >= 40) {
-      wishItemPity.textContent = '🌟 40/40 Pity Garantili 5★ Patlaması!';
+    if (rarity === 5 && pull.pity5AtPull >= 75) {
+      wishItemPity.textContent = '🌟 75/75 Pity Garantili 5★ Patlaması!';
       wishItemPity.style.display = 'inline-block';
     } else if (stats && stats.totalWishes) {
-      wishItemPity.textContent = `Toplam Çekiş: ${stats.totalWishes} | 5★ Pity: ${stats.pity5 || 0}/40`;
+      wishItemPity.textContent = `Toplam Çekiş: ${stats.totalWishes} | 5★ Pity: ${stats.pity5 || 0}/75`;
       wishItemPity.style.display = 'inline-block';
     } else {
       wishItemPity.style.display = 'none';

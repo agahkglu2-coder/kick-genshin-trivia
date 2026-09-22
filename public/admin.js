@@ -978,7 +978,7 @@
     if (gachaUsersCount) gachaUsersCount.textContent = (users || []).length;
 
     if (!users || users.length === 0) {
-      gachaUsersTbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding: 16px; color: #94a3b8;">Henüz kayıtlı Gezgin yok. Chate yazan veya yayını izleyen izleyiciler otomatik olarak buraya eklenecektir.</td></tr>`;
+      gachaUsersTbody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding: 16px; color: #94a3b8;">Henüz kayıtlı Gezgin yok. Chate yazan veya yayını izleyen izleyiciler otomatik olarak buraya eklenecektir.</td></tr>`;
       return;
     }
 
@@ -987,8 +987,9 @@
         <tr>
           <td><strong>@${escapeHtml(u.username)}</strong></td>
           <td><span class="gacha-primo-badge">💎 ${u.primogems}</span></td>
-          <td><span class="gacha-pity-badge">${u.pity5}/40</span></td>
-          <td><span class="gacha-pity-badge">${u.pity4}/8</span></td>
+          <td><span class="gacha-pity-badge">${u.pity5}/75</span></td>
+          <td><span class="gacha-pity-badge">${u.pity4}/10</span></td>
+          <td><span class="gacha-pity-badge" style="color:#38bdf8;">🗡️ ${u.threeStarsCount || 0}</span></td>
           <td><strong style="color: #ffd700;">★ ${u.fiveStarsCount}</strong></td>
           <td>${u.totalWishes}</td>
           <td>

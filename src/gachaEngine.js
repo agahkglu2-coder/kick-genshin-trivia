@@ -13,10 +13,10 @@ class GachaEngine extends EventEmitter {
 
     this.config = {
       costPerWish: 160,
-      rate5: 0.03, // 3.0% base rate
-      rate4: 0.15, // 15.0% base rate
-      pity5Threshold: 40, // 40 pulls hard pity for 5-star
-      pity4Threshold: 8,  // 8 pulls hard pity for 4-star
+      rate5: 0.008, // 0.8% base rate (Challenging & Legendary!)
+      rate4: 0.10,  // 10.0% base rate
+      pity5Threshold: 75, // 75 pulls hard pity for 5-star
+      pity4Threshold: 10,  // 10 pulls hard pity for 4-star
       primoPerChat: 10,
       chatCooldownSeconds: 60,
       passiveTickMinutes: 5,
@@ -92,6 +92,7 @@ class GachaEngine extends EventEmitter {
         totalWishes: 0,
         fiveStarsCount: 0,
         fourStarsCount: 0,
+        threeStarsCount: 0,
         inventory: [],
         lastChatAwardTime: 0,
         lastActiveTime: Date.now(),
@@ -103,6 +104,9 @@ class GachaEngine extends EventEmitter {
       // Keep proper username casing
       this.users[key].username = username;
       this.users[key].lastActiveTime = Date.now();
+      if (this.users[key].threeStarsCount === undefined) {
+        this.users[key].threeStarsCount = (this.users[key].inventory || []).filter(i => i.rarity === 3).length;
+      }
     }
 
     return this.users[key];
@@ -286,6 +290,8 @@ class GachaEngine extends EventEmitter {
       item = pool[Math.floor(Math.random() * pool.length)] || { name: "Debate Club", rarity: 3, type: "Claymore" };
       itemType = 'weapon';
 
+      user.threeStarsCount = (user.threeStarsCount || 0) + 1;
+
       // 15% lucky refund chance on 3-star
       if (Math.random() < 0.15) {
         isRefund = true;
@@ -370,11 +376,29 @@ class GachaEngine extends EventEmitter {
     // Check Balance (!bakiye, !primo, !primogem)
     if (text === '!bakiye' || text === '!primo' || text === '!primogem' || text === '!puan') {
       const user = this.getOrCreateUser(username);
+      const weaponCount = user.threeStarsCount ?? (user.inventory || []).filter(i => i.rarity === 3).length;
       this.emit('chat_response', {
         username,
-        message: `💎 @${username} Primogem: ${user.primogems} | 5★ Pity: ${user.pity5}/${this.config.pity5Threshold} | Toplam Çekiş: ${user.totalWishes}`
+        message: `💎 @${username} Primogem: ${user.primogems} | 5★ Pity: ${user.pity5}/${this.config.pity5Threshold} | 3★ Mavi Silah: ${weaponCount} (Dönüştürmek için: !donustur)`
       });
       return { type: 'balance', user };
+    }
+
+    // Recycle 3-Star Weapons (!donustur, !erit, !hurda, !demirci, !recycle)
+    if (text === '!donustur' || text === '!erit' || text === '!hurda' || text === '!demirci' || text === '!recycle' || text === '!craft') {
+      const res = this.recycleThreeStars(username);
+      if (!res.success && res.reason === 'not_enough_weapons') {
+        this.emit('chat_response', {
+          username,
+          message: `🔨 @${username} Demirci: Dönüşüm için en az 5 adet 3★ mavi silah gerekir! (Mevcut: ${res.current}/5). Dilek çektikçe mavi silahlar burada birikir!`
+        });
+      } else if (res.success) {
+        this.emit('chat_response', {
+          username,
+          message: `🔨 @${username} DEMİRCİ DÖNÜŞÜMÜ: ${res.recycledCount} adet 3★ mavi silah eritildi ve +${res.gainedPrimo} Primogem kazandın! 💎 (Kalan: ${res.remaining} mavi silah, Yeni Bakiye: ${res.newBalance} 💎). Hemen !wish yazabilirsin!`
+        });
+      }
+      return res;
     }
 
     // Pity Check (!pity, !garanti)
@@ -423,12 +447,63 @@ class GachaEngine extends EventEmitter {
     if (text === '!komutlar' || text === '!yardim' || text === '!help' || text === '!commands' || text === '!komut') {
       this.emit('chat_response', {
         username,
-        message: `📜 MilkaBot Komutları: !wish (1 Dilek / 160 Primo) | !wish10 (10'lu Dilek) | !bakiye (Primon & Pity) | !pity (5★ Garantin) | !envanter (5★ Karakterlerin) | !sıralama (Günün Liderleri) | 💡 Trivia sorularını ilk bilen +60 Primo kazanır!`
+        message: `📜 MilkaBot Komutları: !wish (1 Dilek / 160 Primo) | !wish10 (10'lu Dilek) | !bakiye (Primon, Pity & Mavi Silahların) | !donustur (5 Mavi Silah = 160 Primo) | !pity (5★ Garantin) | !envanter (5★ Karakterlerin) | !sıralama (Liderler) | 💡 Trivia sorularını ilk bilen +60 Primo kazanır!`
       });
       return { type: 'help' };
     }
 
     return null;
+  }
+
+  // 6. 3-Star Weapons Recycler (Blacksmith)
+  recycleThreeStars(username) {
+    const user = this.getOrCreateUser(username);
+    if (!user) return { success: false, reason: 'user_not_found' };
+
+    if (user.threeStarsCount === undefined) {
+      user.threeStarsCount = (user.inventory || []).filter(i => i.rarity === 3).length;
+    }
+
+    const available = user.threeStarsCount;
+    if (available < 5) {
+      return {
+        success: false,
+        reason: 'not_enough_weapons',
+        current: available,
+        needed: 5,
+        user
+      };
+    }
+
+    const packages = Math.floor(available / 5);
+    const weaponsToRecycle = packages * 5;
+    const gainedPrimo = packages * 160;
+
+    user.threeStarsCount -= weaponsToRecycle;
+    user.primogems += gainedPrimo;
+
+    // Clean recycled weapons from inventory array if any
+    if (Array.isArray(user.inventory)) {
+      let removed = 0;
+      user.inventory = user.inventory.filter(item => {
+        if (item.rarity === 3 && removed < weaponsToRecycle) {
+          removed++;
+          return false;
+        }
+        return true;
+      });
+    }
+
+    this.saveUsers();
+    return {
+      success: true,
+      recycledCount: weaponsToRecycle,
+      packages,
+      gainedPrimo,
+      remaining: user.threeStarsCount,
+      newBalance: user.primogems,
+      user
+    };
   }
 
   // 6. Admin Panel Helpers
@@ -571,6 +646,7 @@ class GachaEngine extends EventEmitter {
         primogems: u.primogems,
         pity5: u.pity5,
         pity4: u.pity4,
+        threeStarsCount: u.threeStarsCount ?? (u.inventory || []).filter(i => i.rarity === 3).length,
         totalWishes: u.totalWishes,
         fiveStarsCount: (u.inventory || []).filter(i => i.rarity === 5).length,
         fourStarsCount: (u.inventory || []).filter(i => i.rarity === 4).length,
