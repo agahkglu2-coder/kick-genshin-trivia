@@ -373,11 +373,11 @@ class GachaEngine extends EventEmitter {
       return { type: 'inventory', user };
     }
 
-    // Help & Commands Guide (!yardim, !komutlar, !help)
-    if (text === '!yardim' || text === '!komutlar' || text === '!help' || text === '!komut') {
+    // Help & Commands Guide (!yardim, !komutlar, !help, !commands, !komut)
+    if (text === '!komutlar' || text === '!yardim' || text === '!help' || text === '!commands' || text === '!komut') {
       this.emit('chat_response', {
         username,
-        message: `✨ Paimon Bot Rehberi: !wish (160 Primo = 1 Dilek) | !wish10 (10'lu Dilek) | !bakiye (Primon & Pity) | !envanter (5★ Karakterlerin) | !sıralama (Günün şampiyonları)`
+        message: `📜 MilkaBot Komutları: !wish (1 Dilek / 160 Primo) | !wish10 (10'lu Dilek) | !bakiye (Primon & Pity) | !pity (5★ Garantin) | !envanter (5★ Karakterlerin) | !sıralama (Günün Liderleri) | 💡 Trivia sorularını ilk bilen +60 Primo kazanır!`
       });
       return { type: 'help' };
     }

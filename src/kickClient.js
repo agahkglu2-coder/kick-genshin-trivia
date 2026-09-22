@@ -137,9 +137,14 @@ class KickClient extends EventEmitter {
       return RESOLVED_CHANNELS_CACHE[slug];
     }
 
+    const altSlug = slug.includes('_') ? slug.replace(/_/g, '-') : (slug.includes('-') ? slug.replace(/-/g, '_') : null);
     const endpoints = [
-      `https://kick.com/api/v1/channels/${slug}`,
       `https://kick.com/api/v2/channels/${slug}`,
+      `https://kick.com/api/v1/channels/${slug}`,
+      ...(altSlug ? [
+        `https://kick.com/api/v2/channels/${altSlug}`,
+        `https://kick.com/api/v1/channels/${altSlug}`
+      ] : []),
       `https://kick.com/api/v2/channels/${slug}/chatroom`,
       `https://kick.com/api/v1/users/${slug}`
     ];
