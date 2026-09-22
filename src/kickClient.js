@@ -16,6 +16,10 @@ function cleanChannelSlug(input) {
   return s.toLowerCase();
 }
 
+const KNOWN_CHATROOMS = {
+  'zerkacy': { chatroomId: 40879165, slug: 'zerkacy', username: 'zerkacy' }
+};
+
 class KickClient extends EventEmitter {
   constructor() {
     super();
@@ -44,7 +48,18 @@ class KickClient extends EventEmitter {
       };
     }
 
-    // 2. Windows dahili curl.exe ile Cloudflare engelini aşma
+    // 2. Bilinen / önbelleğe alınmış kanal listesi kontrolü
+    if (KNOWN_CHATROOMS[slug]) {
+      console.log(`[KickClient] Bilinen kanal önbelleğinden yüklendi: '${slug}' (#${KNOWN_CHATROOMS[slug].chatroomId})`);
+      return {
+        chatroomId: KNOWN_CHATROOMS[slug].chatroomId,
+        slug: KNOWN_CHATROOMS[slug].slug || slug,
+        user: { username: KNOWN_CHATROOMS[slug].username || slug, profilePic: null }
+      };
+    }
+
+    // 3. Çapraz platform curl (Windows: curl.exe, Linux/Render: curl)
+    const curlCmd = process.platform === 'win32' ? 'curl.exe' : 'curl';
     const endpoints = [
       `https://kick.com/api/v1/channels/${slug}`,
       `https://kick.com/api/v2/channels/${slug}`
@@ -52,11 +67,16 @@ class KickClient extends EventEmitter {
 
     for (const url of endpoints) {
       try {
-        const { stdout } = await execAsync(`curl.exe -s -L "${url}"`, { timeout: 8000 });
+        const { stdout } = await execAsync(`${curlCmd} -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" "${url}"`, { timeout: 8000 });
         if (stdout && stdout.trim().startsWith('{')) {
           const data = JSON.parse(stdout);
           if (data.chatroom && data.chatroom.id) {
-            console.log(`[KickClient] curl.exe ile kanal '${slug}' (#${data.chatroom.id}) başarıyla çözüldü.`);
+            console.log(`[KickClient] ${curlCmd} ile kanal '${slug}' (#${data.chatroom.id}) başarıyla çözüldü.`);
+            KNOWN_CHATROOMS[slug] = {
+              chatroomId: data.chatroom.id,
+              slug: data.slug || slug,
+              username: data.user?.username || slug
+            };
             return {
               chatroomId: data.chatroom.id,
               slug: data.slug || slug,
@@ -72,7 +92,7 @@ class KickClient extends EventEmitter {
       }
     }
 
-    // 3. Fallback: Standart fetch denemesi
+    // 4. Fallback: Standart fetch denemesi
     for (const url of endpoints) {
       try {
         const res = await fetch(url, {
@@ -86,6 +106,11 @@ class KickClient extends EventEmitter {
           const data = await res.json();
           if (data.chatroom && data.chatroom.id) {
             console.log(`[KickClient] fetch ile kanal '${slug}' (#${data.chatroom.id}) başarıyla çözüldü.`);
+            KNOWN_CHATROOMS[slug] = {
+              chatroomId: data.chatroom.id,
+              slug: data.slug || slug,
+              username: data.user?.username || slug
+            };
             return {
               chatroomId: data.chatroom.id,
               slug: data.slug || slug,
@@ -99,7 +124,19 @@ class KickClient extends EventEmitter {
       } catch (errFetch) {}
     }
 
-    throw new Error(`Kick kanalı bulunamadı (${slug}). Lütfen kullanıcı adında yazım hatası olmadığından emin olun.`);
+    // 5. HTML sayfasından chatroom ID regex ayrıştırma
+    try {
+      const { stdout } = await execAsync(`${curlCmd} -s -L -A "Mozilla/5.0" "https://kick.com/${slug}"`, { timeout: 8000 });
+      const match = stdout.match(/"chatroom":\s*\{\s*"id":\s*(\d+)/i) || stdout.match(/"chatroom_id":\s*(\d+)/i);
+      if (match && match[1]) {
+        const cId = parseInt(match[1], 10);
+        console.log(`[KickClient] HTML regex ile kanal '${slug}' (#${cId}) çözüldü.`);
+        KNOWN_CHATROOMS[slug] = { chatroomId: cId, slug, username: slug };
+        return { chatroomId: cId, slug, user: null };
+      }
+    } catch (eHtml) {}
+
+    throw new Error(`Kick kanalı bulunamadı (${slug}). Lütfen kullanıcı adında yazım hatası olmadığından emin olun veya doğrudan Chatroom ID (örn: 40879165) girin.`);
   }
 
   async connect(channelSlug) {
