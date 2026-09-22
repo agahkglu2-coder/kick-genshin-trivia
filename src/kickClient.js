@@ -140,7 +140,8 @@ class KickClient extends EventEmitter {
     const endpoints = [
       `https://kick.com/api/v1/channels/${slug}`,
       `https://kick.com/api/v2/channels/${slug}`,
-      `https://kick.com/api/v2/channels/${slug}/chatroom`
+      `https://kick.com/api/v2/channels/${slug}/chatroom`,
+      `https://kick.com/api/v1/users/${slug}`
     ];
 
     // 3. Primary method: Spawn curl with browser headers
@@ -150,18 +151,18 @@ class KickClient extends EventEmitter {
         if (stdout && stdout.trim().startsWith('{')) {
           const data = JSON.parse(stdout);
           const cId = data.chatroom?.id || (data.id && typeof data.id === 'number' ? data.id : null);
-          const uId = data.user_id || (data.user && data.user.id) || null;
+          const uId = data.user_id || (data.user && data.user.id) || (data.id && typeof data.id === 'number' ? data.id : null);
           if (cId) {
             console.log(`[KickClient] ✅ curl ile kanal '${slug}' (#${cId}, User: #${uId}) çözüldü.`);
             const res = {
               chatroomId: cId,
               broadcasterUserId: uId,
-              slug: data.slug || slug,
+              slug: data.slug || data.username || slug,
               user: data.user ? {
                 id: uId,
                 username: data.user.username,
                 profilePic: data.user.profile_pic
-              } : null
+              } : (data.username ? { id: data.id, username: data.username, profilePic: data.profilepic } : null)
             };
             RESOLVED_CHANNELS_CACHE[slug] = res;
             saveKnownChannel(slug, cId, uId);
@@ -186,18 +187,18 @@ class KickClient extends EventEmitter {
         if (res.ok) {
           const data = await res.json();
           const cId = data.chatroom?.id || (data.id && typeof data.id === 'number' ? data.id : null);
-          const uId = data.user_id || (data.user && data.user.id) || null;
+          const uId = data.user_id || (data.user && data.user.id) || (data.id && typeof data.id === 'number' ? data.id : null);
           if (cId) {
             console.log(`[KickClient] ✅ fetch ile kanal '${slug}' (#${cId}, User: #${uId}) çözüldü.`);
             const result = {
               chatroomId: cId,
               broadcasterUserId: uId,
-              slug: data.slug || slug,
+              slug: data.slug || data.username || slug,
               user: data.user ? {
                 id: uId,
                 username: data.user.username,
                 profilePic: data.user.profile_pic
-              } : null
+              } : (data.username ? { id: data.id, username: data.username, profilePic: data.profilepic } : null)
             };
             RESOLVED_CHANNELS_CACHE[slug] = result;
             saveKnownChannel(slug, cId, uId);

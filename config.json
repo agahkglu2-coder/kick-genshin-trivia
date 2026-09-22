@@ -5,6 +5,7 @@
   "leaderboardCooldownSeconds": 60,
   "gameMode": "first_correct",
   "soundEnabled": true,
-  "channel": "zerkacy",
+  "channel": "Milka_e",
+  "botTargetChannel": "Milka_e",
   "port": 3000
 }

@@ -423,12 +423,13 @@ app.get('/api/bot/status', (req, res) => {
   res.json({
     ...kickBot.getStatus(),
     clientId: config.botClientId || '',
-    redirectUri: config.botRedirectUri || ''
+    redirectUri: config.botRedirectUri || '',
+    targetChannel: config.botTargetChannel || config.channel || ''
   });
 });
 
-app.post('/api/bot/config', (req, res) => {
-  const { token, enabled, clientId, clientSecret, redirectUri } = req.body || {};
+app.post('/api/bot/config', async (req, res) => {
+  const { token, enabled, clientId, clientSecret, redirectUri, targetChannel } = req.body || {};
   if (token !== undefined) {
     config.botToken = token;
     kickBot.setToken(token);
@@ -446,16 +447,67 @@ app.post('/api/bot/config', (req, res) => {
   if (redirectUri !== undefined) {
     config.botRedirectUri = redirectUri.trim();
   }
+  if (targetChannel !== undefined) {
+    config.botTargetChannel = targetChannel.trim();
+    const activeTarget = config.botTargetChannel || config.channel || 'zerkacy';
+    try {
+      const info = await kickClient.getChatroomId(activeTarget);
+      if (info) {
+        if (info.chatroomId) kickBot.setChatroomId(info.chatroomId);
+        if (info.broadcasterUserId) kickBot.setBroadcasterUserId(info.broadcasterUserId);
+      }
+    } catch (e) {}
+  }
   saveConfig(config);
-  broadcast({ type: 'BOT_STATUS', status: kickBot.getStatus() });
+  broadcast({
+    type: 'BOT_STATUS',
+    status: {
+      ...kickBot.getStatus(),
+      clientId: config.botClientId || '',
+      redirectUri: config.botRedirectUri || '',
+      targetChannel: config.botTargetChannel || config.channel || ''
+    }
+  });
   res.json({
     success: true,
     status: {
       ...kickBot.getStatus(),
       clientId: config.botClientId || '',
-      redirectUri: config.botRedirectUri || ''
+      redirectUri: config.botRedirectUri || '',
+      targetChannel: config.botTargetChannel || config.channel || ''
     }
   });
+});
+
+app.post('/api/bot/target-channel', async (req, res) => {
+  const { targetChannel } = req.body || {};
+  const cleaned = cleanChannelSlug(targetChannel);
+  const target = cleaned || (targetChannel ? String(targetChannel).trim() : '');
+
+  config.botTargetChannel = target;
+  saveConfig(config);
+
+  const activeChannel = target || config.channel || 'zerkacy';
+  try {
+    const info = await kickClient.getChatroomId(activeChannel);
+    if (info) {
+      if (info.chatroomId) kickBot.setChatroomId(info.chatroomId);
+      if (info.broadcasterUserId) kickBot.setBroadcasterUserId(info.broadcasterUserId);
+      console.log(`[KickBot] Hedef kanal güncellendi: ${activeChannel} (Chatroom #${info.chatroomId}, Broadcaster #${info.broadcasterUserId})`);
+    }
+    broadcast({
+      type: 'BOT_STATUS',
+      status: {
+        ...kickBot.getStatus(),
+        clientId: config.botClientId || '',
+        redirectUri: config.botRedirectUri || '',
+        targetChannel: config.botTargetChannel || config.channel || ''
+      }
+    });
+    res.json({ success: true, targetChannel: activeChannel, broadcasterUserId: kickBot.broadcasterUserId });
+  } catch (err) {
+    res.json({ success: true, targetChannel: activeChannel, warning: err.message });
+  }
 });
 
 // OAuth 2.1 PKCE Flow: Start

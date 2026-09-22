@@ -85,6 +85,8 @@
   const cfgBotToken = document.getElementById('cfg-bot-token');
   const btnBotAuthorize = document.getElementById('btn-bot-authorize');
   const btnBotCopyAuthLink = document.getElementById('btn-bot-copy-auth-link');
+  const cfgBotTargetChannel = document.getElementById('cfg-bot-target-channel');
+  const btnSaveTargetChannel = document.getElementById('btn-save-target-channel');
   const btnBotTestMsg = document.getElementById('btn-bot-test-msg');
   const botFeedback = document.getElementById('bot-feedback');
   const displayRedirectUri = document.getElementById('display-redirect-uri');
@@ -548,6 +550,9 @@
     if (status.redirectUri && cfgBotRedirectUri && !cfgBotRedirectUri.value) {
       cfgBotRedirectUri.value = status.redirectUri;
     }
+    if (status.targetChannel && cfgBotTargetChannel && !cfgBotTargetChannel.value) {
+      cfgBotTargetChannel.value = status.targetChannel;
+    }
     if (displayRedirectUri && (!displayRedirectUri.value || displayRedirectUri.value.includes('localhost'))) {
       displayRedirectUri.value = `${window.location.origin}/auth/kick/callback`;
     }
@@ -584,6 +589,36 @@
     });
   }
 
+  if (btnSaveTargetChannel && cfgBotTargetChannel) {
+    btnSaveTargetChannel.addEventListener('click', async () => {
+      const targetVal = cfgBotTargetChannel.value.trim();
+      btnSaveTargetChannel.disabled = true;
+      btnSaveTargetChannel.textContent = 'Ayarlanıyor...';
+      try {
+        const res = await fetch('/api/bot/target-channel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetChannel: targetVal })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (botFeedback) {
+            botFeedback.style.color = '#10b981';
+            botFeedback.textContent = `🎯 Hedef kanal güncellendi: ${data.targetChannel || 'Ana Kanal'}`;
+          }
+        }
+      } catch (err) {
+        if (botFeedback) {
+          botFeedback.style.color = '#ef4444';
+          botFeedback.textContent = 'Hata: ' + err.message;
+        }
+      } finally {
+        btnSaveTargetChannel.disabled = false;
+        btnSaveTargetChannel.textContent = 'Ayarla';
+      }
+    });
+  }
+
   if (botForm) {
     botForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -596,6 +631,7 @@
         enabled: cfgBotEnabled.checked,
         clientId: cId,
         clientSecret: cSecret,
+        targetChannel: cfgBotTargetChannel?.value.trim() || '',
         redirectUri: displayRedirectUri?.value.trim() || cfgBotRedirectUri?.value.trim() || `${window.location.origin}/auth/kick/callback`,
         token: cfgBotToken?.value.trim() || ''
       };
