@@ -388,6 +388,37 @@
           </form>
         </div>
 
+        <!-- Database & Persistence Settings Panel -->
+        <div class="panel-card db-card">
+          <div class="panel-title">
+            <span>🗄️ Veritabanı & Kalıcı Hafıza</span>
+            <span id="db-status-badge" class="badge-mini" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4);">🟡 Yerel Dosya Modu</span>
+          </div>
+
+          <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 12px; line-height: 1.4;">
+            Render sunucusu uyusa bile izleyicilerin Primogemleri, 5★ karakterleri ve bot bağlantısı asla sıfırlanmaz.
+          </div>
+
+          <div class="form-group">
+            <label>PostgreSQL URL (Render / Supabase / Neon)</label>
+            <div class="input-with-btn">
+              <input type="password" id="cfg-database-url" placeholder="postgres://kullanici:sifre@host/veritabani">
+              <button type="button" id="btn-toggle-db-url-vis" class="btn btn-outline btn-sm" title="Göster/Gizle">👁️</button>
+              <button type="button" id="btn-save-db-url" class="btn btn-success btn-sm">Bağlan</button>
+            </div>
+            <span class="field-hint">Render'ın ücretsiz <strong>PostgreSQL</strong> servisini veya harici Supabase URL'nizi buraya girebilirsiniz. Boş ise yerel dosyada saklanır.</span>
+            <div id="db-feedback" class="field-hint" style="margin-top: 4px; font-weight: 600;"></div>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+            <button type="button" id="btn-export-db" class="btn btn-outline btn-sm" style="flex: 1;">📥 Yedek İndir (JSON)</button>
+            <label class="btn btn-outline btn-sm" style="flex: 1; text-align: center; cursor: pointer; margin: 0; display: inline-flex; align-items: center; justify-content: center;">
+              📤 Yedek Yükle
+              <input type="file" id="input-import-db" accept=".json" style="display: none;">
+            </label>
+          </div>
+        </div>
+
         <!-- Session Leaderboard -->
         <div class="panel-card">
           <div class="panel-title">

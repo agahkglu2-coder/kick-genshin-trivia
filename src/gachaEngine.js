@@ -1,6 +1,7 @@
 const EventEmitter = require('events');
 const fs = require('fs');
 const path = require('path');
+const { db } = require('./db');
 
 const USERS_FILE = path.join(__dirname, '..', 'data', 'users.json');
 const CHARACTERS_FILE = path.join(__dirname, 'data', 'characters.json');
@@ -54,12 +55,12 @@ class GachaEngine extends EventEmitter {
       this.weapons = [];
     }
 
-    // Load Users
+    // Load Users from DatabaseManager
     try {
-      if (fs.existsSync(USERS_FILE)) {
+      this.users = db.getAllUsers() || {};
+      if (Object.keys(this.users).length === 0 && fs.existsSync(USERS_FILE)) {
         this.users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-      } else {
-        this.saveUsers();
+        db.saveAllUsers(this.users);
       }
     } catch (e) {
       console.error('[GachaEngine] Kullanıcı veritabanı okunamadı:', e);
@@ -71,9 +72,7 @@ class GachaEngine extends EventEmitter {
 
   saveUsers() {
     try {
-      const dir = path.dirname(USERS_FILE);
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(USERS_FILE, JSON.stringify(this.users, null, 2), 'utf8');
+      db.saveAllUsers(this.users);
     } catch (e) {
       console.error('[GachaEngine] Kullanıcı veritabanı kaydedilemedi:', e);
     }
@@ -313,7 +312,15 @@ class GachaEngine extends EventEmitter {
     const username = sender.username;
     this.handleChatActivity(username);
 
-    const text = content.trim().toLowerCase();
+    // Normalize Turkish characters and casing for robust command matching
+    const text = (content || '').trim().toLowerCase()
+      .replace(/ı/g, 'i')
+      .replace(/İ/g, 'i')
+      .replace(/ğ/g, 'g')
+      .replace(/ü/g, 'u')
+      .replace(/ş/g, 's')
+      .replace(/ö/g, 'o')
+      .replace(/ç/g, 'c');
 
     // Single Wish (!wish)
     if (text === '!wish' || text === '!dilek' || text === '!cek') {
@@ -371,6 +378,24 @@ class GachaEngine extends EventEmitter {
         message: `🎒 @${username} 5★ Karakterlerin (${unique5s.length}): ${unique5s.length > 0 ? unique5s.join(', ') : 'Henüz yok (Pity: ' + user.pity5 + '/' + this.config.pity5Threshold + ')'}`
       });
       return { type: 'inventory', user };
+    }
+
+    // Leaderboard Check (!siralama, !top, !liderler)
+    if (text === '!siralama' || text === '!top' || text === '!liderler' || text === '!leaderboard') {
+      const topUsers = this.getAllUsersList().slice(0, 3);
+      if (topUsers.length === 0) {
+        this.emit('chat_response', {
+          username,
+          message: `🏆 Henüz sıralamada Gezgin yok. !wish yazarak ilk dileğini çekebilirsin!`
+        });
+      } else {
+        const listStr = topUsers.map((u, i) => `${i + 1}. @${u.username} (${u.primogems} 💎, ${u.fiveStarsCount}x 5★)`).join(' | ');
+        this.emit('chat_response', {
+          username,
+          message: `🏆 Primogem Liderleri: ${listStr}`
+        });
+      }
+      return { type: 'leaderboard' };
     }
 
     // Help & Commands Guide (!yardim, !komutlar, !help, !commands, !komut)

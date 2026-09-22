@@ -1,7 +1,7 @@
 {
   "zerkacy": {
     "username": "zerkacy",
-    "primogems": 1580,
+    "primogems": 1740,
     "pity4": 0,
     "pity5": 13,
     "totalWishes": 13,
@@ -234,5 +234,10 @@
     "lastChatAwardTime": 1790099790287,
     "lastActiveTime": 1790099799284,
     "createdAt": "2026-09-22T17:16:56.235Z"
+  },
+  "milka_fan": {
+    "username": "milka_fan",
+    "primogems": 500,
+    "pity5": 12
   }
 }

@@ -8,6 +8,7 @@ const { KickClient, cleanChannelSlug } = require('./kickClient');
 const { KickBotService } = require('./kickBot');
 const { GameEngine } = require('./gameEngine');
 const { GachaEngine } = require('./gachaEngine');
+const { db } = require('./db');
 
 const CONFIG_PATH = path.join(__dirname, '..', 'config.json');
 
@@ -141,6 +142,31 @@ try {
 
 const gameEngine = new GameEngine(config);
 const gachaEngine = new GachaEngine();
+
+// Initialize persistent database (PostgreSQL or local fallback)
+db.init(process.env.DATABASE_URL || config.databaseUrl).then(async () => {
+  const savedToken = db.getSetting('botToken');
+  const savedBotUser = db.getSetting('botUsername');
+  const savedClientId = db.getSetting('botClientId');
+  const savedClientSecret = db.getSetting('botClientSecret');
+  const savedTargetChan = db.getSetting('botTargetChannel');
+
+  if (savedToken && !config.botToken) {
+    config.botToken = savedToken;
+    kickBot.setToken(savedToken);
+  }
+  if (savedBotUser && !config.botUsername) {
+    config.botUsername = savedBotUser;
+    kickBot.setUsername(savedBotUser);
+  }
+  if (savedClientId && !config.botClientId) config.botClientId = savedClientId;
+  if (savedClientSecret && !config.botClientSecret) config.botClientSecret = savedClientSecret;
+  if (savedTargetChan && !config.botTargetChannel) config.botTargetChannel = savedTargetChan;
+
+  if (gachaEngine) {
+    gachaEngine.loadData();
+  }
+}).catch(console.error);
 
 let kickStatus = {
   connected: false,
@@ -429,26 +455,37 @@ app.get('/api/bot/status', (req, res) => {
 });
 
 app.post('/api/bot/config', async (req, res) => {
-  const { token, enabled, clientId, clientSecret, redirectUri, targetChannel } = req.body || {};
+  const { token, enabled, clientId, clientSecret, redirectUri, targetChannel, botUsername } = req.body || {};
   if (token !== undefined) {
     config.botToken = token;
     kickBot.setToken(token);
+    await db.setSetting('botToken', token);
+  }
+  if (botUsername !== undefined) {
+    config.botUsername = botUsername;
+    kickBot.setUsername(botUsername);
+    await db.setSetting('botUsername', botUsername);
   }
   if (enabled !== undefined) {
     config.botEnabled = !!enabled;
     kickBot.setEnabled(!!enabled);
+    await db.setSetting('botEnabled', !!enabled);
   }
   if (clientId !== undefined) {
     config.botClientId = clientId.trim();
+    await db.setSetting('botClientId', config.botClientId);
   }
   if (clientSecret !== undefined) {
     config.botClientSecret = clientSecret.trim();
+    await db.setSetting('botClientSecret', config.botClientSecret);
   }
   if (redirectUri !== undefined) {
     config.botRedirectUri = redirectUri.trim();
+    await db.setSetting('botRedirectUri', config.botRedirectUri);
   }
   if (targetChannel !== undefined) {
     config.botTargetChannel = targetChannel.trim();
+    await db.setSetting('botTargetChannel', config.botTargetChannel);
     const activeTarget = config.botTargetChannel || config.channel || 'zerkacy';
     try {
       const info = await kickClient.getChatroomId(activeTarget);
@@ -629,6 +666,7 @@ app.get('/auth/kick/callback', async (req, res) => {
     const tokenData = await tokenRes.json();
     config.botToken = tokenData.access_token;
     kickBot.setToken(tokenData.access_token);
+    await db.setSetting('botToken', tokenData.access_token);
 
     // Fetch the authenticated bot user's identity
     let botUsername = null;
@@ -646,6 +684,7 @@ app.get('/auth/kick/callback', async (req, res) => {
         if (botUsername) {
           config.botUsername = botUsername;
           kickBot.setUsername(botUsername);
+          await db.setSetting('botUsername', botUsername);
           console.log(`[KickBot] ✅ Yetkilendirilen bot hesabı: @${botUsername}`);
         }
       }
@@ -660,9 +699,13 @@ app.get('/auth/kick/callback', async (req, res) => {
       status: {
         ...kickBot.getStatus(),
         clientId: config.botClientId || '',
-        redirectUri: config.botRedirectUri || ''
+        redirectUri: config.botRedirectUri || '',
+        targetChannel: config.botTargetChannel || config.channel || ''
       }
     });
+
+    const safeUsername = botUsername ? encodeURIComponent(botUsername) : '';
+    const safeToken = encodeURIComponent(tokenData.access_token);
 
     // Send successful auto-closing page
     res.send(`
@@ -672,12 +715,20 @@ app.get('/auth/kick/callback', async (req, res) => {
       <body style="font-family:sans-serif; background:#0f172a; color:#fff; display:flex; align-items:center; justify-content:center; height:100vh;">
         <div style="background:#1e293b; padding:30px; border-radius:12px; max-width:480px; text-align:center;">
           <h2 style="color:#10b981;">🎉 Yetkilendirme Başarılı!</h2>
-          <p style="color:#94a3b8;">Paimon Bot Kick kanalınıza başarıyla bağlandı. Bu pencereyi kapatabilirsiniz.</p>
-          <a href="/admin.html?bot_authorized=true" style="display:inline-block; margin-top:16px; padding:10px 20px; background:#10b981; color:#fff; text-decoration:none; border-radius:8px;">Yönetim Paneline Dön</a>
+          <p style="color:#94a3b8;">${botUsername ? `@${botUsername}` : 'Paimon Bot'} Kick kanalınıza başarıyla bağlandı. Bu pencereyi kapatabilirsiniz.</p>
+          <a href="/admin.html?bot_authorized=true&bot_username=${safeUsername}" style="display:inline-block; margin-top:16px; padding:10px 20px; background:#10b981; color:#fff; text-decoration:none; border-radius:8px;">Yönetim Paneline Dön</a>
           <script>
+            try {
+              localStorage.setItem('kick_bot_token', '${tokenData.access_token}');
+              ${botUsername ? `localStorage.setItem('kick_bot_username', '${botUsername}');` : ''}
+            } catch(e) {}
             if (window.opener) {
               try {
-                window.opener.postMessage({ type: 'KICK_AUTH_SUCCESS', token: true }, '*');
+                window.opener.postMessage({
+                  type: 'KICK_AUTH_SUCCESS',
+                  token: '${tokenData.access_token}',
+                  botUsername: '${botUsername || ''}'
+                }, '*');
               } catch (e) {}
               setTimeout(() => { window.close(); }, 1200);
             }
@@ -700,6 +751,79 @@ app.post('/api/bot/test-message', async (req, res) => {
     res.json({ success: true, message: text });
   } else {
     res.status(400).json({ success: false, error: result.error || 'Mesaj gönderilemedi' });
+  }
+});
+
+// Database Management REST Endpoints
+app.get('/api/db/status', (req, res) => {
+  res.json({
+    status: db.getStatus(),
+    databaseUrlSet: Boolean(process.env.DATABASE_URL || config.databaseUrl)
+  });
+});
+
+app.post('/api/db/config', async (req, res) => {
+  const { databaseUrl } = req.body || {};
+  if (databaseUrl !== undefined) {
+    config.databaseUrl = databaseUrl.trim();
+    saveConfig(config);
+    try {
+      await db.init(config.databaseUrl);
+      if (gachaEngine) {
+        gachaEngine.loadData();
+      }
+      res.json({ success: true, status: db.getStatus() });
+    } catch (err) {
+      res.status(400).json({ success: false, error: err.message, status: db.getStatus() });
+    }
+  } else {
+    res.status(400).json({ error: 'databaseUrl parametresi gerekli.' });
+  }
+});
+
+app.get('/api/db/export', (req, res) => {
+  const exportData = {
+    exportedAt: new Date().toISOString(),
+    users: db.getAllUsers(),
+    settings: Object.fromEntries(db.inMemorySettings.entries()),
+    config: {
+      channel: config.channel,
+      botTargetChannel: config.botTargetChannel,
+      intervalMinutes: config.intervalMinutes,
+      questionDurationSeconds: config.questionDurationSeconds
+    }
+  };
+  res.setHeader('Content-Disposition', 'attachment; filename="milkabot_database_backup.json"');
+  res.setHeader('Content-Type', 'application/json');
+  res.send(JSON.stringify(exportData, null, 2));
+});
+
+app.post('/api/db/import', async (req, res) => {
+  try {
+    const importData = req.body;
+    if (!importData || typeof importData !== 'object') {
+      return res.status(400).json({ error: 'Geçersiz yedek verisi.' });
+    }
+    let restoredUsers = 0;
+    if (importData.users && typeof importData.users === 'object') {
+      await db.saveAllUsers(importData.users);
+      restoredUsers = Object.keys(importData.users).length;
+      if (gachaEngine) {
+        gachaEngine.loadData();
+      }
+    }
+    if (importData.settings && typeof importData.settings === 'object') {
+      for (const [k, v] of Object.entries(importData.settings)) {
+        await db.setSetting(k, v);
+      }
+    }
+    res.json({
+      success: true,
+      message: `${restoredUsers} Gezgin ve sistem ayarları başarıyla geri yüklendi!`,
+      status: db.getStatus()
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Yedek yüklenirken hata oluştu: ' + err.message });
   }
 });
 

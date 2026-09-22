@@ -92,6 +92,15 @@
   const displayRedirectUri = document.getElementById('display-redirect-uri');
   const btnCopyRedirectUri = document.getElementById('btn-copy-redirect-uri');
 
+  // Database DOM Elements
+  const dbStatusBadge = document.getElementById('db-status-badge');
+  const cfgDatabaseUrl = document.getElementById('cfg-database-url');
+  const btnToggleDbUrlVis = document.getElementById('btn-toggle-db-url-vis');
+  const btnSaveDbUrl = document.getElementById('btn-save-db-url');
+  const dbFeedback = document.getElementById('db-feedback');
+  const btnExportDb = document.getElementById('btn-export-db');
+  const inputImportDb = document.getElementById('input-import-db');
+
   // Set OBS URLs correctly based on current origin (works seamlessly on Render HTTPS & localhost)
   const currentOrigin = window.location.origin || `http://${window.location.host || 'localhost:3000'}`;
   if (obsTriviaUrl) obsTriviaUrl.value = `${currentOrigin}/trivia.html`;
@@ -568,11 +577,35 @@
         botStatusBadge.style.background = 'rgba(16, 185, 129, 0.2)';
         botStatusBadge.style.color = '#10b981';
         botStatusBadge.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+        if (status.botUsername) {
+          localStorage.setItem('kick_bot_username', status.botUsername);
+        }
       } else {
         botStatusBadge.textContent = '🟡 Simülasyon Modu';
         botStatusBadge.style.background = 'rgba(245, 158, 11, 0.2)';
         botStatusBadge.style.color = '#f59e0b';
         botStatusBadge.style.border = '1px solid rgba(245, 158, 11, 0.4)';
+
+        // Auto-restore token from localStorage if server currently lacks token (e.g. after server sleep / F5 reload)
+        const savedToken = localStorage.getItem('kick_bot_token');
+        const savedBotUser = localStorage.getItem('kick_bot_username');
+        if (savedToken && !window._tokenRestoreSent) {
+          window._tokenRestoreSent = true;
+          console.log('[Admin] 🔄 Tarayıcı hafızasındaki Kick bot tokenı sunucuya otomatik eşitleniyor...');
+          fetch('/api/bot/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              token: savedToken,
+              botUsername: savedBotUser || undefined
+            })
+          }).then(r => r.json()).then(d => {
+            if (d.success) {
+              updateBotStatus(d.status);
+              console.log('[Admin] ✅ Kick bot bağlantısı F5 sonrası anında geri yüklendi!');
+            }
+          }).catch(console.error);
+        }
       }
     }
   }
@@ -774,9 +807,16 @@
   // Handle OAuth success message from popup window
   window.addEventListener('message', async (event) => {
     if (event.data && event.data.type === 'KICK_AUTH_SUCCESS') {
+      if (event.data.token && typeof event.data.token === 'string') {
+        localStorage.setItem('kick_bot_token', event.data.token);
+      }
+      if (event.data.botUsername) {
+        localStorage.setItem('kick_bot_username', event.data.botUsername);
+      }
       if (botFeedback) {
         botFeedback.style.color = '#10b981';
-        botFeedback.textContent = '🎉 Tebrikler! Paimon Bot Kick kanalınıza başarıyla bağlandı (🟢 Canlı Kick Modu Aktif).';
+        const who = event.data.botUsername ? `@${event.data.botUsername}` : 'Paimon Bot';
+        botFeedback.textContent = `🎉 Tebrikler! ${who} Kick kanalınıza başarıyla bağlandı (🟢 Canlı Kick Modu Aktif).`;
       }
       try {
         const res = await fetch('/api/bot/status');
@@ -786,7 +826,12 @@
     }
   });
 
-  if (new URLSearchParams(window.location.search).get('bot_authorized')) {
+  const authUrlParams = new URLSearchParams(window.location.search);
+  if (authUrlParams.get('bot_authorized')) {
+    const pToken = authUrlParams.get('bot_token');
+    const pUser = authUrlParams.get('bot_username');
+    if (pToken) localStorage.setItem('kick_bot_token', pToken);
+    if (pUser) localStorage.setItem('kick_bot_username', pUser);
     if (botFeedback) {
       botFeedback.style.color = '#10b981';
       botFeedback.textContent = '🎉 Tebrikler! Paimon Bot Kick kanalınıza başarıyla bağlandı (🟢 Canlı Kick Modu Aktif).';
@@ -1058,9 +1103,129 @@
     btnRefreshGachaUsers.addEventListener('click', loadGachaUsers);
   }
 
+  // Database Management Logic
+  async function loadDbStatus() {
+    try {
+      const res = await fetch('/api/db/status');
+      const data = await res.json();
+      updateDbStatusUI(data);
+    } catch (e) {
+      console.warn('DB durumu alınamadı:', e);
+    }
+  }
+
+  function updateDbStatusUI(data) {
+    if (!dbStatusBadge) return;
+    const st = data?.status || {};
+    if (st.type === 'postgres' && st.connected) {
+      dbStatusBadge.textContent = '🟢 PostgreSQL Bağlı';
+      dbStatusBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+      dbStatusBadge.style.color = '#10b981';
+      dbStatusBadge.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+    } else {
+      dbStatusBadge.textContent = '🟡 Yerel Dosya Modu';
+      dbStatusBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+      dbStatusBadge.style.color = '#f59e0b';
+      dbStatusBadge.style.border = '1px solid rgba(245, 158, 11, 0.4)';
+    }
+  }
+
+  if (btnToggleDbUrlVis && cfgDatabaseUrl) {
+    btnToggleDbUrlVis.addEventListener('click', () => {
+      if (cfgDatabaseUrl.type === 'password') {
+        cfgDatabaseUrl.type = 'text';
+        btnToggleDbUrlVis.textContent = '🔒';
+      } else {
+        cfgDatabaseUrl.type = 'password';
+        btnToggleDbUrlVis.textContent = '👁️';
+      }
+    });
+  }
+
+  if (btnSaveDbUrl && cfgDatabaseUrl) {
+    btnSaveDbUrl.addEventListener('click', async () => {
+      const dbUrl = cfgDatabaseUrl.value.trim();
+      btnSaveDbUrl.disabled = true;
+      btnSaveDbUrl.textContent = 'Bağlanılıyor...';
+      if (dbFeedback) {
+        dbFeedback.style.color = '#f59e0b';
+        dbFeedback.textContent = '🔄 Veritabanına bağlanılıyor...';
+      }
+
+      try {
+        const res = await fetch('/api/db/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ databaseUrl: dbUrl })
+        });
+        const data = await res.json();
+        if (data.success) {
+          updateDbStatusUI(data);
+          if (dbFeedback) {
+            dbFeedback.style.color = '#10b981';
+            dbFeedback.textContent = '✅ Veritabanı başarıyla bağlandı ve tablolar hazırlandı!';
+          }
+          loadGachaUsers();
+        } else {
+          if (dbFeedback) {
+            dbFeedback.style.color = '#ef4444';
+            dbFeedback.textContent = '❌ Bağlantı hatası: ' + (data.error || 'Bilinmeyen hata');
+          }
+        }
+      } catch (e) {
+        if (dbFeedback) {
+          dbFeedback.style.color = '#ef4444';
+          dbFeedback.textContent = '❌ Hata: ' + e.message;
+        }
+      } finally {
+        btnSaveDbUrl.disabled = false;
+        btnSaveDbUrl.textContent = 'Bağlan';
+      }
+    });
+  }
+
+  if (btnExportDb) {
+    btnExportDb.addEventListener('click', () => {
+      window.location.href = '/api/db/export';
+    });
+  }
+
+  if (inputImportDb) {
+    inputImportDb.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        try {
+          const json = JSON.parse(evt.target.result);
+          const res = await fetch('/api/db/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(json)
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert('✅ ' + data.message);
+            loadGachaUsers();
+            loadDbStatus();
+          } else {
+            alert('❌ Hata: ' + (data.error || 'Yedek yüklenemedi.'));
+          }
+        } catch (err) {
+          alert('❌ Geçersiz JSON dosyası: ' + err.message);
+        } finally {
+          inputImportDb.value = '';
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+
   // Initialize
   connectWS();
   loadQuestions();
   loadGachaUsers();
+  loadDbStatus();
 })();
 
