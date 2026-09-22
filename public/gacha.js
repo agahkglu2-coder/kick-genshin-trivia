@@ -424,6 +424,51 @@
     tryNext();
   }
 
+  function loadCardThumbnail(img, pull) {
+    const candidates = [];
+    if (pull.remoteIcon) {
+      candidates.push(pull.remoteIcon);
+      candidates.push(`/api/asset-proxy?url=${encodeURIComponent(pull.remoteIcon)}`);
+    }
+    if (pull.remoteIconDev) {
+      candidates.push(pull.remoteIconDev);
+      candidates.push(`/api/asset-proxy?url=${encodeURIComponent(pull.remoteIconDev)}`);
+    }
+    if (pull.portrait) {
+      candidates.push(pull.portrait);
+      candidates.push(`/api/asset-proxy?url=${encodeURIComponent(pull.portrait)}`);
+    }
+    if (pull.splashArt) {
+      candidates.push(pull.splashArt);
+      candidates.push(`/api/asset-proxy?url=${encodeURIComponent(pull.splashArt)}`);
+    }
+    if (pull.splashArtDev) {
+      candidates.push(pull.splashArtDev);
+      candidates.push(`/api/asset-proxy?url=${encodeURIComponent(pull.splashArtDev)}`);
+    }
+    if (pull.icon) {
+      candidates.push(pull.icon);
+    }
+
+    const fallback = getElementFallbackAvatar(pull.name, pull.element, pull.rarity);
+    if (!candidates.length) {
+      img.src = fallback;
+      return;
+    }
+
+    let candidateIdx = 0;
+    img.onerror = () => {
+      if (candidateIdx < candidates.length) {
+        img.src = candidates[candidateIdx++];
+      } else {
+        img.onerror = null;
+        img.src = fallback;
+      }
+    };
+
+    img.src = candidates[candidateIdx++];
+  }
+
   function hideWishCard() {
     if (wishCard) {
       wishCard.classList.add('hidden');
@@ -768,7 +813,7 @@
       const img = document.createElement('img');
       img.className = 'multi-card-art';
       img.alt = pull.name;
-      img.src = pull.icon || pull.remoteIcon || pull.splashArt || getElementFallbackAvatar(pull.name, pull.element, pull.rarity);
+      loadCardThumbnail(img, pull);
 
       artWrap.appendChild(img);
 
