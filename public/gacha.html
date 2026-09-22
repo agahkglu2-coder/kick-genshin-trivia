@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Genshin Gacha & Primogem OBS Source - Wish Edition</title>
+  <link rel="stylesheet" href="gacha.css?v=3.5">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Transient Version Confirmation Badge for Streamer (Fades out in 4s) -->
+  <div id="version-badge" class="version-badge">
+    <img src="assets/paimon_cheer.png" alt="" class="badge-paimon-icon">
+    <span>Genshin Wish Showcase Aktif (v3.5)</span>
+  </div>
+
+  <!-- Canvas for Shooting Star Meteors, Sparkles & Primogem Rain -->
+  <canvas id="effects-canvas"></canvas>
+
+  <div id="overlay-container">
+    <!-- Rotating Celestial Sunburst for 5-Star / 4-Star Reveals -->
+    <div id="wish-sunburst" class="wish-sunburst hidden" style="display: none;">
+      <div class="sunburst-rays"></div>
+      <div class="sunburst-core"></div>
+    </div>
+
+    <!-- Gacha Wish Reveal Card -->
+    <div id="wish-card" class="card wish-card hidden" style="display: none;">
+      <div id="wish-card-glow" class="card-glow wish-glow-5"></div>
+      
+      <!-- Paimon Wish Reaction Mascot -->
+      <div class="wish-paimon-mascot">
+        <img id="wish-paimon-img" src="assets/paimon_cheer.png" alt="Paimon" class="wish-paimon-sprite">
+        <div class="wish-speech-bubble" id="wish-speech">İnanılmaz! 5 Yıldız Geldi! ⭐</div>
+      </div>
+
+      <!-- Top Header: Banner Tag & Stream Viewer Badge -->
+      <div class="wish-top-header">
+        <div class="wish-banner-tag" id="wish-banner-tag">✨ 5★ EFSANEVİ DİLEK ✨</div>
+        <div class="wish-user-badge">
+          <span class="wish-user-icon">👤</span>
+          <span id="wish-username" class="wish-username">Gezgin</span>
+        </div>
+      </div>
+
+      <!-- Main Showcase Layout: Left Splash Art Stage + Right Meta Details -->
+      <div class="wish-showcase">
+        <!-- Dramatic Character Splash Art / Weapon Display Stage -->
+        <div class="wish-stage" id="wish-stage">
+          <div class="wish-stage-backglow" id="wish-stage-backglow"></div>
+          <div class="wish-element-crest" id="wish-element-crest">⚡</div>
+          <img id="wish-splash-img" src="" alt="Genshin Artwork" class="wish-splash-img">
+        </div>
+
+        <!-- Character Details & Stats -->
+        <div class="wish-meta">
+          <div class="wish-element-pill" id="wish-element-pill">
+            <span id="wish-element-icon">⚡</span>
+            <span id="wish-element-text">ELECTRO</span>
+          </div>
+
+          <h1 id="wish-item-name" class="wish-item-name">Raiden Shogun</h1>
+          <div class="wish-item-title" id="wish-item-title">Plane of Euthymia</div>
+          <div class="wish-item-sub" id="wish-item-sub">Inazuma • Polearm</div>
+
+          <!-- Pulsing Animated Stars -->
+          <div class="wish-stars-wrap">
+            <div class="wish-stars" id="wish-stars">★★★★★</div>
+          </div>
+
+          <div class="wish-pity-tag" id="wish-item-pity">🌟 40/40 Pity Garantili Çekiliş!</div>
+
+          <!-- Lucky Primogem Refund Notification -->
+          <div id="wish-refund-banner" class="wish-refund-banner hidden" style="display: none;">
+            🎁 Şanslı Primogem İadesi: <strong id="wish-refund-amount">+60 Primogem</strong>!
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Primogem Rain Banner Notification -->
+    <div id="primo-rain-banner" class="primo-rain-banner hidden" style="display: none;">
+      <div class="rain-primo-icon">💎</div>
+      <div class="rain-text-wrap">
+        <h2>🌧️ PRIMOGEM YAĞMURU! 🌧️</h2>
+        <p>Yayıncıdan herkese <strong id="rain-amount-text">+160 Primogem</strong> hediye edildi! (Chate <strong>!wish</strong> yaz!)</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="gacha.js?v=3.5"></script>
+</body>
+</html>

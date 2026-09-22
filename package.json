@@ -1,0 +1,23 @@
+{
+  "name": "kick-genshin-trivia-obs",
+  "version": "1.0.0",
+  "description": "Kick streams Genshin Impact trivia bot & OBS overlay",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node test/test-game.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  },
+  "keywords": [
+    "kick",
+    "genshin-impact",
+    "obs",
+    "overlay",
+    "trivia"
+  ],
+  "author": "",
+  "license": "MIT"
+}

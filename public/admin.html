@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kick Milka Trivia - Yayıncı Kontrol Paneli</title>
+  <link rel="stylesheet" href="admin.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="brand">
+        <img src="assets/paimon_cheer.png" alt="Paimon" class="brand-paimon-icon">
+        <div class="brand-text">
+          <h1>Kick Milka Trivia</h1>
+          <span class="subtext">Yayıncı Kontrol ve Yönetim Paneli</span>
+        </div>
+      </div>
+      <div class="header-status">
+        <div id="kick-status-badge" class="status-badge status-offline">
+          <span class="status-dot"></span>
+          <span id="kick-status-text">Bağlantı Yok</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="dashboard-grid">
+      <!-- Left Column: Controls & Game State -->
+      <div class="col-main">
+        <!-- Live Status & Quick Action Card -->
+        <div class="panel-card hero-card">
+          <div class="panel-title">
+            <span>🎮 Oyun Durumu & Hızlı İşlemler</span>
+            <span id="game-state-badge" class="state-pill">BEKLENİYOR</span>
+          </div>
+
+          <div class="timer-display-box">
+            <div class="timer-circle">
+              <span id="timer-large-text">--:--</span>
+              <span id="timer-label">Sonraki Soruya Kalan</span>
+            </div>
+            <div class="quick-actions">
+              <button id="btn-trigger" class="btn btn-primary btn-glow">
+                ⚡ Hemen Soru Sor (Paimon Uçsun!)
+              </button>
+              <button id="btn-cancel" class="btn btn-danger">
+                ⏹️ Soruyu İptal Et
+              </button>
+              <button id="btn-show-lb" class="btn btn-secondary">
+                👑 Sıralamayı Ekrana Yansıt (!sıralama)
+              </button>
+              <button id="btn-test" class="btn btn-outline">
+                🧪 OBS & Paimon Test Önizlemesi
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Question Banner (if active) -->
+          <div id="active-question-preview" class="active-q-box hidden">
+            <span class="active-badge">ŞU ANDA EKRANDAKİ SORU:</span>
+            <p id="active-q-title" class="active-q-title">...</p>
+            <div class="active-q-meta">
+              <span>Doğru Cevaplar: <strong id="active-q-answers">...</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live OBS Overlay & Paimon Preview Card -->
+        <div class="panel-card">
+          <div class="panel-title">
+            <div class="preview-tabs">
+              <button id="tab-preview-trivia" class="btn btn-xs btn-primary active-tab">🎯 Trivia Önizleme</button>
+              <button id="tab-preview-gacha" class="btn btn-xs btn-outline">✨ Gacha Önizleme</button>
+            </div>
+            <a id="btn-open-active-preview" href="trivia.html" target="_blank" class="btn btn-xs btn-outline">👁️ Tam Ekran Aç</a>
+          </div>
+          <div class="overlay-preview-container">
+            <iframe id="overlay-preview-frame" src="trivia.html" class="preview-iframe" title="OBS Overlay Önizleme"></iframe>
+          </div>
+          <div class="preview-footer-tip" id="preview-tip-text">
+            <span>💡 Şu an <strong>Trivia Ekranı</strong> önizleniyor. <strong>"⚡ Hemen Soru Sor"</strong> veya <strong>"🧪 Test Önizlemesi"</strong>ne bastığınızda soru kartı buraya gelir.</span>
+          </div>
+        </div>
+
+        <!-- OBS Setup Instructions Card (Separated Sources) -->
+        <div class="panel-card obs-info-card">
+          <div class="panel-title">
+            <span>🎬 OBS Studio Entegrasyonu (2 Ayrı Tarayıcı Kaynağı)</span>
+          </div>
+          <p class="info-p">OBS Studio'da <strong>Kaynaklar (+)</strong> &gt; <strong>Tarayıcı (Browser)</strong> seçerek aşağıdaki iki kaynağı dilediğiniz konumlara ekleyin:</p>
+          
+          <!-- Source 1: Trivia -->
+          <div class="obs-source-box">
+            <div class="source-box-title">
+              <span class="source-badge badge-trivia">KAYNAK 1: TRIVIA (Soru &amp; Sıralama)</span>
+              <span class="source-rec">Önerilen Boyut: 860x600 (Üst / Orta Konum)</span>
+            </div>
+            <div class="copy-url-group">
+              <input type="text" id="obs-trivia-url" readonly value="http://localhost:3000/trivia.html">
+              <button id="btn-copy-trivia-url" class="btn btn-sm btn-outline">Kopyala</button>
+              <a href="trivia.html" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
+            </div>
+          </div>
+
+          <!-- Source 2: Gacha -->
+          <div class="obs-source-box" style="margin-top: 14px;">
+            <div class="source-box-title">
+              <span class="source-badge badge-gacha">KAYNAK 2: GACHA (Dilekler &amp; Kayan Yıldız)</span>
+              <span class="source-rec">Önerilen Boyut: 860x600 (Sağ/Sol Alt Konum)</span>
+            </div>
+            <div class="copy-url-group">
+              <input type="text" id="obs-gacha-url" readonly value="http://localhost:3000/gacha.html">
+              <button id="btn-copy-gacha-url" class="btn btn-sm btn-outline">Kopyala</button>
+              <a href="gacha.html" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
+            </div>
+          </div>
+
+          <div class="obs-tips" style="margin-top: 14px;">
+            <span>💡 <strong>İpucu:</strong> Artık soru kartı ile dilek kartı birbirine karışmaz! Soruları ekranın üstüne, dilekleri ise ekranın altına veya yanına bağımsız yerleştirebilirsiniz.</span>
+          </div>
+        </div>
+
+        <!-- Gacha & Primogem Economy Panel -->
+        <div class="panel-card gacha-card">
+          <div class="panel-title">
+            <span>✨ Gacha & Primogem Yönetimi</span>
+            <span class="badge-mini" style="background: rgba(255, 215, 0, 0.2); color: #ffd700; border: 1px solid rgba(255,215,0,0.4);">Genshin Wish v2.0</span>
+          </div>
+
+          <!-- Quick Gacha Action Buttons -->
+          <div class="gacha-actions-grid">
+            <button id="btn-gacha-rain" class="btn btn-warning btn-glow">
+              🌧️ Chate Primogem Yağmuru (+160)
+            </button>
+            <button id="btn-test-wish-5" class="btn btn-gold">
+              🌟 5★ Altın Dilek Testi
+            </button>
+            <button id="btn-test-wish-4" class="btn btn-purple">
+              ⭐ 4★ Mor Dilek Testi
+            </button>
+            <button id="btn-test-wish-3" class="btn btn-outline">
+              🗡️ 3★ Mavi Dilek Testi
+            </button>
+          </div>
+
+          <!-- Chat Commands Quick Info Box -->
+          <div class="chat-cmd-guide">
+            <div class="cmd-item"><code>!wish</code> <span>160 Primogem (1 Dilek)</span></div>
+            <div class="cmd-item"><code>!wish10</code> <span>1600 Primogem (10'lu Dilek)</span></div>
+            <div class="cmd-item"><code>!bakiye</code> <span>Primogem ve 5★ Pity Durumu</span></div>
+            <div class="cmd-item"><code>!envanter</code> <span>Kazanılan 5★ Karakterler</span></div>
+          </div>
+
+          <!-- Manual Primogem Gifter -->
+          <div class="gift-primo-box">
+            <h4>🎁 İzleyiciye Özel Primogem Ekle</h4>
+            <div class="gift-inputs">
+              <input type="text" id="gift-username" placeholder="Kick Kullanıcı Adı">
+              <input type="number" id="gift-amount" placeholder="Miktar" value="160" min="10" step="10">
+              <button id="btn-gift-primo" class="btn btn-success btn-sm">+ Primogem Gönder</button>
+            </div>
+            <div id="gift-feedback" class="field-hint" style="margin-top: 4px; font-weight: 600;"></div>
+          </div>
+
+          <!-- Viewers Primogem Balance & Inventory Table -->
+          <div class="gacha-users-header">
+            <h4>👥 Kayıtlı Gezginler & Bakiyeler (<span id="gacha-users-count">0</span>)</h4>
+            <button id="btn-refresh-gacha-users" class="btn btn-xs btn-outline">🔄 Yenile</button>
+          </div>
+          <div class="gacha-users-table-wrap">
+            <table class="gacha-table">
+              <thead>
+                <tr>
+                  <th>Gezgin</th>
+                  <th>💎 Primogem</th>
+                  <th>🌟 5★ Pity</th>
+                  <th>⭐ 4★ Pity</th>
+                  <th>5★ Karakter</th>
+                  <th>Toplam Çekiş</th>
+                  <th>Hızlı İşlem</th>
+                </tr>
+              </thead>
+              <tbody id="gacha-users-tbody">
+                <tr><td colspan="7" class="text-center" style="padding: 16px; color: #94a3b8;">Henüz kayıtlı Gezgin yok. Chate yazan izleyiciler otomatik olarak buraya eklenecektir.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Question Management Section -->
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>📚 Soru Yönetimi (<span id="questions-count">0</span> Soru)</span>
+            <button id="btn-toggle-add-q" class="btn btn-sm btn-outline">+ Yeni Soru Ekle</button>
+          </div>
+
+          <!-- Add Question Form (Collapsible) -->
+          <div id="add-question-form" class="add-q-container hidden">
+            <h3>Yeni Genshin Sorusu Ekle</h3>
+            <div class="form-grid">
+              <div class="form-group full-width">
+                <label>Soru Metni</label>
+                <input type="text" id="input-q-text" placeholder="Örn: Fontaine'in Başyargıcı kimdir?">
+              </div>
+              <div class="form-group full-width">
+                <label>Doğru Cevaplar (Virgülle birden çok alternatif yazabilirsiniz)</label>
+                <input type="text" id="input-q-answers" placeholder="Neuvillette, Monsieur Neuvillette">
+              </div>
+              <div class="form-group">
+                <label>Kategori</label>
+                <select id="input-q-category">
+                  <option value="Archonlar">Archonlar</option>
+                  <option value="Karakterler" selected>Karakterler</option>
+                  <option value="Lore & Coğrafya">Lore & Coğrafya</option>
+                  <option value="Oyun Mekaniği">Oyun Mekaniği</option>
+                  <option value="Genel">Genel</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Zorluk</label>
+                <select id="input-q-difficulty">
+                  <option value="Kolay">Kolay</option>
+                  <option value="Orta" selected>Orta</option>
+                  <option value="Zor">Zor</option>
+                </select>
+              </div>
+              <div class="form-group full-width">
+                <label>İpucu (İsteğe Bağlı)</label>
+                <input type="text" id="input-q-hint" placeholder="Örn: Hydro Ejderha Hükümdarı">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button id="btn-save-new-question" class="btn btn-success">Soruyu Havuza Ekle</button>
+            </div>
+          </div>
+
+          <!-- Questions List -->
+          <div class="questions-list-wrapper">
+            <input type="text" id="search-questions" class="search-input" placeholder="Sorularda ara...">
+            <div id="questions-list" class="questions-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Settings, Live Chat, Leaderboard -->
+      <div class="col-side">
+        <!-- Channel & Bot Settings -->
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>⚙️ Sistem Ayarları</span>
+          </div>
+
+          <form id="settings-form">
+            <div class="form-group">
+              <label>Kick Kanal Adı veya Linki</label>
+              <div class="input-with-btn">
+                <input type="text" id="cfg-channel" placeholder="Örn: zerkacy, elraenn veya kick.com/kanal" required>
+                <button type="button" id="btn-connect-kick" class="btn btn-success btn-sm">Bağlan</button>
+              </div>
+              <span class="field-hint">Kullanıcı adı, Kick profil linki (kick.com/kanal) veya Chatroom ID girebilirsiniz.</span>
+              <div id="connect-feedback" class="field-hint" style="margin-top: 4px; font-weight: 600;"></div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Soru Aralığı (Dk)</label>
+                <input type="number" id="cfg-interval" min="1" max="60" value="10">
+              </div>
+              <div class="form-group">
+                <label>Soru Süresi (Sn)</label>
+                <input type="number" id="cfg-duration" min="15" max="180" value="45">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Kazanan Ekranı (Sn)</label>
+                <input type="number" id="cfg-winner-duration" min="5" max="30" value="12">
+              </div>
+              <div class="form-group">
+                <label>!sıralama Bekleme (Sn)</label>
+                <input type="number" id="cfg-lb-cooldown" min="10" max="300" value="60">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Oyun Modu</label>
+              <select id="cfg-gamemode">
+                <option value="first_correct">İlk Bilen Kazanır</option>
+                <option value="draw_from_all">Süre Sonu Çekiliş</option>
+              </select>
+            </div>
+
+            <div class="form-group checkbox-group">
+              <label>
+                <input type="checkbox" id="cfg-sound" checked>
+                OBS Ses Efektleri Açık
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary full-width">Ayarları Kaydet</button>
+          </form>
+        </div>
+
+        <!-- Session Leaderboard -->
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>🏆 Günün Kazananları</span>
+            <button id="btn-reset-leaderboard" class="btn btn-xs btn-outline">Sıfırla</button>
+          </div>
+          <div id="leaderboard-list" class="leaderboard-container">
+            <p class="empty-state">Henüz soru kazananı yok.</p>
+          </div>
+        </div>
+
+        <!-- Live Chat Feed Preview -->
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>💬 Canlı Chat Akışı</span>
+            <span class="badge-mini">Kick Canlı</span>
+          </div>
+          <div id="chat-feed" class="chat-feed-box">
+            <p class="empty-state">Sohbet mesajları burada akacak...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

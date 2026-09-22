@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Milka Trivia OBS Source - Paimon Edition</title>
+  <link rel="stylesheet" href="trivia.css?v=3.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Transient Version Confirmation Badge for Streamer (Fades out in 4s) -->
+  <div id="version-badge" class="version-badge">
+    <img src="assets/paimon_cheer.png" alt="" class="badge-paimon-icon">
+    <span>Trivia Modu Aktif (v3.0)</span>
+  </div>
+
+  <!-- Canvas for Confetti & Sparkles -->
+  <canvas id="effects-canvas"></canvas>
+
+  <div id="overlay-container">
+    <!-- Active Question Wrapper (Paimon + Question Card) -->
+    <div id="question-wrapper" class="slide-wrapper hidden">
+      <!-- Animated Paimon Mascot -->
+      <div class="paimon-companion">
+        <div class="paimon-speech" id="paimon-speech">
+          <span class="speech-text">Gezgin, soru geldi! 💬</span>
+        </div>
+        <div class="paimon-img-wrap">
+          <img src="assets/paimon_flying.png" alt="Paimon" class="paimon-avatar paimon-floating">
+          <div class="paimon-halo-glow"></div>
+        </div>
+      </div>
+
+      <!-- Question Card -->
+      <div id="question-card" class="card">
+        <div class="card-glow"></div>
+        
+        <div class="card-header">
+          <div class="primogem-badge">
+            <svg class="primo-icon" viewBox="0 0 100 100">
+              <path d="M50 0 L65 35 L100 50 L65 65 L50 100 L35 65 L0 50 L35 35 Z" fill="url(#primoGrad)"/>
+              <defs>
+                <linearGradient id="primoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#fdf498"/>
+                  <stop offset="50%" stop-color="#e4a838"/>
+                  <stop offset="100%" stop-color="#b86b1b"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <span class="badge-title">MİLKA TRİVİA.</span>
+          </div>
+          <div class="meta-tags">
+            <span id="question-category" class="tag tag-category">Archonlar</span>
+            <span id="question-difficulty" class="tag tag-difficulty">Kolay</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <h2 id="question-text" class="question-title">Mondstadt'ın Anemo Archon'u kimdir?</h2>
+          <p id="question-hint" class="question-hint">İpucu: Şarap içmeyi seven bir ozandır.</p>
+        </div>
+
+        <!-- Timer & Progress Bar -->
+        <div class="timer-section">
+          <div class="timer-bar-wrapper">
+            <div id="timer-bar" class="timer-bar"></div>
+          </div>
+          <div class="timer-info">
+            <span class="cta-text">💬 Cevabı Kick sohbetine yaz!</span>
+            <span id="timer-seconds" class="timer-countdown">45s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Winner Celebration Card -->
+    <div id="winner-card" class="card winner-card hidden">
+      <div class="card-glow victory-glow"></div>
+      
+      <!-- Paimon with Treasure Chest -->
+      <div class="winner-paimon-mascot">
+        <img src="assets/paimon_thinking.png" alt="Paimon Treasure" class="winner-paimon-sprite">
+        <div class="winner-speech-bubble">Doğru bildin! İşte ödülün! 🏆</div>
+      </div>
+
+      <div class="winner-title-badge">KAZANAN TEBRİKLER!</div>
+
+      <div class="winner-profile">
+        <div class="avatar-ring">
+          <img id="winner-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23223049'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%23e4c47b'/%3E%3Cpath d='M24 82 C24 64 36 58 50 58 C64 58 76 64 76 82 Z' fill='%23e4c47b'/%3E%3C/svg%3E" alt="Avatar">
+        </div>
+        <div class="winner-details">
+          <h1 id="winner-username" class="winner-name">Gezgin_123</h1>
+          <div class="winner-score-badge">
+            <span id="winner-wins-count">🏆 1. Galibiyeti</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="winner-answer-box">
+        <span class="answer-label">Verilen Doğru Cevap:</span>
+        <span id="winner-answer" class="answer-value">"Venti"</span>
+      </div>
+    </div>
+
+    <!-- Timeout Card (No one answered) -->
+    <div id="timeout-card" class="card timeout-card hidden">
+      <div class="timeout-paimon-mascot">
+        <img src="assets/paimon_shocked.png" alt="Paimon Shocked" class="timeout-paimon-sprite">
+      </div>
+      <div class="timeout-header">
+        <span class="timeout-icon">⌛</span>
+        <h2>Süre Doldu!</h2>
+      </div>
+      <p class="timeout-subtitle">Ehe te nandayo?! Kimse doğru cevabı bilemedi!</p>
+      <div class="correct-answer-banner">
+        <span>Doğru Cevap:</span>
+        <strong id="timeout-correct-answer">Barbatos / Venti</strong>
+      </div>
+    </div>
+
+    <!-- Leaderboard Card (Triggered by !sıralama or admin) -->
+    <div id="leaderboard-card" class="card leaderboard-card hidden">
+      <div class="card-glow victory-glow"></div>
+
+      <!-- Paimon with Crown / Cheer -->
+      <div class="leaderboard-paimon-mascot">
+        <img src="assets/paimon_cheer.png" alt="Paimon Cheer" class="leaderboard-paimon-sprite">
+        <div class="leaderboard-speech-bubble" id="leaderboard-speech">İşte günün en bilge Gezginleri! 🏆</div>
+      </div>
+
+      <div class="leaderboard-header">
+        <div class="leaderboard-title-badge">👑 GÜNÜN SIRALAMASI 👑</div>
+        <div class="leaderboard-requested-by" id="leaderboard-requested-by">İsteyen: @Gezgin</div>
+      </div>
+
+      <div class="leaderboard-list-wrap" id="leaderboard-list-wrap">
+        <!-- Dynamic list -->
+      </div>
+
+      <div class="leaderboard-footer">
+        <span>💬 Chate <strong>!sıralama</strong> yazarak istediğin zaman açabilirsin!</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="trivia.js?v=3.0"></script>
+</body>
+</html>

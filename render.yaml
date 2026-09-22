@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: kick-genshin-trivia
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production

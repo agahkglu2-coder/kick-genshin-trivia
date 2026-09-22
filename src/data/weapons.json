@@ -1,0 +1,290 @@
+[
+  {
+    "id": "w_5_1",
+    "name": "Mistsplitter Reforged",
+    "rarity": 5,
+    "type": "Sword",
+    "slug": "mistsplitter-reforged",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/mistsplitter-reforged/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/mistsplitter-reforged/icon"
+  },
+  {
+    "id": "w_5_2",
+    "name": "Staff of Homa",
+    "rarity": 5,
+    "type": "Polearm",
+    "slug": "staff-of-homa",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/staff-of-homa/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/staff-of-homa/icon"
+  },
+  {
+    "id": "w_5_3",
+    "name": "Thundering Pulse",
+    "rarity": 5,
+    "type": "Bow",
+    "slug": "thundering-pulse",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/thundering-pulse/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/thundering-pulse/icon"
+  },
+  {
+    "id": "w_5_4",
+    "name": "Wolf's Gravestone",
+    "rarity": 5,
+    "type": "Claymore",
+    "slug": "wolf-s-gravestone",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/wolf-s-gravestone/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/wolf-s-gravestone/icon"
+  },
+  {
+    "id": "w_5_5",
+    "name": "Kagura's Verity",
+    "rarity": 5,
+    "type": "Catalyst",
+    "slug": "kagura-s-verity",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/kagura-s-verity/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/kagura-s-verity/icon"
+  },
+  {
+    "id": "w_5_6",
+    "name": "Aqua Simulacra",
+    "rarity": 5,
+    "type": "Bow",
+    "slug": "aqua-simulacra",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/aqua-simulacra/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/aqua-simulacra/icon"
+  },
+  {
+    "id": "w_5_7",
+    "name": "Primordial Jade Winged-Spear",
+    "rarity": 5,
+    "type": "Polearm",
+    "slug": "primordial-jade-winged-spear",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/primordial-jade-winged-spear/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/primordial-jade-winged-spear/icon"
+  },
+  {
+    "id": "w_5_8",
+    "name": "Light of Foliar Incision",
+    "rarity": 5,
+    "type": "Sword",
+    "slug": "light-of-foliar-incision",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/light-of-foliar-incision/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/light-of-foliar-incision/icon"
+  },
+  {
+    "id": "w_5_9",
+    "name": "Tome of the Eternal Flow",
+    "rarity": 5,
+    "type": "Catalyst",
+    "slug": "tome-of-the-eternal",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/tome-of-the-eternal/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/tome-of-the-eternal/icon"
+  },
+  {
+    "id": "w_5_10",
+    "name": "Redhorn Stonethresher",
+    "rarity": 5,
+    "type": "Claymore",
+    "slug": "redhorn-stonethresher",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/redhorn-stonethresher/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/redhorn-stonethresher/icon"
+  },
+  {
+    "id": "w_4_1",
+    "name": "The Widsith",
+    "rarity": 4,
+    "type": "Catalyst",
+    "slug": "the-widsith",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/the-widsith/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/the-widsith/icon"
+  },
+  {
+    "id": "w_4_2",
+    "name": "Favonius Sword",
+    "rarity": 4,
+    "type": "Sword",
+    "slug": "favonius-sword",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/favonius-sword/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/favonius-sword/icon"
+  },
+  {
+    "id": "w_4_3",
+    "name": "Favonius Lance",
+    "rarity": 4,
+    "type": "Polearm",
+    "slug": "favonius-lance",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/favonius-lance/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/favonius-lance/icon"
+  },
+  {
+    "id": "w_4_4",
+    "name": "Sacrificial Bow",
+    "rarity": 4,
+    "type": "Bow",
+    "slug": "sacrificial-bow",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/sacrificial-bow/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/sacrificial-bow/icon"
+  },
+  {
+    "id": "w_4_5",
+    "name": "Sacrificial Fragments",
+    "rarity": 4,
+    "type": "Catalyst",
+    "slug": "sacrificial-fragments",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/sacrificial-fragments/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/sacrificial-fragments/icon"
+  },
+  {
+    "id": "w_4_6",
+    "name": "The Catch",
+    "rarity": 4,
+    "type": "Polearm",
+    "slug": "the-catch",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/the-catch/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/the-catch/icon"
+  },
+  {
+    "id": "w_4_7",
+    "name": "Rust",
+    "rarity": 4,
+    "type": "Bow",
+    "slug": "rust",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/rust/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/rust/icon"
+  },
+  {
+    "id": "w_4_8",
+    "name": "The Bell",
+    "rarity": 4,
+    "type": "Claymore",
+    "slug": "the-bell",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/the-bell/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/the-bell/icon"
+  },
+  {
+    "id": "w_4_9",
+    "name": "Favonius Greatsword",
+    "rarity": 4,
+    "type": "Claymore",
+    "slug": "favonius-greatsword",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/favonius-greatsword/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/favonius-greatsword/icon"
+  },
+  {
+    "id": "w_4_10",
+    "name": "Dragon's Bane",
+    "rarity": 4,
+    "type": "Polearm",
+    "slug": "dragon-s-bane",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/dragon-s-bane/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/dragon-s-bane/icon"
+  },
+  {
+    "id": "w_4_11",
+    "name": "Lion's Roar",
+    "rarity": 4,
+    "type": "Sword",
+    "slug": "lion-s-roar",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/lion-s-roar/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/lion-s-roar/icon"
+  },
+  {
+    "id": "w_4_12",
+    "name": "The Stringless",
+    "rarity": 4,
+    "type": "Bow",
+    "slug": "the-stringless",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/the-stringless/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/the-stringless/icon"
+  },
+  {
+    "id": "w_3_1",
+    "name": "Debate Club",
+    "rarity": 3,
+    "type": "Claymore",
+    "slug": "debate-club",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/debate-club/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/debate-club/icon"
+  },
+  {
+    "id": "w_3_2",
+    "name": "Harbinger of Dawn",
+    "rarity": 3,
+    "type": "Sword",
+    "slug": "harbinger-of-dawn",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/harbinger-of-dawn/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/harbinger-of-dawn/icon"
+  },
+  {
+    "id": "w_3_3",
+    "name": "Slingshot",
+    "rarity": 3,
+    "type": "Bow",
+    "slug": "slingshot",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/slingshot/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/slingshot/icon"
+  },
+  {
+    "id": "w_3_4",
+    "name": "Magic Guide",
+    "rarity": 3,
+    "type": "Catalyst",
+    "slug": "magic-guide",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/magic-guide/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/magic-guide/icon"
+  },
+  {
+    "id": "w_3_5",
+    "name": "Black Tassel",
+    "rarity": 3,
+    "type": "Polearm",
+    "slug": "black-tassel",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/black-tassel/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/black-tassel/icon"
+  },
+  {
+    "id": "w_3_6",
+    "name": "Cool Steel",
+    "rarity": 3,
+    "type": "Sword",
+    "slug": "cool-steel",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/cool-steel/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/cool-steel/icon"
+  },
+  {
+    "id": "w_3_7",
+    "name": "Sharpshooter's Oath",
+    "rarity": 3,
+    "type": "Bow",
+    "slug": "sharpshooter-s-oath",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/sharpshooter-s-oath/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/sharpshooter-s-oath/icon"
+  },
+  {
+    "id": "w_3_8",
+    "name": "Thrilling Tales of Dragon Slayers",
+    "rarity": 3,
+    "type": "Catalyst",
+    "slug": "thrilling-tales-of-dragon-slayers",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/thrilling-tales-of-dragon-slayers/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/thrilling-tales-of-dragon-slayers/icon"
+  },
+  {
+    "id": "w_3_9",
+    "name": "Raven Bow",
+    "rarity": 3,
+    "type": "Bow",
+    "slug": "raven-bow",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/raven-bow/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/raven-bow/icon"
+  },
+  {
+    "id": "w_3_10",
+    "name": "Bloodtainted Greatsword",
+    "rarity": 3,
+    "type": "Claymore",
+    "slug": "bloodtainted-greatsword",
+    "remoteIcon": "https://genshin.jmp.blue/weapons/bloodtainted-greatsword/icon",
+    "splashArt": "https://genshin.jmp.blue/weapons/bloodtainted-greatsword/icon"
+  }
+]

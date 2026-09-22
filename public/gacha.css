@@ -1,0 +1,614 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: transparent !important;
+  font-family: 'Montserrat', sans-serif;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 30px;
+}
+
+/* Global Hidden Utility */
+.hidden {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Version Confirmation Badge for Streamer */
+.version-badge {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  background: rgba(16, 21, 38, 0.95);
+  border: 1px solid #ffd700;
+  border-radius: 20px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffd700;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  animation: badgeFadeOut 4s forwards 2.5s;
+  pointer-events: none;
+}
+
+.badge-paimon-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+@keyframes badgeFadeOut {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-20px); visibility: hidden; }
+}
+
+#effects-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#overlay-container {
+  position: relative;
+  z-index: 20;
+  width: 820px;
+  max-width: 96vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ========================================================
+   ROTATING CELESTIAL SUNBURST (5★ and 4★ Wish Reveals)
+======================================================== */
+.wish-sunburst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 900px;
+  height: 900px;
+  pointer-events: none;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.5s ease;
+}
+
+.wish-sunburst.hidden {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.sunburst-rays {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 215, 0, 0.32) 0deg 11.25deg,
+    transparent 11.25deg 22.5deg
+  );
+  mask-image: radial-gradient(circle, rgba(0, 0, 0, 1) 22%, transparent 70%);
+  -webkit-mask-image: radial-gradient(circle, rgba(0, 0, 0, 1) 22%, transparent 70%);
+  animation: sunburstSpin 25s linear infinite;
+}
+
+.wish-sunburst.rarity-4 .sunburst-rays {
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(192, 132, 252, 0.3) 0deg 11.25deg,
+    transparent 11.25deg 22.5deg
+  );
+}
+
+.wish-sunburst.rarity-3 .sunburst-rays {
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(56, 189, 248, 0.22) 0deg 11.25deg,
+    transparent 11.25deg 22.5deg
+  );
+}
+
+.sunburst-core {
+  position: absolute;
+  width: 480px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.25) 0%, transparent 70%);
+  filter: blur(20px);
+}
+
+.wish-sunburst.rarity-4 .sunburst-core {
+  background: radial-gradient(circle, rgba(192, 132, 252, 0.25) 0%, transparent 70%);
+}
+
+@keyframes sunburstSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ========================================================
+   GACHA WISH REVEAL CARD
+======================================================== */
+.card {
+  position: relative;
+  box-sizing: border-box;
+}
+
+.wish-card {
+  width: 100%;
+  max-width: 800px;
+  position: relative;
+  overflow: visible !important;
+  background: radial-gradient(ellipse at 35% 35%, rgba(26, 36, 64, 0.96) 0%, rgba(10, 14, 28, 0.98) 100%);
+  border-radius: 24px;
+  padding: 24px 30px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+  animation: wishSlideIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.2) forwards;
+  z-index: 20;
+}
+
+.wish-card.hidden {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.wish-card.slide-out {
+  animation: wishSlideOut 0.6s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards !important;
+}
+
+@keyframes wishSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-80px) scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes wishSlideOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(60px) scale(0.85);
+  }
+}
+
+/* Card Rarity Accents */
+.wish-card.rarity-5 {
+  border: 2px solid #ffd700;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.88), 0 0 50px rgba(255, 215, 0, 0.5), inset 0 0 25px rgba(255, 215, 0, 0.15);
+}
+
+.wish-card.rarity-4 {
+  border: 2px solid #c084fc;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.88), 0 0 40px rgba(192, 132, 252, 0.45), inset 0 0 20px rgba(192, 132, 252, 0.15);
+}
+
+.wish-card.rarity-3 {
+  border: 2px solid #38bdf8;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.88), 0 0 30px rgba(56, 189, 248, 0.35);
+}
+
+.card-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  border-radius: 24px;
+}
+
+.wish-glow-5 {
+  background: radial-gradient(circle at 35% 50%, rgba(255, 215, 0, 0.18) 0%, transparent 70%);
+}
+
+.wish-glow-4 {
+  background: radial-gradient(circle at 35% 50%, rgba(192, 132, 252, 0.18) 0%, transparent 70%);
+}
+
+.wish-glow-3 {
+  background: radial-gradient(circle at 35% 50%, rgba(56, 189, 248, 0.15) 0%, transparent 70%);
+}
+
+/* Paimon Mascot for Wish */
+.wish-paimon-mascot {
+  position: absolute;
+  top: -48px;
+  right: -28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.wish-paimon-sprite {
+  width: 105px;
+  height: 105px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.7));
+  animation: paimonBobbing 2.5s infinite ease-in-out;
+}
+
+@keyframes paimonBobbing {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(3deg);
+  }
+}
+
+.wish-speech-bubble {
+  position: absolute;
+  top: -20px;
+  right: 70px;
+  background: rgba(255, 255, 255, 0.98);
+  color: #1a1a2e;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 12px;
+  border-radius: 14px;
+  white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  border: 1px solid #ffd700;
+}
+
+.wish-speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  right: 14px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid rgba(255, 255, 255, 0.98);
+}
+
+/* Wish Top Header */
+.wish-top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 25;
+}
+
+.wish-banner-tag {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.12);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  padding: 4px 14px;
+  border-radius: 20px;
+}
+
+.wish-user-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #93c5fd;
+}
+
+/* ========================================================
+   WISH SHOWCASE (Stage + Meta)
+======================================================== */
+.wish-showcase {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  position: relative;
+  z-index: 22;
+}
+
+/* Character Splash Art Stage */
+.wish-stage {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.wish-stage-backglow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  filter: blur(35px);
+  opacity: 0.65;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(circle, #ffd700 0%, transparent 70%);
+  transition: all 0.5s ease;
+}
+
+.wish-element-crest {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 140px;
+  opacity: 0.12;
+  font-weight: 900;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.wish-splash-img {
+  position: relative;
+  z-index: 3;
+  max-width: 330px;
+  max-height: 320px;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.85));
+  animation: splashFloat 4.5s ease-in-out infinite;
+}
+
+@keyframes splashFloat {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.02);
+  }
+}
+
+/* Meta Information */
+.wish-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wish-element-pill {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+/* Element Colors */
+.elem-Pyro { background: linear-gradient(135deg, #ef4444, #991b1b); border-color: #fca5a5; }
+.elem-Hydro { background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-color: #93c5fd; }
+.elem-Anemo { background: linear-gradient(135deg, #10b981, #047857); border-color: #6ee7b7; }
+.elem-Electro { background: linear-gradient(135deg, #a855f7, #6b21a8); border-color: #d8b4fe; }
+.elem-Dendro { background: linear-gradient(135deg, #22c55e, #15803d); border-color: #86efac; }
+.elem-Cryo { background: linear-gradient(135deg, #06b6d4, #0e7490); border-color: #a5f3fc; }
+.elem-Geo { background: linear-gradient(135deg, #f59e0b, #b45309); border-color: #fde68a; }
+.elem-Weapon { background: linear-gradient(135deg, #64748b, #334155); border-color: #cbd5e1; }
+
+.wish-item-name {
+  font-family: 'Cinzel', serif;
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1.15;
+  margin: 3px 0;
+  letter-spacing: 1px;
+}
+
+.rarity-5 .wish-item-name {
+  background: linear-gradient(135deg, #ffffff 10%, #ffd700 65%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 10px rgba(255, 215, 0, 0.4));
+}
+
+.rarity-4 .wish-item-name {
+  background: linear-gradient(135deg, #ffffff 10%, #e9d5ff 65%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 10px rgba(192, 132, 252, 0.4));
+}
+
+.rarity-3 .wish-item-name {
+  background: linear-gradient(135deg, #ffffff 10%, #bae6fd 65%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.wish-item-title {
+  font-size: 14px;
+  font-style: italic;
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.wish-item-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.wish-stars-wrap {
+  margin: 4px 0;
+}
+
+.wish-stars {
+  font-size: 26px;
+  letter-spacing: 5px;
+  line-height: 1;
+}
+
+.stars-5 {
+  color: #ffd700;
+  text-shadow: 0 0 14px rgba(255, 215, 0, 0.8);
+  animation: starShimmer 2s infinite ease-in-out;
+}
+
+.stars-4 {
+  color: #c084fc;
+  text-shadow: 0 0 12px rgba(192, 132, 252, 0.8);
+}
+
+.stars-3 {
+  color: #38bdf8;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+}
+
+@keyframes starShimmer {
+  0%, 100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.04);
+    filter: brightness(1.25);
+  }
+}
+
+.wish-pity-tag {
+  align-self: flex-start;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  border-radius: 10px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fde68a;
+  margin-top: 4px;
+}
+
+.wish-refund-banner {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px dashed rgba(16, 185, 129, 0.5);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: #6ee7b7;
+  margin-top: 6px;
+}
+
+.wish-refund-banner.hidden {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* ========================================================
+   PRIMOGEM RAIN BANNER
+======================================================== */
+.primo-rain-banner {
+  position: fixed;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: radial-gradient(circle at 50% 50%, rgba(26, 36, 64, 0.95), rgba(12, 18, 34, 0.98));
+  border: 2px solid #ffd700;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 215, 0, 0.4);
+  border-radius: 16px;
+  padding: 14px 28px;
+  z-index: 1000;
+  animation: rainBannerShow 6s ease-in-out forwards;
+}
+
+.primo-rain-banner.hidden {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+@keyframes rainBannerShow {
+  0% { opacity: 0; transform: translate(-50%, -60px) scale(0.9); }
+  12% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  85% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -40px) scale(0.9); visibility: hidden; pointer-events: none; }
+}
+
+.rain-primo-icon {
+  font-size: 38px;
+  filter: drop-shadow(0 0 10px #ffd700);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.rain-text-wrap h2 {
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffd700;
+  letter-spacing: 1.5px;
+  margin-bottom: 2px;
+}
+
+.rain-text-wrap p {
+  font-size: 13px;
+  color: #e2e8f0;
+}
+
+.rain-text-wrap strong {
+  color: #ffd700;
+}

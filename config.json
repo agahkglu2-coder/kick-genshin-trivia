@@ -1,0 +1,10 @@
+{
+  "intervalMinutes": 10,
+  "questionDurationSeconds": 45,
+  "winnerDisplaySeconds": 12,
+  "leaderboardCooldownSeconds": 60,
+  "gameMode": "first_correct",
+  "soundEnabled": true,
+  "channel": "zerkacy",
+  "port": 3000
+}
