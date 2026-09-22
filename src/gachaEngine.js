@@ -243,6 +243,10 @@ class GachaEngine extends EventEmitter {
       user.pity5 = 0;
       user.fiveStarsCount = (user.fiveStarsCount || 0) + 1;
       console.log(`[GachaEngine] 🌟🌟🌟🌟🌟 EFSANEVİ 5★ ÇIKTI! Kullanıcı: ${user.username} -> ${item.name}!`);
+      this.emit('chat_response', {
+        username: user.username,
+        message: `🌟🌟🌟🌟🌟 İNANILMAZ! @${user.username} az önce 5★ ${item.name} çıkardı! Tebrikler Gezgin!`
+      });
     } else if (rarity === 4) {
       // 70% character, 30% weapon
       const isChar = Math.random() < 0.7;
@@ -345,6 +349,17 @@ class GachaEngine extends EventEmitter {
       return { type: 'balance', user };
     }
 
+    // Pity Check (!pity, !garanti)
+    if (text === '!pity' || text === '!garanti') {
+      const user = this.getOrCreateUser(username);
+      const remaining = Math.max(0, this.config.pity5Threshold - user.pity5);
+      this.emit('chat_response', {
+        username,
+        message: `🎯 @${username} 5★ Garantisi: ${user.pity5}/${this.config.pity5Threshold} (${remaining === 0 ? 'Sıradaki çekiş kesin 5★!' : remaining + ' çekiş sonra kesin 5★!'})`
+      });
+      return { type: 'pity', user };
+    }
+
     // Inventory / Characters Check (!envanter, !karakterler)
     if (text === '!envanter' || text === '!karakterler' || text === '!kadro') {
       const user = this.getOrCreateUser(username);
@@ -356,6 +371,15 @@ class GachaEngine extends EventEmitter {
         message: `🎒 @${username} 5★ Karakterlerin (${unique5s.length}): ${unique5s.length > 0 ? unique5s.join(', ') : 'Henüz yok (Pity: ' + user.pity5 + '/' + this.config.pity5Threshold + ')'}`
       });
       return { type: 'inventory', user };
+    }
+
+    // Help & Commands Guide (!yardim, !komutlar, !help)
+    if (text === '!yardim' || text === '!komutlar' || text === '!help' || text === '!komut') {
+      this.emit('chat_response', {
+        username,
+        message: `✨ Paimon Bot Rehberi: !wish (160 Primo = 1 Dilek) | !wish10 (10'lu Dilek) | !bakiye (Primon & Pity) | !envanter (5★ Karakterlerin) | !sıralama (Günün şampiyonları)`
+      });
+      return { type: 'help' };
     }
 
     return null;
@@ -378,6 +402,10 @@ class GachaEngine extends EventEmitter {
     }
     this.saveUsers();
     this.emit('primo_rain', { amount, userCount: count });
+    this.emit('chat_response', {
+      username: 'Paimon',
+      message: `🌧️ PRIMOGEM YAĞMURU! Yayındaki herkese +${amount} Primogem dağıtıldı! Hemen !wish yazarak dilek çekebilirsiniz!`
+    });
     console.log(`[GachaEngine] 🌧️ Primogem Yağmuru! ${count} kullanıcıya +${amount} Primogem dağıtıldı!`);
     return { amount, userCount: count };
   }

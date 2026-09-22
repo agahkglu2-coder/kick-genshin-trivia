@@ -5,6 +5,7 @@ const express = require('express');
 const { WebSocketServer, WebSocket } = require('ws');
 
 const { KickClient, cleanChannelSlug } = require('./kickClient');
+const { KickBotService } = require('./kickBot');
 const { GameEngine } = require('./gameEngine');
 const { GachaEngine } = require('./gachaEngine');
 
@@ -24,7 +25,9 @@ function loadConfig() {
       leaderboardCooldownSeconds: 60,
       gameMode: 'first_correct',
       port: 3000,
-      soundEnabled: true
+      soundEnabled: true,
+      botEnabled: true,
+      botToken: ''
     };
   }
 }
@@ -112,6 +115,11 @@ app.use(express.static(path.join(__dirname, '..', 'public'), {
 
 // Initialize Services
 const kickClient = new KickClient();
+const kickBot = new KickBotService({
+  token: config.botToken || '',
+  enabled: config.botEnabled !== false,
+  cooldownSeconds: 8
+});
 const gameEngine = new GameEngine(config);
 const gachaEngine = new GachaEngine();
 
@@ -135,6 +143,9 @@ function broadcast(payload) {
 // Kick Client Events
 kickClient.on('status', (status) => {
   kickStatus = { ...kickStatus, ...status };
+  if (status.chatroomId) {
+    kickBot.setChatroomId(status.chatroomId);
+  }
   broadcast({ type: 'KICK_STATUS', status: kickStatus });
 });
 
@@ -177,6 +188,8 @@ gameEngine.on('question_cancelled', () => {
 gameEngine.on('winner_declared', (winData) => {
   if (winData.winner && winData.winner.username) {
     gachaEngine.awardTriviaWinner(winData.winner.username, 60);
+    // Announce winner in Kick chat
+    kickBot.sendMessage(`🎉 Tebrikler @${winData.winner.username}! Doğru cevap vererek +60 Primogem kazandın!`);
   }
   broadcast({ type: 'WINNER_DECLARED', ...winData });
 });
@@ -207,7 +220,27 @@ gachaEngine.on('primo_awarded', (awardData) => {
 });
 
 gachaEngine.on('chat_response', (resp) => {
+  // Feed to KickBot with anti-spam cooldown check
+  if (resp.username === 'Paimon' || kickBot.checkCooldown(resp.username)) {
+    kickBot.sendMessage(resp.message);
+  }
   broadcast({ type: 'GACHA_CHAT_RESPONSE', ...resp });
+});
+
+// KickBot Events
+kickBot.on('bot_message', (botMsg) => {
+  // Add to live chat preview as a verified bot message
+  broadcast({
+    type: 'CHAT_MESSAGE',
+    message: {
+      username: '🤖 PaimonBot',
+      content: botMsg.content,
+      isBot: true,
+      sentToKick: botMsg.sentToKick,
+      createdAt: botMsg.timestamp
+    }
+  });
+  broadcast({ type: 'BOT_MESSAGE', message: botMsg });
 });
 
 // WebSocket Connection Handler
@@ -217,6 +250,7 @@ wss.on('connection', (ws) => {
     type: 'INIT_STATE',
     gameState: gameEngine.getFullState(),
     kickStatus: kickStatus,
+    botStatus: kickBot.getStatus(),
     config: gameEngine.config
   }));
 });
@@ -226,6 +260,7 @@ app.get('/api/status', (req, res) => {
   res.json({
     gameState: gameEngine.getFullState(),
     kickStatus: kickStatus,
+    botStatus: kickBot.getStatus(),
     config: gameEngine.config
   });
 });
@@ -342,6 +377,33 @@ app.post('/api/gacha/test-wish', (req, res) => {
   const { rarity } = req.body || {};
   const result = gachaEngine.triggerTestWish(parseInt(rarity, 10) || 5);
   res.json({ success: true, wish: result });
+});
+
+// Kick Bot REST Endpoints
+app.get('/api/bot/status', (req, res) => {
+  res.json(kickBot.getStatus());
+});
+
+app.post('/api/bot/config', (req, res) => {
+  const { token, enabled } = req.body || {};
+  if (token !== undefined) {
+    config.botToken = token;
+    kickBot.setToken(token);
+  }
+  if (enabled !== undefined) {
+    config.botEnabled = !!enabled;
+    kickBot.setEnabled(!!enabled);
+  }
+  saveConfig(config);
+  broadcast({ type: 'BOT_STATUS', status: kickBot.getStatus() });
+  res.json({ success: true, status: kickBot.getStatus() });
+});
+
+app.post('/api/bot/test-message', (req, res) => {
+  const { message } = req.body || {};
+  const text = message || '✨ Paimon Bot test mesajı: Sistem aktif ve çalışıyor!';
+  kickBot.sendMessage(text);
+  res.json({ success: true, message: text });
 });
 
 

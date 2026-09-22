@@ -74,6 +74,15 @@
   const btnRefreshGachaUsers = document.getElementById('btn-refresh-gacha-users');
   const gachaUsersTbody = document.getElementById('gacha-users-tbody');
 
+  // Kick Bot DOM Elements
+  const botStatusBadge = document.getElementById('bot-status-badge');
+  const botForm = document.getElementById('bot-form');
+  const cfgBotEnabled = document.getElementById('cfg-bot-enabled');
+  const cfgBotToken = document.getElementById('cfg-bot-token');
+  const btnToggleTokenVis = document.getElementById('btn-toggle-token-vis');
+  const btnBotTestMsg = document.getElementById('btn-bot-test-msg');
+  const botFeedback = document.getElementById('bot-feedback');
+
   // Set OBS URLs correctly based on current origin (works seamlessly on Render HTTPS & localhost)
   const currentOrigin = window.location.origin || `http://${window.location.host || 'localhost:3000'}`;
   if (obsTriviaUrl) obsTriviaUrl.value = `${currentOrigin}/trivia.html`;
@@ -174,15 +183,28 @@
     const empty = chatFeed.querySelector('.empty-state');
     if (empty) empty.remove();
 
+    const isBot = msg.isBot || (msg.username && msg.username.includes('Bot'));
     const entry = document.createElement('div');
-    entry.className = 'chat-entry';
+    entry.className = `chat-entry ${isBot ? 'bot-chat-entry' : ''}`;
+    if (isBot) {
+      entry.style.background = 'rgba(99, 102, 241, 0.12)';
+      entry.style.borderLeft = '3px solid #6366f1';
+      entry.style.padding = '4px 8px';
+      entry.style.borderRadius = '4px';
+      entry.style.marginBottom = '4px';
+    }
+
+    const badgeHtml = isBot
+      ? `<span style="background:#6366f1; color:#fff; font-size:0.65rem; padding:1px 5px; border-radius:3px; margin-right:5px; font-weight:700;">PAIMON BOT</span>`
+      : '';
+
     entry.innerHTML = `
-      <span class="chat-user">${escapeHtml(msg.username)}:</span>
-      <span class="chat-content">${escapeHtml(msg.content)}</span>
+      ${badgeHtml}<span class="chat-user" style="${isBot ? 'color:#818cf8; font-weight:700;' : ''}">${escapeHtml(msg.username)}:</span>
+      <span class="chat-content" style="${isBot ? 'color:#f8fafc; font-weight:500;' : ''}">${escapeHtml(msg.content)}</span>
     `;
     chatFeed.appendChild(entry);
 
-    if (chatFeed.children.length > 50) {
+    if (chatFeed.children.length > 60) {
       chatFeed.removeChild(chatFeed.firstChild);
     }
     chatFeed.scrollTop = chatFeed.scrollHeight;
@@ -483,6 +505,99 @@
     }
   });
 
+  // Kick Bot Management UI
+  function updateBotStatus(status) {
+    if (!status) return;
+    if (cfgBotEnabled) cfgBotEnabled.checked = status.enabled !== false;
+    if (botStatusBadge) {
+      if (!status.enabled) {
+        botStatusBadge.textContent = '⚪ Devre Dışı';
+        botStatusBadge.style.background = 'rgba(148, 163, 184, 0.2)';
+        botStatusBadge.style.color = '#94a3b8';
+        botStatusBadge.style.border = '1px solid rgba(148, 163, 184, 0.3)';
+      } else if (status.hasToken) {
+        botStatusBadge.textContent = '🟢 Canlı Kick Modu';
+        botStatusBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+        botStatusBadge.style.color = '#10b981';
+        botStatusBadge.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+      } else {
+        botStatusBadge.textContent = '🟡 Simülasyon Modu';
+        botStatusBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+        botStatusBadge.style.color = '#f59e0b';
+        botStatusBadge.style.border = '1px solid rgba(245, 158, 11, 0.4)';
+      }
+    }
+  }
+
+  if (btnToggleTokenVis && cfgBotToken) {
+    btnToggleTokenVis.addEventListener('click', () => {
+      if (cfgBotToken.type === 'password') {
+        cfgBotToken.type = 'text';
+        btnToggleTokenVis.textContent = '🔒';
+      } else {
+        cfgBotToken.type = 'password';
+        btnToggleTokenVis.textContent = '👁️';
+      }
+    });
+  }
+
+  if (botForm) {
+    botForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        enabled: cfgBotEnabled.checked,
+        token: cfgBotToken.value.trim()
+      };
+
+      try {
+        const res = await fetch('/api/bot/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          updateBotStatus(data.status);
+          if (botFeedback) {
+            botFeedback.style.color = '#10b981';
+            botFeedback.textContent = '✅ Bot ayarları kaydedildi!';
+            setTimeout(() => { botFeedback.textContent = ''; }, 3000);
+          }
+        }
+      } catch (err) {
+        if (botFeedback) {
+          botFeedback.style.color = '#ef4444';
+          botFeedback.textContent = `❌ Hata: ${err.message}`;
+        }
+      }
+    });
+  }
+
+  if (btnBotTestMsg) {
+    btnBotTestMsg.addEventListener('click', async () => {
+      btnBotTestMsg.disabled = true;
+      try {
+        await fetch('/api/bot/test-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: '✨ Paimon Bot test mesajı: Sistem aktif ve çalışıyor!' })
+        });
+        if (botFeedback) {
+          botFeedback.style.color = '#10b981';
+          botFeedback.textContent = '💬 Test mesajı gönderildi!';
+          setTimeout(() => { botFeedback.textContent = ''; }, 3000);
+        }
+      } catch (e) {
+        if (botFeedback) {
+          botFeedback.style.color = '#ef4444';
+          botFeedback.textContent = 'Hata: ' + e.message;
+        }
+      } finally {
+        setTimeout(() => { btnBotTestMsg.disabled = false; }, 1500);
+      }
+    });
+  }
+
   // WebSocket Connection
   function connectWS() {
     socket = new WebSocket(wsUrl);
@@ -519,6 +634,11 @@
         }
         if (msg.kickStatus) updateKickStatus(msg.kickStatus);
         if (msg.gameState) updateGameState(msg.gameState);
+        if (msg.botStatus) updateBotStatus(msg.botStatus);
+        break;
+
+      case 'BOT_STATUS':
+        if (msg.status) updateBotStatus(msg.status);
         break;
 
       case 'KICK_STATUS':

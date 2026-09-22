@@ -304,6 +304,44 @@
           </form>
         </div>
 
+        <!-- Kick Chat Bot Settings Panel -->
+        <div class="panel-card bot-card">
+          <div class="panel-title">
+            <span>🤖 Kick Chat Botu (Paimon Bot)</span>
+            <span id="bot-status-badge" class="badge-mini" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4);">🟡 Simülasyon Modu</span>
+          </div>
+
+          <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 12px; line-height: 1.4;">
+            İzleyiciler chate <code>!wish</code>, <code>!bakiye</code>, <code>!pity</code>, <code>!envanter</code>, <code>!yardim</code> yazdığında bot anında yanıt verir ve trivia kazananlarını chate duyurur.
+          </div>
+
+          <form id="bot-form">
+            <div class="form-group checkbox-group" style="margin-bottom: 10px;">
+              <label>
+                <input type="checkbox" id="cfg-bot-enabled" checked>
+                Chat Botu Aktif (Cevap Versin)
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label>Kick Bot OAuth / Bearer Token</label>
+              <div class="input-with-btn">
+                <input type="password" id="cfg-bot-token" placeholder="Kick Bot Bearer Token (İsteğe bağlı)">
+                <button type="button" id="btn-toggle-token-vis" class="btn btn-outline btn-sm" title="Göster/Gizle">👁️</button>
+              </div>
+              <span class="field-hint">
+                💡 Token girilmezse bot simülasyon modunda çalışır (yanıtlar panelde görünür). Canlı chate doğrudan yazması için Kick Developer Portal'dan aldığınız token'ı yapıştırın.
+              </span>
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-top: 10px;">
+              <button type="submit" class="btn btn-primary btn-sm" style="flex: 1;">Bot Ayarlarını Kaydet</button>
+              <button type="button" id="btn-bot-test-msg" class="btn btn-outline btn-sm">💬 Test Mesajı At</button>
+            </div>
+            <div id="bot-feedback" class="field-hint" style="margin-top: 6px; font-weight: 600;"></div>
+          </form>
+        </div>
+
         <!-- Session Leaderboard -->
         <div class="panel-card">
           <div class="panel-title">
