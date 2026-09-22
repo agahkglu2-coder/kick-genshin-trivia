@@ -1,7 +1,5 @@
 const EventEmitter = require('events');
-const { exec } = require('child_process');
-const util = require('util');
-const execAsync = util.promisify(exec);
+const { spawn } = require('child_process');
 
 const PUSHER_APP_KEY = '32cbd69e4b950bf97679';
 const PUSHER_WS_URL = `wss://ws-us2.pusher.com/app/${PUSHER_APP_KEY}?protocol=7&client=js&version=8.4.0-rc2&flash=false`;
@@ -16,9 +14,41 @@ function cleanChannelSlug(input) {
   return s.toLowerCase();
 }
 
-const KNOWN_CHATROOMS = {
-  'zerkacy': { chatroomId: 40879165, slug: 'zerkacy', username: 'zerkacy' }
-};
+// In-memory cache for resolved channels
+const RESOLVED_CHANNELS_CACHE = {};
+
+// Helper: Execute curl directly via child_process.spawn (no shell escaping issues)
+function curlFetch(url, timeoutMs = 7000) {
+  return new Promise((resolve, reject) => {
+    const curlCmd = process.platform === 'win32' ? 'curl.exe' : 'curl';
+    let stdout = '';
+    let stderr = '';
+
+    const proc = spawn(curlCmd, ['-s', '-L', url]);
+
+    const timer = setTimeout(() => {
+      try { proc.kill(); } catch (e) {}
+      reject(new Error('Curl timeout'));
+    }, timeoutMs);
+
+    proc.stdout.on('data', chunk => { stdout += chunk.toString(); });
+    proc.stderr.on('data', chunk => { stderr += chunk.toString(); });
+
+    proc.on('close', code => {
+      clearTimeout(timer);
+      if (code === 0) {
+        resolve(stdout);
+      } else {
+        reject(new Error(`Curl exited with code ${code}: ${stderr}`));
+      }
+    });
+
+    proc.on('error', err => {
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
+}
 
 class KickClient extends EventEmitter {
   constructor() {
@@ -33,13 +63,14 @@ class KickClient extends EventEmitter {
     this.connectSeq = 0;
   }
 
+  // Universal channel resolver: works for ANY channel on both Windows and Linux
   async getChatroomId(channelSlug) {
     const slug = cleanChannelSlug(channelSlug);
     if (!slug) {
       throw new Error('Geçerli bir kanal adı veya bağlantısı girin.');
     }
 
-    // 1. Kullanıcı doğrudan Chatroom ID girdiyse (sadece rakam)
+    // 1. Direct Chatroom ID (user enters a numeric ID like 40879165 or 25712360)
     if (/^\d+$/.test(slug)) {
       return {
         chatroomId: parseInt(slug, 10),
@@ -48,51 +79,45 @@ class KickClient extends EventEmitter {
       };
     }
 
-    // 2. Bilinen / önbelleğe alınmış kanal listesi kontrolü
-    if (KNOWN_CHATROOMS[slug]) {
-      console.log(`[KickClient] Bilinen kanal önbelleğinden yüklendi: '${slug}' (#${KNOWN_CHATROOMS[slug].chatroomId})`);
-      return {
-        chatroomId: KNOWN_CHATROOMS[slug].chatroomId,
-        slug: KNOWN_CHATROOMS[slug].slug || slug,
-        user: { username: KNOWN_CHATROOMS[slug].username || slug, profilePic: null }
-      };
+    // 2. In-memory cache
+    if (RESOLVED_CHANNELS_CACHE[slug]) {
+      console.log(`[KickClient] Önbellekten yüklendi: '${slug}' (#${RESOLVED_CHANNELS_CACHE[slug].chatroomId})`);
+      return RESOLVED_CHANNELS_CACHE[slug];
     }
 
-    // 3. Çapraz platform curl (Windows: curl.exe, Linux/Render: curl)
-    const curlCmd = process.platform === 'win32' ? 'curl.exe' : 'curl';
     const endpoints = [
       `https://kick.com/api/v1/channels/${slug}`,
-      `https://kick.com/api/v2/channels/${slug}`
+      `https://kick.com/api/v2/channels/${slug}`,
+      `https://kick.com/api/v2/channels/${slug}/chatroom`
     ];
 
+    // 3. Primary method: Spawn curl (bypasses Cloudflare on all OSs)
     for (const url of endpoints) {
       try {
-        const { stdout } = await execAsync(`${curlCmd} -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" "${url}"`, { timeout: 8000 });
+        const stdout = await curlFetch(url, 7000);
         if (stdout && stdout.trim().startsWith('{')) {
           const data = JSON.parse(stdout);
-          if (data.chatroom && data.chatroom.id) {
-            console.log(`[KickClient] ${curlCmd} ile kanal '${slug}' (#${data.chatroom.id}) başarıyla çözüldü.`);
-            KNOWN_CHATROOMS[slug] = {
-              chatroomId: data.chatroom.id,
-              slug: data.slug || slug,
-              username: data.user?.username || slug
-            };
-            return {
-              chatroomId: data.chatroom.id,
+          const cId = data.chatroom?.id || (data.id && typeof data.id === 'number' ? data.id : null);
+          if (cId) {
+            console.log(`[KickClient] ✅ curl ile kanal '${slug}' (#${cId}) çözüldü.`);
+            const res = {
+              chatroomId: cId,
               slug: data.slug || slug,
               user: data.user ? {
                 username: data.user.username,
                 profilePic: data.user.profile_pic
               } : null
             };
+            RESOLVED_CHANNELS_CACHE[slug] = res;
+            return res;
           }
         }
       } catch (errCurl) {
-        // Sıradaki uç noktayı dene
+        // Try next endpoint
       }
     }
 
-    // 4. Fallback: Standart fetch denemesi
+    // 4. Secondary method: Native fetch
     for (const url of endpoints) {
       try {
         const res = await fetch(url, {
@@ -104,39 +129,40 @@ class KickClient extends EventEmitter {
 
         if (res.ok) {
           const data = await res.json();
-          if (data.chatroom && data.chatroom.id) {
-            console.log(`[KickClient] fetch ile kanal '${slug}' (#${data.chatroom.id}) başarıyla çözüldü.`);
-            KNOWN_CHATROOMS[slug] = {
-              chatroomId: data.chatroom.id,
-              slug: data.slug || slug,
-              username: data.user?.username || slug
-            };
-            return {
-              chatroomId: data.chatroom.id,
+          const cId = data.chatroom?.id || (data.id && typeof data.id === 'number' ? data.id : null);
+          if (cId) {
+            console.log(`[KickClient] ✅ fetch ile kanal '${slug}' (#${cId}) çözüldü.`);
+            const result = {
+              chatroomId: cId,
               slug: data.slug || slug,
               user: data.user ? {
                 username: data.user.username,
                 profilePic: data.user.profile_pic
               } : null
             };
+            RESOLVED_CHANNELS_CACHE[slug] = result;
+            return result;
           }
         }
       } catch (errFetch) {}
     }
 
-    // 5. HTML sayfasından chatroom ID regex ayrıştırma
+    // 5. Tertiary method: Scrape webpage HTML for chatroom ID
     try {
-      const { stdout } = await execAsync(`${curlCmd} -s -L -A "Mozilla/5.0" "https://kick.com/${slug}"`, { timeout: 8000 });
-      const match = stdout.match(/"chatroom":\s*\{\s*"id":\s*(\d+)/i) || stdout.match(/"chatroom_id":\s*(\d+)/i);
+      const html = await curlFetch(`https://kick.com/${slug}`, 7000);
+      const match = html.match(/"chatroom":\s*\{\s*"id":\s*(\d+)/i) || 
+                    html.match(/"chatroom_id":\s*(\d+)/i) ||
+                    html.match(/"chatroomId":\s*(\d+)/i);
       if (match && match[1]) {
         const cId = parseInt(match[1], 10);
-        console.log(`[KickClient] HTML regex ile kanal '${slug}' (#${cId}) çözüldü.`);
-        KNOWN_CHATROOMS[slug] = { chatroomId: cId, slug, username: slug };
-        return { chatroomId: cId, slug, user: null };
+        console.log(`[KickClient] ✅ HTML parse ile kanal '${slug}' (#${cId}) çözüldü.`);
+        const result = { chatroomId: cId, slug, user: null };
+        RESOLVED_CHANNELS_CACHE[slug] = result;
+        return result;
       }
     } catch (eHtml) {}
 
-    throw new Error(`Kick kanalı bulunamadı (${slug}). Lütfen kullanıcı adında yazım hatası olmadığından emin olun veya doğrudan Chatroom ID (örn: 40879165) girin.`);
+    throw new Error(`Kick kanalı bulunamadı (${slug}). Lütfen kullanıcı adında yazım hatası olmadığından emin olun veya kanalın Sohbet Odası (Chatroom) ID numarasını girin.`);
   }
 
   async connect(channelSlug) {
@@ -156,7 +182,7 @@ class KickClient extends EventEmitter {
     this.emit('status', {
       connected: false,
       channel: this.channel,
-      message: `${this.channel} kanal bilgileri alınıyor...`
+      message: `${this.channel} aranıyor...`
     });
 
     try {
@@ -173,165 +199,186 @@ class KickClient extends EventEmitter {
         connected: false,
         channel: this.channel,
         chatroomId: this.chatroomId,
-        message: `Chatroom #${this.chatroomId} bulundu, bağlanılıyor...`
+        message: `Kanal (#${this.chatroomId}) bulundu, Pusher'a bağlanılıyor...`
       });
 
       this.initWebSocket(currentSeq);
     } catch (err) {
       if (currentSeq !== this.connectSeq) return;
-      console.error(`[KickClient] ${this.channel} kanal hatası:`, err.message);
+      console.error(`[KickClient] Hata: ${err.message}`);
       this.emit('status', {
         connected: false,
         channel: this.channel,
-        error: err.message,
-        message: `Hata: ${err.message}`
+        error: err.message
       });
-      this.scheduleReconnect();
     }
   }
 
   initWebSocket(seq) {
+    if (this.manualDisconnect || seq !== this.connectSeq) return;
+
     try {
+      const WebSocket = require('ws');
       this.ws = new WebSocket(PUSHER_WS_URL);
 
-      this.ws.onopen = () => {
-        if (seq !== this.connectSeq) return;
-        console.log(`[KickClient] Pusher bağlandı. #${this.chatroomId} odasına abone olunuyor...`);
-        const subscribePayload = {
-          event: 'pusher:subscribe',
-          data: {
-            auth: '',
-            channel: `chatrooms.${this.chatroomId}.v2`
-          }
-        };
-        this.ws.send(JSON.stringify(subscribePayload));
-
-        // Start ping keep-alive
-        clearInterval(this.pingInterval);
-        this.pingInterval = setInterval(() => {
-          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
-          }
-        }, 30000);
-      };
-
-      this.ws.onmessage = (event) => {
-        if (seq !== this.connectSeq) return;
-        try {
-          const payload = JSON.parse(event.data);
-          this.handlePusherEvent(payload);
-        } catch (e) {
-          console.error('[KickClient] Mesaj parse hatası:', e);
+      this.ws.on('open', () => {
+        if (seq !== this.connectSeq) {
+          try { this.ws.close(); } catch(e) {}
+          return;
         }
-      };
+        console.log('[KickClient] Pusher bağlandı. Odaya abone olunuyor...');
+        this.subscribeChatroom();
+        this.startPing();
+      });
 
-      this.ws.onerror = (error) => {
+      this.ws.on('message', (raw) => {
         if (seq !== this.connectSeq) return;
-        console.error('[KickClient] WebSocket hatası:', error.message || error);
-        this.emit('status', {
-          connected: false,
-          channel: this.channel,
-          error: error.message || 'WebSocket hatası'
-        });
-      };
+        this.handleMessage(raw);
+      });
 
-      this.ws.onclose = () => {
-        if (seq !== this.connectSeq) return;
+      this.ws.on('close', (code, reason) => {
+        this.stopPing();
         this.isConnected = false;
-        clearInterval(this.pingInterval);
-        console.log(`[KickClient] ${this.channel} bağlantısı kapandı.`);
+        if (seq !== this.connectSeq) return;
+
+        console.warn(`[KickClient] Pusher bağlantısı kapandı (${code}).`);
         this.emit('status', {
           connected: false,
           channel: this.channel,
-          message: 'Bağlantı kesildi.'
+          chatroomId: this.chatroomId,
+          message: 'Bağlantı koptu, yeniden deneniyor...'
         });
 
         if (!this.manualDisconnect) {
-          this.scheduleReconnect();
+          this.scheduleReconnect(seq);
         }
-      };
+      });
+
+      this.ws.on('error', (err) => {
+        if (seq !== this.connectSeq) return;
+        console.error(`[KickClient] WS Hatası: ${err.message}`);
+      });
+
     } catch (err) {
-      if (seq !== this.connectSeq) return;
-      console.error('[KickClient] WS Başlatma hatası:', err);
-      this.scheduleReconnect();
+      console.error('[KickClient] WebSocket oluşturulamadı:', err);
+      this.scheduleReconnect(seq);
     }
   }
 
-  handlePusherEvent(payload) {
-    if (payload.event === 'pusher:ping') {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ event: 'pusher:pong', data: {} }));
+  subscribeChatroom() {
+    if (!this.ws || this.ws.readyState !== 1 || !this.chatroomId) return;
+
+    const subPayload = {
+      event: 'pusher:subscribe',
+      data: {
+        auth: '',
+        channel: `chatrooms.${this.chatroomId}.v2`
       }
-      return;
-    }
+    };
 
-    if (payload.event === 'pusher_internal:subscription_succeeded') {
-      this.isConnected = true;
-      console.log(`[KickClient] ✅ ${this.channel} (ID: ${this.chatroomId}) sohbetine başarıyla bağlanıldı!`);
-      this.emit('status', {
-        connected: true,
-        channel: this.channel,
-        chatroomId: this.chatroomId,
-        message: `${this.channel} sohbeti dinleniyor.`
-      });
-      return;
-    }
+    this.ws.send(JSON.stringify(subPayload));
+    console.log(`[KickClient] #${this.chatroomId} odasına abone olundu.`);
+  }
 
-    if (payload.event === 'App\\Events\\ChatMessageEvent') {
-      try {
-        const msgData = typeof payload.data === 'string' ? JSON.parse(payload.data) : payload.data;
-        const chatMessage = {
-          id: msgData.id,
-          chatroomId: msgData.chatroom_id,
-          content: (msgData.content || '').trim(),
+  handleMessage(raw) {
+    try {
+      const msg = JSON.parse(raw.toString());
+
+      // 1. Pusher Handshake
+      if (msg.event === 'pusher:connection_established') {
+        this.subscribeChatroom();
+      }
+
+      // 2. Subscription Succeeded
+      if (msg.event === 'pusher_internal:subscription_succeeded') {
+        this.isConnected = true;
+        console.log(`[KickClient] ✅ ${this.channel} (ID: ${this.chatroomId}) sohbetine başarıyla bağlanıldı!`);
+        this.emit('status', {
+          connected: true,
+          channel: this.channel,
+          chatroomId: this.chatroomId,
+          message: `${this.channel} sohbeti dinleniyor.`
+        });
+      }
+
+      // 3. Chat Message Event
+      if (msg.event === 'App\\Events\\ChatMessageEvent') {
+        const chatData = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
+        if (!chatData) return;
+
+        const parsed = {
+          id: chatData.id,
+          chatroomId: chatData.chatroom_id,
+          content: chatData.content,
+          type: chatData.type,
+          createdAt: chatData.created_at,
           sender: {
-            id: msgData.sender?.id,
-            username: msgData.sender?.username || 'Anonim',
-            slug: msgData.sender?.slug,
-            profilePic: msgData.sender?.profile_pic || null,
-            identity: msgData.sender?.identity || null
-          },
-          createdAt: msgData.created_at || new Date().toISOString()
+            id: chatData.sender?.id,
+            username: chatData.sender?.username,
+            slug: chatData.sender?.slug,
+            profilePic: chatData.sender?.profile_pic,
+            badges: chatData.sender?.identity?.badges || []
+          }
         };
 
-        this.emit('message', chatMessage);
-      } catch (e) {
-        console.error('[KickClient] ChatMessageEvent parse hatası:', e);
+        this.emit('message', parsed);
       }
+
+      // 4. Ping response
+      if (msg.event === 'pusher:pong') {
+        // Healthy connection
+      }
+
+    } catch (e) {
+      console.error('[KickClient] Mesaj ayrıştırma hatası:', e);
     }
   }
 
-  scheduleReconnect() {
-    if (this.reconnectTimer || this.manualDisconnect || !this.channel) return;
-    console.log(`[KickClient] 5 saniye sonra (${this.channel}) için yeniden bağlanmayı deneyecek...`);
+  startPing() {
+    this.stopPing();
+    this.pingInterval = setInterval(() => {
+      if (this.ws && this.ws.readyState === 1) {
+        this.ws.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
+      }
+    }, 30000);
+  }
+
+  stopPing() {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+  }
+
+  scheduleReconnect(seq) {
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = setTimeout(() => {
-      this.reconnectTimer = null;
-      if (!this.manualDisconnect && this.channel) {
+      if (!this.manualDisconnect && seq === this.connectSeq) {
+        console.log(`[KickClient] ${this.channel} kanalına yeniden bağlanılıyor...`);
         this.connect(this.channel);
       }
-    }, 5000);
+    }, 4000);
   }
 
   disconnect() {
     this.manualDisconnect = true;
-    clearTimeout(this.reconnectTimer);
-    clearInterval(this.pingInterval);
-    this.reconnectTimer = null;
-    this.pingInterval = null;
-    this.isConnected = false;
-
+    this.stopPing();
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (this.ws) {
       try {
-        // Detach handlers so closing old WS doesn't trigger onclose
-        this.ws.onopen = null;
-        this.ws.onmessage = null;
-        this.ws.onerror = null;
-        this.ws.onclose = null;
-        this.ws.close();
+        this.ws.terminate();
       } catch (e) {}
       this.ws = null;
     }
+    this.isConnected = false;
+    this.chatroomId = null;
   }
 }
 
-module.exports = { KickClient, cleanChannelSlug };
+module.exports = {
+  KickClient,
+  cleanChannelSlug
+};
