@@ -1,5 +1,7 @@
 # 🌟 Kick Milka Trivia & Genshin Gacha Economy System (Paimon Edition)
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/agahkglu2-coder/kick-genshin-trivia)
+
 Kick canlı yayınlarınızda izleyicilerinizle etkileşimi zirveye çıkarmak için hazırlanmış; **Paimon maskotlu soru-cevap**, **canlı Primogem ekonomisi** ve **tam özellikli Genshin Impact Gacha (Dilek) sistemi**.
 
 ---
