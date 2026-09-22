@@ -74,10 +74,10 @@
   const btnRefreshGachaUsers = document.getElementById('btn-refresh-gacha-users');
   const gachaUsersTbody = document.getElementById('gacha-users-tbody');
 
-  // Set OBS URLs correctly based on current host
-  const currentHost = window.location.host || 'localhost:3000';
-  if (obsTriviaUrl) obsTriviaUrl.value = `http://${currentHost}/trivia.html`;
-  if (obsGachaUrl) obsGachaUrl.value = `http://${currentHost}/gacha.html`;
+  // Set OBS URLs correctly based on current origin (works seamlessly on Render HTTPS & localhost)
+  const currentOrigin = window.location.origin || `http://${window.location.host || 'localhost:3000'}`;
+  if (obsTriviaUrl) obsTriviaUrl.value = `${currentOrigin}/trivia.html`;
+  if (obsGachaUrl) obsGachaUrl.value = `${currentOrigin}/gacha.html`;
 
   function formatTime(seconds) {
     if (isNaN(seconds) || seconds < 0) return '00:00';
@@ -388,6 +388,35 @@
     }
   });
 
+  // Client-side resolver (runs on streamer's residential IP - never blocked by Cloudflare!)
+  async function resolveChatroomIdClientSide(slug) {
+    if (!slug) return null;
+    if (/^\d+$/.test(slug)) return parseInt(slug, 10);
+
+    const endpoints = [
+      `https://kick.com/api/v2/channels/${slug}`,
+      `https://kick.com/api/v1/channels/${slug}`,
+      `https://kick.com/api/v2/channels/${slug}/chatroom`
+    ];
+
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (res.ok) {
+          const data = await res.json();
+          const id = data.chatroom?.id || (typeof data.id === 'number' ? data.id : null);
+          if (id) {
+            console.log(`[Admin] Tarayıcı üzerinden chatroomId çözüldü: #${id} (${slug})`);
+            return id;
+          }
+        }
+      } catch (e) {
+        // try next endpoint
+      }
+    }
+    return null;
+  }
+
   async function connectChannel() {
     const rawVal = cfgChannel.value.trim();
     if (!rawVal) {
@@ -405,11 +434,19 @@
       connectFeedback.textContent = '🔄 Kanal aranıyor ve WebSocket bağlantısı kuruluyor...';
     }
 
-    let channelName = rawVal;
+    let channelName = rawVal.replace(/^https?:\/\/(www\.)?kick\.com\//i, '').replace(/^[@/]+/, '').split('/')[0].trim();
     let chatroomId = null;
-    if (/^\d+$/.test(rawVal)) {
-      chatroomId = parseInt(rawVal, 10);
+
+    if (/^\d+$/.test(channelName)) {
+      chatroomId = parseInt(channelName, 10);
       channelName = '';
+    } else {
+      // Fast client-side resolution (runs in streamer's browser, bypassing Cloudflare datacenter blocks on Render)
+      try {
+        chatroomId = await resolveChatroomIdClientSide(channelName);
+      } catch (errResolve) {
+        console.warn('[Admin] İstemci taraflı çözümleme hatası:', errResolve.message);
+      }
     }
 
     try {
