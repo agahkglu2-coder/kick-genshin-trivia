@@ -118,6 +118,7 @@ app.use(express.static(path.join(__dirname, '..', 'public'), {
 const kickClient = new KickClient();
 const kickBot = new KickBotService({
   token: config.botToken || '',
+  botUsername: config.botUsername || null,
   enabled: config.botEnabled !== false,
   cooldownSeconds: 8
 });
@@ -576,6 +577,30 @@ app.get('/auth/kick/callback', async (req, res) => {
     const tokenData = await tokenRes.json();
     config.botToken = tokenData.access_token;
     kickBot.setToken(tokenData.access_token);
+
+    // Fetch the authenticated bot user's identity
+    let botUsername = null;
+    try {
+      const uRes = await fetch('https://api.kick.com/public/v1/users', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Accept': 'application/json'
+        }
+      });
+      if (uRes.ok) {
+        const uData = await uRes.json();
+        const u = Array.isArray(uData.data) ? uData.data[0] : (uData.data || uData);
+        botUsername = u?.username || u?.name || null;
+        if (botUsername) {
+          config.botUsername = botUsername;
+          kickBot.setUsername(botUsername);
+          console.log(`[KickBot] ✅ Yetkilendirilen bot hesabı: @${botUsername}`);
+        }
+      }
+    } catch (eU) {
+      console.warn('[KickBot] Bot kullanıcı adı sorgulanamadı:', eU.message);
+    }
+
     saveConfig(config);
 
     broadcast({

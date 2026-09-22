@@ -84,6 +84,7 @@
   const btnToggleSecretVis = document.getElementById('btn-toggle-secret-vis');
   const cfgBotToken = document.getElementById('cfg-bot-token');
   const btnBotAuthorize = document.getElementById('btn-bot-authorize');
+  const btnBotCopyAuthLink = document.getElementById('btn-bot-copy-auth-link');
   const btnBotTestMsg = document.getElementById('btn-bot-test-msg');
   const botFeedback = document.getElementById('bot-feedback');
   const displayRedirectUri = document.getElementById('display-redirect-uri');
@@ -557,7 +558,8 @@
         botStatusBadge.style.color = '#94a3b8';
         botStatusBadge.style.border = '1px solid rgba(148, 163, 184, 0.3)';
       } else if (status.hasToken) {
-        botStatusBadge.textContent = '🟢 Canlı Kick Modu';
+        const who = status.botUsername ? ` (@${status.botUsername})` : '';
+        botStatusBadge.textContent = `🟢 Canlı Kick Modu${who}`;
         botStatusBadge.style.background = 'rgba(16, 185, 129, 0.2)';
         botStatusBadge.style.color = '#10b981';
         botStatusBadge.style.border = '1px solid rgba(16, 185, 129, 0.4)';
@@ -679,6 +681,56 @@
       } finally {
         btnBotAuthorize.disabled = false;
         btnBotAuthorize.textContent = '🔑 Kick ile Yetkilendir (Bağlan)';
+      }
+    });
+  }
+
+  if (btnBotCopyAuthLink) {
+    btnBotCopyAuthLink.addEventListener('click', async () => {
+      const cId = cfgBotClientId?.value.trim();
+      const cSecret = cfgBotClientSecret?.value.trim();
+      const rUri = displayRedirectUri?.value.trim() || cfgBotRedirectUri?.value.trim() || `${window.location.origin}/auth/kick/callback`;
+
+      if (!cId || !cSecret) {
+        if (botFeedback) {
+          botFeedback.style.color = '#ef4444';
+          botFeedback.textContent = '❌ Lütfen önce Client ID ve Client Secret alanlarını doldurun.';
+        }
+        return;
+      }
+
+      localStorage.setItem('kick_bot_client_id', cId);
+      localStorage.setItem('kick_bot_client_secret', cSecret);
+
+      btnBotCopyAuthLink.disabled = true;
+      try {
+        const res = await fetch('/api/bot/oauth/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clientId: cId, clientSecret: cSecret, redirectUri: rUri })
+        });
+        const data = await res.json();
+        if (data.authUrl) {
+          await navigator.clipboard.writeText(data.authUrl);
+          btnBotCopyAuthLink.textContent = 'Link Kopyalandı! ✅';
+          if (botFeedback) {
+            botFeedback.style.color = '#38bdf8';
+            botFeedback.textContent = '📋 Yetkilendirme linki kopyalandı! Gizli sekmede (veya bot hesabınızın açık olduğu tarayıcıda) açarak "İzin Ver" deyin.';
+          }
+          setTimeout(() => { btnBotCopyAuthLink.textContent = '📋 Bot Linkini Kopyala'; }, 3000);
+        } else {
+          if (botFeedback) {
+            botFeedback.style.color = '#ef4444';
+            botFeedback.textContent = `❌ ${data.error || 'Link oluşturulamadı.'}`;
+          }
+        }
+      } catch (err) {
+        if (botFeedback) {
+          botFeedback.style.color = '#ef4444';
+          botFeedback.textContent = '❌ Hata: ' + err.message;
+        }
+      } finally {
+        btnBotCopyAuthLink.disabled = false;
       }
     });
   }

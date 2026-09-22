@@ -4,6 +4,7 @@ class KickBotService extends EventEmitter {
   constructor(options = {}) {
     super();
     this.token = options.token || '';
+    this.botUsername = options.botUsername || null;
     this.enabled = options.enabled !== false;
     this.chatroomId = options.chatroomId || null;
     this.broadcasterUserId = options.broadcasterUserId || null;
@@ -22,6 +23,11 @@ class KickBotService extends EventEmitter {
   setToken(token) {
     this.token = (token || '').trim();
     console.log(`[KickBot] Bot Token güncellendi: ${this.token ? 'Mevcut (****)' : 'Boş'}`);
+    this.emit('config_updated', this.getStatus());
+  }
+
+  setUsername(name) {
+    this.botUsername = (name || '').trim();
     this.emit('config_updated', this.getStatus());
   }
 
@@ -47,6 +53,7 @@ class KickBotService extends EventEmitter {
       enabled: this.enabled,
       hasToken: Boolean(this.token && this.token.length > 5),
       tokenPreview: this.token ? `${this.token.slice(0, 4)}...${this.token.slice(-4)}` : null,
+      botUsername: this.botUsername,
       chatroomId: this.chatroomId,
       broadcasterUserId: this.broadcasterUserId,
       queueLength: this.queue.length

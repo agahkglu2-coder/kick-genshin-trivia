@@ -359,9 +359,22 @@
 
             <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
               <button type="button" id="btn-bot-authorize" class="btn btn-success btn-sm" style="flex: 1; font-weight: 700;">🔑 Kick ile Yetkilendir (Bağlan)</button>
+              <button type="button" id="btn-bot-copy-auth-link" class="btn btn-outline btn-sm" title="Ayrı bir bot hesabı açtıysanız bu linki kopyalayıp gizli sekmede açın">📋 Bot Linkini Kopyala</button>
               <button type="submit" class="btn btn-primary btn-sm">Kaydet</button>
               <button type="button" id="btn-bot-test-msg" class="btn btn-outline btn-sm">💬 Test Mesajı At</button>
             </div>
+
+            <!-- Dedicated Bot Account Guide -->
+            <details style="margin-top: 10px; background: rgba(0,0,0,0.25); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; color: #94a3b8;">
+              <summary style="cursor: pointer; color: #38bdf8; font-weight: 600; user-select: none;">💡 Ayrı Bir Bot Hesabı (Örn: PaimonBot) Nasıl Bağlanır?</summary>
+              <ol style="margin: 8px 0 0 16px; padding: 0; line-height: 1.5;">
+                <li>Kick'te bot olarak kullanmak istediğiniz hesabı açın (Örn: <code>ZerkacyBot</code>).</li>
+                <li>Kendi kanalınızın sohbetine girip <code>/mod ZerkacyBot</code> yazarak botu moderatör yapın.</li>
+                <li>Yukarıdaki <strong>"📋 Bot Linkini Kopyala"</strong> butonuna basın ve linki <strong>Gizli Sekmede</strong> açın.</li>
+                <li>Gizli sekmede yeni bot hesabınızla giriş yapıp <strong>"İzin Ver"</strong> deyin.</li>
+                <li>Panel rozeti <strong>🟢 Canlı Kick Modu (@ZerkacyBot)</strong> olacak ve tüm mesajlar bot hesabından atılacaktır!</li>
+              </ol>
+            </details>
             <div id="bot-feedback" class="field-hint" style="margin-top: 8px; font-weight: 600;"></div>
           </form>
         </div>
