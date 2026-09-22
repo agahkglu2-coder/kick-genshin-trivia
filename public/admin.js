@@ -78,8 +78,12 @@
   const botStatusBadge = document.getElementById('bot-status-badge');
   const botForm = document.getElementById('bot-form');
   const cfgBotEnabled = document.getElementById('cfg-bot-enabled');
+  const cfgBotClientId = document.getElementById('cfg-bot-client-id');
+  const cfgBotClientSecret = document.getElementById('cfg-bot-client-secret');
+  const cfgBotRedirectUri = document.getElementById('cfg-bot-redirect-uri');
+  const btnToggleSecretVis = document.getElementById('btn-toggle-secret-vis');
   const cfgBotToken = document.getElementById('cfg-bot-token');
-  const btnToggleTokenVis = document.getElementById('btn-toggle-token-vis');
+  const btnBotAuthorize = document.getElementById('btn-bot-authorize');
   const btnBotTestMsg = document.getElementById('btn-bot-test-msg');
   const botFeedback = document.getElementById('bot-feedback');
 
@@ -509,6 +513,12 @@
   function updateBotStatus(status) {
     if (!status) return;
     if (cfgBotEnabled) cfgBotEnabled.checked = status.enabled !== false;
+    if (status.clientId && cfgBotClientId && !cfgBotClientId.value) {
+      cfgBotClientId.value = status.clientId;
+    }
+    if (status.redirectUri && cfgBotRedirectUri && !cfgBotRedirectUri.value) {
+      cfgBotRedirectUri.value = status.redirectUri;
+    }
     if (botStatusBadge) {
       if (!status.enabled) {
         botStatusBadge.textContent = '⚪ Devre Dışı';
@@ -529,14 +539,14 @@
     }
   }
 
-  if (btnToggleTokenVis && cfgBotToken) {
-    btnToggleTokenVis.addEventListener('click', () => {
-      if (cfgBotToken.type === 'password') {
-        cfgBotToken.type = 'text';
-        btnToggleTokenVis.textContent = '🔒';
+  if (btnToggleSecretVis && cfgBotClientSecret) {
+    btnToggleSecretVis.addEventListener('click', () => {
+      if (cfgBotClientSecret.type === 'password') {
+        cfgBotClientSecret.type = 'text';
+        btnToggleSecretVis.textContent = '🔒';
       } else {
-        cfgBotToken.type = 'password';
-        btnToggleTokenVis.textContent = '👁️';
+        cfgBotClientSecret.type = 'password';
+        btnToggleSecretVis.textContent = '👁️';
       }
     });
   }
@@ -546,7 +556,10 @@
       e.preventDefault();
       const payload = {
         enabled: cfgBotEnabled.checked,
-        token: cfgBotToken.value.trim()
+        clientId: cfgBotClientId?.value.trim() || '',
+        clientSecret: cfgBotClientSecret?.value.trim() || '',
+        redirectUri: cfgBotRedirectUri?.value.trim() || '',
+        token: cfgBotToken?.value.trim() || ''
       };
 
       try {
@@ -560,8 +573,7 @@
           updateBotStatus(data.status);
           if (botFeedback) {
             botFeedback.style.color = '#10b981';
-            botFeedback.textContent = '✅ Bot ayarları kaydedildi!';
-            setTimeout(() => { botFeedback.textContent = ''; }, 3000);
+            botFeedback.textContent = '✅ Ayarlar kaydedildi! Şimdi "🔑 Kick ile Yetkilendir" butonuna basarak botu bağlayabilirsiniz.';
           }
         }
       } catch (err) {
@@ -571,6 +583,73 @@
         }
       }
     });
+  }
+
+  if (btnBotAuthorize) {
+    btnBotAuthorize.addEventListener('click', async () => {
+      const cId = cfgBotClientId?.value.trim();
+      const cSecret = cfgBotClientSecret?.value.trim();
+      const rUri = cfgBotRedirectUri?.value.trim() || `${window.location.origin}/auth/kick/callback`;
+
+      if (!cId || !cSecret) {
+        if (botFeedback) {
+          botFeedback.style.color = '#ef4444';
+          botFeedback.textContent = '❌ Lütfen önce Client ID ve Client Secret alanlarını doldurun.';
+        }
+        return;
+      }
+
+      btnBotAuthorize.disabled = true;
+      btnBotAuthorize.textContent = 'Bağlanılıyor...';
+      if (botFeedback) {
+        botFeedback.style.color = '#f59e0b';
+        botFeedback.textContent = '🔄 Kick ile iletişim kuruluyor...';
+      }
+
+      try {
+        const res = await fetch('/api/bot/oauth/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clientId: cId, clientSecret: cSecret, redirectUri: rUri })
+        });
+        const data = await res.json();
+
+        if (data.autoConnected) {
+          updateBotStatus(data.status);
+          if (botFeedback) {
+            botFeedback.style.color = '#10b981';
+            botFeedback.textContent = '🎉 Başarılı! Token otomatik alındı ve canlı Kick sohbeti aktifleşti (🟢 Canlı Kick Modu).';
+          }
+        } else if (data.authUrl) {
+          if (botFeedback) {
+            botFeedback.style.color = '#6366f1';
+            botFeedback.textContent = '🌐 Kick yetkilendirme penceresi açıldı. Lütfen Kick ekranında "İzin Ver" butonuna basın.';
+          }
+          window.open(data.authUrl, 'KickAuthWindow', 'width=620,height=750,menubar=no,toolbar=no');
+        } else {
+          if (botFeedback) {
+            botFeedback.style.color = '#ef4444';
+            botFeedback.textContent = `❌ ${data.error || 'Yetkilendirme başlatılamadı.'}`;
+          }
+        }
+      } catch (err) {
+        if (botFeedback) {
+          botFeedback.style.color = '#ef4444';
+          botFeedback.textContent = `❌ Hata: ${err.message}`;
+        }
+      } finally {
+        btnBotAuthorize.disabled = false;
+        btnBotAuthorize.textContent = '🔑 Kick ile Yetkilendir (Bağlan)';
+      }
+    });
+  }
+
+  if (new URLSearchParams(window.location.search).get('bot_authorized')) {
+    if (botFeedback) {
+      botFeedback.style.color = '#10b981';
+      botFeedback.textContent = '🎉 Tebrikler! Paimon Bot Kick kanalınıza başarıyla bağlandı (🟢 Canlı Kick Modu Aktif).';
+    }
+    history.replaceState(null, '', window.location.pathname);
   }
 
   if (btnBotTestMsg) {

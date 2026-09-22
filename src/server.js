@@ -379,13 +379,25 @@ app.post('/api/gacha/test-wish', (req, res) => {
   res.json({ success: true, wish: result });
 });
 
+const crypto = require('crypto');
+
+function base64URLEncode(buf) {
+  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+const oauthSessions = new Map();
+
 // Kick Bot REST Endpoints
 app.get('/api/bot/status', (req, res) => {
-  res.json(kickBot.getStatus());
+  res.json({
+    ...kickBot.getStatus(),
+    clientId: config.botClientId || '',
+    redirectUri: config.botRedirectUri || ''
+  });
 });
 
 app.post('/api/bot/config', (req, res) => {
-  const { token, enabled } = req.body || {};
+  const { token, enabled, clientId, clientSecret, redirectUri } = req.body || {};
   if (token !== undefined) {
     config.botToken = token;
     kickBot.setToken(token);
@@ -394,9 +406,200 @@ app.post('/api/bot/config', (req, res) => {
     config.botEnabled = !!enabled;
     kickBot.setEnabled(!!enabled);
   }
+  if (clientId !== undefined) {
+    config.botClientId = clientId.trim();
+  }
+  if (clientSecret !== undefined) {
+    config.botClientSecret = clientSecret.trim();
+  }
+  if (redirectUri !== undefined) {
+    config.botRedirectUri = redirectUri.trim();
+  }
   saveConfig(config);
   broadcast({ type: 'BOT_STATUS', status: kickBot.getStatus() });
-  res.json({ success: true, status: kickBot.getStatus() });
+  res.json({
+    success: true,
+    status: {
+      ...kickBot.getStatus(),
+      clientId: config.botClientId || '',
+      redirectUri: config.botRedirectUri || ''
+    }
+  });
+});
+
+// OAuth 2.1 PKCE Flow: Start
+app.post('/api/bot/oauth/start', async (req, res) => {
+  const { clientId, clientSecret, redirectUri } = req.body || {};
+  const cId = (clientId || config.botClientId || '').trim();
+  const cSecret = (clientSecret || config.botClientSecret || '').trim();
+
+  if (!cId || !cSecret) {
+    return res.status(400).json({ error: 'Lütfen hem Client ID hem de Client Secret alanlarını doldurun.' });
+  }
+
+  config.botClientId = cId;
+  config.botClientSecret = cSecret;
+  if (redirectUri) {
+    config.botRedirectUri = redirectUri.trim();
+  }
+  saveConfig(config);
+
+  // 1. Try quick Client Credentials token grant
+  try {
+    const ccRes = await fetch('https://id.kick.com/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: cId,
+        client_secret: cSecret
+      }).toString()
+    });
+
+    if (ccRes.ok) {
+      const ccData = await ccRes.json();
+      if (ccData.access_token) {
+        console.log('[KickBot] ✅ Client credentials ile token başarıyla alındı!');
+        config.botToken = ccData.access_token;
+        kickBot.setToken(ccData.access_token);
+        saveConfig(config);
+        broadcast({ type: 'BOT_STATUS', status: kickBot.getStatus() });
+        return res.json({ success: true, autoConnected: true, status: kickBot.getStatus() });
+      }
+    }
+  } catch (errCc) {
+    console.warn('[KickBot] Client credentials denenirken hata:', errCc.message);
+  }
+
+  // 2. PKCE Authorization Code flow
+  const verifier = base64URLEncode(crypto.randomBytes(32));
+  const challenge = base64URLEncode(crypto.createHash('sha256').update(verifier).digest());
+  const state = base64URLEncode(crypto.randomBytes(16));
+
+  const origin = `${req.protocol}://${req.get('host')}`;
+  const effectiveRedirect = config.botRedirectUri || `${origin}/auth/kick/callback`;
+
+  oauthSessions.set(state, {
+    verifier,
+    redirectUri: effectiveRedirect,
+    createdAt: Date.now()
+  });
+
+  // Clean old sessions
+  for (const [sKey, sVal] of oauthSessions.entries()) {
+    if (Date.now() - sVal.createdAt > 600000) {
+      oauthSessions.delete(sKey);
+    }
+  }
+
+  const authUrl = `https://id.kick.com/oauth/authorize?client_id=${encodeURIComponent(cId)}&redirect_uri=${encodeURIComponent(effectiveRedirect)}&response_type=code&scope=user:read+chat:write+channel:read&code_challenge=${challenge}&code_challenge_method=S256&state=${state}`;
+
+  res.json({ success: true, authUrl, redirectUri: effectiveRedirect });
+});
+
+// OAuth Callback Route
+app.get('/auth/kick/callback', async (req, res) => {
+  const { code, state, error, error_description } = req.query;
+
+  if (error) {
+    return res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="utf-8"><title>Yetkilendirme Hatası</title></head>
+      <body style="font-family:sans-serif; background:#0f172a; color:#fff; display:flex; align-items:center; justify-content:center; height:100vh;">
+        <div style="background:#1e293b; padding:30px; border-radius:12px; max-width:480px; text-align:center;">
+          <h2 style="color:#ef4444;">❌ Yetkilendirme Başarısız</h2>
+          <p style="color:#94a3b8;">${error_description || error}</p>
+          <a href="/admin.html" style="display:inline-block; margin-top:16px; padding:10px 20px; background:#6366f1; color:#fff; text-decoration:none; border-radius:8px;">Panele Geri Dön</a>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+
+  const session = oauthSessions.get(state);
+  const cId = config.botClientId;
+  const cSecret = config.botClientSecret;
+
+  if (!session || !cId || !cSecret) {
+    return res.status(400).send(`
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="utf-8"><title>Oturum Zaman Aşımı</title></head>
+      <body style="font-family:sans-serif; background:#0f172a; color:#fff; display:flex; align-items:center; justify-content:center; height:100vh;">
+        <div style="background:#1e293b; padding:30px; border-radius:12px; max-width:480px; text-align:center;">
+          <h2 style="color:#f59e0b;">⏳ Oturum Zaman Aşımı</h2>
+          <p style="color:#94a3b8;">Yetkilendirme isteği zaman aşımına uğradı. Lütfen panelden tekrar deneyin.</p>
+          <a href="/admin.html" style="display:inline-block; margin-top:16px; padding:10px 20px; background:#6366f1; color:#fff; text-decoration:none; border-radius:8px;">Panele Geri Dön</a>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+
+  oauthSessions.delete(state);
+
+  try {
+    const tokenRes = await fetch('https://id.kick.com/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: cId,
+        client_secret: cSecret,
+        redirect_uri: session.redirectUri,
+        code_verifier: session.verifier,
+        code: code
+      }).toString()
+    });
+
+    if (!tokenRes.ok) {
+      const errBody = await tokenRes.text();
+      return res.status(tokenRes.status).send(`
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"><title>Token Alınamadı</title></head>
+        <body style="font-family:sans-serif; background:#0f172a; color:#fff; display:flex; align-items:center; justify-content:center; height:100vh;">
+          <div style="background:#1e293b; padding:30px; border-radius:12px; max-width:480px; text-align:center;">
+            <h2 style="color:#ef4444;">❌ Token Alınamadı</h2>
+            <p style="color:#94a3b8;">${errBody}</p>
+            <a href="/admin.html" style="display:inline-block; margin-top:16px; padding:10px 20px; background:#6366f1; color:#fff; text-decoration:none; border-radius:8px;">Panele Geri Dön</a>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
+    const tokenData = await tokenRes.json();
+    config.botToken = tokenData.access_token;
+    kickBot.setToken(tokenData.access_token);
+    saveConfig(config);
+
+    broadcast({ type: 'BOT_STATUS', status: kickBot.getStatus() });
+
+    // Send successful auto-closing page
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="utf-8"><title>Yetkilendirme Başarılı</title></head>
+      <body style="font-family:sans-serif; background:#0f172a; color:#fff; display:flex; align-items:center; justify-content:center; height:100vh;">
+        <div style="background:#1e293b; padding:30px; border-radius:12px; max-width:480px; text-align:center;">
+          <h2 style="color:#10b981;">🎉 Yetkilendirme Başarılı!</h2>
+          <p style="color:#94a3b8;">Paimon Bot Kick kanalınıza başarıyla bağlandı. Bu pencereyi kapatabilirsiniz.</p>
+          <a href="/admin.html?bot_authorized=true" style="display:inline-block; margin-top:16px; padding:10px 20px; background:#10b981; color:#fff; text-decoration:none; border-radius:8px;">Yönetim Paneline Dön</a>
+          <script>
+            if (window.opener) {
+              window.opener.location.href = '/admin.html?bot_authorized=true';
+              setTimeout(() => { window.close(); }, 1500);
+            }
+          </script>
+        </div>
+      </body>
+      </html>
+    `);
+  } catch (err) {
+    res.status(500).send(`<h2>Sunucu Hatası:</h2><p>${err.message}</p><a href="/admin.html">Panele Geri Dön</a>`);
+  }
 });
 
 app.post('/api/bot/test-message', (req, res) => {

@@ -324,21 +324,37 @@
             </div>
 
             <div class="form-group">
-              <label>Kick Bot OAuth / Bearer Token</label>
-              <div class="input-with-btn">
-                <input type="password" id="cfg-bot-token" placeholder="Kick Bot Bearer Token (İsteğe bağlı)">
-                <button type="button" id="btn-toggle-token-vis" class="btn btn-outline btn-sm" title="Göster/Gizle">👁️</button>
-              </div>
-              <span class="field-hint">
-                💡 Token girilmezse bot simülasyon modunda çalışır (yanıtlar panelde görünür). Canlı chate doğrudan yazması için Kick Developer Portal'dan aldığınız token'ı yapıştırın.
-              </span>
+              <label>Kick Developer Client ID</label>
+              <input type="text" id="cfg-bot-client-id" placeholder="Kick portalındaki Client ID">
             </div>
 
-            <div style="display: flex; gap: 8px; margin-top: 10px;">
-              <button type="submit" class="btn btn-primary btn-sm" style="flex: 1;">Bot Ayarlarını Kaydet</button>
+            <div class="form-group">
+              <label>Kick Developer Client Secret</label>
+              <div class="input-with-btn">
+                <input type="password" id="cfg-bot-client-secret" placeholder="Kick portalındaki Client Secret">
+                <button type="button" id="btn-toggle-secret-vis" class="btn btn-outline btn-sm" title="Göster/Gizle">👁️</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Portalda Girdiğiniz Yönlendirme URL'si (Redirect URI)</label>
+              <input type="text" id="cfg-bot-redirect-uri" placeholder="https://kick.com veya https://yourapp.com">
+              <span class="field-hint">Kick Developer Portal'da "URL Yönlendirme" kutusuna ne girdiyseniz aynısını yazın (örn: https://kick.com).</span>
+            </div>
+
+            <details style="margin: 8px 0; font-size: 0.82rem; color: #94a3b8;">
+              <summary style="cursor: pointer; color: #818cf8; user-select: none;">⚙️ Gelişmiş: Doğrudan Access / Bearer Token Yapıştır</summary>
+              <div class="form-group" style="margin-top: 8px;">
+                <input type="password" id="cfg-bot-token" placeholder="Varsa doğrudan Bearer Token yapıştırın">
+              </div>
+            </details>
+
+            <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+              <button type="button" id="btn-bot-authorize" class="btn btn-success btn-sm" style="flex: 1; font-weight: 700;">🔑 Kick ile Yetkilendir (Bağlan)</button>
+              <button type="submit" class="btn btn-primary btn-sm">Kaydet</button>
               <button type="button" id="btn-bot-test-msg" class="btn btn-outline btn-sm">💬 Test Mesajı At</button>
             </div>
-            <div id="bot-feedback" class="field-hint" style="margin-top: 6px; font-weight: 600;"></div>
+            <div id="bot-feedback" class="field-hint" style="margin-top: 8px; font-weight: 600;"></div>
           </form>
         </div>
 
