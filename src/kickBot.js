@@ -136,10 +136,33 @@ class KickBotService extends EventEmitter {
 
   async dispatchMessage(content, replyToId = null) {
     if (!this.token) {
-      return { success: false, error: 'Token girilmedi (Simülasyon modunda).' };
+      return { success: false, error: 'Token girilmedi (Simülasyon modunda). Lütfen önce "Kick ile Yetkilendir" butonuna basarak botu bağlayın.' };
     }
 
-    const targetBroadcasterId = this.broadcasterUserId;
+    let targetBroadcasterId = this.broadcasterUserId;
+    if (!targetBroadcasterId && this.chatroomId) {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const kcPath = path.join(__dirname, '..', 'data', 'known_channels.json');
+        if (fs.existsSync(kcPath)) {
+          const kc = JSON.parse(fs.readFileSync(kcPath, 'utf-8'));
+          for (const [slug, item] of Object.entries(kc)) {
+            if (item.chatroomId === this.chatroomId && item.broadcasterUserId) {
+              targetBroadcasterId = item.broadcasterUserId;
+              this.broadcasterUserId = targetBroadcasterId;
+              break;
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!targetBroadcasterId && this.chatroomId === 40879165) {
+      targetBroadcasterId = 42256338;
+      this.broadcasterUserId = 42256338;
+    }
+
     let lastError = null;
 
     // 1. Try Official Kick Public API: POST https://api.kick.com/public/v1/chat
@@ -171,7 +194,7 @@ class KickBotService extends EventEmitter {
           }
 
           const errText = await res.text();
-          lastError = `Kick Public API (${res.status}): ${errText}`;
+          lastError = `Kick Public API (${res.status} [${msgType}]): ${errText}`;
           console.warn(`[KickBot] ${lastError}`);
         } catch (eOfficial) {
           lastError = `Public API hatası: ${eOfficial.message}`;

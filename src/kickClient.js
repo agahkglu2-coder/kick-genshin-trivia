@@ -325,6 +325,7 @@ class KickClient extends EventEmitter {
           connected: false,
           channel: this.channel,
           chatroomId: this.chatroomId,
+          broadcasterUserId: this.broadcasterUserId,
           message: 'Bağlantı koptu, yeniden deneniyor...'
         });
 
@@ -371,11 +372,12 @@ class KickClient extends EventEmitter {
       // 2. Subscription Succeeded
       if (msg.event === 'pusher_internal:subscription_succeeded') {
         this.isConnected = true;
-        console.log(`[KickClient] ✅ ${this.channel} (ID: ${this.chatroomId}) sohbetine başarıyla bağlanıldı!`);
+        console.log(`[KickClient] ✅ ${this.channel} (ID: ${this.chatroomId}, User: #${this.broadcasterUserId || '?'}) sohbetine başarıyla bağlanıldı!`);
         this.emit('status', {
           connected: true,
           channel: this.channel,
           chatroomId: this.chatroomId,
+          broadcasterUserId: this.broadcasterUserId,
           message: `${this.channel} sohbeti dinleniyor.`
         });
       }

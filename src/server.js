@@ -121,6 +121,23 @@ const kickBot = new KickBotService({
   enabled: config.botEnabled !== false,
   cooldownSeconds: 8
 });
+
+// Pre-fill KickBot channel & broadcaster ID if known
+try {
+  const KNOWN_CHANNELS_PATH = path.join(__dirname, '..', 'data', 'known_channels.json');
+  if (fs.existsSync(KNOWN_CHANNELS_PATH)) {
+    const kc = JSON.parse(fs.readFileSync(KNOWN_CHANNELS_PATH, 'utf-8'));
+    const curChan = (config.channel || 'zerkacy').toLowerCase();
+    if (kc[curChan]) {
+      if (kc[curChan].chatroomId) kickBot.setChatroomId(kc[curChan].chatroomId);
+      if (kc[curChan].broadcasterUserId) kickBot.setBroadcasterUserId(kc[curChan].broadcasterUserId);
+      console.log(`[KickBot] Başlangıç kanalı '${curChan}' kimlikleri yüklendi: Chatroom #${kc[curChan].chatroomId}, User #${kc[curChan].broadcasterUserId}`);
+    }
+  }
+} catch (e) {
+  console.warn('[Server] known_channels.json okunamadı:', e.message);
+}
+
 const gameEngine = new GameEngine(config);
 const gachaEngine = new GachaEngine();
 
@@ -128,6 +145,7 @@ let kickStatus = {
   connected: false,
   channel: config.channel || '',
   chatroomId: null,
+  broadcasterUserId: null,
   message: 'Bağlantı henüz başlatılmadı.'
 };
 
@@ -146,6 +164,9 @@ kickClient.on('status', (status) => {
   kickStatus = { ...kickStatus, ...status };
   if (status.chatroomId) {
     kickBot.setChatroomId(status.chatroomId);
+  }
+  if (status.broadcasterUserId) {
+    kickBot.setBroadcasterUserId(status.broadcasterUserId);
   }
   broadcast({ type: 'KICK_STATUS', status: kickStatus });
 });
@@ -251,7 +272,11 @@ wss.on('connection', (ws) => {
     type: 'INIT_STATE',
     gameState: gameEngine.getFullState(),
     kickStatus: kickStatus,
-    botStatus: kickBot.getStatus(),
+    botStatus: {
+      ...kickBot.getStatus(),
+      clientId: config.botClientId || '',
+      redirectUri: config.botRedirectUri || ''
+    },
     config: gameEngine.config
   }));
 });
@@ -261,7 +286,11 @@ app.get('/api/status', (req, res) => {
   res.json({
     gameState: gameEngine.getFullState(),
     kickStatus: kickStatus,
-    botStatus: kickBot.getStatus(),
+    botStatus: {
+      ...kickBot.getStatus(),
+      clientId: config.botClientId || '',
+      redirectUri: config.botRedirectUri || ''
+    },
     config: gameEngine.config
   });
 });
@@ -549,7 +578,14 @@ app.get('/auth/kick/callback', async (req, res) => {
     kickBot.setToken(tokenData.access_token);
     saveConfig(config);
 
-    broadcast({ type: 'BOT_STATUS', status: kickBot.getStatus() });
+    broadcast({
+      type: 'BOT_STATUS',
+      status: {
+        ...kickBot.getStatus(),
+        clientId: config.botClientId || '',
+        redirectUri: config.botRedirectUri || ''
+      }
+    });
 
     // Send successful auto-closing page
     res.send(`
@@ -563,8 +599,10 @@ app.get('/auth/kick/callback', async (req, res) => {
           <a href="/admin.html?bot_authorized=true" style="display:inline-block; margin-top:16px; padding:10px 20px; background:#10b981; color:#fff; text-decoration:none; border-radius:8px;">Yönetim Paneline Dön</a>
           <script>
             if (window.opener) {
-              window.opener.location.href = '/admin.html?bot_authorized=true';
-              setTimeout(() => { window.close(); }, 1500);
+              try {
+                window.opener.postMessage({ type: 'KICK_AUTH_SUCCESS', token: true }, '*');
+              } catch (e) {}
+              setTimeout(() => { window.close(); }, 1200);
             }
           </script>
         </div>

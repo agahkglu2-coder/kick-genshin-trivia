@@ -527,14 +527,28 @@
   });
 
   // Kick Bot Management UI
+  // Restore saved credentials from localStorage
+  if (cfgBotClientId && !cfgBotClientId.value) {
+    const savedCId = localStorage.getItem('kick_bot_client_id');
+    if (savedCId) cfgBotClientId.value = savedCId;
+  }
+  if (cfgBotClientSecret && !cfgBotClientSecret.value) {
+    const savedCSecret = localStorage.getItem('kick_bot_client_secret');
+    if (savedCSecret) cfgBotClientSecret.value = savedCSecret;
+  }
+
   function updateBotStatus(status) {
     if (!status) return;
     if (cfgBotEnabled) cfgBotEnabled.checked = status.enabled !== false;
     if (status.clientId && cfgBotClientId && !cfgBotClientId.value) {
       cfgBotClientId.value = status.clientId;
+      localStorage.setItem('kick_bot_client_id', status.clientId);
     }
     if (status.redirectUri && cfgBotRedirectUri && !cfgBotRedirectUri.value) {
       cfgBotRedirectUri.value = status.redirectUri;
+    }
+    if (displayRedirectUri && (!displayRedirectUri.value || displayRedirectUri.value.includes('localhost'))) {
+      displayRedirectUri.value = `${window.location.origin}/auth/kick/callback`;
     }
     if (botStatusBadge) {
       if (!status.enabled) {
@@ -571,11 +585,16 @@
   if (botForm) {
     botForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const cId = cfgBotClientId?.value.trim() || '';
+      const cSecret = cfgBotClientSecret?.value.trim() || '';
+      if (cId) localStorage.setItem('kick_bot_client_id', cId);
+      if (cSecret) localStorage.setItem('kick_bot_client_secret', cSecret);
+
       const payload = {
         enabled: cfgBotEnabled.checked,
-        clientId: cfgBotClientId?.value.trim() || '',
-        clientSecret: cfgBotClientSecret?.value.trim() || '',
-        redirectUri: cfgBotRedirectUri?.value.trim() || '',
+        clientId: cId,
+        clientSecret: cSecret,
+        redirectUri: displayRedirectUri?.value.trim() || cfgBotRedirectUri?.value.trim() || `${window.location.origin}/auth/kick/callback`,
         token: cfgBotToken?.value.trim() || ''
       };
 
@@ -616,6 +635,9 @@
         return;
       }
 
+      localStorage.setItem('kick_bot_client_id', cId);
+      localStorage.setItem('kick_bot_client_secret', cSecret);
+
       btnBotAuthorize.disabled = true;
       btnBotAuthorize.textContent = 'Bağlanılıyor...';
       if (botFeedback) {
@@ -640,7 +662,7 @@
         } else if (data.authUrl) {
           if (botFeedback) {
             botFeedback.style.color = '#6366f1';
-            botFeedback.textContent = '🌐 Kick yetkilendirme penceresi açıldı. Lütfen Kick ekranında "İzin Ver" butonuna basın.';
+            botFeedback.textContent = '🌐 Kick yetkilendirme penceresi açıldı. Lütfen açılan ekranda "İzin Ver" butonuna basın.';
           }
           window.open(data.authUrl, 'KickAuthWindow', 'width=620,height=750,menubar=no,toolbar=no');
         } else {
@@ -661,35 +683,66 @@
     });
   }
 
+  // Handle OAuth success message from popup window
+  window.addEventListener('message', async (event) => {
+    if (event.data && event.data.type === 'KICK_AUTH_SUCCESS') {
+      if (botFeedback) {
+        botFeedback.style.color = '#10b981';
+        botFeedback.textContent = '🎉 Tebrikler! Paimon Bot Kick kanalınıza başarıyla bağlandı (🟢 Canlı Kick Modu Aktif).';
+      }
+      try {
+        const res = await fetch('/api/bot/status');
+        const st = await res.json();
+        updateBotStatus(st);
+      } catch (e) {}
+    }
+  });
+
   if (new URLSearchParams(window.location.search).get('bot_authorized')) {
     if (botFeedback) {
       botFeedback.style.color = '#10b981';
       botFeedback.textContent = '🎉 Tebrikler! Paimon Bot Kick kanalınıza başarıyla bağlandı (🟢 Canlı Kick Modu Aktif).';
     }
     history.replaceState(null, '', window.location.pathname);
+    fetch('/api/bot/status').then(r => r.json()).then(updateBotStatus).catch(console.error);
   }
 
   if (btnBotTestMsg) {
     btnBotTestMsg.addEventListener('click', async () => {
       btnBotTestMsg.disabled = true;
+      btnBotTestMsg.textContent = 'Gönderiliyor...';
+      if (botFeedback) {
+        botFeedback.style.color = '#f59e0b';
+        botFeedback.textContent = '⏳ Mesaj Kick chatine iletiliyor...';
+      }
       try {
-        await fetch('/api/bot/test-message', {
+        const res = await fetch('/api/bot/test-message', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: '✨ Paimon Bot test mesajı: Sistem aktif ve çalışıyor!' })
         });
-        if (botFeedback) {
-          botFeedback.style.color = '#10b981';
-          botFeedback.textContent = '💬 Test mesajı gönderildi!';
-          setTimeout(() => { botFeedback.textContent = ''; }, 3000);
+        const data = await res.json();
+        if (res.ok && data.success) {
+          if (botFeedback) {
+            botFeedback.style.color = '#10b981';
+            botFeedback.textContent = '💬 Test mesajı Kick chatine başarıyla gönderildi! (Kick sohbetinizi kontrol edin)';
+          }
+        } else {
+          if (botFeedback) {
+            botFeedback.style.color = '#ef4444';
+            botFeedback.textContent = `❌ Mesaj gönderilemedi: ${data.error || 'Kick API isteği reddetti.'}`;
+          }
         }
       } catch (e) {
         if (botFeedback) {
           botFeedback.style.color = '#ef4444';
-          botFeedback.textContent = 'Hata: ' + e.message;
+          botFeedback.textContent = '❌ Bağlantı Hatası: ' + e.message;
         }
       } finally {
-        setTimeout(() => { btnBotTestMsg.disabled = false; }, 1500);
+        setTimeout(() => {
+          btnBotTestMsg.disabled = false;
+          btnBotTestMsg.textContent = '💬 Test Mesajı At';
+        }, 1500);
       }
     });
   }
