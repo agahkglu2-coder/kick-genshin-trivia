@@ -18,8 +18,26 @@
     <span>Genshin Wish Showcase Aktif (v3.5)</span>
   </div>
 
+  <!-- Sleek Golden Announcement Ticker for 5★ and 4★ Drops -->
+  <div id="wish-ticker-bar" class="wish-ticker-bar hidden" style="display: none;">
+    <div class="ticker-crest">🌟</div>
+    <div class="ticker-content" id="ticker-content">
+      <span class="ticker-text" id="ticker-text">Teyvat Gökyüzü Sakin...</span>
+    </div>
+  </div>
+
   <!-- Canvas for Shooting Star Meteors, Sparkles & Primogem Rain -->
   <canvas id="effects-canvas"></canvas>
+
+  <!-- Dramatic Celestial Sky & Meteor Animation Stage -->
+  <div id="wish-meteor-stage" class="wish-meteor-stage hidden" style="display: none;">
+    <div class="meteor-sky-glow" id="meteor-sky-glow"></div>
+    <div class="meteor-comet" id="meteor-comet">
+      <div class="comet-head"></div>
+      <div class="comet-tail"></div>
+    </div>
+    <div class="meteor-impact-flash" id="meteor-impact-flash"></div>
+  </div>
 
   <div id="overlay-container">
     <!-- Rotating Celestial Sunburst for 5-Star / 4-Star Reveals -->
@@ -28,7 +46,7 @@
       <div class="sunburst-core"></div>
     </div>
 
-    <!-- Gacha Wish Reveal Card -->
+    <!-- Gacha Wish Reveal Card (Single / Featured Pull) -->
     <div id="wish-card" class="card wish-card hidden" style="display: none;">
       <div id="wish-card-glow" class="card-glow wish-glow-5"></div>
       
@@ -79,6 +97,23 @@
             🎁 Şanslı Primogem İadesi: <strong id="wish-refund-amount">+60 Primogem</strong>!
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- 10x Wish Multi-Card Overview Showcase Grid -->
+    <div id="wish-multi-grid" class="wish-multi-grid hidden" style="display: none;">
+      <div class="multi-grid-header">
+        <div class="multi-banner-tag">✨ 10'LU DİLEK SONUÇLARI ✨</div>
+        <div class="multi-user-badge">
+          <span class="wish-user-icon">👤</span>
+          <span id="multi-username" class="wish-username">Gezgin</span>
+        </div>
+      </div>
+      <div class="multi-cards-container" id="multi-cards-container">
+        <!-- 10 cards dynamically injected here -->
+      </div>
+      <div class="multi-grid-footer">
+        <span id="multi-summary-text">🌟 10 Çekiliş Tamamlandı!</span>
       </div>
     </div>
 

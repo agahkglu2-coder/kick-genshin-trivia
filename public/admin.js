@@ -63,6 +63,7 @@
 
   // Gacha & Primogem DOM Elements
   const btnGachaRain = document.getElementById('btn-gacha-rain');
+  const btnTestWish10 = document.getElementById('btn-test-wish-10');
   const btnTestWish5 = document.getElementById('btn-test-wish-5');
   const btnTestWish4 = document.getElementById('btn-test-wish-4');
   const btnTestWish3 = document.getElementById('btn-test-wish-3');
@@ -1037,6 +1038,15 @@
       } catch (e) {
         alert('Hata: ' + e.message);
       }
+    });
+  }
+
+  if (btnTestWish10) {
+    btnTestWish10.addEventListener('click', async () => {
+      await fetch('/api/gacha/test-wish-10', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
     });
   }
 

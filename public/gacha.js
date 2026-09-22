@@ -1,4 +1,4 @@
-// Genshin Gacha & Primogem OBS Overlay Client - Dedicated Wish Edition (v3.5)
+// Genshin Gacha & Primogem OBS Overlay Client - Dedicated Wish Edition (v4.0)
 (() => {
   const host = window.location.host || 'localhost:3000';
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -7,6 +7,15 @@
   let soundEnabled = true;
 
   // DOM Elements
+  const overlayContainer = document.getElementById('overlay-container');
+  const wishTickerBar = document.getElementById('wish-ticker-bar');
+  const tickerText = document.getElementById('ticker-text');
+
+  const wishMeteorStage = document.getElementById('wish-meteor-stage');
+  const meteorSkyGlow = document.getElementById('meteor-sky-glow');
+  const meteorComet = document.getElementById('meteor-comet');
+  const meteorImpactFlash = document.getElementById('meteor-impact-flash');
+
   const wishSunburst = document.getElementById('wish-sunburst');
   const wishCard = document.getElementById('wish-card');
   const wishCardGlow = document.getElementById('wish-card-glow');
@@ -31,12 +40,18 @@
   
   const wishRefundBanner = document.getElementById('wish-refund-banner');
   const wishRefundAmount = document.getElementById('wish-refund-amount');
+
+  const wishMultiGrid = document.getElementById('wish-multi-grid');
+  const multiUsername = document.getElementById('multi-username');
+  const multiCardsContainer = document.getElementById('multi-cards-container');
+  const multiSummaryText = document.getElementById('multi-summary-text');
+
   const primoRainBanner = document.getElementById('primo-rain-banner');
   const rainAmountText = document.getElementById('rain-amount-text');
   
   let wishDismissTimer = null;
 
-  // Canvas for Visual FX
+  // Canvas for Particle FX
   const canvas = document.getElementById('effects-canvas');
   const ctx = canvas.getContext('2d');
 
@@ -47,7 +62,16 @@
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
 
-  // Web Audio API Synthesizer for Gacha SFX
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, m => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
+  }
+
+  // ========================================================
+  // WEB AUDIO API SYNTHESIZER FOR GENSHIN SFX
+  // ========================================================
   let audioCtx = null;
   function getAudioContext() {
     if (!audioCtx) {
@@ -79,13 +103,39 @@
 
       osc.start(startTime);
       osc.stop(startTime + duration);
-    } catch (e) {
-      // Audio autoplay policy
-    }
+    } catch (e) {}
   }
 
-  // Sound Effects by Rarity
-  function playWishReveal(rarity) {
+  function playMeteorSound(rarity) {
+    if (!soundEnabled) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+
+      // Descending cosmic whoosh
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(rarity === 5 ? 750 : 500, now);
+      osc.frequency.exponentialRampToValueAtTime(120, now + 1.0);
+
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 1.0);
+
+      // Shimmering chimes as meteor travels
+      for (let i = 0; i < 5; i++) {
+        playTone(600 + i * 180, 'sine', 0.2, now + i * 0.18, 0.08);
+      }
+    } catch (e) {}
+  }
+
+  function playRevealFanfare(rarity) {
     if (!soundEnabled) return;
     try {
       const ctx = getAudioContext();
@@ -93,48 +143,42 @@
       const now = ctx.currentTime;
 
       if (rarity === 5) {
-        // Legendary 5★ Majestic Fanfare Arpeggio
-        playTone(392.00, 'sine', 0.5, now, 0.25);        // G4
-        playTone(493.88, 'sine', 0.5, now + 0.12, 0.25); // B4
-        playTone(587.33, 'triangle', 0.6, now + 0.24, 0.3); // D5
-        playTone(783.99, 'triangle', 0.8, now + 0.38, 0.35); // G5
-        playTone(987.77, 'sine', 1.4, now + 0.52, 0.38); // B5
-        playTone(1174.66, 'sine', 2.0, now + 0.68, 0.4); // D6
+        // Deep Impact + Royal Orchestral Jingle
+        playTone(85, 'sine', 0.8, now, 0.4);
+        playTone(130, 'triangle', 0.6, now, 0.3);
+
+        const notes = [261.63, 392.00, 523.25, 659.25, 783.99, 987.77, 1046.50, 1318.51];
+        notes.forEach((freq, idx) => {
+          playTone(freq, idx > 4 ? 'sine' : 'triangle', 1.8, now + 0.08 * idx, 0.28);
+        });
+
+        // Golden shimmer bells
+        for (let i = 0; i < 8; i++) {
+          playTone(1200 + Math.random() * 800, 'sine', 0.6, now + 0.4 + i * 0.12, 0.12);
+        }
       } else if (rarity === 4) {
-        // 4★ Violet Celestial Chime
-        playTone(440.00, 'sine', 0.4, now, 0.22);        // A4
-        playTone(554.37, 'sine', 0.5, now + 0.14, 0.24); // C#5
-        playTone(659.25, 'triangle', 0.8, now + 0.28, 0.26); // E5
-        playTone(880.00, 'sine', 1.2, now + 0.42, 0.3); // A5
+        // Violet Starlight Chime
+        playTone(110, 'sine', 0.5, now, 0.25);
+        const notes4 = [349.23, 440.00, 523.25, 698.46, 880.00, 1046.50];
+        notes4.forEach((freq, idx) => {
+          playTone(freq, 'sine', 1.2, now + 0.08 * idx, 0.22);
+        });
       } else {
         // 3★ Crystal Drop
-        playTone(523.25, 'sine', 0.3, now, 0.18);
-        playTone(659.25, 'sine', 0.4, now + 0.1, 0.18);
+        playTone(523.25, 'sine', 0.3, now, 0.16);
+        playTone(659.25, 'sine', 0.4, now + 0.1, 0.16);
       }
     } catch (e) {}
   }
 
-  function playMeteorWhoosh() {
+  function playGridCardPop(idx, rarity) {
     if (!soundEnabled) return;
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
       const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(600, now);
-      osc.frequency.exponentialRampToValueAtTime(150, now + 0.8);
-
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(now);
-      osc.stop(now + 0.8);
+      const baseFreq = rarity === 5 ? 880 : rarity === 4 ? 660 : 440;
+      playTone(baseFreq + idx * 35, 'sine', 0.25, now, 0.15);
     } catch (e) {}
   }
 
@@ -152,12 +196,33 @@
     } catch (e) {}
   }
 
+  // ========================================================
+  // CELEBRATION & SCREEN SHAKE
+  // ========================================================
+  function triggerScreenShake() {
+    if (overlayContainer) {
+      overlayContainer.classList.remove('screen-shake');
+      void overlayContainer.offsetWidth;
+      overlayContainer.classList.add('screen-shake');
+      setTimeout(() => {
+        overlayContainer.classList.remove('screen-shake');
+      }, 850);
+    }
+  }
+
+  function updateTicker(username, characterName, rarity) {
+    if (!wishTickerBar || !tickerText) return;
+    const starStr = '★'.repeat(rarity || 5);
+    tickerText.innerHTML = `<span style="color:#ffd700;">🌟 @${escapeHtml(username)}</span> az önce <strong style="color:${rarity === 5 ? '#ffd700' : '#c084fc'};">${rarity}★ ${escapeHtml(characterName)}</strong> çıkardı!`;
+    wishTickerBar.classList.remove('hidden');
+    wishTickerBar.style.display = 'flex';
+  }
+
   // Particle System
   const particles = [];
   let meteor = null;
 
   function launchMeteor(rarity, onImpact) {
-    playMeteorWhoosh();
     meteor = {
       x: canvas.width * 0.2,
       y: -50,
@@ -173,18 +238,18 @@
   function createConfettiBurst(x, y, count, colors) {
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 8 + 3;
+      const speed = Math.random() * 9 + 3;
       particles.push({
         x: x,
         y: y,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed - 2,
-        size: Math.random() * 7 + 4,
+        size: Math.random() * 8 + 4,
         color: colors[Math.floor(Math.random() * colors.length)],
         rotation: Math.random() * 360,
-        rotationSpeed: (Math.random() - 0.5) * 12,
+        rotationSpeed: (Math.random() - 0.5) * 14,
         alpha: 1,
-        decay: Math.random() * 0.015 + 0.01,
+        decay: Math.random() * 0.015 + 0.009,
         shape: Math.random() > 0.4 ? 'circle' : 'rect'
       });
     }
@@ -193,7 +258,7 @@
   function renderParticles() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 1. Render Meteor
+    // 1. Render Canvas Meteor
     if (meteor) {
       const dx = meteor.targetX - meteor.x;
       const dy = meteor.targetY - meteor.y;
@@ -202,12 +267,11 @@
       meteor.trail.push({ x: meteor.x, y: meteor.y, alpha: 1 });
       if (meteor.trail.length > 20) meteor.trail.shift();
 
-      // Render Trail
       for (let i = 0; i < meteor.trail.length; i++) {
         const t = meteor.trail[i];
         t.alpha -= 0.05;
         ctx.beginPath();
-        ctx.arc(t.x, t.y, (i / meteor.trail.length) * (meteor.rarity === 5 ? 14 : 9), 0, Math.PI * 2);
+        ctx.arc(t.x, t.y, (i / meteor.trail.length) * (meteor.rarity === 5 ? 15 : 10), 0, Math.PI * 2);
         ctx.fillStyle = meteor.rarity === 5 
           ? `rgba(255, 215, 0, ${Math.max(0, t.alpha)})`
           : meteor.rarity === 4 
@@ -216,7 +280,6 @@
         ctx.fill();
       }
 
-      // Render Head
       ctx.beginPath();
       ctx.arc(meteor.x, meteor.y, meteor.rarity === 5 ? 18 : 12, 0, Math.PI * 2);
       ctx.fillStyle = '#ffffff';
@@ -226,7 +289,6 @@
       ctx.shadowBlur = 0;
 
       if (dist < meteor.speed) {
-        // Impact!
         const impactRarity = meteor.rarity;
         const ix = meteor.targetX;
         const iy = meteor.targetY;
@@ -234,13 +296,12 @@
         meteor = null;
 
         const burstColors = impactRarity === 5 
-          ? ['#ffd700', '#f59e0b', '#ffffff', '#fef08a', '#fbbf24']
+          ? ['#ffd700', '#f59e0b', '#ffffff', '#fef08a', '#fbbf24', '#eab308']
           : impactRarity === 4
           ? ['#c084fc', '#e9d5ff', '#ffffff', '#a855f7', '#d8b4fe']
           : ['#38bdf8', '#bae6fd', '#ffffff', '#0284c7'];
 
-        createConfettiBurst(ix, iy, impactRarity === 5 ? 150 : 85, burstColors);
-        playWishReveal(impactRarity);
+        createConfettiBurst(ix, iy, impactRarity === 5 ? 180 : 90, burstColors);
         if (cb) cb();
       } else {
         meteor.x += (dx / dist) * meteor.speed;
@@ -293,7 +354,6 @@
     Weapon: { icon: '⚔️', crest: '⚔️', color: '#94a3b8', glow: 'rgba(148, 163, 184, 0.4)' }
   };
 
-  // Fallback SVG Generator for Character / Weapon
   function getElementFallbackAvatar(name, element, rarity) {
     const meta = elementData[element] || elementData.Weapon;
     const color = meta.color;
@@ -314,42 +374,28 @@
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   }
 
-  // Multi-tier Resilient Image Loader
   function loadArtwork(pull, onLoaded) {
     const candidates = [];
-
-    // 1. Direct Enka Splash Art (full wish illustration)
     if (pull.splashArt) {
       candidates.push(pull.splashArt);
-      // 2. Server local cached proxy
       candidates.push(`/api/asset-proxy?url=${encodeURIComponent(pull.splashArt)}`);
     }
-
-    // 3. Genshin.dev Splash Art
     if (pull.splashArtDev) {
       candidates.push(pull.splashArtDev);
       candidates.push(`/api/asset-proxy?url=${encodeURIComponent(pull.splashArtDev)}`);
     }
-
-    // 4. Portrait cutout
     if (pull.portrait) {
       candidates.push(pull.portrait);
       candidates.push(`/api/asset-proxy?url=${encodeURIComponent(pull.portrait)}`);
     }
-
-    // 5. Remote Avatar Icon (Enka)
     if (pull.remoteIcon) {
       candidates.push(pull.remoteIcon);
       candidates.push(`/api/asset-proxy?url=${encodeURIComponent(pull.remoteIcon)}`);
     }
-
-    // 6. Genshin.dev Icon
     if (pull.remoteIconDev) {
       candidates.push(pull.remoteIconDev);
       candidates.push(`/api/asset-proxy?url=${encodeURIComponent(pull.remoteIconDev)}`);
     }
-
-    // 7. Local assets folder
     if (pull.icon) {
       candidates.push(pull.icon);
     }
@@ -378,7 +424,6 @@
     tryNext();
   }
 
-  // Wish Card Show / Hide
   function hideWishCard() {
     if (wishCard) {
       wishCard.classList.add('hidden');
@@ -397,6 +442,57 @@
       clearTimeout(wishDismissTimer);
       wishDismissTimer = null;
     }
+  }
+
+  // ========================================================
+  // METEOR STAGE TRIGGER
+  // ========================================================
+  function triggerMeteorStage(rarity, onImpact) {
+    if (!wishMeteorStage) {
+      playRevealFanfare(rarity);
+      if (onImpact) onImpact();
+      return;
+    }
+
+    playMeteorSound(rarity);
+    launchMeteor(rarity, null);
+
+    wishMeteorStage.classList.remove('hidden');
+    wishMeteorStage.style.display = 'block';
+
+    if (meteorSkyGlow) {
+      meteorSkyGlow.className = `meteor-sky-glow glow-${rarity}`;
+    }
+
+    if (meteorComet) {
+      const cometHead = meteorComet.querySelector('.comet-head');
+      const cometTail = meteorComet.querySelector('.comet-tail');
+      if (cometHead) cometHead.className = `comet-head ${rarity === 4 ? 'head-4' : rarity === 3 ? 'head-3' : ''}`;
+      if (cometTail) cometTail.className = `comet-tail ${rarity === 4 ? 'tail-4' : rarity === 3 ? 'tail-3' : ''}`;
+
+      meteorComet.classList.remove('comet-streak');
+      void meteorComet.offsetWidth;
+      meteorComet.classList.add('comet-streak');
+    }
+
+    setTimeout(() => {
+      if (meteorImpactFlash) {
+        meteorImpactFlash.classList.add('flash-active');
+      }
+
+      if (rarity === 5) {
+        triggerScreenShake();
+      }
+
+      playRevealFanfare(rarity);
+
+      setTimeout(() => {
+        wishMeteorStage.classList.add('hidden');
+        wishMeteorStage.style.display = 'none';
+        if (meteorImpactFlash) meteorImpactFlash.classList.remove('flash-active');
+        if (onImpact) onImpact();
+      }, 350);
+    }, 900);
   }
 
   // Primogem Rain Effect
@@ -442,21 +538,39 @@
     }, 6000);
   }
 
-  // Gacha Wish Queue & Display
+  // ========================================================
+  // SMART PRIORITY QUEUE
+  // ========================================================
   let wishQueue = [];
   let isProcessingWish = false;
 
   function queueWish(wishData) {
-    if (wishData.pulls && Array.isArray(wishData.pulls)) {
-      wishData.pulls.forEach(pull => {
-        wishQueue.push({
-          username: wishData.username,
-          pull: pull,
-          stats: wishData.stats
-        });
-      });
+    const is10Pull = wishData.is10Pull || (Array.isArray(wishData.pulls) && wishData.pulls.length >= 10);
+    const highestRarity = wishData.highestRarity || (Array.isArray(wishData.pulls) ? Math.max(...wishData.pulls.map(p => p.rarity || 3)) : 3);
+    const featuredPull = wishData.featuredPull || (Array.isArray(wishData.pulls) 
+      ? (wishData.pulls.find(p => p.rarity === 5) || wishData.pulls.find(p => p.rarity === 4) || wishData.pulls[0])
+      : null);
+
+    const queueItem = {
+      username: wishData.username || 'Gezgin',
+      pulls: wishData.pulls || [],
+      is10Pull: is10Pull,
+      highestRarity: highestRarity,
+      featuredPull: featuredPull,
+      stats: wishData.stats
+    };
+
+    if (Array.isArray(wishData.pulls)) {
+      const top5 = wishData.pulls.find(p => p.rarity === 5);
+      if (top5) {
+        updateTicker(wishData.username, top5.name, 5);
+      }
+    }
+
+    if (highestRarity === 5) {
+      wishQueue.unshift(queueItem);
     } else {
-      wishQueue.push(wishData);
+      wishQueue.push(queueItem);
     }
 
     if (!isProcessingWish) {
@@ -471,33 +585,45 @@
     }
 
     isProcessingWish = true;
-    const current = wishQueue.shift();
-    const pull = current.pull || current;
-    const username = current.username || 'Gezgin';
-    const rarity = pull.rarity || 3;
+    const item = wishQueue.shift();
+    const highestRarity = item.highestRarity || 3;
 
-    // Launch shooting star / meteor first
-    launchMeteor(rarity, () => {
-      // Impact! Reveal Wish Card
-      showWishCard(username, pull, current.stats, () => {
-        processNextWish();
-      });
+    // Phase 1: Launch Celestial Meteor
+    triggerMeteorStage(highestRarity, () => {
+      if (item.is10Pull && item.pulls.length >= 10) {
+        // Tam Genshin Akışı: Önce öne çıkan karakterin büyük vitrini, ardından 10'lu ızgara!
+        showWishCard(item.username, item.featuredPull, item.stats, () => {
+          showMultiGrid(item.username, item.pulls, () => {
+            processNextWish();
+          });
+        }, true); // isPart10 = true (shorter single card duration)
+      } else {
+        // Tekli dilek
+        showWishCard(item.username, item.featuredPull || item.pulls[0], item.stats, () => {
+          processNextWish();
+        }, false);
+      }
     });
   }
 
-  function showWishCard(username, pull, stats, onComplete) {
+  // ========================================================
+  // SINGLE / FEATURED WISH CARD SHOWCASE
+  // ========================================================
+  function showWishCard(username, pull, stats, onComplete, isPart10 = false) {
     hideWishCard();
+    if (!pull) {
+      if (onComplete) onComplete();
+      return;
+    }
 
     const rarity = pull.rarity || 3;
     const element = pull.element || (pull.type === 'weapon' ? 'Weapon' : 'Geo');
     const name = pull.name || 'Genshin Item';
     const elemMeta = elementData[element] || elementData.Weapon;
 
-    // 1. Rarity Classes
     wishCard.className = `card wish-card rarity-${rarity}`;
     wishCardGlow.className = `card-glow wish-glow-${rarity}`;
 
-    // 2. Celestial Sunburst for 5★ and 4★
     if (wishSunburst) {
       if (rarity >= 4) {
         wishSunburst.className = `wish-sunburst rarity-${rarity}`;
@@ -509,7 +635,6 @@
       }
     }
 
-    // 3. User & Banner Tag
     wishUsername.textContent = username;
     if (rarity === 5) {
       wishBannerTag.textContent = '✨ 5★ EFSANEVİ DİLEK ✨';
@@ -525,7 +650,6 @@
       wishSpeech.textContent = 'Bir dahakine kesin 5★ gelir! ✨';
     }
 
-    // 4. Element Crest & Backglow
     if (wishStageBackglow) {
       wishStageBackglow.style.background = `radial-gradient(circle, ${elemMeta.glow} 0%, transparent 70%)`;
     }
@@ -533,14 +657,12 @@
       wishElementCrest.textContent = elemMeta.crest;
     }
 
-    // 5. Element Pill
     if (wishElementPill) {
       wishElementPill.className = `wish-element-pill elem-${element}`;
       if (wishElementIcon) wishElementIcon.textContent = elemMeta.icon;
       if (wishElementText) wishElementText.textContent = element.toUpperCase();
     }
 
-    // 6. Name, Title, Region & Subtitle
     wishItemName.textContent = name;
     if (wishItemTitle) {
       if (pull.title) {
@@ -555,11 +677,9 @@
     const region = pull.region ? ` • ${pull.region}` : '';
     wishItemSub.textContent = `${weaponType}${region}`;
 
-    // 7. Stars
     wishStars.textContent = '★'.repeat(rarity);
     wishStars.className = `wish-stars stars-${rarity}`;
 
-    // 8. Pity Information
     if (rarity === 5 && pull.pity5AtPull >= 40) {
       wishItemPity.textContent = '🌟 40/40 Pity Garantili 5★ Patlaması!';
       wishItemPity.style.display = 'inline-block';
@@ -570,7 +690,6 @@
       wishItemPity.style.display = 'none';
     }
 
-    // 9. Lucky Refund
     if (pull.isRefund && pull.refundAmount > 0) {
       wishRefundAmount.textContent = `+${pull.refundAmount} Primogem`;
       wishRefundBanner.style.display = 'block';
@@ -580,22 +699,23 @@
       wishRefundBanner.style.display = 'none';
     }
 
-    // 10. Load Character Splash Art / Weapon Icon
     loadArtwork(pull, () => {
-      // Reveal Card
       wishCard.style.display = 'block';
       wishCard.classList.remove('hidden');
       wishCard.classList.remove('slide-out');
     });
 
-    // Display Duration
-    let displayDuration = 5000;
-    if (rarity === 5) {
-      displayDuration = wishQueue.length > 2 ? 5000 : 7000;
-    } else if (rarity === 4) {
-      displayDuration = wishQueue.length > 2 ? 3500 : 5000;
+    let displayDuration = 4500;
+    if (isPart10) {
+      displayDuration = rarity === 5 ? 4200 : 3200;
     } else {
-      displayDuration = wishQueue.length > 2 ? 2200 : 3200;
+      if (rarity === 5) {
+        displayDuration = wishQueue.length > 2 ? 4500 : 6500;
+      } else if (rarity === 4) {
+        displayDuration = wishQueue.length > 2 ? 3200 : 4500;
+      } else {
+        displayDuration = wishQueue.length > 2 ? 2000 : 3000;
+      }
     }
 
     wishDismissTimer = setTimeout(() => {
@@ -607,8 +727,79 @@
       setTimeout(() => {
         hideWishCard();
         if (onComplete) onComplete();
-      }, 600);
+      }, 500);
     }, displayDuration);
+  }
+
+  // ========================================================
+  // 10-CARD MULTI-GRID SHOWCASE
+  // ========================================================
+  function showMultiGrid(username, pulls, onComplete) {
+    hideWishCard();
+    if (!wishMultiGrid || !multiCardsContainer) {
+      if (onComplete) onComplete();
+      return;
+    }
+
+    multiUsername.textContent = username;
+    multiCardsContainer.innerHTML = '';
+
+    const sortedPulls = [...pulls].sort((a, b) => (b.rarity || 3) - (a.rarity || 3));
+    const fiveStarsCount = sortedPulls.filter(p => p.rarity === 5).length;
+    const fourStarsCount = sortedPulls.filter(p => p.rarity === 4).length;
+
+    let summary = '🌟 10 Çekiliş Tamamlandı!';
+    if (fiveStarsCount > 0) {
+      summary = `🎉 İNANILMAZ ŞANS! ${fiveStarsCount}x 5★ Karakter Kazandın!`;
+      triggerScreenShake();
+    } else if (fourStarsCount > 0) {
+      summary = `⭐ Tebrikler! ${fourStarsCount}x 4★ Öğe Kazandın!`;
+    }
+    if (multiSummaryText) multiSummaryText.textContent = summary;
+
+    sortedPulls.slice(0, 10).forEach((pull, idx) => {
+      const card = document.createElement('div');
+      card.className = `multi-item-card card-rarity-${pull.rarity || 3}`;
+      card.style.animationDelay = `${idx * 0.08}s`;
+
+      const artWrap = document.createElement('div');
+      artWrap.className = 'multi-card-art-wrap';
+
+      const img = document.createElement('img');
+      img.className = 'multi-card-art';
+      img.alt = pull.name;
+      img.src = pull.icon || pull.remoteIcon || pull.splashArt || getElementFallbackAvatar(pull.name, pull.element, pull.rarity);
+
+      artWrap.appendChild(img);
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'multi-card-name';
+      nameEl.textContent = pull.name;
+
+      const starsEl = document.createElement('div');
+      starsEl.className = `multi-card-stars stars-${pull.rarity || 3}`;
+      starsEl.textContent = '★'.repeat(pull.rarity || 3);
+
+      card.appendChild(artWrap);
+      card.appendChild(nameEl);
+      card.appendChild(starsEl);
+
+      multiCardsContainer.appendChild(card);
+
+      setTimeout(() => {
+        playGridCardPop(idx, pull.rarity || 3);
+      }, idx * 75);
+    });
+
+    wishMultiGrid.style.display = 'flex';
+    wishMultiGrid.classList.remove('hidden');
+
+    const duration = wishQueue.length > 1 ? 4000 : 6500;
+    setTimeout(() => {
+      wishMultiGrid.classList.add('hidden');
+      wishMultiGrid.style.display = 'none';
+      if (onComplete) onComplete();
+    }, duration);
   }
 
   // WebSocket Connection
@@ -660,8 +851,11 @@
     }
   }
 
-  // Initial State: Guarantee all banners and cards start hidden
   hideWishCard();
+  if (wishMultiGrid) {
+    wishMultiGrid.classList.add('hidden');
+    wishMultiGrid.style.display = 'none';
+  }
   if (primoRainBanner) {
     primoRainBanner.classList.add('hidden');
     primoRainBanner.style.display = 'none';

@@ -436,6 +436,11 @@ app.post('/api/gacha/test-wish', (req, res) => {
   res.json({ success: true, wish: result });
 });
 
+app.post('/api/gacha/test-wish-10', (req, res) => {
+  const result = gachaEngine.triggerTestWish10();
+  res.json({ success: true, wish: result });
+});
+
 const crypto = require('crypto');
 
 function base64URLEncode(buf) {

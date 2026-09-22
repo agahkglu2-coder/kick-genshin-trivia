@@ -29,6 +29,7 @@ class GachaEngine extends EventEmitter {
     this.users = {};
     this.characters = [];
     this.weapons = [];
+    this.recentFiveStars = [];
 
     this.loadData();
     this.startPassiveInterval();
@@ -188,9 +189,29 @@ class GachaEngine extends EventEmitter {
 
     this.saveUsers();
 
+    const highestRarity = Math.max(...pulls.map(p => p.rarity || 3));
+    const featuredPull = pulls.find(p => p.rarity === 5) || pulls.find(p => p.rarity === 4) || pulls[0];
+
+    // Track 5★ for live ticker
+    pulls.filter(p => p.rarity === 5).forEach(p => {
+      this.recentFiveStars.unshift({
+        username: user.username,
+        characterName: p.name,
+        rarity: 5,
+        element: p.element,
+        timestamp: Date.now()
+      });
+    });
+    if (this.recentFiveStars.length > 15) {
+      this.recentFiveStars = this.recentFiveStars.slice(0, 15);
+    }
+
     const resultPayload = {
       username: user.username,
       pulls,
+      is10Pull: count === 10,
+      highestRarity,
+      featuredPull,
       stats: {
         primogems: user.primogems,
         pity5: user.pity5,
@@ -482,6 +503,65 @@ class GachaEngine extends EventEmitter {
 
     this.emit('wish_result', payload);
     return payload;
+  }
+
+  triggerTestWish10() {
+    const mockUser = {
+      username: "GenshinGezgini",
+      pity5: 40,
+      pity4: 8,
+      totalWishes: 90,
+      primogems: 4800
+    };
+
+    const char5 = this.characters.find(c => c.name === "Raiden Shogun") || this.characters[0];
+    const char4 = this.characters.find(c => c.name === "Bennett") || this.characters[1];
+    const weaponPool = this.weapons.length > 0 ? this.weapons : [{ name: "Debate Club", rarity: 3, weaponType: "Claymore" }];
+
+    const pulls = [];
+    pulls.push(this.formatPullItem(char5, 5, 'character', 40));
+    pulls.push(this.formatPullItem(char4, 4, 'character', 8));
+    for (let i = 0; i < 8; i++) {
+      const w = weaponPool[i % weaponPool.length];
+      pulls.push(this.formatPullItem(w, 3, 'weapon', 0));
+    }
+
+    pulls.sort(() => Math.random() - 0.5);
+
+    const payload = {
+      username: mockUser.username,
+      pulls,
+      is10Pull: true,
+      highestRarity: 5,
+      featuredPull: pulls.find(p => p.rarity === 5),
+      stats: mockUser
+    };
+
+    this.emit('wish_result', payload);
+    return payload;
+  }
+
+  formatPullItem(item, rarity, type, pity5AtPull = 0) {
+    return {
+      name: item.name,
+      rarity: rarity,
+      type: type,
+      element: item.element || null,
+      weaponType: item.weaponType || item.type || 'Sword',
+      region: item.region || 'Teyvat',
+      title: item.title || 'Kahraman',
+      icon: item.icon || null,
+      remoteIcon: item.remoteIcon || null,
+      remoteIconDev: item.remoteIconDev || null,
+      splashArt: item.splashArt || null,
+      splashArtDev: item.splashArtDev || null,
+      portrait: item.portrait || null,
+      internalName: item.internalName || null,
+      slug: item.slug || null,
+      pity5AtPull,
+      isRefund: false,
+      refundAmount: 0
+    };
   }
 
   getAllUsersList() {
