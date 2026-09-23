@@ -19,7 +19,8 @@ function loadConfig() {
   } catch (e) {
     console.warn('[Server] config.json okunamadı, varsayılanlar kullanılıyor.');
     return {
-      channel: 'zerkacy',
+      channel: 'milka_e',
+      botTargetChannel: 'milka_e',
       intervalMinutes: 10,
       questionDurationSeconds: 45,
       winnerDisplaySeconds: 12,
@@ -125,15 +126,16 @@ const kickBot = new KickBotService({
 });
 
 // Pre-fill KickBot channel & broadcaster ID if known
+let knownChannels = {};
 try {
   const KNOWN_CHANNELS_PATH = path.join(__dirname, '..', 'data', 'known_channels.json');
   if (fs.existsSync(KNOWN_CHANNELS_PATH)) {
-    const kc = JSON.parse(fs.readFileSync(KNOWN_CHANNELS_PATH, 'utf-8'));
-    const curChan = (config.channel || 'zerkacy').toLowerCase();
-    if (kc[curChan]) {
-      if (kc[curChan].chatroomId) kickBot.setChatroomId(kc[curChan].chatroomId);
-      if (kc[curChan].broadcasterUserId) kickBot.setBroadcasterUserId(kc[curChan].broadcasterUserId);
-      console.log(`[KickBot] Başlangıç kanalı '${curChan}' kimlikleri yüklendi: Chatroom #${kc[curChan].chatroomId}, User #${kc[curChan].broadcasterUserId}`);
+    knownChannels = JSON.parse(fs.readFileSync(KNOWN_CHANNELS_PATH, 'utf-8'));
+    const curChan = (config.channel || 'milka_e').toLowerCase();
+    if (knownChannels[curChan]) {
+      if (knownChannels[curChan].chatroomId) kickBot.setChatroomId(knownChannels[curChan].chatroomId);
+      if (knownChannels[curChan].broadcasterUserId) kickBot.setBroadcasterUserId(knownChannels[curChan].broadcasterUserId);
+      console.log(`[KickBot] Başlangıç kanalı '${curChan}' kimlikleri yüklendi: Chatroom #${knownChannels[curChan].chatroomId}, User #${knownChannels[curChan].broadcasterUserId}`);
     }
   }
 } catch (e) {
@@ -147,21 +149,49 @@ const gachaEngine = new GachaEngine();
 db.init(process.env.DATABASE_URL || config.databaseUrl).then(async () => {
   const savedToken = db.getSetting('botToken');
   const savedBotUser = db.getSetting('botUsername');
+  const savedBotEnabled = db.getSetting('botEnabled');
   const savedClientId = db.getSetting('botClientId');
   const savedClientSecret = db.getSetting('botClientSecret');
+  const savedRedirectUri = db.getSetting('botRedirectUri');
   const savedTargetChan = db.getSetting('botTargetChannel');
+  const savedChan = db.getSetting('channel');
 
-  if (savedToken && !config.botToken) {
+  if (savedToken) {
     config.botToken = savedToken;
     kickBot.setToken(savedToken);
   }
-  if (savedBotUser && !config.botUsername) {
+  if (savedBotUser) {
     config.botUsername = savedBotUser;
     kickBot.setUsername(savedBotUser);
   }
-  if (savedClientId && !config.botClientId) config.botClientId = savedClientId;
-  if (savedClientSecret && !config.botClientSecret) config.botClientSecret = savedClientSecret;
-  if (savedTargetChan && !config.botTargetChannel) config.botTargetChannel = savedTargetChan;
+  if (savedBotEnabled !== undefined && savedBotEnabled !== null) {
+    config.botEnabled = Boolean(savedBotEnabled);
+    kickBot.setEnabled(Boolean(savedBotEnabled));
+  }
+  if (savedClientId) config.botClientId = savedClientId;
+  if (savedClientSecret) config.botClientSecret = savedClientSecret;
+  if (savedRedirectUri) config.botRedirectUri = savedRedirectUri;
+
+  if (savedTargetChan) {
+    config.botTargetChannel = savedTargetChan;
+  } else if (!config.botTargetChannel) {
+    config.botTargetChannel = 'milka_e';
+  }
+
+  if (savedChan) {
+    config.channel = savedChan;
+    gameEngine.updateConfig({ channel: savedChan });
+  } else if (!config.channel) {
+    config.channel = 'milka_e';
+    gameEngine.updateConfig({ channel: 'milka_e' });
+  }
+
+  const activeChan = (config.botTargetChannel || config.channel || 'milka_e').toLowerCase();
+  if (knownChannels[activeChan]) {
+    if (knownChannels[activeChan].chatroomId) kickBot.setChatroomId(knownChannels[activeChan].chatroomId);
+    if (knownChannels[activeChan].broadcasterUserId) kickBot.setBroadcasterUserId(knownChannels[activeChan].broadcasterUserId);
+    console.log(`[KickBot] Kalıcı kanal '${activeChan}' kimlikleri bağlandı: Chatroom #${knownChannels[activeChan].chatroomId}, User #${knownChannels[activeChan].broadcasterUserId}`);
+  }
 
   if (gachaEngine) {
     gachaEngine.loadData();
@@ -348,7 +378,7 @@ app.get('/api/config', (req, res) => {
 });
 
 // Dedicated Connect Channel Endpoint
-app.post('/api/connect-channel', (req, res) => {
+app.post('/api/connect-channel', async (req, res) => {
   const { channel, chatroomId } = req.body || {};
   if ((!channel || !channel.trim()) && !chatroomId) {
     return res.status(400).json({ error: 'Lütfen bir kanal adı veya bağlantısı girin.' });
@@ -361,19 +391,24 @@ app.post('/api/connect-channel', (req, res) => {
     gameEngine.updateConfig({ channel: cleaned });
     config.channel = cleaned;
     saveConfig(config);
+    await db.setSetting('channel', cleaned);
   }
 
   kickClient.connect(cleaned, chatroomId);
   res.json({ success: true, channel: cleaned || `chatroom_${chatroomId}`, chatroomId });
 });
 
-app.post('/api/config', (req, res) => {
+app.post('/api/config', async (req, res) => {
   const newConfig = req.body;
   if (!newConfig) return res.status(400).json({ error: 'Geçersiz veri.' });
 
   const oldChannel = gameEngine.config.channel;
   if (newConfig.channel) {
     newConfig.channel = cleanChannelSlug(newConfig.channel);
+    await db.setSetting('channel', newConfig.channel);
+  }
+  if (newConfig.botTargetChannel) {
+    await db.setSetting('botTargetChannel', newConfig.botTargetChannel);
   }
 
   gameEngine.updateConfig(newConfig);
@@ -491,7 +526,7 @@ app.post('/api/bot/config', async (req, res) => {
   if (targetChannel !== undefined) {
     config.botTargetChannel = targetChannel.trim();
     await db.setSetting('botTargetChannel', config.botTargetChannel);
-    const activeTarget = config.botTargetChannel || config.channel || 'zerkacy';
+    const activeTarget = config.botTargetChannel || config.channel || 'milka_e';
     try {
       const info = await kickClient.getChatroomId(activeTarget);
       if (info) {
@@ -528,8 +563,9 @@ app.post('/api/bot/target-channel', async (req, res) => {
 
   config.botTargetChannel = target;
   saveConfig(config);
+  await db.setSetting('botTargetChannel', target);
 
-  const activeChannel = target || config.channel || 'zerkacy';
+  const activeChannel = target || config.channel || 'milka_e';
   try {
     const info = await kickClient.getChatroomId(activeChannel);
     if (info) {

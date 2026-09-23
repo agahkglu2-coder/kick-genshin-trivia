@@ -5,7 +5,7 @@
   "leaderboardCooldownSeconds": 60,
   "gameMode": "first_correct",
   "soundEnabled": true,
-  "channel": "Milka_e",
-  "botTargetChannel": "Milka_e",
+  "channel": "milka_e",
+  "botTargetChannel": "milka_e",
   "port": 3000
 }
