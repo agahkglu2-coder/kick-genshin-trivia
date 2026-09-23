@@ -770,10 +770,25 @@ app.get('/api/db/status', (req, res) => {
 app.post('/api/db/config', async (req, res) => {
   const { databaseUrl } = req.body || {};
   if (databaseUrl !== undefined) {
-    config.databaseUrl = databaseUrl.trim();
-    saveConfig(config);
+    const trimmed = (databaseUrl || '').trim();
+    if (!trimmed) {
+      config.databaseUrl = '';
+      saveConfig(config);
+      await db.init(null);
+      return res.json({ success: true, status: db.getStatus() });
+    }
+
     try {
-      await db.init(config.databaseUrl);
+      await db.init(trimmed);
+      if (db.type !== 'postgres') {
+        return res.status(400).json({
+          success: false,
+          error: db.lastError || 'Veritabanına bağlanılamadı. Lütfen şifrenizi veya bağlantı adresinizi kontrol edin.',
+          status: db.getStatus()
+        });
+      }
+      config.databaseUrl = trimmed;
+      saveConfig(config);
       if (gachaEngine) {
         gachaEngine.loadData();
       }

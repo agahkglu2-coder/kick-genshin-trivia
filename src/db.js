@@ -13,6 +13,7 @@ class DatabaseManager {
     this.inMemoryUsers = new Map();
     this.inMemorySettings = new Map();
     this.isInitialized = false;
+    this.lastError = null;
   }
 
   async init(databaseUrl = null) {
@@ -57,6 +58,7 @@ class DatabaseManager {
           `);
 
           this.type = 'postgres';
+          this.lastError = null;
           console.log('[DB] ✅ PostgreSQL veritabanı başarıyla bağlandı ve tablolar hazırlandı!');
         } finally {
           client.release();
@@ -65,9 +67,11 @@ class DatabaseManager {
         console.warn(`[DB] PostgreSQL bağlantı hatası (${err.message}). Yerel dosya moduna geçiliyor.`);
         this.type = 'file';
         this.pool = null;
+        this.lastError = err.message;
       }
     } else {
       this.type = 'file';
+      this.lastError = null;
       console.log('[DB] Yerel dosya depolama modu (JSON) devrede.');
     }
 
@@ -283,9 +287,10 @@ class DatabaseManager {
   getStatus() {
     return {
       type: this.type,
-      connected: this.type === 'postgres' ? Boolean(this.pool) : true,
+      connected: this.type === 'postgres' && Boolean(this.pool),
       usersCount: this.inMemoryUsers.size,
-      settingsCount: this.inMemorySettings.size
+      settingsCount: this.inMemorySettings.size,
+      lastError: this.lastError || null
     };
   }
 }

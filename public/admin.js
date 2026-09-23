@@ -1129,15 +1129,28 @@
     if (!dbStatusBadge) return;
     const st = data?.status || {};
     if (st.type === 'postgres' && st.connected) {
-      dbStatusBadge.textContent = '🟢 PostgreSQL Bağlı';
+      dbStatusBadge.textContent = '🟢 PostgreSQL Bağlı (Kalıcı Mod)';
       dbStatusBadge.style.background = 'rgba(16, 185, 129, 0.2)';
       dbStatusBadge.style.color = '#10b981';
       dbStatusBadge.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+      if (dbFeedback && !dbFeedback.textContent.includes('🔄')) {
+        dbFeedback.style.color = '#10b981';
+        dbFeedback.textContent = '✅ Kalıcı bulut veritabanı aktif. Tüm izleyici bakiyeleri ve ayarlar kaydediliyor.';
+      }
     } else {
       dbStatusBadge.textContent = '🟡 Yerel Dosya Modu';
       dbStatusBadge.style.background = 'rgba(245, 158, 11, 0.2)';
       dbStatusBadge.style.color = '#f59e0b';
       dbStatusBadge.style.border = '1px solid rgba(245, 158, 11, 0.4)';
+      if (dbFeedback && !dbFeedback.textContent.includes('🔄')) {
+        if (st.lastError) {
+          dbFeedback.style.color = '#ef4444';
+          dbFeedback.textContent = '❌ Bağlantı hatası: ' + st.lastError;
+        } else if (data && !data.databaseUrlSet) {
+          dbFeedback.style.color = '#94a3b8';
+          dbFeedback.textContent = 'ℹ️ Henüz bir PostgreSQL URL tanımlanmadı. Render Environment veya aşağıdaki kutudan bağlanabilirsiniz.';
+        }
+      }
     }
   }
 
