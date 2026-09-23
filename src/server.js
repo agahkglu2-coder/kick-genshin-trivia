@@ -159,15 +159,25 @@ db.init(process.env.DATABASE_URL || config.databaseUrl).then(async () => {
   if (savedToken) {
     config.botToken = savedToken;
     kickBot.setToken(savedToken);
+  } else if (config.botToken) {
+    kickBot.setToken(config.botToken);
+    await db.setSetting('botToken', config.botToken);
   }
+
   if (savedBotUser) {
     config.botUsername = savedBotUser;
     kickBot.setUsername(savedBotUser);
+  } else if (config.botUsername) {
+    kickBot.setUsername(config.botUsername);
   }
+
   if (savedBotEnabled !== undefined && savedBotEnabled !== null) {
     config.botEnabled = Boolean(savedBotEnabled);
     kickBot.setEnabled(Boolean(savedBotEnabled));
+  } else if (config.botEnabled !== undefined) {
+    kickBot.setEnabled(Boolean(config.botEnabled));
   }
+
   if (savedClientId) config.botClientId = savedClientId;
   if (savedClientSecret) config.botClientSecret = savedClientSecret;
   if (savedRedirectUri) config.botRedirectUri = savedRedirectUri;
@@ -228,7 +238,7 @@ kickClient.on('status', (status) => {
   broadcast({ type: 'KICK_STATUS', status: kickStatus });
 });
 
-kickClient.on('message', (chatMsg) => {
+kickClient.on('message', async (chatMsg) => {
   // Feed to GameEngine for answer checking
   gameEngine.handleChatMessage(chatMsg);
 
@@ -245,7 +255,73 @@ kickClient.on('message', (chatMsg) => {
       createdAt: chatMsg.createdAt
     }
   });
+
+  // Handle Broadcaster/Moderator Bot Commands (!başlık & !oyun)
+  try {
+    const content = (chatMsg.content || '').trim();
+    const senderUser = chatMsg.sender?.username || '';
+    const badges = chatMsg.sender?.badges || [];
+
+    const isBroadcaster = (
+      badges.some(b => b.type === 'broadcaster') ||
+      senderUser.toLowerCase() === (config.channel || 'milka_e').toLowerCase() ||
+      senderUser.toLowerCase() === (config.botTargetChannel || '').toLowerCase()
+    );
+    const isModerator = badges.some(b => b.type === 'moderator' || b.type === 'admin' || b.type === 'staff');
+    const isAuthorized = isBroadcaster || isModerator;
+
+    // 1. !başlık [yeni başlık] / !baslik / !title
+    const titleMatch = content.match(/^!(?:başlık|baslik|title)(?:\s+(.+))?$/i);
+    if (titleMatch) {
+      if (!isAuthorized) {
+        kickBot.sendMessage(`⚠️ @${senderUser} Başlık değiştirme komutunu yalnızca yayıncı veya moderatörler kullanabilir.`);
+      } else {
+        const newTitle = (titleMatch[1] || '').trim();
+        if (!newTitle) {
+          kickBot.sendMessage(`ℹ️ @${senderUser} Kullanım: !başlık <YENİ BAŞLIK>`);
+        } else {
+          console.log(`[KickBot] Yayın başlığı güncelleme isteği (@${senderUser}): "${newTitle}"`);
+          const res = await kickBot.updateChannel({ stream_title: newTitle });
+          if (res.success) {
+            kickBot.sendMessage(`📢 @${senderUser} Yayın başlığı güncellendi: "${newTitle}"`);
+          } else {
+            kickBot.sendMessage(`⚠️ @${senderUser} Başlık güncellenemedi: ${res.error}`);
+          }
+        }
+      }
+    }
+
+    // 2. !oyun [kategori adı] / !kategori / !game / !category
+    const gameMatch = content.match(/^!(?:oyun|kategori|game|category)(?:\s+(.+))?$/i);
+    if (gameMatch) {
+      if (!isAuthorized) {
+        kickBot.sendMessage(`⚠️ @${senderUser} Kategori değiştirme komutunu yalnızca yayıncı veya moderatörler kullanabilir.`);
+      } else {
+        const query = (gameMatch[1] || '').trim();
+        if (!query) {
+          kickBot.sendMessage(`ℹ️ @${senderUser} Kullanım: !oyun <KATEGORİ ADI> (Örn: !oyun valorant, !oyun sohbet, !oyun genshin)`);
+        } else {
+          console.log(`[KickBot] Kategori arama isteği (@${senderUser}): "${query}"`);
+          const cat = await kickBot.findCategory(query);
+          if (!cat) {
+            kickBot.sendMessage(`⚠️ @${senderUser} "${query}" adında bir Kick kategorisi bulunamadı.`);
+          } else {
+            console.log(`[KickBot] Kategori güncelleme isteği (@${senderUser}): #${cat.id} - ${cat.name}`);
+            const res = await kickBot.updateChannel({ category_id: cat.id });
+            if (res.success) {
+              kickBot.sendMessage(`🎮 @${senderUser} Yayın kategorisi güncellendi: [${cat.name}]`);
+            } else {
+              kickBot.sendMessage(`⚠️ @${senderUser} Kategori güncellenemedi: ${res.error}`);
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[Server] Komut işleme hatası:', err.message);
+  }
 });
+
 
 // GameEngine Events
 gameEngine.on('state_changed', (state) => {
@@ -626,7 +702,7 @@ app.post('/api/bot/oauth/start', async (req, res) => {
     }
   }
 
-  const authUrl = `https://id.kick.com/oauth/authorize?client_id=${encodeURIComponent(cId)}&redirect_uri=${encodeURIComponent(effectiveRedirect)}&response_type=code&scope=user:read+chat:write+channel:read&code_challenge=${challenge}&code_challenge_method=S256&state=${state}`;
+  const authUrl = `https://id.kick.com/oauth/authorize?client_id=${encodeURIComponent(cId)}&redirect_uri=${encodeURIComponent(effectiveRedirect)}&response_type=code&scope=user:read+chat:write+channel:read+channel:write&code_challenge=${challenge}&code_challenge_method=S256&state=${state}`;
 
   res.json({ success: true, authUrl, redirectUri: effectiveRedirect });
 });
@@ -794,6 +870,31 @@ app.post('/api/bot/test-message', async (req, res) => {
     res.status(400).json({ success: false, error: result.error || 'Mesaj gönderilemedi' });
   }
 });
+
+app.post('/api/bot/update-channel', async (req, res) => {
+  const { stream_title, category_name, category_id } = req.body || {};
+  let targetCatId = category_id;
+  if (!targetCatId && category_name) {
+    const found = await kickBot.findCategory(category_name);
+    if (found) {
+      targetCatId = found.id;
+    } else {
+      return res.status(400).json({ success: false, error: `"${category_name}" adında bir kategori bulunamadı.` });
+    }
+  }
+
+  const result = await kickBot.updateChannel({
+    stream_title: stream_title || undefined,
+    category_id: targetCatId || undefined
+  });
+
+  if (result.success) {
+    res.json({ success: true, payload: result.payload });
+  } else {
+    res.status(400).json({ success: false, error: result.error || 'Kanal güncellenemedi.' });
+  }
+});
+
 
 // Database Management REST Endpoints
 app.get('/api/db/status', (req, res) => {

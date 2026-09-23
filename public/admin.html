@@ -320,6 +320,14 @@
             İzleyiciler chate <code>!wish</code>, <code>!bakiye</code>, <code>!pity</code>, <code>!envanter</code>, <code>!yardim</code> yazdığında bot anında yanıt verir ve trivia kazananlarını chate duyurur.
           </div>
 
+          <!-- New !başlık and !oyun commands notice -->
+          <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 10px; margin-bottom: 12px; font-size: 0.8rem; color: #a7f3d0; line-height: 1.4;">
+            <strong>✨ Canlı Chat Komutları (Yayıncı & Modlar):</strong><br>
+            • <code>!başlık &lt;Yeni Başlık&gt;</code>: Yayının başlığını anında değiştirir.<br>
+            • <code>!oyun &lt;Kategori Adı&gt;</code>: Kategori/oyunu günceller (Örn: <code>!oyun valorant</code>, <code>!oyun genshin</code>, <code>!oyun sohbet</code>, <code>!oyun cs2</code>).<br>
+            <span style="font-size: 0.74rem; color: #94a3b8; display: block; margin-top: 4px;">* Bu komutlar için yeni <strong>channel:write</strong> izni eklenmiştir. Lütfen aşağıdaki <strong>"🔑 Kick ile Yetkilendir"</strong> butonuna basarak yeni izni bir defa onaylayın.</span>
+          </div>
+
           <form id="bot-form">
             <div class="form-group checkbox-group" style="margin-bottom: 10px;">
               <label>
@@ -400,8 +408,19 @@
             <span id="db-status-badge" class="badge-mini" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4);">🟡 Yerel Dosya Modu</span>
           </div>
 
-          <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 12px; line-height: 1.4;">
-            Render sunucusu uyusa bile izleyicilerin Primogemleri, 5★ karakterleri ve bot bağlantısı asla sıfırlanmaz.
+          <!-- Render Database Permanence Notice -->
+          <div style="background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 10px; margin-bottom: 12px; font-size: 0.78rem; color: #bfdbfe; line-height: 1.45;">
+            <strong>🛡️ Render'da Kalıcı Veritabanı Rehberi:</strong><br>
+            Render yeniden başladığında yerel dosyaları sıfırlar. Veritabanının asla kopmaması ve Gezgin bakiyelerinin ömür boyu kalıcı olması için:
+            <ol style="margin: 4px 0 0 16px; padding: 0;">
+              <li>Render Dashboard'da uygulamanızı (<code>kick-genshin-trivia</code>) açın.</li>
+              <li>Sol menüden <strong>Environment</strong> sekmesine tıklayın.</li>
+              <li><strong>Add Environment Variable</strong> butonuna basıp:
+                <br>Key: <code>DATABASE_URL</code>
+                <br>Value: <code>postgresql://...</code> (Supabase / Render PostgreSQL adresiniz)
+              </li>
+              <li><strong>Save Changes</strong> butonuna basın.</li>
+            </ol>
           </div>
 
           <div class="form-group">

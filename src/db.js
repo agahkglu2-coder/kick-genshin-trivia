@@ -14,18 +14,44 @@ class DatabaseManager {
     this.inMemorySettings = new Map();
     this.isInitialized = false;
     this.lastError = null;
+    this.activeUrl = null;
+    this.keepAliveTimer = null;
+    this.isReconnecting = false;
   }
 
   async init(databaseUrl = null) {
-    const url = databaseUrl || process.env.DATABASE_URL;
+    let url = (databaseUrl || process.env.DATABASE_URL || '').trim();
+
+    // Check fallback file if not provided directly or via env
+    if (!url) {
+      try {
+        const DB_URL_FILE = path.join(DATA_DIR, 'db_url.txt');
+        if (fs.existsSync(DB_URL_FILE)) {
+          const savedUrl = fs.readFileSync(DB_URL_FILE, 'utf-8').trim();
+          if (savedUrl) url = savedUrl;
+        }
+      } catch (e) {}
+    }
 
     if (url && (url.startsWith('postgres://') || url.startsWith('postgresql://'))) {
       try {
         console.log('[DB] PostgreSQL veritabanına bağlanılıyor...');
+        if (this.pool) {
+          try { await this.pool.end(); } catch (e) {}
+          this.pool = null;
+        }
+
         this.pool = new Pool({
           connectionString: url,
           ssl: url.includes('localhost') ? false : { rejectUnauthorized: false },
-          connectionTimeoutMillis: 8000
+          connectionTimeoutMillis: 10000,
+          idleTimeoutMillis: 30000,
+          max: 10
+        });
+
+        // Prevent idle client termination from crashing Node process
+        this.pool.on('error', (err) => {
+          console.warn('[DB Pool] Boşta bağlantı kapandı/uyarısı (havuz otomatik yenilenecektir):', err.message);
         });
 
         // Test connection
@@ -58,8 +84,28 @@ class DatabaseManager {
           `);
 
           this.type = 'postgres';
+          this.activeUrl = url;
           this.lastError = null;
           console.log('[DB] ✅ PostgreSQL veritabanı başarıyla bağlandı ve tablolar hazırlandı!');
+
+          // Persist URL to local file mirror so container reboots remember it
+          try {
+            if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+            fs.writeFileSync(path.join(DATA_DIR, 'db_url.txt'), url, 'utf-8');
+          } catch (e) {}
+
+          // Start Keep-Alive Ping every 45s (prevents Supabase idle pooler shutdown)
+          if (this.keepAliveTimer) clearInterval(this.keepAliveTimer);
+          this.keepAliveTimer = setInterval(async () => {
+            if (this.type === 'postgres' && this.pool) {
+              try {
+                await this.pool.query('SELECT 1');
+              } catch (pingErr) {
+                console.warn('[DB] Keep-alive ping başarısız, yeniden bağlanılıyor:', pingErr.message);
+                this.reconnect();
+              }
+            }
+          }, 45000);
         } finally {
           client.release();
         }
@@ -248,6 +294,9 @@ class DatabaseManager {
         await this.pool.query(query, values);
       } catch (err) {
         console.error('[DB] PostgreSQL saveUser hatası:', err.message);
+        if (err.message.includes('closed') || err.message.includes('terminated') || err.message.includes('Connection')) {
+          this.reconnect();
+        }
       }
     }
   }
@@ -267,6 +316,19 @@ class DatabaseManager {
     this.inMemorySettings.set(key, val);
     this.saveLocalSettings();
 
+    // Mirror bot settings into config.json so restarts never wipe bot connection
+    const criticalKeys = ['botToken', 'botUsername', 'botEnabled', 'botClientId', 'botClientSecret', 'botTargetChannel', 'channel'];
+    if (criticalKeys.includes(key)) {
+      try {
+        const cfgPath = path.join(__dirname, '..', 'config.json');
+        if (fs.existsSync(cfgPath)) {
+          const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
+          cfg[key] = val;
+          fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2), 'utf-8');
+        }
+      } catch (e) {}
+    }
+
     if (this.type === 'postgres' && this.pool) {
       try {
         const query = `
@@ -280,7 +342,27 @@ class DatabaseManager {
         await this.pool.query(query, [key, strVal]);
       } catch (err) {
         console.error('[DB] PostgreSQL setSetting hatası:', err.message);
+        if (err.message.includes('closed') || err.message.includes('terminated') || err.message.includes('Connection')) {
+          this.reconnect();
+        }
       }
+    }
+  }
+
+  async reconnect() {
+    if (this.isReconnecting || !this.activeUrl) return;
+    this.isReconnecting = true;
+    console.log('[DB] PostgreSQL bağlantısı yeniden kuruluyor...');
+    try {
+      if (this.pool) {
+        try { await this.pool.end(); } catch (e) {}
+        this.pool = null;
+      }
+      await this.init(this.activeUrl);
+    } catch (e) {
+      console.warn('[DB] Otomatik yeniden bağlanma hatası:', e.message);
+    } finally {
+      this.isReconnecting = false;
     }
   }
 
@@ -298,3 +380,4 @@ class DatabaseManager {
 const db = new DatabaseManager();
 
 module.exports = { db, DatabaseManager };
+

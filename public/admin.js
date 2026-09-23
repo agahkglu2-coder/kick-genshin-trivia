@@ -1187,7 +1187,7 @@
           updateDbStatusUI(data);
           if (dbFeedback) {
             dbFeedback.style.color = '#10b981';
-            dbFeedback.textContent = '✅ Veritabanı başarıyla bağlandı ve tablolar hazırlandı!';
+            dbFeedback.innerHTML = '✅ Veritabanı bağlandı! <br><span style="font-size:0.75rem; color:#a7f3d0;">🛡️ Kalıcı olması için Render Dashboard &rarr; Environment &rarr; DATABASE_URL olarak da ekleyin.</span>';
           }
           loadGachaUsers();
         } else {
