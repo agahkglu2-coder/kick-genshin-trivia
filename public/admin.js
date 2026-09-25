@@ -910,6 +910,246 @@
     });
   }
 
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // Quick Channel Title & Game Update (Direct Panel Control)
+  const quickStreamTitle = document.getElementById('quick-stream-title');
+  const btnQuickUpdateTitle = document.getElementById('btn-quick-update-title');
+  const quickStreamGame = document.getElementById('quick-stream-game');
+  const btnQuickUpdateGame = document.getElementById('btn-quick-update-game');
+  const quickChannelFeedback = document.getElementById('quick-channel-feedback');
+
+  if (btnQuickUpdateTitle && quickStreamTitle) {
+    btnQuickUpdateTitle.addEventListener('click', async () => {
+      const title = quickStreamTitle.value.trim();
+      if (!title) {
+        if (quickChannelFeedback) {
+          quickChannelFeedback.style.color = '#ef4444';
+          quickChannelFeedback.textContent = 'Lütfen bir yayın başlığı yazın.';
+        }
+        return;
+      }
+      btnQuickUpdateTitle.disabled = true;
+      btnQuickUpdateTitle.textContent = 'Güncelleniyor...';
+      if (quickChannelFeedback) {
+        quickChannelFeedback.style.color = '#f59e0b';
+        quickChannelFeedback.textContent = '⏳ Yayın başlığı güncelleniyor...';
+      }
+      try {
+        const res = await fetch('/api/bot/update-channel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stream_title: title })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          if (quickChannelFeedback) {
+            quickChannelFeedback.style.color = '#10b981';
+            quickChannelFeedback.textContent = `📢 Yayın başlığı başarıyla güncellendi: "${title}"`;
+          }
+        } else {
+          if (quickChannelFeedback) {
+            quickChannelFeedback.style.color = '#ef4444';
+            quickChannelFeedback.textContent = `❌ Başlık güncellenemedi: ${data.error || 'Bilinmeyen hata'}`;
+          }
+        }
+      } catch (e) {
+        if (quickChannelFeedback) {
+          quickChannelFeedback.style.color = '#ef4444';
+          quickChannelFeedback.textContent = 'Bağlantı hatası: ' + e.message;
+        }
+      } finally {
+        btnQuickUpdateTitle.disabled = false;
+        btnQuickUpdateTitle.textContent = 'Başlığı Güncelle';
+      }
+    });
+  }
+
+  if (btnQuickUpdateGame && quickStreamGame) {
+    btnQuickUpdateGame.addEventListener('click', async () => {
+      const game = quickStreamGame.value.trim();
+      if (!game) {
+        if (quickChannelFeedback) {
+          quickChannelFeedback.style.color = '#ef4444';
+          quickChannelFeedback.textContent = 'Lütfen bir kategori/oyun adı yazın.';
+        }
+        return;
+      }
+      btnQuickUpdateGame.disabled = true;
+      btnQuickUpdateGame.textContent = 'Güncelleniyor...';
+      if (quickChannelFeedback) {
+        quickChannelFeedback.style.color = '#f59e0b';
+        quickChannelFeedback.textContent = `⏳ "${game}" kategorisi aranıyor ve güncelleniyor...`;
+      }
+      try {
+        const res = await fetch('/api/bot/update-channel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category_name: game })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          if (quickChannelFeedback) {
+            quickChannelFeedback.style.color = '#10b981';
+            quickChannelFeedback.textContent = `🎮 Yayın kategorisi başarıyla güncellendi!`;
+          }
+        } else {
+          if (quickChannelFeedback) {
+            quickChannelFeedback.style.color = '#ef4444';
+            quickChannelFeedback.textContent = `❌ Kategori güncellenemedi: ${data.error || 'Bilinmeyen hata'}`;
+          }
+        }
+      } catch (e) {
+        if (quickChannelFeedback) {
+          quickChannelFeedback.style.color = '#ef4444';
+          quickChannelFeedback.textContent = 'Bağlantı hatası: ' + e.message;
+        }
+      } finally {
+        btnQuickUpdateGame.disabled = false;
+        btnQuickUpdateGame.textContent = 'Oyunu Güncelle';
+      }
+    });
+  }
+
+  // Timed Messages (Scheduled Announcements) Logic
+  const timersCountBadge = document.getElementById('timers-count-badge');
+  const addTimerForm = document.getElementById('add-timer-form');
+  const inputTimerText = document.getElementById('input-timer-text');
+  const inputTimerInterval = document.getElementById('input-timer-interval');
+  const timerFormFeedback = document.getElementById('timer-form-feedback');
+  const timersList = document.getElementById('timers-list');
+
+  async function loadTimers() {
+    try {
+      const res = await fetch('/api/timers');
+      const data = await res.json();
+      renderTimers(data.timers || []);
+    } catch (e) {
+      console.warn('[Admin] Timers yüklenemedi:', e.message);
+    }
+  }
+
+  function renderTimers(timers) {
+    if (timersCountBadge) {
+      timersCountBadge.textContent = `${timers.length} Mesaj`;
+    }
+    if (!timersList) return;
+
+    if (!timers || timers.length === 0) {
+      timersList.innerHTML = `<div class="empty-state" style="padding: 12px; text-align: center; color: #94a3b8; font-size: 0.82rem;">Henüz zamanlanmış mesaj eklenmedi. Yukarıdan yeni bir duyuru ekleyebilirsiniz.</div>`;
+      return;
+    }
+
+    timersList.innerHTML = timers.map(t => {
+      const statusBadge = t.enabled
+        ? `<span class="badge-mini" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);">🟢 Aktif</span>`
+        : `<span class="badge-mini" style="background: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3);">⚪ Kapalı</span>`;
+
+      return `
+        <div class="timer-item" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+            <div style="font-size: 0.85rem; color: #f1f5f9; font-weight: 500; word-break: break-word;">${escapeHtml(t.text)}</div>
+            <div>${statusBadge}</div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; flex-wrap: wrap; gap: 6px;">
+            <span style="font-size: 0.75rem; color: #a5b4fc; background: rgba(99, 102, 241, 0.15); padding: 2px 8px; border-radius: 4px;">
+              ⏱️ Her ${t.intervalMinutes} dakikada bir
+            </span>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-xs ${t.enabled ? 'btn-outline' : 'btn-success'} btn-toggle-timer" data-id="${t.id}" data-enabled="${t.enabled}">
+                ${t.enabled ? 'Durdur' : 'Başlat'}
+              </button>
+              <button class="btn btn-xs btn-outline btn-trigger-timer" data-id="${t.id}" title="Hemen test mesajı at">
+                🚀 Şimdi Gönder
+              </button>
+              <button class="btn btn-xs btn-danger btn-delete-timer" data-id="${t.id}">
+                🗑️ Sil
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Attach event listeners to timer action buttons
+    timersList.querySelectorAll('.btn-toggle-timer').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const curEnabled = btn.getAttribute('data-enabled') === 'true';
+        await fetch(`/api/timers/${id}/toggle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: !curEnabled })
+        });
+        loadTimers();
+      });
+    });
+
+    timersList.querySelectorAll('.btn-trigger-timer').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        btn.disabled = true;
+        btn.textContent = 'Gönderildi! ✅';
+        await fetch(`/api/timers/${id}/trigger`, { method: 'POST' });
+        setTimeout(() => { loadTimers(); }, 1200);
+      });
+    });
+
+    timersList.querySelectorAll('.btn-delete-timer').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        if (confirm('Bu zamanlanmış mesajı silmek istediğinize emin misiniz?')) {
+          await fetch(`/api/timers/${id}`, { method: 'DELETE' });
+          loadTimers();
+        }
+      });
+    });
+  }
+
+  if (addTimerForm) {
+    addTimerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = inputTimerText.value.trim();
+      const intervalMinutes = parseInt(inputTimerInterval.value, 10) || 5;
+      if (!text) return;
+
+      try {
+        const res = await fetch('/api/timers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, intervalMinutes })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          inputTimerText.value = '';
+          if (timerFormFeedback) {
+            timerFormFeedback.style.color = '#10b981';
+            timerFormFeedback.textContent = '✅ Zamanlanmış mesaj eklendi!';
+            setTimeout(() => { timerFormFeedback.textContent = ''; }, 3000);
+          }
+          loadTimers();
+        } else {
+          if (timerFormFeedback) {
+            timerFormFeedback.style.color = '#ef4444';
+            timerFormFeedback.textContent = `❌ ${data.error || 'Eklenemedi.'}`;
+          }
+        }
+      } catch (err) {
+        if (timerFormFeedback) {
+          timerFormFeedback.style.color = '#ef4444';
+          timerFormFeedback.textContent = 'Hata: ' + err.message;
+        }
+      }
+    });
+  }
+
   // WebSocket Connection
   function connectWS() {
     socket = new WebSocket(wsUrl);
@@ -1317,5 +1557,6 @@
   loadQuestions();
   loadGachaUsers();
   loadDbStatus();
+  loadTimers();
 })();
 

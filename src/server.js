@@ -144,9 +144,14 @@ try {
 
 const gameEngine = new GameEngine(config);
 const gachaEngine = new GachaEngine();
+const { TimerService } = require('./timerService');
+const timerService = new TimerService({ kickBot, db });
 
 // Initialize persistent database (PostgreSQL or local fallback)
 db.init(process.env.DATABASE_URL || config.databaseUrl).then(async () => {
+  const savedTimers = db.getSetting('timed_messages');
+  timerService.init(savedTimers || []);
+
   const savedToken = db.getSetting('botToken');
   const savedBotUser = db.getSetting('botUsername');
   const savedBotEnabled = db.getSetting('botEnabled');
@@ -259,19 +264,27 @@ kickClient.on('message', async (chatMsg) => {
   // Handle Broadcaster/Moderator Bot Commands (!başlık & !oyun)
   try {
     const content = (chatMsg.content || '').trim();
-    const senderUser = chatMsg.sender?.username || '';
+    const senderUser = (chatMsg.sender?.username || '').trim();
+    const senderSlug = (chatMsg.sender?.slug || '').trim();
     const badges = chatMsg.sender?.badges || [];
 
     const isBroadcaster = (
-      badges.some(b => b.type === 'broadcaster') ||
+      badges.some(b => {
+        const val = ((b && (b.type || b.badge_type || b.text)) || '').toLowerCase();
+        return val.includes('broadcaster') || val.includes('yayinci') || val.includes('owner');
+      }) ||
       senderUser.toLowerCase() === (config.channel || 'milka_e').toLowerCase() ||
+      senderSlug.toLowerCase() === (config.channel || 'milka_e').toLowerCase() ||
       senderUser.toLowerCase() === (config.botTargetChannel || '').toLowerCase()
     );
-    const isModerator = badges.some(b => b.type === 'moderator' || b.type === 'admin' || b.type === 'staff');
+    const isModerator = badges.some(b => {
+      const val = ((b && (b.type || b.badge_type || b.text)) || '').toLowerCase();
+      return val.includes('mod') || val.includes('admin') || val.includes('staff');
+    });
     const isAuthorized = isBroadcaster || isModerator;
 
-    // 1. !başlık [yeni başlık] / !baslik / !title
-    const titleMatch = content.match(/^!(?:başlık|baslik|title)(?:\s+(.+))?$/i);
+    // 1. !başlık [yeni başlık] / !baslik / !title (Turkish casing: !BAŞLIK, !Başlık, !baslik)
+    const titleMatch = content.match(/^!(?:[bB][aA][şsŞS][lLiIıİ][ıiIİ][kK]|title)(?:\s+(.+))?$/u);
     if (titleMatch) {
       if (!isAuthorized) {
         kickBot.sendMessage(`⚠️ @${senderUser} Başlık değiştirme komutunu yalnızca yayıncı veya moderatörler kullanabilir.`);
@@ -292,7 +305,7 @@ kickClient.on('message', async (chatMsg) => {
     }
 
     // 2. !oyun [kategori adı] / !kategori / !game / !category
-    const gameMatch = content.match(/^!(?:oyun|kategori|game|category)(?:\s+(.+))?$/i);
+    const gameMatch = content.match(/^!(?:[oO][yY][uU][nN]|[kK][aA][tT][eE][gG][oO][rR][iİıI]|[gG][aA][mM][eE]|category)(?:\s+(.+))?$/u);
     if (gameMatch) {
       if (!isAuthorized) {
         kickBot.sendMessage(`⚠️ @${senderUser} Kategori değiştirme komutunu yalnızca yayıncı veya moderatörler kullanabilir.`);
@@ -906,6 +919,54 @@ app.post('/api/bot/update-channel', async (req, res) => {
     res.status(400).json({ success: false, error: result.error || 'Kanal güncellenemedi.' });
   }
 });
+
+// Timed Messages (Scheduled Announcements) REST Endpoints
+app.get('/api/timers', (req, res) => {
+  res.json({ timers: timerService.getTimers() });
+});
+
+app.post('/api/timers', (req, res) => {
+  const { text, intervalMinutes, enabled } = req.body || {};
+  if (!text || !text.trim()) {
+    return res.status(400).json({ success: false, error: 'Mesaj metni boş olamaz.' });
+  }
+  const timer = timerService.addTimer({ text, intervalMinutes, enabled });
+  res.json({ success: true, timer, timers: timerService.getTimers() });
+});
+
+app.put('/api/timers/:id', (req, res) => {
+  const { text, intervalMinutes, enabled } = req.body || {};
+  const updated = timerService.updateTimer(req.params.id, { text, intervalMinutes, enabled });
+  if (updated) {
+    res.json({ success: true, timer: updated, timers: timerService.getTimers() });
+  } else {
+    res.status(404).json({ success: false, error: 'Zamanlayıcı bulunamadı.' });
+  }
+});
+
+app.delete('/api/timers/:id', (req, res) => {
+  const success = timerService.deleteTimer(req.params.id);
+  res.json({ success, timers: timerService.getTimers() });
+});
+
+app.post('/api/timers/:id/toggle', (req, res) => {
+  const { enabled } = req.body || {};
+  const timer = timerService.timers.find(x => x.id === req.params.id);
+  if (!timer) return res.status(404).json({ success: false, error: 'Bulunamadı.' });
+  const newEnabled = enabled !== undefined ? !!enabled : !timer.enabled;
+  const updated = timerService.updateTimer(req.params.id, { enabled: newEnabled });
+  res.json({ success: true, timer: updated, timers: timerService.getTimers() });
+});
+
+app.post('/api/timers/:id/trigger', (req, res) => {
+  const success = timerService.triggerTimer(req.params.id);
+  if (success) {
+    res.json({ success: true, message: 'Mesaj Kick sohbetine gönderildi.' });
+  } else {
+    res.status(404).json({ success: false, error: 'Zamanlayıcı bulunamadı.' });
+  }
+});
+
 
 
 // Database Management REST Endpoints

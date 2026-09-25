@@ -397,6 +397,7 @@ class KickBotService extends EventEmitter {
     }
 
     try {
+      console.log(`[KickBot] updateChannel -> İstek gönderiliyor (PATCH https://api.kick.com/public/v1/channels):`, JSON.stringify(payload));
       const res = await fetch('https://api.kick.com/public/v1/channels', {
         method: 'PATCH',
         headers: {
@@ -407,22 +408,32 @@ class KickBotService extends EventEmitter {
         body: JSON.stringify(payload)
       });
 
-      if (res.ok) {
-        console.log(`[KickBot] ✅ Kanal bilgileri güncellendi:`, payload);
+      console.log(`[KickBot] updateChannel -> Yanıt Kodu: ${res.status}`);
+
+      if (res.ok || res.status === 204) {
+        console.log(`[KickBot] ✅ Kanal bilgileri başarıyla güncellendi:`, payload);
         return { success: true, payload };
       }
 
       const errText = await res.text();
+      console.warn(`[KickBot] updateChannel hata yanıtı (${res.status}):`, errText);
       let parsedErr = errText;
       try {
         const json = JSON.parse(errText);
         parsedErr = json.message || json.error || errText;
       } catch (e) {}
 
+      if (res.status === 401) {
+        return {
+          success: false,
+          error: 'Yetkilendirme süresi dolmuş (401). Lütfen yönetim panelinden "Kick ile Yetkilendir" butonuna tıklayarak botu yeniden bağlayın.'
+        };
+      }
+
       if (res.status === 403) {
         return {
           success: false,
-          error: 'Yetki yetersiz (403). Lütfen yönetim panelinden "Kick ile Yetkilendir" butonuna tıklayarak kanal düzenleme iznini (channel:write) onaylayın.'
+          error: 'Yetki yetersiz (403). Kick API\'si kanal düzenleme için "channel:write" yetkisi ister. Lütfen panelden "Kick ile Yetkilendir" butonuna tıklayarak kanal düzenleme iznini onaylayın.'
         };
       }
 

@@ -397,9 +397,63 @@
                 <li>Panel rozeti <strong>🟢 Canlı Kick Modu (@ZerkacyBot)</strong> olacak ve tüm mesajlar bot hesabından atılacaktır!</li>
               </ol>
             </details>
+            <!-- Live Channel Title & Game Quick Control -->
+            <div style="margin-top: 14px; background: rgba(0,0,0,0.25); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px;">
+              <div style="font-weight: 700; color: #a7f3d0; font-size: 0.84rem; margin-bottom: 8px;">🎮 Canlı Yayın Başlığı & Oyun Değiştir (Panelden Kontrol):</div>
+              <div class="form-group" style="margin-bottom: 8px;">
+                <label style="font-size: 0.78rem;">Yayın Başlığı</label>
+                <div class="input-with-btn">
+                  <input type="text" id="quick-stream-title" placeholder="Yeni yayın başlığını yazın">
+                  <button type="button" id="btn-quick-update-title" class="btn btn-outline btn-sm">Başlığı Güncelle</button>
+                </div>
+              </div>
+              <div class="form-group" style="margin-bottom: 4px;">
+                <label style="font-size: 0.78rem;">Yayın Kategorisi / Oyun</label>
+                <div class="input-with-btn">
+                  <input type="text" id="quick-stream-game" placeholder="Örn: Valorant, Genshin, Sohbet, CS2">
+                  <button type="button" id="btn-quick-update-game" class="btn btn-outline btn-sm">Oyunu Güncelle</button>
+                </div>
+              </div>
+              <div id="quick-channel-feedback" class="field-hint" style="margin-top: 6px; font-weight: 600;"></div>
+            </div>
+
             <div id="bot-feedback" class="field-hint" style="margin-top: 8px; font-weight: 600;"></div>
           </form>
         </div>
+
+        <!-- Timed Messages / Scheduled Announcements Card -->
+        <div class="panel-card timer-card">
+          <div class="panel-title">
+            <span>⏱️ Zamanlanmış Chat Mesajları (Oto-Duyuru)</span>
+            <span id="timers-count-badge" class="badge-mini" style="background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4);">0 Mesaj</span>
+          </div>
+
+          <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 12px; line-height: 1.4;">
+            Botun belirlediğiniz aralıklarla (örn: 5 dakikada bir) Kick sohbetine otomatik duyuru veya hatırlatma mesajları atmasını sağlar.
+          </div>
+
+          <!-- Add New Timed Message Form -->
+          <form id="add-timer-form" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+            <div class="form-group" style="margin-bottom: 8px;">
+              <label style="font-size: 0.78rem;">Otomatik Gönderilecek Mesaj</label>
+              <input type="text" id="input-timer-text" placeholder="Örn: ⭐ Yayını takip etmeyi ve chate !wish yazmayı unutmayın!" required>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: flex-end;">
+              <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                <label style="font-size: 0.78rem;">Tekrar Aralığı (Dakika)</label>
+                <input type="number" id="input-timer-interval" min="1" max="180" value="5" required>
+              </div>
+              <button type="submit" id="btn-add-timer" class="btn btn-success btn-sm" style="height: 38px; white-space: nowrap;">+ Duyuru Ekle</button>
+            </div>
+            <div id="timer-form-feedback" class="field-hint" style="margin-top: 6px; font-weight: 600;"></div>
+          </form>
+
+          <!-- Timers List Container -->
+          <div id="timers-list" class="timers-list-container" style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="empty-state" style="padding: 12px; text-align: center; color: #94a3b8; font-size: 0.82rem;">Henüz zamanlanmış mesaj eklenmedi. Yukarıdan yeni bir duyuru ekleyebilirsiniz.</div>
+          </div>
+        </div>
+
 
         <!-- Database & Persistence Settings Panel -->
         <div class="panel-card db-card">
