@@ -428,6 +428,18 @@ app.get('/api/status', (req, res) => {
   });
 });
 
+// Lightweight ping endpoint for 24/7 uptime services (e.g. cron-job.org / uptimerobot)
+app.get('/api/ping', (req, res) => {
+  res.json({
+    status: 'ok',
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+    db: db.getStatus().type,
+    botConnected: kickBot.getStatus().hasToken
+  });
+});
+
+
 app.post('/api/trigger-question', (req, res) => {
   const { id } = req.body || {};
   gameEngine.triggerQuestion(id || null);

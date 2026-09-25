@@ -110,6 +110,26 @@
   if (displayRedirectUri) displayRedirectUri.value = defaultRedirectUri;
   if (cfgBotRedirectUri) cfgBotRedirectUri.value = defaultRedirectUri;
 
+  // Pre-fill saved credentials from browser localStorage (resilient across Render server sleeps)
+  try {
+    const cachedDbUrl = localStorage.getItem('milka_database_url');
+    if (cachedDbUrl && cfgDatabaseUrl && !cfgDatabaseUrl.value) {
+      cfgDatabaseUrl.value = cachedDbUrl;
+    }
+    const cachedCId = localStorage.getItem('kick_bot_client_id');
+    if (cachedCId && cfgBotClientId && !cfgBotClientId.value) {
+      cfgBotClientId.value = cachedCId;
+    }
+    const cachedCSecret = localStorage.getItem('kick_bot_client_secret');
+    if (cachedCSecret && cfgBotClientSecret && !cfgBotClientSecret.value) {
+      cfgBotClientSecret.value = cachedCSecret;
+    }
+    const cachedTargetChan = localStorage.getItem('milka_bot_target_channel');
+    if (cachedTargetChan && cfgBotTargetChannel && !cfgBotTargetChannel.value) {
+      cfgBotTargetChannel.value = cachedTargetChan;
+    }
+  } catch (e) {}
+
   if (btnCopyRedirectUri && displayRedirectUri) {
     btnCopyRedirectUri.addEventListener('click', () => {
       displayRedirectUri.select();
@@ -587,23 +607,31 @@
         botStatusBadge.style.color = '#f59e0b';
         botStatusBadge.style.border = '1px solid rgba(245, 158, 11, 0.4)';
 
-        // Auto-restore token from localStorage if server currently lacks token (e.g. after server sleep / F5 reload)
+        // Auto-restore token & credentials from localStorage if server currently lacks token (e.g. after server sleep / F5 reload)
         const savedToken = localStorage.getItem('kick_bot_token');
         const savedBotUser = localStorage.getItem('kick_bot_username');
+        const savedCId = localStorage.getItem('kick_bot_client_id');
+        const savedCSecret = localStorage.getItem('kick_bot_client_secret');
         if (savedToken && !window._tokenRestoreSent) {
           window._tokenRestoreSent = true;
-          console.log('[Admin] 🔄 Tarayıcı hafızasındaki Kick bot tokenı sunucuya otomatik eşitleniyor...');
+          console.log('[Admin] 🔄 Tarayıcı hafızasındaki Kick bot tokenı ve bilgileri sunucuya eşitleniyor...');
           fetch('/api/bot/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               token: savedToken,
+              clientId: savedCId || undefined,
+              clientSecret: savedCSecret || undefined,
               botUsername: savedBotUser || undefined
             })
           }).then(r => r.json()).then(d => {
             if (d.success) {
               updateBotStatus(d.status);
-              console.log('[Admin] ✅ Kick bot bağlantısı F5 sonrası anında geri yüklendi!');
+              console.log('[Admin] ✅ Kick bot bağlantısı otomatik geri yüklendi!');
+              if (botFeedback) {
+                botFeedback.style.color = '#10b981';
+                botFeedback.innerHTML = '🎉 <strong>Bot Yeniden Bağlandı:</strong> Render uykudan uyandı ve bot bağlantınız tarayıcı hafızanızdan otomatik aktifleştirildi!';
+              }
             }
           }).catch(console.error);
         }
@@ -626,6 +654,7 @@
   if (btnSaveTargetChannel && cfgBotTargetChannel) {
     btnSaveTargetChannel.addEventListener('click', async () => {
       const targetVal = cfgBotTargetChannel.value.trim();
+      if (targetVal) localStorage.setItem('milka_bot_target_channel', targetVal);
       btnSaveTargetChannel.disabled = true;
       btnSaveTargetChannel.textContent = 'Ayarlanıyor...';
       try {
@@ -1117,9 +1146,43 @@
   // Database Management Logic
   async function loadDbStatus() {
     try {
+      const savedDbUrl = localStorage.getItem('milka_database_url');
+      if (savedDbUrl && cfgDatabaseUrl && !cfgDatabaseUrl.value) {
+        cfgDatabaseUrl.value = savedDbUrl;
+      }
+
       const res = await fetch('/api/db/status');
       const data = await res.json();
       updateDbStatusUI(data);
+
+      // Auto-Restore if server just woke up and lost its DB connection!
+      const st = data?.status || {};
+      if (st.type !== 'postgres' && savedDbUrl && (savedDbUrl.startsWith('postgres://') || savedDbUrl.startsWith('postgresql://')) && !window._dbAutoRestoreAttempted) {
+        window._dbAutoRestoreAttempted = true;
+        console.log('[Admin] ⚡ Render uykudan uyandı: Kayıtlı veritabanı adresi otomatik bağlanıyor...');
+        if (dbFeedback) {
+          dbFeedback.style.color = '#38bdf8';
+          dbFeedback.innerHTML = '⚡ <em>Render uykudan uyandı: Kayıtlı veritabanınıza otomatik bağlanılıyor...</em>';
+        }
+        try {
+          const autoRes = await fetch('/api/db/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ databaseUrl: savedDbUrl })
+          });
+          const autoData = await autoRes.json();
+          if (autoData.success) {
+            updateDbStatusUI(autoData);
+            loadGachaUsers();
+            if (dbFeedback) {
+              dbFeedback.style.color = '#10b981';
+              dbFeedback.innerHTML = '🎉 <strong>Otomatik Kurtarma Başarılı:</strong> Render uykudan uyandı ve veritabanı tarayıcı hafızanızdan anında geri bağlandı!';
+            }
+          }
+        } catch (eAuto) {
+          console.warn('[Admin] Otomatik bağlanma hatası:', eAuto);
+        }
+      }
     } catch (e) {
       console.warn('DB durumu alınamadı:', e);
     }
@@ -1169,6 +1232,9 @@
   if (btnSaveDbUrl && cfgDatabaseUrl) {
     btnSaveDbUrl.addEventListener('click', async () => {
       const dbUrl = cfgDatabaseUrl.value.trim();
+      if (dbUrl) {
+        localStorage.setItem('milka_database_url', dbUrl);
+      }
       btnSaveDbUrl.disabled = true;
       btnSaveDbUrl.textContent = 'Bağlanılıyor...';
       if (dbFeedback) {

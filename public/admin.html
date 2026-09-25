@@ -410,17 +410,21 @@
 
           <!-- Render Database Permanence Notice -->
           <div style="background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 10px; margin-bottom: 12px; font-size: 0.78rem; color: #bfdbfe; line-height: 1.45;">
-            <strong>🛡️ Render'da Kalıcı Veritabanı Rehberi:</strong><br>
-            Render yeniden başladığında yerel dosyaları sıfırlar. Veritabanının asla kopmaması ve Gezgin bakiyelerinin ömür boyu kalıcı olması için:
-            <ol style="margin: 4px 0 0 16px; padding: 0;">
-              <li>Render Dashboard'da uygulamanızı (<code>kick-genshin-trivia</code>) açın.</li>
-              <li>Sol menüden <strong>Environment</strong> sekmesine tıklayın.</li>
-              <li><strong>Add Environment Variable</strong> butonuna basıp:
-                <br>Key: <code>DATABASE_URL</code>
-                <br>Value: <code>postgresql://...</code> (Supabase / Render PostgreSQL adresiniz)
-              </li>
-              <li><strong>Save Changes</strong> butonuna basın.</li>
-            </ol>
+            <strong>🛡️ Render Uykudan Uyandığında Neden Sıfırlanır?</strong><br>
+            Render'ın ücretsiz sunucusu 15 dakika istek gelmeyince uyur (<em>Service Waking Up...</em>). Uyandığında sunucu diski sıfırlanır. Bunu önlemek için 2 kolay yolunuz var:
+            <div style="margin-top: 6px; padding: 6px 8px; background: rgba(0,0,0,0.25); border-radius: 6px;">
+              <strong>1. Yol (Kalıcı Çözüm):</strong> Render Dashboard &rarr; <code>kick-genshin-trivia</code> &rarr; <strong>Environment</strong> sekmesine gidin. <strong>Add Environment Variable</strong> diyerek:
+              <br>&bull; Key: <code>DATABASE_URL</code>
+              <br>&bull; Value: <code>postgresql://...</code> (PostgreSQL adresiniz)
+              <br>ekleyin. Artık sunucu her uyandığında otomatik olarak veritabanına bağlı açılır!
+            </div>
+            <div style="margin-top: 6px; padding: 6px 8px; background: rgba(16, 185, 129, 0.15); border-radius: 6px; color: #a7f3d0;">
+              <strong>2. Yol (⚡ Otomatik Tarayıcı Kurtarma - Aktif):</strong> Aşağıdaki kutuya bağlantınızı bir kez girip "Bağlan" dediğinizde bu tarayıcıya kaydedilir. Render uykudan uyansa bile bu paneli açtığınız anda ayarlarınız arka planda otomatik geri yüklenir!
+            </div>
+            <div style="margin-top: 6px; padding: 6px 8px; background: rgba(245, 158, 11, 0.15); border-radius: 6px; color: #fde68a;">
+              <strong>⏰ Render'ın Hiç Uyumamasını İster misiniz? (7/24 Açık Kalma):</strong><br>
+              Ücretsiz bir uptime aracı ([cron-job.org](https://cron-job.org) veya [uptimerobot.com](https://uptimerobot.com)) ile <code>https://&lt;siteniz&gt;.onrender.com/api/ping</code> adresinize her 10 dakikada bir istek attırarak sunucunuzun 7/24 hiç uyumamasını sağlayabilirsiniz!
+            </div>
           </div>
 
           <div class="form-group">
