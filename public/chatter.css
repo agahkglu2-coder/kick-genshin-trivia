@@ -37,8 +37,4 @@ html, body {
   max-height: 100vh;
   object-fit: contain;
   display: block;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: -webkit-crisp-edges;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
 }

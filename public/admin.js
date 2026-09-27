@@ -1880,6 +1880,8 @@
     const valScale = document.getElementById('val-chatter-scale');
     const cfgSpeed = document.getElementById('cfg-chatter-speed');
     const valSpeed = document.getElementById('val-chatter-speed');
+    const cfgFontSize = document.getElementById('cfg-chatter-fontsize');
+    const valFontSize = document.getElementById('val-chatter-fontsize');
     const cfgGround = document.getElementById('cfg-chatter-ground');
     const valGround = document.getElementById('val-chatter-ground');
     const cfgMax = document.getElementById('cfg-chatter-max');
@@ -1904,6 +1906,7 @@
         const partial = {
           scale: parseFloat(cfgScale ? cfgScale.value : 3.2),
           speed: parseFloat(cfgSpeed ? cfgSpeed.value : 1.0),
+          fontSizeMultiplier: parseFloat(cfgFontSize ? cfgFontSize.value : 1.35),
           groundY: parseInt(cfgGround ? cfgGround.value : 920, 10),
           maxChatters: parseInt(cfgMax ? cfgMax.value : 45, 10),
           bubbleDurationSec: parseFloat(cfgBubble ? cfgBubble.value : 5.5),
@@ -1933,6 +1936,13 @@
     if (cfgSpeed && valSpeed) {
       cfgSpeed.addEventListener('input', () => {
         valSpeed.textContent = `${parseFloat(cfgSpeed.value).toFixed(1)}x`;
+        liveUpdateChatterConfig();
+      });
+    }
+    if (cfgFontSize && valFontSize) {
+      cfgFontSize.addEventListener('input', () => {
+        const val = parseFloat(cfgFontSize.value);
+        valFontSize.textContent = `${val.toFixed(2)}x ${val >= 1.6 ? '(Ekstra Büyük)' : val >= 1.3 ? '(Büyük)' : '(Standart)'}`;
         liveUpdateChatterConfig();
       });
     }
@@ -1972,6 +1982,18 @@
       });
     });
 
+    // Font size preset buttons
+    document.querySelectorAll('.btn-fontsize-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const fVal = parseFloat(btn.dataset.fontsize);
+        if (cfgFontSize && valFontSize) {
+          cfgFontSize.value = fVal;
+          valFontSize.textContent = `${fVal.toFixed(2)}x ${fVal >= 1.6 ? '(Ekstra Büyük)' : fVal >= 1.3 ? '(Büyük)' : '(Standart)'}`;
+          liveUpdateChatterConfig();
+        }
+      });
+    });
+
     // Load Chatter Config
     async function loadChatterConfig() {
       try {
@@ -1986,6 +2008,13 @@
           if (cfgSpeed) {
             cfgSpeed.value = cfg.speed || 1.0;
             if (valSpeed) valSpeed.textContent = `${parseFloat(cfgSpeed.value).toFixed(1)}x`;
+          }
+          if (cfgFontSize) {
+            cfgFontSize.value = cfg.fontSizeMultiplier || 1.35;
+            if (valFontSize) {
+              const val = parseFloat(cfgFontSize.value);
+              valFontSize.textContent = `${val.toFixed(2)}x ${val >= 1.6 ? '(Ekstra Büyük)' : val >= 1.3 ? '(Büyük)' : '(Standart)'}`;
+            }
           }
           if (cfgGround) {
             cfgGround.value = cfg.groundY || 920;
@@ -2061,6 +2090,7 @@
         const newConfig = {
           scale: parseFloat(cfgScale ? cfgScale.value : 3.2),
           speed: parseFloat(cfgSpeed ? cfgSpeed.value : 1.0),
+          fontSizeMultiplier: parseFloat(cfgFontSize ? cfgFontSize.value : 1.35),
           groundY: parseInt(cfgGround ? cfgGround.value : 920, 10),
           maxChatters: parseInt(cfgMax ? cfgMax.value : 45, 10),
           bubbleDurationSec: parseFloat(cfgBubble ? cfgBubble.value : 5.5),

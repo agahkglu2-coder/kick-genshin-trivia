@@ -326,6 +326,21 @@
               <input type="range" id="cfg-chatter-speed" min="0.4" max="2.5" step="0.1" value="1.0">
             </div>
 
+            <!-- Font Size & Speech Bubble Size with Quick Presets -->
+            <div class="form-group" style="grid-column: 1 / -1; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 6px; padding: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label style="margin: 0; font-weight: 700; color: #93c5fd;">💬 İsimlik & Chat Yazı Boyutu: <strong id="val-chatter-fontsize" style="color: #60a5fa; font-size: 1rem;">1.35x (Büyük)</strong></label>
+                <span style="font-size: 0.72rem; color: #94a3b8;">(Yazıların ve konuşma balonlarının ekranda net okunmasını sağlar)</span>
+              </div>
+              <input type="range" id="cfg-chatter-fontsize" min="1.0" max="2.2" step="0.05" value="1.35">
+              <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-xs btn-outline btn-fontsize-preset" data-fontsize="1.35" style="border-color: #60a5fa; color: #93c5fd; font-weight: 700;">⭐ Önerilen Büyük (1.35x)</button>
+                <button type="button" class="btn btn-xs btn-outline btn-fontsize-preset" data-fontsize="1.6">🚀 Ekstra Büyük (1.60x)</button>
+                <button type="button" class="btn btn-xs btn-outline btn-fontsize-preset" data-fontsize="1.9">🔎 Dev / Uzaktan Okunur (1.90x)</button>
+                <button type="button" class="btn btn-xs btn-outline btn-fontsize-preset" data-fontsize="1.0" style="color: #94a3b8;">🔹 Küçük / Standart (1.00x)</button>
+              </div>
+            </div>
+
             <!-- Ground Height with Quick Presets -->
             <div class="form-group" style="grid-column: 1 / -1; background: rgba(244, 114, 182, 0.06); border: 1px solid rgba(244, 114, 182, 0.2); border-radius: 6px; padding: 10px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">

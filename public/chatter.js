@@ -16,6 +16,7 @@
     groundY: 920,
     groundDepth: 60,
     moveSpeed: 1.0,
+    fontSizeMultiplier: 1.35,
     despawnTimeout: 900, // seconds (15 minutes)
     maxChatters: 45,
     chatBubbleDuration: 5.5,
@@ -325,30 +326,41 @@
 
   // Visual Helper: Mini Reaction Icon Bubble
   function renderReactionBubble(ctx, icon, x, y) {
+    if (!icon) return;
     ctx.save();
-    ctx.font = '15px sans-serif';
-    const metrics = ctx.measureText(icon);
-    const bw = metrics.width + 12;
-    const bh = 22;
+    ctx.font = '20px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+    const bw = 32;
+    const bh = 30;
     const bx = x - bw / 2;
     const by = y - bh;
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    // Drop shadow
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 2;
+    ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.roundRect(bx, by, bw, bh, 8);
     ctx.fill();
+    ctx.restore();
 
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.18)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 8);
     ctx.stroke();
 
     // Tail
     ctx.beginPath();
-    ctx.moveTo(x - 3, by + bh);
-    ctx.lineTo(x, by + bh + 4);
-    ctx.lineTo(x + 3, by + bh);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.moveTo(x - 4, by + bh);
+    ctx.lineTo(x, by + bh + 5);
+    ctx.lineTo(x + 4, by + bh);
+    ctx.fillStyle = '#ffffff';
     ctx.fill();
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -1015,19 +1027,21 @@
         renderCrown(ctx, this.x, this.y - h - 4, scale, this.animTimer);
       }
 
-      // 5. Mini Reaction Bubble
-      if (this.reactionIcon && this.reactionTimer > 0) {
-        renderReactionBubble(ctx, this.reactionIcon, this.x, this.y - h - (hasCrownNow ? 26 : 8));
+      // 5. Nameplates with Loyalty Badges
+      let nameplateTop = null;
+      if (config.showNameplates) {
+        nameplateTop = this.renderNameplate(ctx, h, hasCrownNow);
       }
 
-      // 6. Nameplates with Loyalty Badges
-      if (config.showNameplates) {
-        this.renderNameplate(ctx, h, hasCrownNow);
+      // 6. Mini Reaction Bubble
+      if (this.reactionIcon && this.reactionTimer > 0) {
+        const reactY = nameplateTop !== null ? (nameplateTop - 8) : (this.y - h - (hasCrownNow ? 32 : 12));
+        renderReactionBubble(ctx, this.reactionIcon, this.x, reactY);
       }
 
       // 7. Speech Bubble
       if (this.bubbleText && this.bubbleAlpha > 0) {
-        this.renderSpeechBubble(ctx, h, hasCrownNow);
+        this.renderSpeechBubble(ctx, h, hasCrownNow, nameplateTop);
       }
 
       ctx.restore();
@@ -1044,40 +1058,63 @@
         badge = '🥈';
       }
 
-      const fontSize = Math.round(11 * (config.scale / 2.5));
-      ctx.font = `bold ${fontSize}px 'Fredoka', 'Segoe UI', sans-serif`;
+      const fontMult = config.fontSizeMultiplier || 1.35;
+      const fontSize = Math.max(16, Math.round(15 * fontMult));
+      ctx.font = `800 ${fontSize}px 'Fredoka', 'Nunito', 'Segoe UI', sans-serif`;
       const displayText = `${badge} ${this.username}`;
       const textMetrics = ctx.measureText(displayText);
-      const paddingX = 8;
-      const paddingY = 3;
+      const paddingX = Math.round(11 * fontMult);
+      const paddingY = Math.round(5 * fontMult);
       const pillW = textMetrics.width + paddingX * 2;
-      const pillH = fontSize + paddingY * 2;
+      const pillH = fontSize + paddingY * 2 + 2;
       const pillX = this.x - pillW / 2;
-      const pillY = this.y - spriteHeight - pillH - (hasCrown ? 20 : 4);
+      const pillY = this.y - spriteHeight - pillH - (hasCrown ? 24 : 6);
 
-      ctx.fillStyle = 'rgba(15, 18, 25, 0.78)';
+      // 1. Drop shadow for the pill
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetY = 2;
+
+      // 2. High-contrast solid dark background
+      ctx.fillStyle = 'rgba(10, 14, 24, 0.94)';
       ctx.beginPath();
       ctx.roundRect(pillX, pillY, pillW, pillH, pillH / 2);
       ctx.fill();
+      ctx.restore();
 
+      // 3. Thick vibrant border
       ctx.strokeStyle = hasCrown ? '#ffd700' : this.color;
-      ctx.lineWidth = hasCrown ? 2 : 1.5;
+      ctx.lineWidth = hasCrown ? 2.8 : 2.2;
+      ctx.beginPath();
+      ctx.roundRect(pillX, pillY, pillW, pillH, pillH / 2);
       ctx.stroke();
 
+      // 4. Razor-sharp white text with text shadow
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(displayText, this.x, pillY + pillH / 2);
+      ctx.restore();
+
+      return pillY;
     }
 
-    renderSpeechBubble(ctx, spriteHeight, hasCrown) {
+    renderSpeechBubble(ctx, spriteHeight, hasCrown, nameplateTop) {
       ctx.save();
       ctx.globalAlpha = this.bubbleAlpha * this.despawnAlpha;
 
-      const maxCharsPerLine = 24;
+      const fontMult = config.fontSizeMultiplier || 1.35;
+      const fontSize = Math.max(18, Math.round(16 * fontMult));
+      ctx.font = `700 ${fontSize}px 'Fredoka', 'Nunito', 'Segoe UI', sans-serif`;
+
+      const maxCharsPerLine = Math.max(16, Math.round(24 / (fontMult * 0.85)));
       const lines = wrapText(this.bubbleText, maxCharsPerLine);
-      const fontSize = Math.round(12 * (config.scale / 2.5));
-      ctx.font = `600 ${fontSize}px 'Fredoka', 'Segoe UI', sans-serif`;
 
       let maxLineW = 0;
       for (const line of lines) {
@@ -1085,35 +1122,65 @@
         if (w > maxLineW) maxLineW = w;
       }
 
-      const padX = 12;
-      const padY = 8;
-      const lineH = fontSize * 1.35;
-      const bubbleW = Math.max(50, maxLineW + padX * 2);
+      const padX = Math.round(14 * fontMult);
+      const padY = Math.round(9 * fontMult);
+      const lineH = Math.round(fontSize * 1.35);
+      const bubbleW = Math.max(64, maxLineW + padX * 2);
       const bubbleH = lines.length * lineH + padY * 2;
 
       let bubbleX = this.x - bubbleW / 2;
-      bubbleX = Math.max(15, Math.min(1920 - bubbleW - 15, bubbleX));
-      const bubbleY = this.y - spriteHeight - (hasCrown ? 46 : 32) - bubbleH;
+      bubbleX = Math.max(20, Math.min(1920 - bubbleW - 20, bubbleX));
+      
+      const targetAnchorY = nameplateTop !== null ? (nameplateTop - 12) : (this.y - spriteHeight - (hasCrown ? 44 : 16));
+      const bubbleY = targetAnchorY - bubbleH;
 
+      // 1. Rich drop shadow
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      ctx.shadowBlur = 14;
+      ctx.shadowOffsetY = 4;
+
+      // 2. Solid pure white bubble body
       ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#22252e';
-      ctx.lineWidth = 2.5;
-
       ctx.beginPath();
-      ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 8);
+      ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 12);
       ctx.fill();
-      ctx.stroke();
 
-      const tailX = Math.max(bubbleX + 12, Math.min(bubbleX + bubbleW - 12, this.x));
+      // Tail with shadow
+      const tailX = Math.max(bubbleX + 18, Math.min(bubbleX + bubbleW - 18, this.x));
+      const tailTipY = bubbleY + bubbleH + 9;
       ctx.beginPath();
-      ctx.moveTo(tailX - 6, bubbleY + bubbleH);
-      ctx.lineTo(tailX, bubbleY + bubbleH + 7);
-      ctx.lineTo(tailX + 6, bubbleY + bubbleH);
+      ctx.moveTo(tailX - 8, bubbleY + bubbleH - 1);
+      ctx.lineTo(tailX, tailTipY);
+      ctx.lineTo(tailX + 8, bubbleY + bubbleH - 1);
       ctx.closePath();
       ctx.fill();
+      ctx.restore();
+
+      // 3. Crisp bold dark border
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 12);
       ctx.stroke();
 
-      ctx.fillStyle = '#1e212b';
+      // Tail fill & border
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(tailX - 8, bubbleY + bubbleH - 2);
+      ctx.lineTo(tailX, tailTipY);
+      ctx.lineTo(tailX + 8, bubbleY + bubbleH - 2);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(tailX - 8, bubbleY + bubbleH);
+      ctx.lineTo(tailX, tailTipY);
+      ctx.lineTo(tailX + 8, bubbleY + bubbleH);
+      ctx.stroke();
+
+      // 4. Ultra-clear deep black text
+      ctx.fillStyle = '#0f172a';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       for (let i = 0; i < lines.length; i++) {

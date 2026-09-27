@@ -49,6 +49,7 @@ const DEFAULT_CHATTER_CONFIG = {
   groundY: 920,
   groundDepth: 60,
   moveSpeed: 1.0,
+  fontSizeMultiplier: 1.35,
   despawnTimeout: 900,
   maxChatters: 45,
   chatBubbleDuration: 5.5,
