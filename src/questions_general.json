@@ -4,7 +4,11 @@
     "category": "Tarih",
     "difficulty": "Kolay",
     "question": "Türkiye Cumhuriyeti hangi yılda ilan edilmiştir?",
-    "answers": ["1923", "yirmidokuz ekim 1923", "29 ekim 1923"],
+    "answers": [
+      "1923",
+      "yirmidokuz ekim 1923",
+      "29 ekim 1923"
+    ],
     "hint": "29 Ekim..."
   },
   {
@@ -12,7 +16,9 @@
     "category": "Coğrafya",
     "difficulty": "Kolay",
     "question": "Türkiye'nin başkenti neresidir?",
-    "answers": ["Ankara"],
+    "answers": [
+      "Ankara"
+    ],
     "hint": "İç Anadolu'da yer alır."
   },
   {
@@ -20,7 +26,10 @@
     "category": "Bilim",
     "difficulty": "Kolay",
     "question": "Güneş sistemindeki en büyük gezegen hangisidir?",
-    "answers": ["Jüpiter", "Jupiter"],
+    "answers": [
+      "Jüpiter",
+      "Jupiter"
+    ],
     "hint": "Gaz devi olarak bilinir ve meşhur Kırmızı Lekesi vardır."
   },
   {
@@ -28,7 +37,12 @@
     "category": "Sinema",
     "difficulty": "Kolay",
     "question": "'Yüzüklerin Efendisi' serisinde Tek Yüzük hangi dağın ateşinde yok edilebilir?",
-    "answers": ["Hüküm Dağı", "Mount Doom", "Hukum Dagi", "Orodruin"],
+    "answers": [
+      "Hüküm Dağı",
+      "Mount Doom",
+      "Hukum Dagi",
+      "Orodruin"
+    ],
     "hint": "Mordor'un kalbindeki yanardağ."
   },
   {
@@ -36,7 +50,10 @@
     "category": "Tarih",
     "difficulty": "Kolay",
     "question": "İstanbul hangi yıl fethedilmiştir?",
-    "answers": ["1453", "bin dort yuz elli uc"],
+    "answers": [
+      "1453",
+      "bin dort yuz elli uc"
+    ],
     "hint": "Fatih Sultan Mehmet fethetti."
   },
   {
@@ -44,7 +61,11 @@
     "category": "Edebiyat",
     "difficulty": "Kolay",
     "question": "'Suç ve Ceza' romanının dünyaca ünlü Rus yazarı kimdir?",
-    "answers": ["Dostoyevski", "Fyodor Dostoyevski", "Dostoyevsky"],
+    "answers": [
+      "Dostoyevski",
+      "Fyodor Dostoyevski",
+      "Dostoyevsky"
+    ],
     "hint": "Karakteri Raskolnikov'dur."
   },
   {
@@ -52,7 +73,12 @@
     "category": "Coğrafya",
     "difficulty": "Kolay",
     "question": "Dünyanın en uzun nehri genellikle hangisi kabul edilir?",
-    "answers": ["Nil", "Nil Nehri", "Amazon", "Amazon Nehri"],
+    "answers": [
+      "Nil",
+      "Nil Nehri",
+      "Amazon",
+      "Amazon Nehri"
+    ],
     "hint": "Afrika kıtasında akar ve Mısır'dan geçer."
   },
   {
@@ -60,7 +86,10 @@
     "category": "Bilim",
     "difficulty": "Kolay",
     "question": "Suyun kimyasal formülü nedir?",
-    "answers": ["H2O", "h2o"],
+    "answers": [
+      "H2O",
+      "h2o"
+    ],
     "hint": "2 Hidrojen, 1 Oksijen."
   },
   {
@@ -68,7 +97,10 @@
     "category": "Spor",
     "difficulty": "Kolay",
     "question": "Futbolda bir takım sahada kaç oyuncuyla mücadele eder?",
-    "answers": ["11", "on bir"],
+    "answers": [
+      "11",
+      "on bir"
+    ],
     "hint": "Kaleci dahil toplam sayı."
   },
   {
@@ -76,7 +108,11 @@
     "category": "Sanat",
     "difficulty": "Kolay",
     "question": "Ünlü 'Mona Lisa' tablosunu hangi Rönesans sanatçısı yapmıştır?",
-    "answers": ["Leonardo da Vinci", "Da Vinci", "Leonardo"],
+    "answers": [
+      "Leonardo da Vinci",
+      "Da Vinci",
+      "Leonardo"
+    ],
     "hint": "İtalyan deha ve mucit."
   },
   {
@@ -84,7 +120,9 @@
     "category": "Coğrafya",
     "difficulty": "Orta",
     "question": "Fransa'nın başkenti neresidir?",
-    "answers": ["Paris"],
+    "answers": [
+      "Paris"
+    ],
     "hint": "Eyfel Kulesi bu şehirdedir."
   },
   {
@@ -92,7 +130,11 @@
     "category": "Bilim",
     "difficulty": "Orta",
     "question": "Periyodik tabloda 'Au' simgesi hangi değerli madeni temsil eder?",
-    "answers": ["Altın", "Altin", "Gold"],
+    "answers": [
+      "Altın",
+      "Altin",
+      "Gold"
+    ],
     "hint": "Kuyumcuların vazgeçilmezi sarı maden."
   },
   {
@@ -100,7 +142,11 @@
     "category": "Müzik",
     "difficulty": "Kolay",
     "question": "İstiklal Marşı'mızın şairi kimdir?",
-    "answers": ["Mehmet Akif Ersoy", "Mehmet Akif", "Akif Ersoy"],
+    "answers": [
+      "Mehmet Akif Ersoy",
+      "Mehmet Akif",
+      "Akif Ersoy"
+    ],
     "hint": "Milli şairimiz."
   },
   {
@@ -108,7 +154,11 @@
     "category": "Sinema",
     "difficulty": "Kolay",
     "question": "'Titanik' filminin başrolünde Jack karakterini canlandıran ünlü aktör kimdir?",
-    "answers": ["Leonardo DiCaprio", "DiCaprio", "Leonardo Di Caprio"],
+    "answers": [
+      "Leonardo DiCaprio",
+      "DiCaprio",
+      "Leonardo Di Caprio"
+    ],
     "hint": "Yıllar sonra 'The Revenant' ile Oscar kazandı."
   },
   {
@@ -116,7 +166,12 @@
     "category": "Tarih",
     "difficulty": "Kolay",
     "question": "İlk Türk astronot olarak Uluslararası Uzay İstasyonu'na giden isim kimdir?",
-    "answers": ["Alper Gezeravcı", "Alper Gezeravci", "Gezeravcı", "Gezeravci"],
+    "answers": [
+      "Alper Gezeravcı",
+      "Alper Gezeravci",
+      "Gezeravcı",
+      "Gezeravci"
+    ],
     "hint": "İstikbal göklerdedir diyerek yola çıktı."
   },
   {
@@ -124,7 +179,10 @@
     "category": "Coğrafya",
     "difficulty": "Orta",
     "question": "Japonya'nın başkenti neresidir?",
-    "answers": ["Tokyo", "Tokio"],
+    "answers": [
+      "Tokyo",
+      "Tokio"
+    ],
     "hint": "Dünyanın en kalabalık metropollerinden biri."
   },
   {
@@ -132,7 +190,10 @@
     "category": "Bilim",
     "difficulty": "Kolay",
     "question": "İnsan vücudundaki en büyük iç organ hangisidir?",
-    "answers": ["Karaciğer", "Karaciger"],
+    "answers": [
+      "Karaciğer",
+      "Karaciger"
+    ],
     "hint": "Kendini yenileme özelliğine sahip hayati organ."
   },
   {
@@ -140,7 +201,10 @@
     "category": "Popüler Kültür",
     "difficulty": "Kolay",
     "question": "Harry Potter serisinde Harry'nin mensubu olduğu Hogwarts binası hangisidir?",
-    "answers": ["Gryffindor", "Griffindor"],
+    "answers": [
+      "Gryffindor",
+      "Griffindor"
+    ],
     "hint": "Cesaret ve yiğitliğin simgesi aslan armalı bina."
   },
   {
@@ -148,7 +212,12 @@
     "category": "Tarih",
     "difficulty": "Orta",
     "question": "Osmanlı Devleti'nin kurucusu olan ilk padişah kimdir?",
-    "answers": ["Osman Gazi", "Osman Bey", "I. Osman", "Osman"],
+    "answers": [
+      "Osman Gazi",
+      "Osman Bey",
+      "I. Osman",
+      "Osman"
+    ],
     "hint": "Ertuğrul Gazi'nin oğludur."
   },
   {
@@ -156,7 +225,11 @@
     "category": "Coğrafya",
     "difficulty": "Orta",
     "question": "Türkiye'nin yüzölçümü bakımından en büyük gölü hangisidir?",
-    "answers": ["Van Gölü", "Van Golu", "Van"],
+    "answers": [
+      "Van Gölü",
+      "Van Golu",
+      "Van"
+    ],
     "hint": "Nemrut Dağı yakınlarında sodalı bir göl."
   },
   {
@@ -164,7 +237,10 @@
     "category": "Müzik",
     "difficulty": "Kolay",
     "question": "'Arkadaşım Eşek' ve 'Gülpembe' şarkılarıyla tanınan efsanevi Türk sanatçı kimdir?",
-    "answers": ["Barış Manço", "Baris Manco"],
+    "answers": [
+      "Barış Manço",
+      "Baris Manco"
+    ],
     "hint": "7'den 77'ye programının unutulmaz sunucusu."
   },
   {
@@ -172,7 +248,11 @@
     "category": "Spor",
     "difficulty": "Kolay",
     "question": "Basketbolda serbest atış çizgisi arkasından atılan her isabetli basket kaç puandır?",
-    "answers": ["1", "Bir", "1 puan"],
+    "answers": [
+      "1",
+      "Bir",
+      "1 puan"
+    ],
     "hint": "Faul atışları tek sayıdır."
   },
   {
@@ -180,7 +260,10 @@
     "category": "Bilim",
     "difficulty": "Kolay",
     "question": "Kırmızı gezegen olarak da bilinen Dünya'ya en yakın komşu gezegenlerden biri hangisidir?",
-    "answers": ["Mars", "Merih"],
+    "answers": [
+      "Mars",
+      "Merih"
+    ],
     "hint": "Demir oksit kaplı kızıl yüzeyi vardır."
   },
   {
@@ -188,7 +271,12 @@
     "category": "Sinema",
     "difficulty": "Kolay",
     "question": "Yıldız Savaşları (Star Wars) evreninde Luke Skywalker'ın babası kimdir?",
-    "answers": ["Darth Vader", "Anakin Skywalker", "Anakin", "Vader"],
+    "answers": [
+      "Darth Vader",
+      "Anakin Skywalker",
+      "Anakin",
+      "Vader"
+    ],
     "hint": "'I am your father!' repliğiyle meşhurdur."
   },
   {
@@ -196,7 +284,11 @@
     "category": "Coğrafya",
     "difficulty": "Kolay",
     "question": "Piramitleri ve Nil Nehri ile meşhur olan kuzeydoğu Afrika ülkesi hangisidir?",
-    "answers": ["Mısır", "Misir", "Egypt"],
+    "answers": [
+      "Mısır",
+      "Misir",
+      "Egypt"
+    ],
     "hint": "Kahire bu ülkenin başkentidir."
   },
   {
@@ -204,7 +296,10 @@
     "category": "Tarih",
     "difficulty": "Orta",
     "question": "Mustafa Kemal Atatürk hangi şehirde doğmuştur?",
-    "answers": ["Selanik", "Thessaloniki"],
+    "answers": [
+      "Selanik",
+      "Thessaloniki"
+    ],
     "hint": "Bugün Yunanistan sınırları içinde kalan tarihi kent."
   },
   {
@@ -212,7 +307,10 @@
     "category": "Bilim",
     "difficulty": "Kolay",
     "question": "Ampulü icat eden ve patentini alan Amerikalı ünlü mucit kimdir?",
-    "answers": ["Thomas Edison", "Edison"],
+    "answers": [
+      "Thomas Edison",
+      "Edison"
+    ],
     "hint": "Nikola Tesla'nın en büyük rakibi."
   },
   {
@@ -220,7 +318,12 @@
     "category": "Edebiyat",
     "difficulty": "Orta",
     "question": "'Küçük Prens' (Le Petit Prince) adlı unutulmaz kitabın Fransız yazarı kimdir?",
-    "answers": ["Antoine de Saint-Exupery", "Saint-Exupery", "Exupery", "Antoine de Saint Exupery"],
+    "answers": [
+      "Antoine de Saint-Exupery",
+      "Saint-Exupery",
+      "Exupery",
+      "Antoine de Saint Exupery"
+    ],
     "hint": "Aynı zamanda bir pilottur."
   },
   {
@@ -228,7 +331,11 @@
     "category": "Spor",
     "difficulty": "Kolay",
     "question": "Olimpiyat halkalarında kaç farklı renk halka bulunmaktadır?",
-    "answers": ["5", "Beş", "Bes"],
+    "answers": [
+      "5",
+      "Beş",
+      "Bes"
+    ],
     "hint": "5 kıtayı simgeler."
   },
   {
@@ -236,7 +343,10 @@
     "category": "Coğrafya",
     "difficulty": "Orta",
     "question": "İtalya'nın başkenti neresidir?",
-    "answers": ["Roma", "Rome"],
+    "answers": [
+      "Roma",
+      "Rome"
+    ],
     "hint": "Kolezyum'un bulunduğu tarihi başkent."
   },
   {
@@ -244,7 +354,11 @@
     "category": "Genel Kültür",
     "difficulty": "Kolay",
     "question": "Satranç oyununda en güçlü hareket kabiliyetine sahip taş hangisidir?",
-    "answers": ["Vezir", "Kraliçe", "Queen"],
+    "answers": [
+      "Vezir",
+      "Kraliçe",
+      "Queen"
+    ],
     "hint": "Hem kale hem fil gibi istediği yöne gidebilir."
   },
   {
@@ -252,7 +366,12 @@
     "category": "Bilim",
     "difficulty": "Orta",
     "question": "Işık hızı saniyede yaklaşık olarak kaç bin kilometredir?",
-    "answers": ["300000", "300 bin", "300.000", "300 bin km"],
+    "answers": [
+      "300000",
+      "300 bin",
+      "300.000",
+      "300 bin km"
+    ],
     "hint": "Tam olarak 299.792 km/s."
   },
   {
@@ -260,7 +379,10 @@
     "category": "Sinema",
     "difficulty": "Kolay",
     "question": "Marvel evreninde demir zırhıyla uçan Tony Stark'ın süper kahraman adı nedir?",
-    "answers": ["Iron Man", "Demir Adam"],
+    "answers": [
+      "Iron Man",
+      "Demir Adam"
+    ],
     "hint": "Robert Downey Jr. canlandırmıştır."
   },
   {
@@ -268,7 +390,10 @@
     "category": "Tarih",
     "difficulty": "Kolay",
     "question": "Çanakkale Zaferi her yıl hangi ay ve günde anılmaktadır?",
-    "answers": ["18 Mart", "18 mart"],
+    "answers": [
+      "18 Mart",
+      "18 mart"
+    ],
     "hint": "İlkbaharın başındaki milli zafer günümüz."
   },
   {
@@ -276,7 +401,10 @@
     "category": "Coğrafya",
     "difficulty": "Zor",
     "question": "Avustralya'nın başkenti neresidir?",
-    "answers": ["Canberra", "Kanberra"],
+    "answers": [
+      "Canberra",
+      "Kanberra"
+    ],
     "hint": "Sidney veya Melbourne değildir!"
   },
   {
@@ -284,7 +412,10 @@
     "category": "Müzik",
     "difficulty": "Orta",
     "question": "İşitme duyusunu kaybetmesine rağmen 9. Senfoni'yi besteleyen Alman besteci kimdir?",
-    "answers": ["Beethoven", "Ludwig van Beethoven"],
+    "answers": [
+      "Beethoven",
+      "Ludwig van Beethoven"
+    ],
     "hint": "'Kader Kapıyı Çalınca' motifiyle tanınır."
   },
   {
@@ -292,7 +423,11 @@
     "category": "Bilim",
     "difficulty": "Kolay",
     "question": "Atmosferde en yüksek oranda bulunan gaz hangisidir?",
-    "answers": ["Azot", "Nitrojen", "N2"],
+    "answers": [
+      "Azot",
+      "Nitrojen",
+      "N2"
+    ],
     "hint": "Havanın yaklaşık %78'ini oluşturur, oksijen değildir."
   },
   {
@@ -300,7 +435,11 @@
     "category": "Popüler Kültür",
     "difficulty": "Kolay",
     "question": "Minecraft oyununun baş düşmanı olan ve 'The End' boyutunda yaşayan dev ejderha kimdir?",
-    "answers": ["Ender Dragon", "Ender Ejderhası", "Ender Ejderhasi"],
+    "answers": [
+      "Ender Dragon",
+      "Ender Ejderhası",
+      "Ender Ejderhasi"
+    ],
     "hint": "Obsidyen kulelerdeki kristalleri yok etmeden canı yenilenir."
   },
   {
@@ -308,7 +447,10 @@
     "category": "Tarih",
     "difficulty": "Orta",
     "question": "Ay'a ayak basan ilk insan kimdir?",
-    "answers": ["Neil Armstrong", "Armstrong"],
+    "answers": [
+      "Neil Armstrong",
+      "Armstrong"
+    ],
     "hint": "'İnsan için küçük, insanlık için dev bir adım.'"
   },
   {
@@ -316,7 +458,11 @@
     "category": "Coğrafya",
     "difficulty": "Kolay",
     "question": "Dünyanın en yüksek dağı hangisidir?",
-    "answers": ["Everest", "Everest Dağı", "Mount Everest"],
+    "answers": [
+      "Everest",
+      "Everest Dağı",
+      "Mount Everest"
+    ],
     "hint": "Himalayalar'da 8848 metre yüksekliktedir."
   },
   {
@@ -324,7 +470,11 @@
     "category": "Sanat",
     "difficulty": "Orta",
     "question": "Kendi kulağını kesmesi ve 'Yıldızlı Gece' tablosuyla bilinen Hollandalı ressam kimdir?",
-    "answers": ["Vincent van Gogh", "Van Gogh", "Gogh"],
+    "answers": [
+      "Vincent van Gogh",
+      "Van Gogh",
+      "Gogh"
+    ],
     "hint": "Post-empresyonist sarı tonların ustası."
   },
   {
@@ -332,7 +482,9 @@
     "category": "Spor",
     "difficulty": "Kolay",
     "question": "Tenis sporunda '0' (sıfır) puan hangi kelimeyle ifade edilir?",
-    "answers": ["Love"],
+    "answers": [
+      "Love"
+    ],
     "hint": "İngilizce aşk anlamına gelir."
   },
   {
@@ -340,7 +492,10 @@
     "category": "Bilim",
     "difficulty": "Kolay",
     "question": "Yerçekimi kanununu bir elmanın başının üstüne düşmesiyle ilham alarak keşfeden fizikçi kimdir?",
-    "answers": ["Isaac Newton", "Newton"],
+    "answers": [
+      "Isaac Newton",
+      "Newton"
+    ],
     "hint": "İngiliz matematikçi ve fizikçi."
   },
   {
@@ -348,7 +503,11 @@
     "category": "Sinema",
     "difficulty": "Kolay",
     "question": "Batman karakterinin yaşadığı kurgusal karanlık şehir hangisidir?",
-    "answers": ["Gotham", "Gotham City", "Gothom"],
+    "answers": [
+      "Gotham",
+      "Gotham City",
+      "Gothom"
+    ],
     "hint": "Joker de bu şehirde suç işler."
   },
   {
@@ -356,7 +515,9 @@
     "category": "Coğrafya",
     "difficulty": "Kolay",
     "question": "Almanya'nın başkenti neresidir?",
-    "answers": ["Berlin"],
+    "answers": [
+      "Berlin"
+    ],
     "hint": "Tarihte bir duvarla ikiye bölünmüştü."
   },
   {
@@ -364,7 +525,11 @@
     "category": "Tarih",
     "difficulty": "Orta",
     "question": "Kurtuluş Savaşı'nı başlatan Mustafa Kemal Atatürk'ün Samsun'a çıktığı tarih nedir?",
-    "answers": ["19 Mayıs 1919", "19 Mayıs", "19 mayis 1919"],
+    "answers": [
+      "19 Mayıs 1919",
+      "19 Mayıs",
+      "19 mayis 1919"
+    ],
     "hint": "Gençlik ve Spor Bayramı olarak kutlanır."
   },
   {
@@ -372,7 +537,10 @@
     "category": "Genel Kültür",
     "difficulty": "Kolay",
     "question": "Bir yılda kaç hafta vardır?",
-    "answers": ["52", "Elli iki"],
+    "answers": [
+      "52",
+      "Elli iki"
+    ],
     "hint": "365 gün yaklaşık 52 haftadır."
   },
   {
@@ -380,7 +548,11 @@
     "category": "Bilim",
     "difficulty": "Kolay",
     "question": "Kendi ışığını üreten ve Dünya'mızı ısıtan en yakın yıldız hangisidir?",
-    "answers": ["Güneş", "Gunes", "Sun"],
+    "answers": [
+      "Güneş",
+      "Gunes",
+      "Sun"
+    ],
     "hint": "Gündüzleri gökyüzünde parlar."
   },
   {
@@ -388,7 +560,10 @@
     "category": "Edebiyat",
     "difficulty": "Orta",
     "question": "'İnce Memed' roman serisinin yazarı olan efsanevi Çukurovalı Türk yazar kimdir?",
-    "answers": ["Yaşar Kemal", "Yasar Kemal"],
+    "answers": [
+      "Yaşar Kemal",
+      "Yasar Kemal"
+    ],
     "hint": "Torosların ve Çukurova'nın büyük romancısı."
   },
   {
@@ -396,7 +571,10 @@
     "category": "Spor",
     "difficulty": "Kolay",
     "question": "Futbolda Dünya Kupası'nı en çok kazanan ülke hangisidir?",
-    "answers": ["Brezilya", "Brazil"],
+    "answers": [
+      "Brezilya",
+      "Brazil"
+    ],
     "hint": "Samba diyarı, toplam 5 kez şampiyon oldu."
   },
   {
@@ -404,7 +582,12 @@
     "category": "Coğrafya",
     "difficulty": "Kolay",
     "question": "Dünyanın en büyük okyanusu hangisidir?",
-    "answers": ["Büyük Okyanus", "Pasifik", "Pasifik Okyanusu", "Buyuk Okyanus"],
+    "answers": [
+      "Büyük Okyanus",
+      "Pasifik",
+      "Pasifik Okyanusu",
+      "Buyuk Okyanus"
+    ],
     "hint": "Asya ile Amerika kıtaları arasındadır."
   },
   {
@@ -412,7 +595,10 @@
     "category": "Müzik",
     "difficulty": "Kolay",
     "question": "'Popun Kralı' (King of Pop) lakabıyla tanınan efsanevi şarkıcı ve dansçı kimdir?",
-    "answers": ["Michael Jackson", "Jackson"],
+    "answers": [
+      "Michael Jackson",
+      "Jackson"
+    ],
     "hint": "Moonwalk dansı ve 'Thriller' albümüyle bilinir."
   },
   {
@@ -420,7 +606,10 @@
     "category": "Tarih",
     "difficulty": "Orta",
     "question": "Titanik gemisi hangi yılda buzdağına çarparak batmıştır?",
-    "answers": ["1912", "bin dokuz yuz on iki"],
+    "answers": [
+      "1912",
+      "bin dokuz yuz on iki"
+    ],
     "hint": "1. Dünya Savaşı'ndan 2 yıl önce."
   },
   {
@@ -428,7 +617,11 @@
     "category": "Bilim",
     "difficulty": "Kolay",
     "question": "Bal üreten ve polen taşıyarak doğanın dengesini koruyan böcek hangisidir?",
-    "answers": ["Arı", "Bal arısı", "Ari"],
+    "answers": [
+      "Arı",
+      "Bal arısı",
+      "Ari"
+    ],
     "hint": "Kovanlarda yaşar."
   },
   {
@@ -436,7 +629,10 @@
     "category": "Sinema",
     "difficulty": "Kolay",
     "question": "'Matrix' filminde Neo karakterine kırmızı ve mavi hapı sunan karakter kimdir?",
-    "answers": ["Morpheus", "Morfeus"],
+    "answers": [
+      "Morpheus",
+      "Morfeus"
+    ],
     "hint": "Laurence Fishburne oynamıştır."
   },
   {
@@ -444,7 +640,10 @@
     "category": "Coğrafya",
     "difficulty": "Kolay",
     "question": "İngiltere'nin (Birleşik Krallık) başkenti neresidir?",
-    "answers": ["Londra", "London"],
+    "answers": [
+      "Londra",
+      "London"
+    ],
     "hint": "Big Ben saat kulesi bu şehirdedir."
   },
   {
@@ -452,7 +651,10 @@
     "category": "Genel Kültür",
     "difficulty": "Kolay",
     "question": "Gökkuşağında kaç renk bulunur?",
-    "answers": ["7", "Yedi"],
+    "answers": [
+      "7",
+      "Yedi"
+    ],
     "hint": "Kırmızıdan mora uzanır."
   },
   {
@@ -460,7 +662,11 @@
     "category": "Bilim",
     "difficulty": "Orta",
     "question": "DNA'nın açılımındaki 'D' harfi hangi kelimenin kısaltmasıdır?",
-    "answers": ["Deoksiribo", "Deoksiribonükleik", "Deoksiribonukleik"],
+    "answers": [
+      "Deoksiribo",
+      "Deoksiribonükleik",
+      "Deoksiribonukleik"
+    ],
     "hint": "Deoksiribo Nükleik Asit."
   },
   {
@@ -468,7 +674,12 @@
     "category": "Tarih",
     "difficulty": "Kolay",
     "question": "Roma İmparatorluğu'nun en ünlü diktatörlerinden olan ve 'Sen de mi Brütüs?' sözüyle hatırlanan lider kimdir?",
-    "answers": ["Jül Sezar", "Sezar", "Julius Caesar", "Jul Sezar"],
+    "answers": [
+      "Jül Sezar",
+      "Sezar",
+      "Julius Caesar",
+      "Jul Sezar"
+    ],
     "hint": "Senato'da suikaste uğramıştır."
   },
   {
@@ -476,7 +687,10 @@
     "category": "Coğrafya",
     "difficulty": "Orta",
     "question": "Rusya'nın başkenti neresidir?",
-    "answers": ["Moskova", "Moscow"],
+    "answers": [
+      "Moskova",
+      "Moscow"
+    ],
     "hint": "Kızıl Meydan ve Kremlin bu şehirdedir."
   },
   {
@@ -484,7 +698,10 @@
     "category": "Spor",
     "difficulty": "Kolay",
     "question": "100 metre dünya rekorunu 9.58 saniye ile elinde tutan Jamaikalı efsane atlet kimdir?",
-    "answers": ["Usain Bolt", "Bolt"],
+    "answers": [
+      "Usain Bolt",
+      "Bolt"
+    ],
     "hint": "Şimşek lakaplı koşucu."
   },
   {
@@ -492,7 +709,10 @@
     "category": "Edebiyat",
     "difficulty": "Kolay",
     "question": "'Romeo ve Juliet' ile 'Hamlet' gibi ölümsüz tiyatro eserlerinin İngiliz yazarı kimdir?",
-    "answers": ["William Shakespeare", "Shakespeare"],
+    "answers": [
+      "William Shakespeare",
+      "Shakespeare"
+    ],
     "hint": "'Olmak ya da olmamak, işte bütün mesele bu.'"
   },
   {
@@ -500,7 +720,10 @@
     "category": "Bilim",
     "difficulty": "Kolay",
     "question": "İnsan iskeletinde yetişkin bir bireyde toplam kaç adet kemik bulunur?",
-    "answers": ["206", "iki yuz alti"],
+    "answers": [
+      "206",
+      "iki yuz alti"
+    ],
     "hint": "200'den birkaç kemik fazla."
   },
   {
@@ -508,7 +731,11 @@
     "category": "Sinema",
     "difficulty": "Kolay",
     "question": "'Karayip Korsanları' film serisindeki meşhur korsan kaptan Jack'in soyadı nedir?",
-    "answers": ["Sparrow", "Kaptan Jack Sparrow", "Serçe"],
+    "answers": [
+      "Sparrow",
+      "Kaptan Jack Sparrow",
+      "Serçe"
+    ],
     "hint": "İngilizce serçe kuşu anlamına gelir."
   },
   {
@@ -516,7 +743,9 @@
     "category": "Coğrafya",
     "difficulty": "Orta",
     "question": "İspanya'nın başkenti neresidir?",
-    "answers": ["Madrid"],
+    "answers": [
+      "Madrid"
+    ],
     "hint": "Real Madrid kulübünün evi."
   },
   {
@@ -524,7 +753,9 @@
     "category": "Tarih",
     "difficulty": "Kolay",
     "question": "Mevlana Celaleddin-i Rumi'nin türbesi Türkiye'nin hangi ilindedir?",
-    "answers": ["Konya"],
+    "answers": [
+      "Konya"
+    ],
     "hint": "İç Anadolu'nun tahıl ambarı ili."
   },
   {
@@ -532,7 +763,10 @@
     "category": "Popüler Kültür",
     "difficulty": "Kolay",
     "question": "Pokemon serisinde kül sarısı rengi ve elektrik saldırılarıyla meşhur olan 25 numaralı Pokemon kimdir?",
-    "answers": ["Pikachu", "Pikaçu"],
+    "answers": [
+      "Pikachu",
+      "Pikaçu"
+    ],
     "hint": "Ash'in en sadık dostu."
   },
   {
@@ -540,7 +774,10 @@
     "category": "Bilim",
     "difficulty": "Orta",
     "question": "Kuduz aşısını bulan dünyaca ünlü Fransız mikrobiyolog kimdir?",
-    "answers": ["Louis Pasteur", "Pasteur"],
+    "answers": [
+      "Louis Pasteur",
+      "Pasteur"
+    ],
     "hint": "Pastörizasyon yöntemine de adını vermiştir."
   },
   {
@@ -548,7 +785,11 @@
     "category": "Müzik",
     "difficulty": "Kolay",
     "question": "Gitarda standart olarak kaç adet tel bulunur?",
-    "answers": ["6", "Altı", "Alti"],
+    "answers": [
+      "6",
+      "Altı",
+      "Alti"
+    ],
     "hint": "Mi, La, Re, Sol, Si, Mi."
   },
   {
@@ -556,7 +797,10 @@
     "category": "Coğrafya",
     "difficulty": "Kolay",
     "question": "Dünyanın en soğuk ve güney kutbunu kaplayan buzullarla kaplı kıtası hangisidir?",
-    "answers": ["Antarktika", "Antartika"],
+    "answers": [
+      "Antarktika",
+      "Antartika"
+    ],
     "hint": "Penguenlerin ana vatanı."
   },
   {
@@ -564,7 +808,11 @@
     "category": "Tarih",
     "difficulty": "Kolay",
     "question": "Türkiye Büyük Millet Meclisi (TBMM) hangi tarihte açılmıştır?",
-    "answers": ["23 Nisan 1920", "23 Nisan", "23 nisan 1920"],
+    "answers": [
+      "23 Nisan 1920",
+      "23 Nisan",
+      "23 nisan 1920"
+    ],
     "hint": "Ulusal Egemenlik ve Çocuk Bayramı."
   },
   {
@@ -572,7 +820,10 @@
     "category": "Genel Kültür",
     "difficulty": "Kolay",
     "question": "Hangi hayvan 'çöl gemisi' olarak adlandırılır ve hörgüçlerinde yağ depolar?",
-    "answers": ["Deve", "Dromedar"],
+    "answers": [
+      "Deve",
+      "Dromedar"
+    ],
     "hint": "Susuzluğa günlerce dayanabilir."
   },
   {
@@ -580,7 +831,11 @@
     "category": "Sinema",
     "difficulty": "Orta",
     "question": "Christopher Nolan'ın yönettiği rüya içinde rüya temalı ünlü bilimkurgu filminin adı nedir?",
-    "answers": ["Inception", "Başlangıç", "Baslangic"],
+    "answers": [
+      "Inception",
+      "Başlangıç",
+      "Baslangic"
+    ],
     "hint": "Fırıldak (topaç) dönmeye devam eder..."
   },
   {
@@ -588,7 +843,12 @@
     "category": "Bilim",
     "difficulty": "Kolay",
     "question": "Evrende bilinen en hızlı şey nedir?",
-    "answers": ["Işık", "Isik", "Işık hızı", "Isik hizi"],
+    "answers": [
+      "Işık",
+      "Isik",
+      "Işık hızı",
+      "Isik hizi"
+    ],
     "hint": "Saniyede 300.000 km mesafe kateder."
   },
   {
@@ -596,7 +856,11 @@
     "category": "Coğrafya",
     "difficulty": "Orta",
     "question": "İtalya'nın haritadaki şekli genellikle hangi eşyaya benzetilir?",
-    "answers": ["Çizme", "Cizme", "Bot"],
+    "answers": [
+      "Çizme",
+      "Cizme",
+      "Bot"
+    ],
     "hint": "Ayakkabı çeşidi."
   },
   {
@@ -604,7 +868,11 @@
     "category": "Spor",
     "difficulty": "Kolay",
     "question": "Futbolda bir oyuncunun aynı maçta 3 gol atmasına ne ad verilir?",
-    "answers": ["Hat-trick", "Hattrick", "Hat trick"],
+    "answers": [
+      "Hat-trick",
+      "Hattrick",
+      "Hat trick"
+    ],
     "hint": "İngilizce şapka numarasından gelir."
   },
   {
@@ -612,7 +880,12 @@
     "category": "Tarih",
     "difficulty": "Orta",
     "question": "Osmanlı Devleti'nde en uzun süre tahtta kalan padişah kimdir?",
-    "answers": ["Kanuni Sultan Süleyman", "Kanuni", "I. Süleyman", "Süleyman"],
+    "answers": [
+      "Kanuni Sultan Süleyman",
+      "Kanuni",
+      "I. Süleyman",
+      "Süleyman"
+    ],
     "hint": "Muhteşem Süleyman olarak da bilinir, 46 yıl hüküm sürmüştür."
   },
   {
@@ -620,7 +893,10 @@
     "category": "Bilim",
     "difficulty": "Kolay",
     "question": "Dünyanın uydusu olan gök cismi hangisidir?",
-    "answers": ["Ay", "Moon"],
+    "answers": [
+      "Ay",
+      "Moon"
+    ],
     "hint": "Geceleri gökyüzünde hilal veya dolunay olarak görünür."
   },
   {
@@ -628,7 +904,9 @@
     "category": "Müzik",
     "difficulty": "Orta",
     "question": "'Düm Tek Tek' şarkısıyla Eurovision'da Türkiye'yi temsil edip 4. olan sanatçımız kimdir?",
-    "answers": ["Hadise"],
+    "answers": [
+      "Hadise"
+    ],
     "hint": "Kırmızı elbisesiyle hafızalara kazındı."
   },
   {
@@ -636,7 +914,10 @@
     "category": "Coğrafya",
     "difficulty": "Kolay",
     "question": "Türkiye'nin üç tarafını çevreleyen denizlerden kuzeyde olanı hangisidir?",
-    "answers": ["Karadeniz", "Kara Deniz"],
+    "answers": [
+      "Karadeniz",
+      "Kara Deniz"
+    ],
     "hint": "Hamsisi ve yaylalarıyla meşhurdur."
   },
   {
@@ -644,7 +925,10 @@
     "category": "Edebiyat",
     "difficulty": "Orta",
     "question": "Dedektif Sherlock Holmes karakterinin İngiliz yaratıcısı yazar kimdir?",
-    "answers": ["Arthur Conan Doyle", "Conan Doyle"],
+    "answers": [
+      "Arthur Conan Doyle",
+      "Conan Doyle"
+    ],
     "hint": "Dr. Watson'ın da yaratıcısıdır."
   },
   {
@@ -652,7 +936,11 @@
     "category": "Popüler Kültür",
     "difficulty": "Kolay",
     "question": "Shrek animasyon filminde Shrek'in en yakın konuşan geveze dostu hangi hayvandır?",
-    "answers": ["Eşek", "Esek", "Donkey"],
+    "answers": [
+      "Eşek",
+      "Esek",
+      "Donkey"
+    ],
     "hint": "Ejderhaya aşık olan sevimli hayvan."
   },
   {
@@ -660,7 +948,10 @@
     "category": "Bilim",
     "difficulty": "Zor",
     "question": "Genel Görelilik Teorisini ortaya koyan ünlü fizik dehası kimdir?",
-    "answers": ["Albert Einstein", "Einstein"],
+    "answers": [
+      "Albert Einstein",
+      "Einstein"
+    ],
     "hint": "E = mc^2 formülüyle bilinir."
   },
   {
@@ -668,7 +959,11 @@
     "category": "Sinema",
     "difficulty": "Kolay",
     "question": "'Yüzüklerin Efendisi' serisinde 'Precious' (Kıymetlimiss) diyerek yüzüğün peşinden koşan karakter kimdir?",
-    "answers": ["Gollum", "Smeagol", "Sméagol"],
+    "answers": [
+      "Gollum",
+      "Smeagol",
+      "Sméagol"
+    ],
     "hint": "Eski bir hobbit olan ikili kişilikli yaratık."
   },
   {
@@ -676,7 +971,10 @@
     "category": "Coğrafya",
     "difficulty": "Orta",
     "question": "Kanada'nın başkenti neresidir?",
-    "answers": ["Ottawa", "Otava"],
+    "answers": [
+      "Ottawa",
+      "Otava"
+    ],
     "hint": "Toronto veya Vancouver değildir!"
   },
   {
@@ -684,7 +982,11 @@
     "category": "Tarih",
     "difficulty": "Orta",
     "question": "Amerika kıtasını 1492 yılında keşfeden Cenevizli kaşif kimdir?",
-    "answers": ["Kristof Kolomb", "Kolomb", "Christopher Columbus"],
+    "answers": [
+      "Kristof Kolomb",
+      "Kolomb",
+      "Christopher Columbus"
+    ],
     "hint": "Hindistan'a ulaştığını sanmıştı."
   },
   {
@@ -692,7 +994,11 @@
     "category": "Spor",
     "difficulty": "Kolay",
     "question": "Voleybolda bir takım sahada kaç oyuncu ile yer alır?",
-    "answers": ["6", "Altı", "Alti"],
+    "answers": [
+      "6",
+      "Altı",
+      "Alti"
+    ],
     "hint": "3 ön, 3 arka hat oyuncusu."
   },
   {
@@ -700,7 +1006,10 @@
     "category": "Bilim",
     "difficulty": "Kolay",
     "question": "Bitkilerin güneş ışığını kullanarak besin üretmesi sürecine ne ad verilir?",
-    "answers": ["Fotosentez", "Photosynthesis"],
+    "answers": [
+      "Fotosentez",
+      "Photosynthesis"
+    ],
     "hint": "Klorofil sayesinde gerçekleşir ve oksijen açığa çıkar."
   },
   {
@@ -708,7 +1017,12 @@
     "category": "Genel Kültür",
     "difficulty": "Kolay",
     "question": "Dünyanın en kalabalık ülkesi günümüzde genellikle hangi ülke kabul edilir?",
-    "answers": ["Hindistan", "India", "Çin", "Cin"],
+    "answers": [
+      "Hindistan",
+      "India",
+      "Çin",
+      "Cin"
+    ],
     "hint": "Güney Asya'da yer alır ve 1.4 milyarı aşkın nüfusu vardır."
   },
   {
@@ -716,7 +1030,9 @@
     "category": "Müzik",
     "difficulty": "Kolay",
     "question": "Freddie Mercury'nin solistliğini yaptığı efsanevi İngiliz rock grubu hangisidir?",
-    "answers": ["Queen"],
+    "answers": [
+      "Queen"
+    ],
     "hint": "'Bohemian Rhapsody' ve 'We Will Rock You' şarkılarıyla bilinir."
   },
   {
@@ -724,7 +1040,10 @@
     "category": "Coğrafya",
     "difficulty": "Kolay",
     "question": "Yunanistan'ın başkenti neresidir?",
-    "answers": ["Atina", "Athens"],
+    "answers": [
+      "Atina",
+      "Athens"
+    ],
     "hint": "Akropolis bu şehirdedir."
   },
   {
@@ -732,7 +1051,10 @@
     "category": "Tarih",
     "difficulty": "Kolay",
     "question": "İlk Çağ Mısır krallarına verilen genel unvan nedir?",
-    "answers": ["Firavun", "Pharaoh"],
+    "answers": [
+      "Firavun",
+      "Pharaoh"
+    ],
     "hint": "Tutankhamun ve Ramses bunlardandır."
   },
   {
@@ -740,7 +1062,11 @@
     "category": "Sinema",
     "difficulty": "Kolay",
     "question": "Matrix evreninde gerçeği temsil eden hap hangi renktir?",
-    "answers": ["Kırmızı", "Kirmizi", "Red"],
+    "answers": [
+      "Kırmızı",
+      "Kirmizi",
+      "Red"
+    ],
     "hint": "Mavi olan illüzyonda kalmayı sağlar."
   },
   {
@@ -748,7 +1074,11 @@
     "category": "Bilim",
     "difficulty": "Orta",
     "question": "İnsan kalbi normal şartlarda kaç odacıktan oluşur?",
-    "answers": ["4", "Dört", "Dort"],
+    "answers": [
+      "4",
+      "Dört",
+      "Dort"
+    ],
     "hint": "2 kulakçık, 2 karıncık."
   },
   {
@@ -756,7 +1086,11 @@
     "category": "Spor",
     "difficulty": "Kolay",
     "question": "Futbolda penaltı atışı kaleden kaç metre uzaklıktan kullanılır?",
-    "answers": ["11", "11 metre", "On bir"],
+    "answers": [
+      "11",
+      "11 metre",
+      "On bir"
+    ],
     "hint": "Beyaz yuvarlak nokta."
   },
   {
@@ -764,7 +1098,10 @@
     "category": "Coğrafya",
     "difficulty": "Orta",
     "question": "Güney Amerika'nın en büyük yüzölçümüne ve nüfusuna sahip ülkesi hangisidir?",
-    "answers": ["Brezilya", "Brazil"],
+    "answers": [
+      "Brezilya",
+      "Brazil"
+    ],
     "hint": "Resmi dili Portekizce'dir."
   },
   {
@@ -772,7 +1109,10 @@
     "category": "Edebiyat",
     "difficulty": "Orta",
     "question": "Türk edebiyatında 'Kürk Mantolu Madonna' romanının ünlü yazarı kimdir?",
-    "answers": ["Sabahattin Ali", "Sebahattin Ali"],
+    "answers": [
+      "Sabahattin Ali",
+      "Sebahattin Ali"
+    ],
     "hint": "Raif Efendi ve Maria Puder'in aşkını anlatır."
   },
   {
@@ -780,7 +1120,11 @@
     "category": "Tarih",
     "difficulty": "Zor",
     "question": "Pusulayı, matbaayı ve barutu ilk icat eden antik uygarlık hangisidir?",
-    "answers": ["Çin", "Cin", "China"],
+    "answers": [
+      "Çin",
+      "Cin",
+      "China"
+    ],
     "hint": "Büyük Seddi ile meşhur Asya uygarlığı."
   },
   {
@@ -788,7 +1132,10 @@
     "category": "Popüler Kültür",
     "difficulty": "Kolay",
     "question": "Riot Games tarafından geliştirilen ve Spike kurma/çözme mekaniği olan popüler taktiksel FPS oyunu hangisidir?",
-    "answers": ["Valorant", "Valo"],
+    "answers": [
+      "Valorant",
+      "Valo"
+    ],
     "hint": "Jett, Reyna, Omen gibi ajanlar bulunur."
   },
   {
@@ -796,7 +1143,12 @@
     "category": "Bilim",
     "difficulty": "Kolay",
     "question": "Dünya'nın kendi ekseni etrafında bir tam tur dönmesi ne kadar sürer?",
-    "answers": ["24 saat", "24", "1 gün", "Bir gün"],
+    "answers": [
+      "24 saat",
+      "24",
+      "1 gün",
+      "Bir gün"
+    ],
     "hint": "Gece ve gündüzün oluştuğu süre."
   },
   {
@@ -804,7 +1156,10 @@
     "category": "Müzik",
     "difficulty": "Kolay",
     "question": "Piyanoda siyah ve beyaz olmak üzere toplam kaç adet tuş bulunur?",
-    "answers": ["88", "Seksen sekiz"],
+    "answers": [
+      "88",
+      "Seksen sekiz"
+    ],
     "hint": "52 beyaz, 36 siyah tuş."
   },
   {
@@ -812,7 +1167,9 @@
     "category": "Coğrafya",
     "difficulty": "Orta",
     "question": "Hollanda'nın resmi başkenti neresidir?",
-    "answers": ["Amsterdam"],
+    "answers": [
+      "Amsterdam"
+    ],
     "hint": "Kanalları ve bisikletleriyle meşhurdur."
   },
   {
@@ -820,7 +1177,9 @@
     "category": "Sinema",
     "difficulty": "Kolay",
     "question": "'Aslan Kral' (The Lion King) animasyonunda ana karakter olan aslan yavrusunun adı nedir?",
-    "answers": ["Simba"],
+    "answers": [
+      "Simba"
+    ],
     "hint": "Mufasa'nın oğlu."
   },
   {
@@ -828,7 +1187,11 @@
     "category": "Tarih",
     "difficulty": "Kolay",
     "question": "Osmanlı Devleti'nin başkentliğini yapmış ve Boğaz üzerinde kurulu tarihi şehir hangisidir?",
-    "answers": ["İstanbul", "Istanbul", "Konstantinopolis"],
+    "answers": [
+      "İstanbul",
+      "Istanbul",
+      "Konstantinopolis"
+    ],
     "hint": "İki kıtayı birbirine bağlar."
   },
   {
@@ -836,7 +1199,13 @@
     "category": "Spor",
     "difficulty": "Kolay",
     "question": "Formula 1 yarışlarında yarışın bittiğini ilan eden bayrak hangi renktir?",
-    "answers": ["Dama desenli", "Damalı", "Damali", "Siyah beyaz", "Damalı bayrak"],
+    "answers": [
+      "Dama desenli",
+      "Damalı",
+      "Damali",
+      "Siyah beyaz",
+      "Damalı bayrak"
+    ],
     "hint": "Siyah ve beyaz karelerden oluşur."
   },
   {
@@ -844,7 +1213,11 @@
     "category": "Bilim",
     "difficulty": "Orta",
     "question": "Bir üçgenin iç açılarının toplamı kaç derecedir?",
-    "answers": ["180", "180 derece", "Yüz seksen"],
+    "answers": [
+      "180",
+      "180 derece",
+      "Yüz seksen"
+    ],
     "hint": "Düz bir doğru açıdır."
   },
   {
@@ -852,7 +1225,12 @@
     "category": "Coğrafya",
     "difficulty": "Kolay",
     "question": "Dünyanın en kurak ve en büyük sıcak çölü hangisidir?",
-    "answers": ["Sahra", "Sahra Çölü", "Sahra Colu", "Sahara"],
+    "answers": [
+      "Sahra",
+      "Sahra Çölü",
+      "Sahra Colu",
+      "Sahara"
+    ],
     "hint": "Kuzey Afrika'yı kaplar."
   },
   {
@@ -860,7 +1238,10 @@
     "category": "Popüler Kültür",
     "difficulty": "Kolay",
     "question": "Kırmızı şapkalı, bıyıklı ve Prenses Peach'i kurtarmaya çalışan Nintendo karakteri kimdir?",
-    "answers": ["Mario", "Super Mario"],
+    "answers": [
+      "Mario",
+      "Super Mario"
+    ],
     "hint": "İtalyan tesisatçı."
   },
   {
@@ -868,7 +1249,10 @@
     "category": "Tarih",
     "difficulty": "Orta",
     "question": "Fransız İhtilali hangi yılda gerçekleşmiştir?",
-    "answers": ["1789", "bin yedi yuz seksen dokuz"],
+    "answers": [
+      "1789",
+      "bin yedi yuz seksen dokuz"
+    ],
     "hint": "Bastille Hapishanesi'nin basılmasıyla başladı."
   },
   {
@@ -876,7 +1260,10 @@
     "category": "Sinema",
     "difficulty": "Orta",
     "question": "'Yıldızlararası' (Interstellar) filminde astronot Cooper'ın kızı olan karakterin adı nedir?",
-    "answers": ["Murph", "Murphy"],
+    "answers": [
+      "Murph",
+      "Murphy"
+    ],
     "hint": "Saat tıkırtılarıyla babasının mesajını çözer."
   },
   {
@@ -884,7 +1271,12 @@
     "category": "Genel Kültür",
     "difficulty": "Kolay",
     "question": "Olimpiyat Oyunları kaç yılda bir düzenlenir?",
-    "answers": ["4", "Dört", "Dort", "4 yılda bir"],
+    "answers": [
+      "4",
+      "Dört",
+      "Dort",
+      "4 yılda bir"
+    ],
     "hint": "Dünya Kupası gibi."
   },
   {
@@ -892,7 +1284,11 @@
     "category": "Bilim",
     "difficulty": "Orta",
     "question": "Gözdeki görüntünün ilk olarak ters düştüğü ve sinirlerin bulunduğu arka tabaka nedir?",
-    "answers": ["Retina", "Ağ tabaka", "Ag tabaka"],
+    "answers": [
+      "Retina",
+      "Ağ tabaka",
+      "Ag tabaka"
+    ],
     "hint": "Işığa duyarlı görme tabakası."
   },
   {
@@ -900,7 +1296,10 @@
     "category": "Müzik",
     "difficulty": "Orta",
     "question": "Türk Sanat Müziği'nde 'Sanat Güneşi' lakabıyla anılan unutulmaz ses sanatçısı kimdir?",
-    "answers": ["Zeki Müren", "Zeki Muren"],
+    "answers": [
+      "Zeki Müren",
+      "Zeki Muren"
+    ],
     "hint": "Bodrum aşığı, 'Şimdi Uzaklardasın' şarkısının efsane yorumcusu."
   },
   {
@@ -908,7 +1307,11 @@
     "category": "Coğrafya",
     "difficulty": "Kolay",
     "question": "Türkiye hangi iki kıtanın birleşim noktasında yer alır?",
-    "answers": ["Asya ve Avrupa", "Avrupa ve Asya", "Asya Avrupa"],
+    "answers": [
+      "Asya ve Avrupa",
+      "Avrupa ve Asya",
+      "Asya Avrupa"
+    ],
     "hint": "Doğu ile Batı arasında köprü."
   },
   {
@@ -916,7 +1319,11 @@
     "category": "Tarih",
     "difficulty": "Kolay",
     "question": "Birinci Dünya Savaşı hangi yıllar arasında gerçekleşmiştir?",
-    "answers": ["1914-1918", "1914 1918", "1914"],
+    "answers": [
+      "1914-1918",
+      "1914 1918",
+      "1914"
+    ],
     "hint": "Saraybosna suikastiyle başladı."
   },
   {
@@ -924,7 +1331,12 @@
     "category": "Edebiyat",
     "difficulty": "Kolay",
     "question": "Yel değirmenlerine karşı savaşan şövalye Don Kişot'un sadık yardımcısının adı nedir?",
-    "answers": ["Sanço Panço", "Sancho Panza", "Sanco Panco", "Sancho"],
+    "answers": [
+      "Sanço Panço",
+      "Sancho Panza",
+      "Sanco Panco",
+      "Sancho"
+    ],
     "hint": "Eşeğine binerek Don Kişot'u takip eder."
   },
   {
@@ -932,7 +1344,11 @@
     "category": "Bilim",
     "difficulty": "Kolay",
     "question": "Havadaki nem oranını ölçen meteorolojik cihaza ne ad verilir?",
-    "answers": ["Higrometre", "Nemölçer", "Nemolcer"],
+    "answers": [
+      "Higrometre",
+      "Nemölçer",
+      "Nemolcer"
+    ],
     "hint": "Sıcaklığı termometre, nemi ise..."
   },
   {
@@ -940,7 +1356,12 @@
     "category": "Spor",
     "difficulty": "Kolay",
     "question": "Basketbolda potanın yerden standart yüksekliği kaç metredir?",
-    "answers": ["3.05", "3,05", "3 metre 5 cm", "305"],
+    "answers": [
+      "3.05",
+      "3,05",
+      "3 metre 5 cm",
+      "305"
+    ],
     "hint": "10 feet (üç metrenin biraz üstü)."
   },
   {
@@ -948,7 +1369,10 @@
     "category": "Sinema",
     "difficulty": "Kolay",
     "question": "Spider-Man (Örümcek Adam) karakterinin gerçek adı nedir?",
-    "answers": ["Peter Parker", "Peter"],
+    "answers": [
+      "Peter Parker",
+      "Peter"
+    ],
     "hint": "New York'ta bir lise öğrencisi ve fotoğrafçı."
   },
   {
@@ -956,7 +1380,966 @@
     "category": "Genel Kültür",
     "difficulty": "Kolay",
     "question": "Türkiye'de plaka kodu '06' olan ilimiz hangisidir?",
-    "answers": ["Ankara"],
+    "answers": [
+      "Ankara"
+    ],
     "hint": "Başkentimiz."
+  },
+  {
+    "id": 121,
+    "category": "Sanat",
+    "difficulty": "Kolay",
+    "question": "'Mona Lisa' ve 'Son Akşam Yemeği' tablolarının Rönesans dönemi İtalyan ressamı ve hezârfen dehası kimdir?",
+    "answers": [
+      "Leonardo da Vinci",
+      "Da Vinci",
+      "Leonardo"
+    ],
+    "hint": "İtalyan Rönesansı'nın evrensel dehası."
+  },
+  {
+    "id": 122,
+    "category": "Uzay & Bilim",
+    "difficulty": "Kolay",
+    "question": "İnsanoğlunun Ay'a ilk kez ayak bastığı (Neil Armstrong) tarihi NASA görevi hangisidir?",
+    "answers": [
+      "Apollo 11",
+      "Apollo XI",
+      "Apollo"
+    ],
+    "hint": "1969 yılındaki efsanevi Apollo görevi."
+  },
+  {
+    "id": 123,
+    "category": "Mitoloji",
+    "difficulty": "Kolay",
+    "question": "İskandinav mitolojisinde şimşek ve gök gürültüsü tanrısı olup efsanevi çekici Mjölnir'i kullanan tanrı kimdir?",
+    "answers": [
+      "Thor"
+    ],
+    "hint": "Odin'in oğlu, Asgard'ın koruyucusu."
+  },
+  {
+    "id": 124,
+    "category": "Coğrafya",
+    "difficulty": "Orta",
+    "question": "Dünyanın bilinen en derin noktası olan ve Büyük Okyanus'ta yer alan denizaltı çukuru hangisidir?",
+    "answers": [
+      "Mariana Çukuru",
+      "Mariana Cukuru",
+      "Mariana",
+      "Challenger"
+    ],
+    "hint": "Derinliği yaklaşık 11.000 metredir."
+  },
+  {
+    "id": 125,
+    "category": "Edebiyat",
+    "difficulty": "Kolay",
+    "question": "'Küçük Prens' (Le Petit Prince) adlı dünyaca ünlü felsefi çocuk kitabının Fransız yazarı ve pilotu kimdir?",
+    "answers": [
+      "Antoine de Saint-Exupery",
+      "Saint-Exupery",
+      "Antoine de Saint Exupery",
+      "Ekzüperi",
+      "Exupery"
+    ],
+    "hint": "Gezegen B-612'yi ve gülünü anlatan Fransız yazar."
+  },
+  {
+    "id": 126,
+    "category": "Tarih",
+    "difficulty": "Kolay",
+    "question": "Şanlıurfa yakınlarında bulunan ve 'tarihin sıfır noktası' kabul edilen dünyanın en eski tapınak kompleksi neresidir?",
+    "answers": [
+      "Göbeklitepe",
+      "Gobeklitepe",
+      "Göbekli Tepe",
+      "Gobekli Tepe"
+    ],
+    "hint": "Yaklaşık 12.000 yıllık T biçimli dikilitaşlarıyla ünlüdür."
+  },
+  {
+    "id": 127,
+    "category": "Popüler Kültür",
+    "difficulty": "Kolay",
+    "question": "'The Matrix' filminde Morpheus'un Neo'ya sunduğu ve gerçeğin simülasyonunu kırıp hakikati gösteren hap hangi renktir?",
+    "answers": [
+      "Kırmızı",
+      "Kirmizi",
+      "Red",
+      "Kırmızı hap",
+      "Red pill"
+    ],
+    "hint": "Mavi hap uykuyu sürdürür, diğeri ise..."
+  },
+  {
+    "id": 128,
+    "category": "Bilim",
+    "difficulty": "Kolay",
+    "question": "Periyodik tabloda 'Au' sembolüyle gösterilen ve Latince 'Aurum' kelimesinden gelen değerli metal hangisidir?",
+    "answers": [
+      "Altın",
+      "Altin",
+      "Gold"
+    ],
+    "hint": "Paslanmaz, parlak sarı değerli maden."
+  },
+  {
+    "id": 129,
+    "category": "Sinema",
+    "difficulty": "Orta",
+    "question": "'Baba' (The Godfather) filminde efsanevi mafya lideri Don Vito Corleone'yi canlandırarak Oscar kazanan usta aktör kimdir?",
+    "answers": [
+      "Marlon Brando",
+      "Brando"
+    ],
+    "hint": "'Ona reddedemeyeceği bir teklif yapacağım' repliğini seslendiren efsane."
+  },
+  {
+    "id": 130,
+    "category": "Müzik",
+    "difficulty": "Kolay",
+    "question": "'Bohemian Rhapsody', 'We Will Rock You' ve 'Don't Stop Me Now' şarkılarını seslendiren efsanevi İngiliz rock grubu hangisidir?",
+    "answers": [
+      "Queen"
+    ],
+    "hint": "Vokalisti Freddie Mercury'dir."
+  },
+  {
+    "id": 131,
+    "category": "Bilim & Teknoloji",
+    "difficulty": "Orta",
+    "question": "Modern bilgisayar biliminin babası sayılan ve II. Dünya Savaşı'nda Nazi Enigma şifresini kıran dahi İngiliz matematikçi kimdir?",
+    "answers": [
+      "Alan Turing",
+      "Turing"
+    ],
+    "hint": "Kendi adını taşıyan yapay zeka testiyle de tanınır."
+  },
+  {
+    "id": 132,
+    "category": "Coğrafya & Tarih",
+    "difficulty": "Kolay",
+    "question": "İtalya'nın başkenti Roma'da bulunan ve antik çağda gladyatör dövüşlerine sahne olan devasa amfitiyatro nedir?",
+    "answers": [
+      "Kolezyum",
+      "Colosseum",
+      "Kolezyum Amfitiyatrosu",
+      "Colosseo"
+    ],
+    "hint": "Flavius Amfitiyatrosu olarak da bilinir."
+  },
+  {
+    "id": 133,
+    "category": "Sanat",
+    "difficulty": "Kolay",
+    "question": "Girdaplı gökyüzüyle ünlü 'Yıldızlı Gece' (The Starry Night) tablosunun Hollandalı post-empresyonist ressamı kimdir?",
+    "answers": [
+      "Vincent van Gogh",
+      "Van Gogh",
+      "Gogh"
+    ],
+    "hint": "'Ayçiçekleri' tablosunu da yapan Hollandalı ressam."
+  },
+  {
+    "id": 134,
+    "category": "Doğa & Biyoloji",
+    "difficulty": "Kolay",
+    "question": "Karada yaşayan hayvanlar arasında saatte 100-120 km hıza ulaşabilen en hızlı memeli hayvan hangisidir?",
+    "answers": [
+      "Çita",
+      "Cita",
+      "Cheetah"
+    ],
+    "hint": "Benekli büyük kedi türü."
+  },
+  {
+    "id": 135,
+    "category": "Mitoloji",
+    "difficulty": "Orta",
+    "question": "Yunan mitolojisinde Truva Atı taktiğini geliştiren ve savaştan sonra 10 yıllık eve dönüş macerası destanlaştırılan kahraman kimdir?",
+    "answers": [
+      "Odysseus",
+      "Odisseus",
+      "Ulysses",
+      "Ulisse"
+    ],
+    "hint": "Homeros'un kendi adını taşıyan ikinci destanının başkahramanı."
+  },
+  {
+    "id": 136,
+    "category": "Edebiyat",
+    "difficulty": "Kolay",
+    "question": "'Büyük Birader' (Big Brother) ve 'Düşünce Polisi' kavramlarını dünyaya kazandıran distopik roman '1984'ün yazarı kimdir?",
+    "answers": [
+      "George Orwell",
+      "Orwell"
+    ],
+    "hint": "'Hayvan Çiftliği' kitabının da yazarıdır."
+  },
+  {
+    "id": 137,
+    "category": "Tarih",
+    "difficulty": "Kolay",
+    "question": "1513 yılında ceylan derisi üzerine çizdiği son derece ayrıntılı dünya haritasıyla ünlü Osmanlı denizcisi ve kaptanı kimdir?",
+    "answers": [
+      "Piri Reis",
+      "Piri"
+    ],
+    "hint": "'Kitab-ı Bahriye' eserinin yazarıdır."
+  },
+  {
+    "id": 138,
+    "category": "Video Oyunları",
+    "difficulty": "Kolay",
+    "question": "Rivialı Geralt'ın başrolde olduğu ve Ciri ile Yennefer'ı aradığı CD Projekt Red yapımı efsanevi RPG serisi hangisidir?",
+    "answers": [
+      "The Witcher",
+      "Witcher",
+      "The Witcher 3",
+      "Witcher 3"
+    ],
+    "hint": "Canavar avcısı mutant kahramanın hikayesi."
+  },
+  {
+    "id": 139,
+    "category": "Fizik & Bilim",
+    "difficulty": "Kolay",
+    "question": "Boşluktaki ışık hızı yaklaşık olarak saniyede kaç bin kilometredir?",
+    "answers": [
+      "300.000",
+      "300000",
+      "300 bin",
+      "Üç yüz bin",
+      "Uc yuz bin",
+      "300"
+    ],
+    "hint": "Dünyanın çevresini bir saniyede yaklaşık 7.5 kez turlar."
+  },
+  {
+    "id": 140,
+    "category": "Coğrafya & Tarih",
+    "difficulty": "Kolay",
+    "question": "Hindistan'ın Agra kentinde Babür İmparatoru Şah Cihan tarafından vefat eden eşi Mümtaz Mahal için yaptırılan beyaz mermer anıt mezar nedir?",
+    "answers": [
+      "Tac Mahal",
+      "Taj Mahal",
+      "Tacmahal"
+    ],
+    "hint": "Dünyanın 7 harikasından biri sayılan beyaz kubbeli anıt."
+  },
+  {
+    "id": 141,
+    "category": "Müzik",
+    "difficulty": "Kolay",
+    "question": "İşitme duyusunu neredeyse tamamen kaybetmesine rağmen ünlü 9. Senfoni (Neşeye Övgü) eserini besteleyen Alman besteci kimdir?",
+    "answers": [
+      "Beethoven",
+      "Ludwig van Beethoven"
+    ],
+    "hint": "Klasik Batı müziğinin 'Ayışığı Sonatı' bestecisi."
+  },
+  {
+    "id": 142,
+    "category": "Sinema & Popüler Kültür",
+    "difficulty": "Kolay",
+    "question": "'Star Wars' (Yıldız Savaşları) serisinde Luke Skywalker'ın babası olan ve karanlık tarafa geçen efsanevi Sith Lordu kimdir?",
+    "answers": [
+      "Darth Vader",
+      "Vader",
+      "Anakin Skywalker",
+      "Anakin"
+    ],
+    "hint": "'Ben senin babanım!' (I am your father) repliğiyle tanınır."
+  },
+  {
+    "id": 143,
+    "category": "Sanat",
+    "difficulty": "Kolay",
+    "question": "Elleri yanaklarında panik içinde haykıran figürüyle tanınan ünlü 'Çığlık' (The Scream) tablosunun Norveçli dışavurumcu ressamı kimdir?",
+    "answers": [
+      "Edvard Munch",
+      "Munch"
+    ],
+    "hint": "Norveç'in en ünlü ressamıdır."
+  },
+  {
+    "id": 144,
+    "category": "Coğrafya",
+    "difficulty": "Kolay",
+    "question": "Dünyanın deniz seviyesine göre en yüksek zirvesi olan Everest Dağı hangi sıradağlar üzerinde yer alır?",
+    "answers": [
+      "Himalayalar",
+      "Himalaya",
+      "Himalayas"
+    ],
+    "hint": "Asya kıtasında Nepal ile Çin arasında uzanır."
+  },
+  {
+    "id": 145,
+    "category": "Edebiyat & Sinema",
+    "difficulty": "Kolay",
+    "question": "'Yüzüklerin Efendisi' serisinde Tek Yüzük'e 'Benim Kıymetlim' (My Precious) diye seslenen karakterin adı nedir?",
+    "answers": [
+      "Gollum",
+      "Smeagol",
+      "Sméagol"
+    ],
+    "hint": "Eski adı Sméagol olan, mağarada yaşayan yaratık."
+  },
+  {
+    "id": 146,
+    "category": "Biyoloji & Bilim",
+    "difficulty": "Kolay",
+    "question": "Tüm canlıların genetik talimatlarını taşıyan çift sarmal yapıdaki nükleik asit molekülünün yaygın kısaltması nedir?",
+    "answers": [
+      "DNA",
+      "Dna"
+    ],
+    "hint": "Deoksiribonükleik asit."
+  },
+  {
+    "id": 147,
+    "category": "Müzik & Kültür",
+    "difficulty": "Kolay",
+    "question": "'Bozkırın Tezenesi' lakabıyla anılan; 'Gönül Dağı' ve 'Yalan Dünya' türkülerinin efsanevi ozanı kimdir?",
+    "answers": [
+      "Neşet Ertaş",
+      "Neset Ertas",
+      "Neşet Ertas"
+    ],
+    "hint": "Kırşehirli büyük halk ozanı ve saz ustası."
+  },
+  {
+    "id": 148,
+    "category": "Tarih",
+    "difficulty": "Orta",
+    "question": "Üzerinde üç dilde metin bulunması sayesinde Antik Mısır hiyerogliflerinin çözülmesini sağlayan tarihi taş yazıt hangisidir?",
+    "answers": [
+      "Rosetta Taşı",
+      "Rosetta Tasi",
+      "Reşid Taşı",
+      "Rosetta"
+    ],
+    "hint": "Jean-François Champollion tarafından çözülmüştür."
+  },
+  {
+    "id": 149,
+    "category": "Coğrafya",
+    "difficulty": "Kolay",
+    "question": "Japonya'nın simgesi olan, 3.776 metre yüksekliğindeki kutsal aktif yanardağın adı nedir?",
+    "answers": [
+      "Fuji",
+      "Fuji Dağı",
+      "Mount Fuji",
+      "Fuji Dagi"
+    ],
+    "hint": "Honshu adasında bulunan karlı zirve."
+  },
+  {
+    "id": 150,
+    "category": "Video Oyunları",
+    "difficulty": "Kolay",
+    "question": "Minecraft oyununda oyuncunun yanına sessizce sokulup 'Tısss' sesi çıkararak patlayan yeşil düşman yaratık hangisidir?",
+    "answers": [
+      "Creeper",
+      "Kriper"
+    ],
+    "hint": "Oyunun en ikonik yeşil patlayıcısı."
+  },
+  {
+    "id": 151,
+    "category": "Felsefe",
+    "difficulty": "Kolay",
+    "question": "'Düşünüyorum, öyleyse varım' (Cogito, ergo sum) önermesiyle rasyonalizmin temelini atan Fransız düşünür kimdir?",
+    "answers": [
+      "René Descartes",
+      "Descartes",
+      "Rene Descartes"
+    ],
+    "hint": "Kartezyen koordinat sisteminin de mucididir."
+  },
+  {
+    "id": 152,
+    "category": "Sinema & Animasyon",
+    "difficulty": "Kolay",
+    "question": "'Ruhların Kaçışı' (Spirited Away) ve 'Komşum Totoro' filmleriyle ünlü Studio Ghibli'nin efsanevi Japon yönetmeni kimdir?",
+    "answers": [
+      "Hayao Miyazaki",
+      "Miyazaki"
+    ],
+    "hint": "Animasyon dünyasının Walt Disney'i kabul edilen usta."
+  },
+  {
+    "id": 153,
+    "category": "Tarih",
+    "difficulty": "Orta",
+    "question": "1215 yılında İngiltere Kralı Yurtsuz John'a imzalatılan ve kralın yetkilerini ilk kez yasayla sınırlayan tarihi ferman nedir?",
+    "answers": [
+      "Magna Carta",
+      "Magna Charta",
+      "Büyük Ferman"
+    ],
+    "hint": "Modern parlamenter demokrasinin temel taşlarından biri."
+  },
+  {
+    "id": 154,
+    "category": "Sanat & Kültür",
+    "difficulty": "Kolay",
+    "question": "Türk resim sanatının en ünlü eserlerinden biri olan 'Kaplumbağa Terbiyecisi' tablosunun ressamı kimdir?",
+    "answers": [
+      "Osman Hamdi Bey",
+      "Osman Hamdi"
+    ],
+    "hint": "İstanbul Arkeoloji Müzesi'nin de kurucusudur."
+  },
+  {
+    "id": 155,
+    "category": "Bilim & Astronomi",
+    "difficulty": "Orta",
+    "question": "Gezegenlerin Güneş etrafında çember değil 'elips' şeklinde yörüngelerde döndüğünü kanıtlayan Alman gökbilimci kimdir?",
+    "answers": [
+      "Johannes Kepler",
+      "Kepler"
+    ],
+    "hint": "Gezegensel hareket kanunlarını formüle etmiştir."
+  },
+  {
+    "id": 156,
+    "category": "Mitoloji",
+    "difficulty": "Kolay",
+    "question": "Yunan mitolojisinde yeraltı dünyasının ve ölülerin tanrısı olan, üç başlı köpek Cerberus'un efendisi kimdir?",
+    "answers": [
+      "Hades"
+    ],
+    "hint": "Zeus ve Poseidon'un kardeşidir."
+  },
+  {
+    "id": 157,
+    "category": "Coğrafya & Tarih",
+    "difficulty": "Kolay",
+    "question": "Peru'da And Dağları'nın zirvesinde 15. yüzyılda İnka medeniyeti tarafından inşa edilen kayıp antik kent hangisidir?",
+    "answers": [
+      "Machu Picchu",
+      "Macu Picu",
+      "Machupicchu"
+    ],
+    "hint": "Bulutların üzerindeki İnka kalesi."
+  },
+  {
+    "id": 158,
+    "category": "Popüler Kültür & Edebiyat",
+    "difficulty": "Kolay",
+    "question": "Harry Potter serisinde Lord Voldemort'un ölümsüz kalmak için ruhunu parçalayarak içine sakladığı nesnelere ne ad verilir?",
+    "answers": [
+      "Hortkuluk",
+      "Horcrux",
+      "Hortkuluklar"
+    ],
+    "hint": "Günlük, yüzük, madalyon gibi nesneler bunlardandır."
+  },
+  {
+    "id": 159,
+    "category": "Edebiyat",
+    "difficulty": "Kolay",
+    "question": "Endülüslü çoban Santiago'nun Mısır piramitlerine hazine arayışı yolculuğunu anlatan 'Simyacı' romanının Brezilyalı yazarı kimdir?",
+    "answers": [
+      "Paulo Coelho",
+      "Coelho"
+    ],
+    "hint": "Dünyanın en çok okunan çağdaş yazarlarından biri."
+  },
+  {
+    "id": 160,
+    "category": "Doğa & Biyoloji",
+    "difficulty": "Kolay",
+    "question": "Dünya tarihinde yaşamış ve yaşamakta olan en büyük hayvan türü hangisidir?",
+    "answers": [
+      "Mavi Balina",
+      "Mavi balina",
+      "Gök balina",
+      "Blue whale"
+    ],
+    "hint": "Ağırlığı 150-200 tonu, uzunluğu 30 metreyi bulabilir."
+  },
+  {
+    "id": 161,
+    "category": "Bilim & Fizik",
+    "difficulty": "Kolay",
+    "question": "Başına düşen elma efsanesiyle evrensel kütleçekim kanununu ve hareket yasalarını ortaya koyan İngiliz dahi kimdir?",
+    "answers": [
+      "Isaac Newton",
+      "Newton"
+    ],
+    "hint": "'Principia' eserinin yazarı."
+  },
+  {
+    "id": 162,
+    "category": "Müzik",
+    "difficulty": "Kolay",
+    "question": "'Dönence', 'Gülpembe', 'Arkadaşım Eşşek' şarkıları ve '7'den 77'ye' programıyla gönüllere taht kuran unutulmaz Türk sanatçısı kimdir?",
+    "answers": [
+      "Barış Manço",
+      "Baris Manco",
+      "Baris Manço"
+    ],
+    "hint": "Kurtalan Ekspres'in kurucusu, gezgin sanatçı."
+  },
+  {
+    "id": 163,
+    "category": "Tarih",
+    "difficulty": "Kolay",
+    "question": "'Göze göz, dişe diş' ilkesiyle bilinen tarihin en eski taş üzerine yazılı kanunlarını oluşturan Babil kralı kimdir?",
+    "answers": [
+      "Hammurabi"
+    ],
+    "hint": "Hammurabi Kanunları."
+  },
+  {
+    "id": 164,
+    "category": "Coğrafya & Turizm",
+    "difficulty": "Kolay",
+    "question": "Denizli ilinde bulunan, beyaz traverten basamakları ve termal sularıyla dünyaca ünlü doğa harikası neresidir?",
+    "answers": [
+      "Pamukkale",
+      "Pamukkale Travertenleri"
+    ],
+    "hint": "Hierapolis antik kentiyle yan yanadır."
+  },
+  {
+    "id": 165,
+    "category": "Tarih & Coğrafya",
+    "difficulty": "Kolay",
+    "question": "1912 yılında ilk seferinde buzdağına çarparak batan dev yolcu gemisi Titanic hangi okyanusta batmıştır?",
+    "answers": [
+      "Atlantik",
+      "Atlas Okyanusu",
+      "Kuzey Atlantik",
+      "Atlantik Okyanusu"
+    ],
+    "hint": "Avrupa ile Kuzey Amerika arasındaki okyanus."
+  },
+  {
+    "id": 166,
+    "category": "Popüler Kültür & Dizi",
+    "difficulty": "Kolay",
+    "question": "'Game of Thrones' dizisinde Ejderhaların Annesi (Mother of Dragons) olarak bilinen gümüş saçlı Targaryen prensesi kimdir?",
+    "answers": [
+      "Daenerys Targaryen",
+      "Daenerys",
+      "Khaleesi"
+    ],
+    "hint": "Drogon, Rhaegal ve Viserion adlı üç ejderhası vardır."
+  },
+  {
+    "id": 167,
+    "category": "Bilim & Kimya",
+    "difficulty": "Orta",
+    "question": "Dünya atmosferinin yaklaşık %78'ini oluşturan, en bol bulunan gaz hangisidir?",
+    "answers": [
+      "Azot",
+      "Nitrojen",
+      "Nitrogen",
+      "N2"
+    ],
+    "hint": "Oksijen %21 civarındayken, bu gaz %78'dir."
+  },
+  {
+    "id": 168,
+    "category": "Sanat",
+    "difficulty": "Orta",
+    "question": "Pablo Picasso ve Georges Braque'ın öncülüğünü yaptığı, nesneleri geometrik formlara bölerek betimleyen sanat akımı hangisidir?",
+    "answers": [
+      "Kübizm",
+      "Kubizm",
+      "Cubism"
+    ],
+    "hint": "'Küp' kelimesinden türetilmiştir."
+  },
+  {
+    "id": 169,
+    "category": "Tarih",
+    "difficulty": "Kolay",
+    "question": "Kurtuluş Savaşı'nda Mustafa Kemal Paşa'nın 'Ordular, ilk hedefiniz Akdeniz'dir, ileri!' tarihi emrini verdiği zafer hangisidir?",
+    "answers": [
+      "Büyük Taarruz",
+      "Buyuk Taarruz",
+      "Başkomutanlık Meydan Muharebesi",
+      "Dumlupınar"
+    ],
+    "hint": "30 Ağustos Zaferi."
+  },
+  {
+    "id": 170,
+    "category": "Video Oyunları",
+    "difficulty": "Kolay",
+    "question": "Rockstar Games tarafından yapılan, Arthur Morgan ve Van der Linde çetesini konu alan efsanevi Vahşi Batı kovboy oyunu hangisidir?",
+    "answers": [
+      "Red Dead Redemption 2",
+      "RDR2",
+      "Red Dead Redemption",
+      "Rdr 2"
+    ],
+    "hint": "Vahşi Batı'nın son günlerini anlatan açık dünya şaheseri."
+  },
+  {
+    "id": 171,
+    "category": "Edebiyat",
+    "difficulty": "Orta",
+    "question": "'Yüzyıllık Yalnızlık' romanıyla Macondo kasabasını ve Buendia ailesini anlatan Nobel ödüllü Kolombiyalı yazar kimdir?",
+    "answers": [
+      "Gabriel Garcia Marquez",
+      "Marquez",
+      "Gabo"
+    ],
+    "hint": "Büyülü gerçekçilik akımının en büyük temsilcisi."
+  },
+  {
+    "id": 172,
+    "category": "Coğrafya",
+    "difficulty": "Orta",
+    "question": "Tanzanya sınırları içerisinde yer alan ve Afrika kıtasının en yüksek noktası olan dağ hangisidir?",
+    "answers": [
+      "Kilimanjaro",
+      "Kilimancaro",
+      "Mount Kilimanjaro"
+    ],
+    "hint": "5.895 metre yüksekliğindeki zirvesi karlı dağ."
+  },
+  {
+    "id": 173,
+    "category": "Mitoloji",
+    "difficulty": "Kolay",
+    "question": "Antik Mısır mitolojisinde çakal başlı olarak betimlenen ölüm, ölüler diyarı ve mumyalama tanrısı kimdir?",
+    "answers": [
+      "Anubis"
+    ],
+    "hint": "Ölenlerin kalbini doğruluk tüyüyle tartan tanrı."
+  },
+  {
+    "id": 174,
+    "category": "Bilim & Tıp",
+    "difficulty": "Kolay",
+    "question": "Kuduz aşısını bulan ve sütün mikroplardan arındırılması yöntemine (pastörizasyon) adını veren Fransız mikrobiyolog kimdir?",
+    "answers": [
+      "Louis Pasteur",
+      "Pasteur"
+    ],
+    "hint": "Pastörize sütün isim babası."
+  },
+  {
+    "id": 175,
+    "category": "Popüler Kültür & Çizgi Roman",
+    "difficulty": "Kolay",
+    "question": "Batman'in Gotham şehrindeki en tehlikeli ezeli düşmanı olan, mor takım elbiseli çılgın suç dehası kimdir?",
+    "answers": [
+      "Joker",
+      "The Joker"
+    ],
+    "hint": "'Why so serious?' (Neden bu kadar ciddisin?) repliğiyle bilinir."
+  },
+  {
+    "id": 176,
+    "category": "Sinema",
+    "difficulty": "Kolay",
+    "question": "'Pulp Fiction', 'Kill Bill' ve 'Zincirsiz' (Django Unchained) filmlerinin kült Amerikalı yönetmeni kimdir?",
+    "answers": [
+      "Quentin Tarantino",
+      "Tarantino"
+    ],
+    "hint": "Kanlı sahneleri ve harika diyaloglarıyla tanınan yönetmen."
+  },
+  {
+    "id": 177,
+    "category": "Müzik",
+    "difficulty": "Kolay",
+    "question": "'Dört Mevsim' (Le quattro stagioni) adlı ünlü keman konçertoları serisinin İtalyan Barok bestecisi kimdir?",
+    "answers": [
+      "Antonio Vivaldi",
+      "Vivaldi"
+    ],
+    "hint": "Kızıl Rahip lakaplı Venedikli besteci."
+  },
+  {
+    "id": 178,
+    "category": "Tarih",
+    "difficulty": "Kolay",
+    "question": "M.Ö. 3500 civarında çivi yazısını icat ederek tarihi çağları başlatan ilk Mezopotamya uygarlığı hangisidir?",
+    "answers": [
+      "Sümerler",
+      "Sumerler",
+      "Sümer",
+      "Sumer"
+    ],
+    "hint": "Ziggurat tapınakları ve Gılgamış Destanı ile tanınırlar."
+  },
+  {
+    "id": 179,
+    "category": "Coğrafya",
+    "difficulty": "Kolay",
+    "question": "Kuzey Kutup bölgesinde bulunan ve dünyanın yüzölçümü bakımından en büyük adası hangisidir?",
+    "answers": [
+      "Grönland",
+      "Gronland",
+      "Greenland"
+    ],
+    "hint": "Danimarka'ya bağlı buzullarla kaplı devasa ada."
+  },
+  {
+    "id": 180,
+    "category": "Video Oyunları",
+    "difficulty": "Orta",
+    "question": "'Dark Souls', 'Bloodborne' ve 2022'de Yılın Oyunu seçilen 'Elden Ring'in efsanevi Japon yönetmeni kimdir?",
+    "answers": [
+      "Hidetaka Miyazaki",
+      "Miyazaki"
+    ],
+    "hint": "FromSoftware stüdyosunun zorlu oyunlarıyla ünlü başkanı."
+  },
+  {
+    "id": 181,
+    "category": "Biyoloji & Tıp",
+    "difficulty": "Kolay",
+    "question": "İnsan vücudunun en büyük iç organı olup kendini yenileyebilme yeteneğine sahip olan hayati organ hangisidir?",
+    "answers": [
+      "Karaciğer",
+      "Karaciger",
+      "Liver"
+    ],
+    "hint": "Safra üretir ve toksinleri filtreler."
+  },
+  {
+    "id": 182,
+    "category": "Edebiyat",
+    "difficulty": "Kolay",
+    "question": "Baker Street 221B adresinde yaşayan dahi dedektif Sherlock Holmes'ün yaratıcısı olan yazar kimdir?",
+    "answers": [
+      "Arthur Conan Doyle",
+      "Conan Doyle",
+      "Sir Arthur Conan Doyle"
+    ],
+    "hint": "Doktor Watson'ın maceralarını anlatan yazar."
+  },
+  {
+    "id": 183,
+    "category": "Coğrafya & Kültür",
+    "difficulty": "Kolay",
+    "question": "Kapadokya bölgesinde volkanik tüflerin aşınmasıyla oluşan, balon turlarıyla ünlü kaya yapılarına ne ad verilir?",
+    "answers": [
+      "Peri Bacaları",
+      "Peri Bacalari",
+      "Fairy Chimneys"
+    ],
+    "hint": "Göreme ve Ürgüp'te bolca bulunur."
+  },
+  {
+    "id": 184,
+    "category": "Edebiyat & Popüler Kültür",
+    "difficulty": "Kolay",
+    "question": "'Hobbit' ve 'Yüzüklerin Efendisi' serisiyle Orta Dünya evrenini ve Elfçe dillerini inşa eden efsanevi İngiliz yazar kimdir?",
+    "answers": [
+      "J.R.R. Tolkien",
+      "Tolkien",
+      "JRR Tolkien"
+    ],
+    "hint": "Oxford Üniversitesi'nde profesör olan fantezi edebiyatının babası."
+  },
+  {
+    "id": 185,
+    "category": "Sinema",
+    "difficulty": "Kolay",
+    "question": "Kafatası Adası'ndan getirilip New York'ta Empire State Binası'na tırmanan devasa sinema canavarı goril kimdir?",
+    "answers": [
+      "King Kong",
+      "Kong"
+    ],
+    "hint": "Godzilla'nın en büyük rakiplerinden biri."
+  },
+  {
+    "id": 186,
+    "category": "Mitoloji & Türk Tarihi",
+    "difficulty": "Orta",
+    "question": "Türk ve Altay mitolojisinde gökyüzünde yaşayan, iyilik ve merhametin simgesi olan en büyük gök tanrı kimdir?",
+    "answers": [
+      "Ülgen",
+      "Ulgen",
+      "Kayra Han",
+      "Gök Tengri",
+      "Tengri"
+    ],
+    "hint": "Ak Ana'dan yaratma ilhamı alan iyilik tanrısı."
+  },
+  {
+    "id": 187,
+    "category": "Tarih",
+    "difficulty": "Kolay",
+    "question": "Söğüt merkezli kurulan ve 600 yılı aşkın hüküm süren Osmanlı Devleti'nin kurucusu olan ilk padişah kimdir?",
+    "answers": [
+      "Osman Gazi",
+      "Osman Bey",
+      "I. Osman",
+      "Osman"
+    ],
+    "hint": "Ertuğrul Gazi'nin oğludur."
+  },
+  {
+    "id": 188,
+    "category": "Uzay & Astronomi",
+    "difficulty": "Kolay",
+    "question": "İçinde bulunduğumuz Samanyolu Galaksisi'ne en yakın olan dev sarmal komşu galaksi hangisidir?",
+    "answers": [
+      "Andromeda",
+      "Andromeda Galaksisi",
+      "M31"
+    ],
+    "hint": "Yaklaşık 2.5 milyon ışık yılı uzaklıktadır ve çıplak gözle görülebilir."
+  },
+  {
+    "id": 189,
+    "category": "Coğrafya",
+    "difficulty": "Orta",
+    "question": "Venezuela'da bulunan ve 979 metre yükseklikten kesintisiz dökülen dünyanın en yüksek şelalesi hangisidir?",
+    "answers": [
+      "Angel Şelalesi",
+      "Angel",
+      "Salto Angel",
+      "Angel Selalesi"
+    ],
+    "hint": "Amerikalı pilot Jimmie Angel'ın adını taşır."
+  },
+  {
+    "id": 190,
+    "category": "Popüler Kültür",
+    "difficulty": "Kolay",
+    "question": "Pokémon animesinde Ash Ketchum'ın omzunda taşıdığı, 'Pika Pika' diyen sarı renkli elektrikli Pokémon kimdir?",
+    "answers": [
+      "Pikachu",
+      "Pikaçu"
+    ],
+    "hint": "Kırmızı yanaklarından elektrik kıvılcımları saçar."
+  },
+  {
+    "id": 191,
+    "category": "Felsefe",
+    "difficulty": "Kolay",
+    "question": "'Devlet' kitabını yazan ve idealar kuramını meşhur 'Mağara Alegorisi' ile açıklayan Antik Yunan filozofu kimdir?",
+    "answers": [
+      "Platon",
+      "Eflatun",
+      "Plato"
+    ],
+    "hint": "Sokrates'in öğrencisi, Aristoteles'in hocasıdır."
+  },
+  {
+    "id": 192,
+    "category": "Sanat",
+    "difficulty": "Kolay",
+    "question": "Vatikan'daki Sistina Şapeli tavanına 'Adem'in Yaratılışı' freskini yapan ve Davut (David) heykelini yontan İtalyan heykeltıraş kimdir?",
+    "answers": [
+      "Michelangelo",
+      "Mikelanj"
+    ],
+    "hint": "Rönesans'ın en büyük heykeltıraş ve ressamlarından biri."
+  },
+  {
+    "id": 193,
+    "category": "Bilim",
+    "difficulty": "Kolay",
+    "question": "Radyoaktivite alanındaki öncü çalışmalarıyla hem Fizik hem Kimya alanında iki Nobel Ödülü kazanan ilk kadın kimdir?",
+    "answers": [
+      "Marie Curie",
+      "Madam Curie",
+      "Curie"
+    ],
+    "hint": "Polonyum ve Radyum elementlerini keşfetmiştir."
+  },
+  {
+    "id": 194,
+    "category": "Sinema & Popüler Kültür",
+    "difficulty": "Kolay",
+    "question": "'Geleceğe Dönüş' (Back to the Future) serisinde Doktor Brown'ın zaman makinesine dönüştürdüğü ikonik kanat kapılı araba markası nedir?",
+    "answers": [
+      "DeLorean",
+      "Delorean",
+      "DMC",
+      "DMC-12"
+    ],
+    "hint": "Zaman yolculuğu için 88 mil/saat hıza ulaşması gerekir."
+  },
+  {
+    "id": 195,
+    "category": "Tarih",
+    "difficulty": "Kolay",
+    "question": "M.Ö. 44 yılında Roma Senatosu'nda suikasta uğrarken 'Sen de mi Brütüs?' dediği rivayet edilen ünlü Roma diktatörü kimdir?",
+    "answers": [
+      "Jül Sezar",
+      "Julius Caesar",
+      "Sezar",
+      "Caesar"
+    ],
+    "hint": "'Geldim, gördüm, yendim' (Veni, vidi, vici) sözünün de sahibidir."
+  },
+  {
+    "id": 196,
+    "category": "Coğrafya & Şehirler",
+    "difficulty": "Kolay",
+    "question": "Dünyada toprakları hem Asya hem de Avrupa kıtalarına yayılan, Boğazı ve tarihiyle ünlü Türkiye metropolü neresidir?",
+    "answers": [
+      "İstanbul",
+      "Istanbul",
+      "Konstantinopolis"
+    ],
+    "hint": "İki kıtayı birbirine bağlayan şehir."
+  },
+  {
+    "id": 197,
+    "category": "Video Oyunları",
+    "difficulty": "Kolay",
+    "question": "Gordon Freeman'ın elinde levye ile Black Mesa araştırma tesisinden kaçmaya çalıştığı kült bilim kurgu FPS oyunu hangisidir?",
+    "answers": [
+      "Half-Life",
+      "Half Life",
+      "Half Life 2",
+      "Half-Life 2"
+    ],
+    "hint": "Valve firmasının oyun dünyasını değiştiren başyapıtı."
+  },
+  {
+    "id": 198,
+    "category": "Edebiyat",
+    "difficulty": "Kolay",
+    "question": "'Dönüşüm' romanında Gregor Samsa'nın bir sabah dev bir böceğe dönüşmüş olarak uyanmasını anlatan Çek yazar kimdir?",
+    "answers": [
+      "Franz Kafka",
+      "Kafka"
+    ],
+    "hint": "'Dava' ve 'Şato' romanlarının da yazarı."
+  },
+  {
+    "id": 199,
+    "category": "Uzay & Fizik",
+    "difficulty": "Kolay",
+    "question": "Çekim kuvveti o kadar güçlüdür ki ışığın bile kaçamadığı son derece yoğun uzay cisimlerine ne ad verilir?",
+    "answers": [
+      "Kara delik",
+      "Kara delikler",
+      "Black hole",
+      "Karadelik"
+    ],
+    "hint": "Olay ufku ile çevrelenmiş kozmik dev."
+  },
+  {
+    "id": 200,
+    "category": "Sinema & Popüler Kültür",
+    "difficulty": "Kolay",
+    "question": "Amerikan Sinema Sanatları Akademisi tarafından her yıl dağıtılan ve küçük altın şövalye heykeli olan sinema ödüllerinin popüler adı nedir?",
+    "answers": [
+      "Oscar",
+      "Oskar",
+      "Oscar Ödülleri",
+      "Academy Awards"
+    ],
+    "hint": "Kırmızı halı töreniyle dünyanın en ünlü film ödülü."
   }
 ]

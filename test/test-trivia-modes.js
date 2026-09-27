@@ -15,7 +15,7 @@ if (engine.genshinQuestions.length >= 250) {
   process.exit(1);
 }
 
-if (engine.generalQuestions.length >= 120) {
+if (engine.generalQuestions.length >= 200) {
   console.log(`✅ Genel Kültür Soru Havuzu Yüklendi: ${engine.generalQuestions.length} soru`);
 } else {
   console.error(`❌ Genel Kültür havuzu eksik: ${engine.generalQuestions.length}`);
@@ -89,3 +89,4 @@ if (genshinRes.mode === 'genshin' && genshinRes.activeCount === engine.genshinQu
 
 engine.stop();
 console.log('\n🎉 TÜM GENEL KÜLTÜR & ÇİFT MOD TESTLERİ BAŞARIYLA GEÇTİ! 🚀');
+process.exit(0);
