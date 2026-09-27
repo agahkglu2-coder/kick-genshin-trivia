@@ -257,12 +257,30 @@
           </div>
 
           <!-- Quick Chatter Action Buttons Grid -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 16px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 12px;">
             <button type="button" id="btn-chatter-spawn-random" class="btn btn-sm btn-outline" style="border-color: #f472b6; color: #fbcfe8;">
               ✨ Rastgele İzleyici
             </button>
             <button type="button" id="btn-chatter-test-chat" class="btn btn-sm btn-primary">
               💬 Test Mesajı At
+            </button>
+            <button type="button" id="btn-chatter-test-dance" class="btn btn-sm" style="background: #ec4899; color: white;">
+              💃 Dans Partisi
+            </button>
+            <button type="button" id="btn-chatter-test-crown" class="btn btn-sm btn-gold">
+              👑 Trivia Tacı Ver
+            </button>
+            <button type="button" id="btn-chatter-test-aura" class="btn btn-sm btn-warning">
+              ✨ 5★ Altın Aura
+            </button>
+            <button type="button" id="btn-chatter-test-hug" class="btn btn-sm" style="background: #f43f5e; color: white;">
+              🤗 Sarılma Testi
+            </button>
+            <button type="button" id="btn-chatter-test-duel" class="btn btn-sm" style="background: #dc2626; color: white;">
+              ⚔️ Düello Testi
+            </button>
+            <button type="button" id="btn-chatter-test-primo" class="btn btn-sm" style="background: #0284c7; color: white;">
+              💎 Primo Yağmuru
             </button>
             <button type="button" id="btn-chatter-test-follow" class="btn btn-sm btn-warning">
               ⭐ Takipçi Testi
@@ -282,6 +300,18 @@
             <button type="button" id="btn-chatter-clear" class="btn btn-sm btn-outline" style="color: #f87171; border-color: #f87171;">
               🧹 Temizle
             </button>
+          </div>
+
+          <!-- Chat Commands Quick Info Box for Pixel Chatters -->
+          <div style="background: rgba(236, 72, 153, 0.09); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 8px; padding: 10px 12px; margin-bottom: 16px; font-size: 0.8rem; color: #fbcfe8; line-height: 1.5;">
+            <strong>💬 İzleyicilerin Kullanabileceği İnteraktif Chat Komutları:</strong><br>
+            • <code>!zipla</code> / <code>!jump</code> &rarr; Karakteri yükseğe zıplatır.<br>
+            • <code>!dans</code> / <code>!dance</code> &rarr; Ritmik dans eder ve müzik notaları 🎵 saçar.<br>
+            • <code>!uyu</code> & <code>!uyan</code> &rarr; Karakteri uyutur (💤 zzz) veya uyandırır.<br>
+            • <code>!sev</code> &rarr; Kalp saçar ve neşelenir.<br>
+            • <code>!saril @kullanici</code> &rarr; Hedef izleyicinin yanına koşup sarılır ve dev kalp patlaması oluşturur.<br>
+            • <code>!duello @kullanici</code> &rarr; Hedefle çarpışır; kazanan yıldız ⭐ saçar, kaybedenin başı döner (💫).<br>
+            <span style="font-size: 0.74rem; color: #cbd5e1; display: block; margin-top: 4px;">* Ayrıca Trivia kazananına <strong>👑 Bilgelik Tacı</strong>, Gacha'da 5★ çıkaranlara 15 dk <strong>✨ Altın Yıldız Aurası</strong>, Primogem ödüllerinde ise <strong>💎 Primogem Yağmuru</strong> otomatik tetiklenir.</span>
           </div>
 
           <!-- Chatter Settings Controls Grid -->
@@ -330,6 +360,17 @@
             <div class="form-group checkbox-group" style="align-self: center;">
               <label><input type="checkbox" id="cfg-chatter-nameplates" checked> İsimlikleri Göster</label>
               <label style="margin-left: 14px;"><input type="checkbox" id="cfg-chatter-shadows" checked> Gölgeleri Göster</label>
+            </div>
+
+            <div class="form-group checkbox-group" style="grid-column: 1 / -1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 10px; display: flex; gap: 20px; flex-wrap: wrap;">
+              <label style="color: #fbcfe8; font-weight: 600;">
+                <input type="checkbox" id="cfg-chatter-interactions" checked> 
+                🤝 Pikseller Arası Sosyal Etkileşimler (Selamlaşma, Kovalamaca, Çember Sohbeti)
+              </label>
+              <label style="color: #fbcfe8; font-weight: 600;">
+                <input type="checkbox" id="cfg-chatter-commands" checked> 
+                🎮 Canlı Chat Komutları (!saril, !duello, !dans, !zipla, !uyu, !sev)
+              </label>
             </div>
           </div>
 

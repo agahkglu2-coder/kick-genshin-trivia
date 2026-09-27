@@ -1863,6 +1863,12 @@
   function initChatterAdmin() {
     const btnSpawnRandom = document.getElementById('btn-chatter-spawn-random');
     const btnTestChat = document.getElementById('btn-chatter-test-chat');
+    const btnTestDance = document.getElementById('btn-chatter-test-dance');
+    const btnTestCrown = document.getElementById('btn-chatter-test-crown');
+    const btnTestAura = document.getElementById('btn-chatter-test-aura');
+    const btnTestHug = document.getElementById('btn-chatter-test-hug');
+    const btnTestDuel = document.getElementById('btn-chatter-test-duel');
+    const btnTestPrimo = document.getElementById('btn-chatter-test-primo');
     const btnTestFollow = document.getElementById('btn-chatter-test-follow');
     const btnTestSub = document.getElementById('btn-chatter-test-sub');
     const btnTestDon = document.getElementById('btn-chatter-test-don');
@@ -1881,6 +1887,8 @@
     const cfgTimeout = document.getElementById('cfg-chatter-timeout');
     const cfgNameplates = document.getElementById('cfg-chatter-nameplates');
     const cfgShadows = document.getElementById('cfg-chatter-shadows');
+    const cfgInteractions = document.getElementById('cfg-chatter-interactions');
+    const cfgCommands = document.getElementById('cfg-chatter-commands');
 
     const avatarsGrid = document.getElementById('chatter-avatars-grid');
     const btnSaveSettings = document.getElementById('btn-save-chatter-settings');
@@ -1901,7 +1909,9 @@
           bubbleDurationSec: parseFloat(cfgBubble ? cfgBubble.value : 5.5),
           despawnTimeout: parseInt(cfgTimeout ? cfgTimeout.value : 15, 10) * 60,
           showNameplates: cfgNameplates ? cfgNameplates.checked : true,
-          showShadows: cfgShadows ? cfgShadows.checked : true
+          showShadows: cfgShadows ? cfgShadows.checked : true,
+          enableInteractions: cfgInteractions ? cfgInteractions.checked : true,
+          enableCommands: cfgCommands ? cfgCommands.checked : true
         };
         try {
           await fetch('/api/chatter/config', {
@@ -1936,6 +1946,18 @@
       cfgTimeout.addEventListener('input', () => {
         liveUpdateChatterConfig();
       });
+    }
+    if (cfgNameplates) {
+      cfgNameplates.addEventListener('change', () => liveUpdateChatterConfig());
+    }
+    if (cfgShadows) {
+      cfgShadows.addEventListener('change', () => liveUpdateChatterConfig());
+    }
+    if (cfgInteractions) {
+      cfgInteractions.addEventListener('change', () => liveUpdateChatterConfig());
+    }
+    if (cfgCommands) {
+      cfgCommands.addEventListener('change', () => liveUpdateChatterConfig());
     }
 
     // Ground preset buttons
@@ -1974,6 +1996,8 @@
           if (cfgTimeout) cfgTimeout.value = Math.round((cfg.despawnTimeout || 900) / 60);
           if (cfgNameplates) cfgNameplates.checked = cfg.showNameplates !== false;
           if (cfgShadows) cfgShadows.checked = cfg.showShadows !== false;
+          if (cfgInteractions) cfgInteractions.checked = cfg.enableInteractions !== false;
+          if (cfgCommands) cfgCommands.checked = cfg.enableCommands !== false;
 
           renderAvatarsGrid();
         }
@@ -2043,6 +2067,8 @@
           despawnTimeout: parseInt(cfgTimeout ? cfgTimeout.value : 15, 10) * 60,
           showNameplates: cfgNameplates ? cfgNameplates.checked : true,
           showShadows: cfgShadows ? cfgShadows.checked : true,
+          enableInteractions: cfgInteractions ? cfgInteractions.checked : true,
+          enableCommands: cfgCommands ? cfgCommands.checked : true,
           vipOverrides: vipOverrides
         };
 
@@ -2096,6 +2122,82 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: randomUser, text: randomMsg })
+        });
+      });
+    }
+
+    if (btnTestDance) {
+      btnTestDance.addEventListener('click', async () => {
+        await fetch('/api/chatter/dance-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ duration: 8 })
+        });
+      });
+    }
+
+    if (btnTestCrown) {
+      btnTestCrown.addEventListener('click', async () => {
+        const randWinner = 'TriviaSampiyon_' + Math.floor(Math.random() * 900 + 100);
+        await fetch('/api/chatter/crown', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ winner: randWinner })
+        });
+      });
+    }
+
+    if (btnTestAura) {
+      btnTestAura.addEventListener('click', async () => {
+        const luckyUser = 'SansliGezgin_' + Math.floor(Math.random() * 900 + 100);
+        await fetch('/api/chatter/aura', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: luckyUser, duration: 900 })
+        });
+      });
+    }
+
+    if (btnTestHug) {
+      btnTestHug.addEventListener('click', async () => {
+        const userA = 'Klee';
+        const userB = 'Traveler';
+        await fetch('/api/chatter/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: userA, text: 'Sarılalım! 🤗' })
+        });
+        await fetch('/api/chatter/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'hug', fromUser: userA, toUser: userB })
+        });
+      });
+    }
+
+    if (btnTestDuel) {
+      btnTestDuel.addEventListener('click', async () => {
+        const userA = 'Xiao';
+        const userB = 'Zhongli';
+        await fetch('/api/chatter/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: userA, text: 'Meydan okuyorum! ⚔️' })
+        });
+        await fetch('/api/chatter/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'duel', fromUser: userA, toUser: userB })
+        });
+      });
+    }
+
+    if (btnTestPrimo) {
+      btnTestPrimo.addEventListener('click', async () => {
+        await fetch('/api/chatter/primo-rain', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ count: 35 })
         });
       });
     }

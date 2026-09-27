@@ -54,6 +54,8 @@ const DEFAULT_CHATTER_CONFIG = {
   chatBubbleDuration: 5.5,
   showNameplates: true,
   showShadows: true,
+  enableInteractions: true,
+  enableCommands: true,
   vipOverrides: {}
 };
 
@@ -330,17 +332,43 @@ kickClient.on('message', async (chatMsg) => {
     }
   });
 
-  // Forward to Pixel Chatter Overlay
-  try {
-    const rawUser = (chatMsg.sender?.username || 'Viewer').trim();
-    const vipAv = (config.chatterConfig && config.chatterConfig.vipOverrides && config.chatterConfig.vipOverrides[rawUser.toLowerCase()]) || null;
-    broadcast({
-      type: 'CHATTER_CHAT',
-      user: rawUser,
-      text: chatMsg.content,
-      avatarId: vipAv
-    });
-  } catch (e) {}
+    // Forward to Pixel Chatter Overlay
+    try {
+      const rawUser = (chatMsg.sender?.username || 'Viewer').trim();
+      const vipAv = (config.chatterConfig && config.chatterConfig.vipOverrides && config.chatterConfig.vipOverrides[rawUser.toLowerCase()]) || null;
+      broadcast({
+        type: 'CHATTER_CHAT',
+        user: rawUser,
+        text: chatMsg.content,
+        avatarId: vipAv
+      });
+
+      // Check for Chatter Action Commands if enabled
+      if (config.chatterConfig?.enableCommands !== false) {
+        const textLower = (chatMsg.content || '').trim().toLowerCase();
+        if (textLower === '!zipla' || textLower === '!zıpla' || textLower === '!jump') {
+          broadcast({ type: 'CHATTER_ACTION', action: 'jump', user: rawUser });
+        } else if (textLower === '!dans' || textLower === '!dance') {
+          broadcast({ type: 'CHATTER_ACTION', action: 'dance', user: rawUser });
+        } else if (textLower === '!uyu' || textLower === '!sleep') {
+          broadcast({ type: 'CHATTER_ACTION', action: 'sleep', user: rawUser });
+        } else if (textLower === '!uyan' || textLower === '!wake') {
+          broadcast({ type: 'CHATTER_ACTION', action: 'wake', user: rawUser });
+        } else if (textLower === '!sev' || textLower === '!love' || textLower === '!piko') {
+          broadcast({ type: 'CHATTER_ACTION', action: 'love', user: rawUser });
+        } else if (textLower.startsWith('!saril') || textLower.startsWith('!sarıl') || textLower.startsWith('!hug')) {
+          const match = textLower.match(/^!(?:saril|sarıl|hug)\s+@?([a-zA-Z0-9_\u00C0-\u017F]+)/);
+          if (match && match[1]) {
+            broadcast({ type: 'CHATTER_ACTION', action: 'hug', fromUser: rawUser, toUser: match[1] });
+          }
+        } else if (textLower.startsWith('!duello') || textLower.startsWith('!düello') || textLower.startsWith('!duel') || textLower.startsWith('!fight')) {
+          const match = textLower.match(/^!(?:duello|düello|duel|fight)\s+@?([a-zA-Z0-9_\u00C0-\u017F]+)/);
+          if (match && match[1]) {
+            broadcast({ type: 'CHATTER_ACTION', action: 'duel', fromUser: rawUser, toUser: match[1] });
+          }
+        }
+      }
+    } catch (e) {}
 
   // Handle Broadcaster/Moderator Bot Commands (!başlık & !oyun)
   try {
@@ -436,10 +464,17 @@ gameEngine.on('question_cancelled', () => {
 
 gameEngine.on('winner_declared', (winData) => {
   if (winData.winner && winData.winner.username) {
-    gachaEngine.awardTriviaWinner(winData.winner.username, 60);
+    const winnerUser = winData.winner.username;
+    gachaEngine.awardTriviaWinner(winnerUser, 60);
     // Announce winner in Kick chat with mode context
     const modeName = winData.triviaMode === 'general' ? 'Genel Kültür' : 'Genshin';
-    kickBot.sendMessage(`🎉 Tebrikler @${winData.winner.username}! ${modeName} sorusunu doğru bilerek +60 Primogem kazandın!`);
+    kickBot.sendMessage(`🎉 Tebrikler @${winnerUser}! ${modeName} sorusunu doğru bilerek +60 Primogem kazandın!`);
+
+    // Award Crown of Wisdom on Pixel Chatter overlay!
+    broadcast({
+      type: 'CHATTER_CROWN',
+      winner: winnerUser
+    });
   }
   broadcast({ type: 'WINNER_DECLARED', ...winData });
 });
@@ -465,10 +500,21 @@ gameEngine.on('show_leaderboard', (leaderboardData) => {
 // GachaEngine Events
 gachaEngine.on('wish_result', (wishData) => {
   broadcast({ type: 'WISH_RESULT', ...wishData });
+  // Check if 5-star pull occurred -> Award Golden Aura!
+  const has5Star = (wishData.results && wishData.results.some(r => r.rarity === 5)) || wishData.item?.rarity === 5;
+  if (has5Star && wishData.username) {
+    broadcast({
+      type: 'CHATTER_AURA',
+      user: wishData.username,
+      duration: 900 // 15 mins golden starlight aura!
+    });
+  }
 });
 
 gachaEngine.on('primo_rain', (rainData) => {
   broadcast({ type: 'PRIMO_RAIN', ...rainData });
+  // Chatters jump for primogems!
+  broadcast({ type: 'CHATTER_PRIMO_RAIN' });
 });
 
 gachaEngine.on('primo_awarded', (awardData) => {
@@ -536,6 +582,14 @@ wss.on('connection', (ws) => {
         broadcast({ type: 'CHATTER_CHAT', user: data.user, text: data.text, avatarId: data.avatarId });
       } else if (data.type === 'TEST_CHATTER_EVENT' || data.type === 'CHATTER_EVENT') {
         broadcast({ type: 'CHATTER_EVENT', eventType: data.eventType || data.event, user: data.user, amount: data.amount });
+      } else if (data.type === 'CHATTER_ACTION') {
+        broadcast(data);
+      } else if (data.type === 'CHATTER_CROWN') {
+        broadcast(data);
+      } else if (data.type === 'CHATTER_AURA') {
+        broadcast(data);
+      } else if (data.type === 'CHATTER_PRIMO_RAIN') {
+        broadcast(data);
       } else if (data.type === 'CHATTER_CLEAR') {
         broadcast({ type: 'CHATTER_CLEAR' });
       }
@@ -555,6 +609,24 @@ app.post('/api/chatter/config', express.json(), (req, res) => {
   res.json({ success: true, config: config.chatterConfig });
 });
 
+app.post('/api/chatter/action', express.json(), (req, res) => {
+  const { action, user, fromUser, toUser } = req.body || {};
+  broadcast({ type: 'CHATTER_ACTION', action, user, fromUser, toUser });
+  res.json({ success: true });
+});
+
+app.post('/api/chatter/crown', express.json(), (req, res) => {
+  const { winner } = req.body || {};
+  broadcast({ type: 'CHATTER_CROWN', winner: winner || 'Champion' });
+  res.json({ success: true });
+});
+
+app.post('/api/chatter/aura', express.json(), (req, res) => {
+  const { user } = req.body || {};
+  broadcast({ type: 'CHATTER_AURA', user: user || 'Viewer', duration: 900 });
+  res.json({ success: true });
+});
+
 app.post('/api/chatter/test-event', express.json(), (req, res) => {
   const { eventType, user, amount } = req.body || {};
   broadcast({ type: 'CHATTER_EVENT', eventType: eventType || 'sub', user: user || 'Viewer', amount });
@@ -564,6 +636,16 @@ app.post('/api/chatter/test-event', express.json(), (req, res) => {
 app.post('/api/chatter/chat', express.json(), (req, res) => {
   const { user, text, avatarId } = req.body || {};
   broadcast({ type: 'CHATTER_CHAT', user: user || 'Viewer', text: text || 'Hello!', avatarId });
+  res.json({ success: true });
+});
+
+app.post('/api/chatter/dance-all', express.json(), (req, res) => {
+  broadcast({ type: 'CHATTER_DANCE_ALL', duration: req.body?.duration || 8 });
+  res.json({ success: true });
+});
+
+app.post('/api/chatter/primo-rain', express.json(), (req, res) => {
+  broadcast({ type: 'CHATTER_PRIMO_RAIN', count: req.body?.count || 35 });
   res.json({ success: true });
 });
 

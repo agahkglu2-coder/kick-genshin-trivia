@@ -21,10 +21,13 @@
     chatBubbleDuration: 5.5,
     showNameplates: true,
     showShadows: true,
+    enableInteractions: true,
+    enableCommands: true,
     vipOverrides: {},
   };
 
   // State
+  let currentCrownWinner = null;
   let avatarRegistry = [];
   const loadedSprites = {};
   const chatters = new Map();
@@ -192,6 +195,30 @@
         ctx.beginPath();
         ctx.arc(0, 0, this.size, 0, Math.PI * 2);
         ctx.fill();
+      } else if (this.type === 'note') {
+        ctx.fillStyle = this.color || '#ff70a6';
+        ctx.font = `bold ${Math.round(this.size * 2.2)}px sans-serif`;
+        ctx.fillText(this.text || '🎵', 0, 0);
+      } else if (this.type === 'primo') {
+        ctx.rotate(this.rot);
+        const s = this.size;
+        ctx.fillStyle = '#60a5fa';
+        ctx.beginPath();
+        ctx.moveTo(0, -s);
+        ctx.lineTo(s * 0.75, 0);
+        ctx.lineTo(0, s);
+        ctx.lineTo(-s * 0.75, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#f472b6';
+        ctx.beginPath();
+        ctx.moveTo(0, -s * 0.6);
+        ctx.lineTo(s * 0.45, 0);
+        ctx.lineTo(0, s * 0.6);
+        ctx.lineTo(-s * 0.45, 0);
+        ctx.closePath();
+        ctx.fill();
       }
 
       ctx.restore();
@@ -205,6 +232,217 @@
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed - (options.upwardBias || 60);
       particles.push(new Particle(x, y, vx, vy, type, options));
+    }
+  }
+
+  // Visual Helper: Handcrafted Pixel Crown for Trivia Champions
+  function renderCrown(ctx, x, y, scale, animTimer) {
+    const floatY = Math.sin(animTimer * 4.5) * 3.5;
+    ctx.save();
+    ctx.translate(x, y + floatY);
+
+    const cw = 18 * (scale / 2.5);
+    const ch = 11 * (scale / 2.5);
+
+    // Golden halo glow behind crown
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur = 10;
+
+    // Crown Body
+    ctx.fillStyle = '#ffb703';
+    ctx.beginPath();
+    ctx.moveTo(-cw / 2, 0);
+    ctx.lineTo(-cw / 2, -ch * 0.7);
+    ctx.lineTo(-cw * 0.25, -ch * 0.35);
+    ctx.lineTo(0, -ch);
+    ctx.lineTo(cw * 0.25, -ch * 0.35);
+    ctx.lineTo(cw / 2, -ch * 0.7);
+    ctx.lineTo(cw / 2, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // Crown Base Rim
+    ctx.fillStyle = '#fb8500';
+    ctx.fillRect(-cw / 2, -ch * 0.18, cw, ch * 0.22);
+
+    // Center Ruby Gem
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ef233c';
+    ctx.beginPath();
+    ctx.arc(0, -ch * 0.45, 2.5 * (scale / 2.5), 0, Math.PI * 2);
+    ctx.fill();
+
+    // Diamond Jewels on Crown Tips
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-cw / 2 - 1, -ch * 0.8, 2, 2);
+    ctx.fillRect(-1, -ch - 1, 2, 2);
+    ctx.fillRect(cw / 2 - 1, -ch * 0.8, 2, 2);
+
+    ctx.restore();
+  }
+
+  // Visual Helper: 5★ Golden Starlight Aura (Genshin Style)
+  function renderGoldenAura(ctx, x, y, scale, animTimer) {
+    ctx.save();
+    ctx.translate(x, y - 16 * scale);
+
+    const pulse = 1.0 + Math.sin(animTimer * 5.0) * 0.12;
+    const rad = 32 * scale * pulse;
+    const grad = ctx.createRadialGradient(0, 0, rad * 0.2, 0, 0, rad);
+    grad.addColorStop(0, 'rgba(255, 215, 0, 0.45)');
+    grad.addColorStop(0.65, 'rgba(251, 191, 36, 0.18)');
+    grad.addColorStop(1, 'rgba(255, 215, 0, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, rad, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 4 Orbiting Starlight Diamonds
+    const starCount = 4;
+    for (let i = 0; i < starCount; i++) {
+      const ang = animTimer * 2.5 + (i * Math.PI * 2) / starCount;
+      const sx = Math.cos(ang) * (22 * scale);
+      const sy = Math.sin(ang) * (14 * scale);
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(animTimer * 4.0);
+      ctx.fillStyle = '#fff475';
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 6;
+      const ss = 4.5 * (scale / 2.5);
+      ctx.beginPath();
+      ctx.moveTo(0, -ss);
+      ctx.lineTo(ss * 0.4, 0);
+      ctx.lineTo(0, ss);
+      ctx.lineTo(-ss * 0.4, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  // Visual Helper: Mini Reaction Icon Bubble
+  function renderReactionBubble(ctx, icon, x, y) {
+    ctx.save();
+    ctx.font = '15px sans-serif';
+    const metrics = ctx.measureText(icon);
+    const bw = metrics.width + 12;
+    const bh = 22;
+    const bx = x - bw / 2;
+    const by = y - bh;
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 8);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.18)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Tail
+    ctx.beginPath();
+    ctx.moveTo(x - 3, by + bh);
+    ctx.lineTo(x, by + bh + 4);
+    ctx.lineTo(x + 3, by + bh);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.fill();
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(icon, x, by + bh / 2 + 1);
+    ctx.restore();
+  }
+
+  // Primogem Rain Event: 35 falling primogems and all chatters jump
+  function triggerPrimoRain(count = 35) {
+    for (let i = 0; i < count; i++) {
+      const px = rand(80, 1840);
+      const py = rand(-350, -30);
+      const vx = rand(-35, 35);
+      const vy = rand(140, 280);
+      particles.push(
+        new Particle(px, py, vx, vy, 'primo', {
+          size: rand(7, 12),
+          life: rand(4.0, 6.5),
+          gravity: 50,
+          bounce: 0.35
+        })
+      );
+    }
+
+    let delay = 0;
+    for (const ch of chatters.values()) {
+      setTimeout(() => {
+        ch.triggerJump(rand(300, 400));
+        ch.reactionIcon = '✨';
+        ch.reactionTimer = 2.5;
+        ch.triggerEmote(2.5);
+      }, delay);
+      delay += rand(100, 250);
+    }
+  }
+
+  // Interactive Chat Commands Handler
+  function handleChatAction(action, user, fromUser, toUser) {
+    if (config.enableCommands === false) return;
+
+    const actorName = user || fromUser;
+    if (!actorName) return;
+
+    let ch = chatters.get(actorName.toLowerCase());
+    if (!ch) {
+      ch = new Chatter(actorName);
+      chatters.set(actorName.toLowerCase(), ch);
+    }
+
+    if (action === 'jump') {
+      ch.triggerJump(380);
+      ch.reactionIcon = '⬆️';
+      ch.reactionTimer = 1.5;
+    } else if (action === 'dance') {
+      ch.startDancing(6.0);
+    } else if (action === 'sleep') {
+      ch.setState('sit_sleep', 35.0);
+    } else if (action === 'wake') {
+      ch.triggerJump(260);
+      ch.setState('idle', 2.5);
+      ch.reactionIcon = '☀️';
+      ch.reactionTimer = 1.5;
+    } else if (action === 'love') {
+      ch.triggerEmote(3.0);
+      ch.reactionIcon = '💖';
+      ch.reactionTimer = 2.5;
+    } else if (action === 'hug' && toUser) {
+      let target = chatters.get(toUser.toLowerCase());
+      if (!target) {
+        target = new Chatter(toUser);
+        chatters.set(toUser.toLowerCase(), target);
+      }
+      ch.targetChatter = target;
+      ch.socialAction = 'hug';
+      ch.setState('run', 6.0);
+      ch.reactionIcon = '🏃';
+      ch.reactionTimer = 2.0;
+    } else if (action === 'duel' && toUser) {
+      let target = chatters.get(toUser.toLowerCase());
+      if (!target) {
+        target = new Chatter(toUser);
+        chatters.set(toUser.toLowerCase(), target);
+      }
+      ch.targetChatter = target;
+      ch.socialAction = 'duel';
+      ch.setState('run', 5.0);
+      ch.reactionIcon = '⚔️';
+      ch.reactionTimer = 2.0;
+
+      target.targetChatter = ch;
+      target.socialAction = 'duel';
+      target.setState('run', 5.0);
+      target.reactionIcon = '⚔️';
+      target.reactionTimer = 2.0;
     }
   }
 
@@ -239,6 +477,21 @@
       this.bubbleText = null;
       this.bubbleTimer = 0;
       this.bubbleAlpha = 0;
+
+      // Interaction & Ecosystem State
+      this.messageCount = 1;
+      this.hasCrown = false;
+      this.hasGoldenAura = false;
+      this.auraTimer = 0;
+      this.socialCooldown = rand(5.0, 15.0);
+      this.targetChatter = null;
+      this.socialAction = null; // 'hug', 'duel', 'chase'
+      this.isDancing = false;
+      this.danceTimer = 0;
+      this.isDizzy = false;
+      this.dizzyTimer = 0;
+      this.reactionIcon = null;
+      this.reactionTimer = 0;
     }
 
     pickAvatar(username) {
@@ -268,6 +521,7 @@
     }
 
     say(text) {
+      this.messageCount = (this.messageCount || 0) + 1;
       this.bubbleText = text;
       this.bubbleTimer = config.chatBubbleDuration;
       this.lastActiveTime = Date.now();
@@ -278,6 +532,55 @@
       } else {
         this.setState('emote', 2.0);
       }
+    }
+
+    startDancing(duration = 6.0) {
+      this.isDancing = true;
+      this.danceTimer = duration;
+      this.state = 'emote';
+      this.lastActiveTime = Date.now();
+      this.isDespawning = false;
+      this.despawnAlpha = 1.0;
+      this.reactionIcon = '🎵';
+      this.reactionTimer = duration;
+    }
+
+    startGreeting(other) {
+      this.facing = other.x >= this.x ? 1 : -1;
+      this.setState('emote', 2.0);
+      this.reactionIcon = randChoice(['❤️', '👋', '🎵', '✨']);
+      this.reactionTimer = 2.0;
+      spawnBurst(this.x, this.groundY - 35 * config.scale, 'heart', 3, {
+        size: 4,
+        life: 1.2,
+        gravity: -25
+      });
+    }
+
+    startChase(other) {
+      this.setState('run', 3.5);
+      this.targetX = Math.max(100, Math.min(1820, this.x + (this.x >= other.x ? 1 : -1) * rand(250, 400)));
+      this.facing = this.targetX >= this.x ? 1 : -1;
+      this.reactionIcon = '💨';
+      this.reactionTimer = 1.5;
+
+      other.targetChatter = this;
+      other.socialAction = 'chase';
+      other.setState('run', 3.5);
+      other.reactionIcon = '👀';
+      other.reactionTimer = 1.5;
+    }
+
+    startGathering(other) {
+      this.setState('idle', 3.0);
+      this.facing = other.x >= this.x ? 1 : -1;
+      this.reactionIcon = randChoice(['💬', '💡']);
+      this.reactionTimer = 2.5;
+
+      other.setState('idle', 3.0);
+      other.facing = this.x >= other.x ? 1 : -1;
+      other.reactionIcon = randChoice(['❓', '🎵', '✨']);
+      other.reactionTimer = 2.5;
     }
 
     triggerJump(force = 320) {
@@ -361,6 +664,141 @@
         this.despawnAlpha -= dt * 0.8;
         if (this.despawnAlpha <= 0) {
           return false;
+        }
+      }
+
+      // Aura & Effect Timers
+      if (this.hasGoldenAura) {
+        this.auraTimer -= dt;
+        if (this.auraTimer <= 0) {
+          this.hasGoldenAura = false;
+        }
+      }
+
+      if (this.isDancing) {
+        this.danceTimer -= dt;
+        if (this.danceTimer <= 0) {
+          this.isDancing = false;
+          this.setState('idle', rand(2.0, 4.0));
+        } else {
+          if (Math.floor(this.animTimer / 0.3) % 2 === 0) {
+            this.facing = 1;
+          } else {
+            this.facing = -1;
+          }
+          if (this.animTimer > 0.6) {
+            this.animTimer = 0;
+            particles.push(
+              new Particle(
+                this.x + rand(-12, 12),
+                this.y - 30 * config.scale,
+                rand(-20, 20),
+                rand(-50, -80),
+                'note',
+                { size: 7, life: 1.5, gravity: -20, text: randChoice(['🎵', '🎶']), color: randChoice(['#f472b6', '#a855f7', '#38bdf8', '#fbbf24']) }
+              )
+            );
+          }
+        }
+      }
+
+      if (this.isDizzy) {
+        this.dizzyTimer -= dt;
+        if (this.dizzyTimer <= 0) {
+          this.isDizzy = false;
+        }
+      }
+
+      if (this.reactionTimer > 0) {
+        this.reactionTimer -= dt;
+        if (this.reactionTimer <= 0) {
+          this.reactionIcon = null;
+        }
+      }
+
+      // Handle Directed Social Interactions (hug, duel, chase)
+      if (this.targetChatter) {
+        if (!allChatters.includes(this.targetChatter) || this.targetChatter.isDespawning) {
+          this.targetChatter = null;
+          this.socialAction = null;
+        } else {
+          this.targetX = this.targetChatter.x;
+          this.targetY = this.targetChatter.groundY;
+          const dx = this.targetChatter.x - this.x;
+          const dy = this.targetChatter.groundY - this.groundY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (this.socialAction === 'hug') {
+            if (dist < 32) {
+              this.facing = dx >= 0 ? 1 : -1;
+              this.targetChatter.facing = -this.facing;
+              this.setState('emote', 2.8);
+              this.targetChatter.setState('emote', 2.8);
+              this.reactionIcon = '💖';
+              this.reactionTimer = 2.5;
+              this.targetChatter.reactionIcon = '🤗';
+              this.targetChatter.reactionTimer = 2.5;
+              spawnBurst((this.x + this.targetChatter.x) / 2, this.groundY - 35 * config.scale, 'heart', 16, { size: 6, life: 1.8, gravity: -30 });
+              this.targetChatter = null;
+              this.socialAction = null;
+            }
+          } else if (this.socialAction === 'duel') {
+            if (dist < 35) {
+              spawnBurst((this.x + this.targetChatter.x) / 2, this.groundY - 20 * config.scale, 'dust', 14, { size: 5, life: 0.6, gravity: 30 });
+              const winMe = Math.random() > 0.5;
+              const winCh = winMe ? this : this.targetChatter;
+              const loseCh = winMe ? this.targetChatter : this;
+
+              winCh.triggerJump(360);
+              winCh.reactionIcon = '⭐';
+              winCh.reactionTimer = 2.5;
+              winCh.setState('emote', 2.5);
+
+              loseCh.isDizzy = true;
+              loseCh.dizzyTimer = 3.0;
+              loseCh.reactionIcon = '💫';
+              loseCh.reactionTimer = 3.0;
+              loseCh.setState('idle', 3.0);
+
+              this.targetChatter = null;
+              this.socialAction = null;
+            }
+          } else if (this.socialAction === 'chase') {
+            if (dist < 32) {
+              this.setState('emote', 2.0);
+              this.reactionIcon = '🎉';
+              this.reactionTimer = 2.0;
+              this.targetChatter = null;
+              this.socialAction = null;
+            }
+          }
+        }
+      }
+
+      // Autonomous Proximity Social Check
+      if (config.enableInteractions !== false && !this.targetChatter && !this.isDancing && !this.isDizzy && !this.isDespawning && this.state !== 'jump') {
+        this.socialCooldown -= dt;
+        if (this.socialCooldown <= 0) {
+          for (const other of allChatters) {
+            if (other === this || other.targetChatter || other.isDespawning || other.state === 'jump') continue;
+            const dX = other.x - this.x;
+            const dY = other.groundY - this.groundY;
+            const dist = Math.sqrt(dX * dX + dY * dY);
+            if (dist < 52) {
+              this.socialCooldown = rand(15.0, 30.0);
+              other.socialCooldown = rand(15.0, 30.0);
+              const r = Math.random();
+              if (r < 0.5) {
+                this.startGreeting(other);
+                other.startGreeting(this);
+              } else if (r < 0.75) {
+                this.startChase(other);
+              } else {
+                this.startGathering(other);
+              }
+              break;
+            }
+          }
         }
       }
 
@@ -531,6 +969,12 @@
       ctx.save();
       ctx.globalAlpha = this.despawnAlpha;
 
+      // 1. 5★ Golden Starlight Aura
+      if (this.hasGoldenAura) {
+        renderGoldenAura(ctx, this.x, this.y, scale, this.animTimer);
+      }
+
+      // 2. Soft Shadow
       if (config.showShadows) {
         ctx.save();
         ctx.fillStyle = 'rgba(12, 14, 20, 0.35)';
@@ -543,8 +987,13 @@
         ctx.restore();
       }
 
+      // 3. Avatar Sprite
       ctx.save();
       ctx.translate(this.x, this.y);
+
+      if (this.isDizzy) {
+        ctx.rotate(Math.sin(this.animTimer * 14.0) * 0.2);
+      }
 
       if (this.facing < 0 && (this.state === 'run' || this.state === 'jump' || this.state === 'idle')) {
         ctx.scale(-1, 1);
@@ -560,44 +1009,68 @@
       ctx.drawImage(sprite, -w / 2, -h + bounceY, w, h);
       ctx.restore();
 
-      if (config.showNameplates) {
-        this.renderNameplate(ctx, h);
+      // 4. Trivia Winner Crown
+      const hasCrownNow = this.hasCrown || (currentCrownWinner && currentCrownWinner === this.username.toLowerCase());
+      if (hasCrownNow) {
+        renderCrown(ctx, this.x, this.y - h - 4, scale, this.animTimer);
       }
 
+      // 5. Mini Reaction Bubble
+      if (this.reactionIcon && this.reactionTimer > 0) {
+        renderReactionBubble(ctx, this.reactionIcon, this.x, this.y - h - (hasCrownNow ? 26 : 8));
+      }
+
+      // 6. Nameplates with Loyalty Badges
+      if (config.showNameplates) {
+        this.renderNameplate(ctx, h, hasCrownNow);
+      }
+
+      // 7. Speech Bubble
       if (this.bubbleText && this.bubbleAlpha > 0) {
-        this.renderSpeechBubble(ctx, h);
+        this.renderSpeechBubble(ctx, h, hasCrownNow);
       }
 
       ctx.restore();
     }
 
-    renderNameplate(ctx, spriteHeight) {
+    renderNameplate(ctx, spriteHeight, hasCrown) {
+      const isVip = Boolean(config.vipOverrides && config.vipOverrides[this.username.toLowerCase()]);
+      let badge = '🥉';
+      if (isVip) {
+        badge = '👑';
+      } else if (this.messageCount >= 25) {
+        badge = '🥇';
+      } else if (this.messageCount >= 10) {
+        badge = '🥈';
+      }
+
       const fontSize = Math.round(11 * (config.scale / 2.5));
       ctx.font = `bold ${fontSize}px 'Fredoka', 'Segoe UI', sans-serif`;
-      const textMetrics = ctx.measureText(this.username);
+      const displayText = `${badge} ${this.username}`;
+      const textMetrics = ctx.measureText(displayText);
       const paddingX = 8;
       const paddingY = 3;
       const pillW = textMetrics.width + paddingX * 2;
       const pillH = fontSize + paddingY * 2;
       const pillX = this.x - pillW / 2;
-      const pillY = this.y - spriteHeight - pillH - 4;
+      const pillY = this.y - spriteHeight - pillH - (hasCrown ? 20 : 4);
 
       ctx.fillStyle = 'rgba(15, 18, 25, 0.78)';
       ctx.beginPath();
       ctx.roundRect(pillX, pillY, pillW, pillH, pillH / 2);
       ctx.fill();
 
-      ctx.strokeStyle = this.color;
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = hasCrown ? '#ffd700' : this.color;
+      ctx.lineWidth = hasCrown ? 2 : 1.5;
       ctx.stroke();
 
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(this.username, this.x, pillY + pillH / 2);
+      ctx.fillText(displayText, this.x, pillY + pillH / 2);
     }
 
-    renderSpeechBubble(ctx, spriteHeight) {
+    renderSpeechBubble(ctx, spriteHeight, hasCrown) {
       ctx.save();
       ctx.globalAlpha = this.bubbleAlpha * this.despawnAlpha;
 
@@ -620,7 +1093,7 @@
 
       let bubbleX = this.x - bubbleW / 2;
       bubbleX = Math.max(15, Math.min(1920 - bubbleW - 15, bubbleX));
-      const bubbleY = this.y - spriteHeight - 32 - bubbleH;
+      const bubbleY = this.y - spriteHeight - (hasCrown ? 46 : 32) - bubbleH;
 
       ctx.fillStyle = '#ffffff';
       ctx.strokeStyle = '#22252e';
@@ -740,6 +1213,46 @@
           // 1. Dedicated chatter events
           if (msg.type === 'CHATTER_CHAT' || msg.type === 'chat') {
             handleChat(msg.user, msg.text, msg.avatarId);
+          } else if (msg.type === 'CHATTER_ACTION') {
+            handleChatAction(msg.action, msg.user, msg.fromUser, msg.toUser);
+          } else if (msg.type === 'CHATTER_CROWN') {
+            currentCrownWinner = msg.winner ? msg.winner.toLowerCase() : null;
+            if (msg.winner) {
+              let ch = chatters.get(msg.winner.toLowerCase());
+              if (!ch) {
+                ch = new Chatter(msg.winner);
+                chatters.set(msg.winner.toLowerCase(), ch);
+              }
+              ch.hasCrown = true;
+              ch.triggerJump(380);
+              spawnBurst(ch.x, ch.groundY - 60, 'confetti', 25, {
+                color: randChoice(['#ffd700', '#ffb703', '#fb8500', '#fff3b0']),
+                size: 6,
+                gravity: 100
+              });
+            }
+          } else if (msg.type === 'CHATTER_AURA') {
+            if (msg.user) {
+              let ch = chatters.get(msg.user.toLowerCase());
+              if (!ch) {
+                ch = new Chatter(msg.user);
+                chatters.set(msg.user.toLowerCase(), ch);
+              }
+              ch.hasGoldenAura = true;
+              ch.auraTimer = msg.duration || 900;
+              ch.triggerJump(400);
+              spawnBurst(ch.x, ch.groundY - 50, 'star', 20, {
+                color: '#ffd700',
+                size: 7,
+                gravity: 60
+              });
+            }
+          } else if (msg.type === 'CHATTER_PRIMO_RAIN') {
+            triggerPrimoRain(msg.count || 35);
+          } else if (msg.type === 'CHATTER_DANCE_ALL') {
+            for (const ch of chatters.values()) {
+              ch.startDancing(msg.duration || 8.0);
+            }
           } else if (msg.type === 'CHATTER_EVENT' || msg.type === 'event') {
             handleEvent(msg.eventType || msg.event, msg.user, msg);
           } else if (msg.type === 'CHATTER_CONFIG' || msg.type === 'config') {
@@ -837,6 +1350,8 @@
     config,
     handleChat,
     handleEvent,
+    handleChatAction,
+    triggerPrimoRain,
   };
 
   init();
