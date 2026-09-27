@@ -1887,22 +1887,61 @@
     let currentChatterConfig = null;
     let avatarsList = [];
 
+    // Live real-time slider sync to OBS & preview
+    let liveUpdateTimer = null;
+    function liveUpdateChatterConfig() {
+      clearTimeout(liveUpdateTimer);
+      liveUpdateTimer = setTimeout(async () => {
+        const partial = {
+          scale: parseFloat(cfgScale ? cfgScale.value : 3.2),
+          speed: parseFloat(cfgSpeed ? cfgSpeed.value : 1.0),
+          groundY: parseInt(cfgGround ? cfgGround.value : 920, 10),
+          maxChatters: parseInt(cfgMax ? cfgMax.value : 45, 10),
+          bubbleDurationSec: parseFloat(cfgBubble ? cfgBubble.value : 5.5),
+          showNameplates: cfgNameplates ? cfgNameplates.checked : true,
+          showShadows: cfgShadows ? cfgShadows.checked : true
+        };
+        try {
+          await fetch('/api/chatter/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(partial)
+          });
+        } catch (e) {}
+      }, 80);
+    }
+
     // Range input listeners for live labels
     if (cfgScale && valScale) {
       cfgScale.addEventListener('input', () => {
         valScale.textContent = `${parseFloat(cfgScale.value).toFixed(1)}x`;
+        liveUpdateChatterConfig();
       });
     }
     if (cfgSpeed && valSpeed) {
       cfgSpeed.addEventListener('input', () => {
         valSpeed.textContent = `${parseFloat(cfgSpeed.value).toFixed(1)}x`;
+        liveUpdateChatterConfig();
       });
     }
     if (cfgGround && valGround) {
       cfgGround.addEventListener('input', () => {
         valGround.textContent = `${cfgGround.value} px`;
+        liveUpdateChatterConfig();
       });
     }
+
+    // Ground preset buttons
+    document.querySelectorAll('.btn-ground-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const groundVal = parseInt(btn.dataset.ground, 10);
+        if (cfgGround && valGround) {
+          cfgGround.value = groundVal;
+          valGround.textContent = `${groundVal} px`;
+          liveUpdateChatterConfig();
+        }
+      });
+    });
 
     // Load Chatter Config
     async function loadChatterConfig() {
@@ -1912,7 +1951,7 @@
           const cfg = await res.json();
           currentChatterConfig = cfg;
           if (cfgScale) {
-            cfgScale.value = cfg.scale || 2.5;
+            cfgScale.value = cfg.scale || 3.2;
             if (valScale) valScale.textContent = `${parseFloat(cfgScale.value).toFixed(1)}x`;
           }
           if (cfgSpeed) {
@@ -1920,7 +1959,7 @@
             if (valSpeed) valSpeed.textContent = `${parseFloat(cfgSpeed.value).toFixed(1)}x`;
           }
           if (cfgGround) {
-            cfgGround.value = cfg.groundY || 1030;
+            cfgGround.value = cfg.groundY || 920;
             if (valGround) valGround.textContent = `${cfgGround.value} px`;
           }
           if (cfgMax) cfgMax.value = cfg.maxChatters || 45;
@@ -1988,9 +2027,9 @@
         });
 
         const newConfig = {
-          scale: parseFloat(cfgScale ? cfgScale.value : 2.5),
+          scale: parseFloat(cfgScale ? cfgScale.value : 3.2),
           speed: parseFloat(cfgSpeed ? cfgSpeed.value : 1.0),
-          groundY: parseInt(cfgGround ? cfgGround.value : 1030, 10),
+          groundY: parseInt(cfgGround ? cfgGround.value : 920, 10),
           maxChatters: parseInt(cfgMax ? cfgMax.value : 45, 10),
           bubbleDurationSec: parseFloat(cfgBubble ? cfgBubble.value : 5.5),
           showNameplates: cfgNameplates ? cfgNameplates.checked : true,

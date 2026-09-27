@@ -43,7 +43,22 @@ function saveConfig(cfg) {
   }
 }
 
+const DEFAULT_CHATTER_CONFIG = {
+  enabled: true,
+  scale: 3.2,
+  groundY: 920,
+  groundDepth: 60,
+  moveSpeed: 1.0,
+  despawnTimeout: 300,
+  maxChatters: 45,
+  chatBubbleDuration: 5.5,
+  showNameplates: true,
+  showShadows: true,
+  vipOverrides: {}
+};
+
 const config = loadConfig();
+config.chatterConfig = { ...DEFAULT_CHATTER_CONFIG, ...(config.chatterConfig || {}) };
 const app = express();
 app.enable('trust proxy');
 const server = http.createServer(app);

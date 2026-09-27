@@ -169,6 +169,9 @@
               <button id="btn-copy-chatter-url" class="btn btn-sm btn-outline">Kopyala</button>
               <a href="chatter.html" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
             </div>
+            <div style="font-size: 0.76rem; color: #fbcfe8; margin-top: 8px; background: rgba(244, 114, 182, 0.1); border-radius: 6px; padding: 6px 10px;">
+              ⚠️ <strong>OBS Ayarı:</strong> OBS'te Tarayıcı kaynağı oluştururken Genişlik: <strong>1920</strong>, Yükseklik: <strong>1080</strong> girin. Karakterlerin ekrandaki yükseklik ve boyutunu aşağıdaki <strong>Pixel Chatter Paneli</strong>nden dilediğiniz gibi ayarlayabilirsiniz!
+            </div>
           </div>
 
           <div class="obs-tips" style="margin-top: 14px;">
@@ -284,8 +287,8 @@
           <!-- Chatter Settings Controls Grid -->
           <div class="form-grid" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
             <div class="form-group">
-              <label>Karakter Boyutu: <strong id="val-chatter-scale" style="color: #f472b6;">2.5x</strong></label>
-              <input type="range" id="cfg-chatter-scale" min="1.0" max="4.5" step="0.1" value="2.5">
+              <label>Karakter Boyutu: <strong id="val-chatter-scale" style="color: #f472b6;">3.2x</strong></label>
+              <input type="range" id="cfg-chatter-scale" min="1.5" max="5.0" step="0.1" value="3.2">
             </div>
 
             <div class="form-group">
@@ -293,9 +296,20 @@
               <input type="range" id="cfg-chatter-speed" min="0.4" max="2.5" step="0.1" value="1.0">
             </div>
 
-            <div class="form-group">
-              <label>Zemin Yüksekliği: <strong id="val-chatter-ground" style="color: #f472b6;">1030 px</strong></label>
-              <input type="range" id="cfg-chatter-ground" min="800" max="1060" step="5" value="1030">
+            <!-- Ground Height with Quick Presets -->
+            <div class="form-group" style="grid-column: 1 / -1; background: rgba(244, 114, 182, 0.06); border: 1px solid rgba(244, 114, 182, 0.2); border-radius: 6px; padding: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label style="margin: 0; font-weight: 700; color: #fbcfe8;">Zemin Yüksekliği (Ekranda Yukarı / Aşağı Konum): <strong id="val-chatter-ground" style="color: #f472b6; font-size: 1rem;">920 px</strong></label>
+                <span style="font-size: 0.72rem; color: #94a3b8;">(Daha sola kaydırırsanız karakterler yukarı çıkar)</span>
+              </div>
+              <input type="range" id="cfg-chatter-ground" min="300" max="1060" step="5" value="920">
+              <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-xs btn-outline btn-ground-preset" data-ground="920" style="border-color: #f472b6; color: #fbcfe8; font-weight: 700;">⭐ Önerilen Alt Bölge (920 px)</button>
+                <button type="button" class="btn btn-xs btn-outline btn-ground-preset" data-ground="850">⬆️ Biraz Daha Yukarı (850 px)</button>
+                <button type="button" class="btn btn-xs btn-outline btn-ground-preset" data-ground="750">🚀 Orta-Alt Bölge (750 px)</button>
+                <button type="button" class="btn btn-xs btn-outline btn-ground-preset" data-ground="650">🪟 Ekranın Ortası (650 px)</button>
+                <button type="button" class="btn btn-xs btn-outline btn-ground-preset" data-ground="1020" style="color: #94a3b8;">🔻 En Dip (1020 px)</button>
+              </div>
             </div>
 
             <div class="form-group">

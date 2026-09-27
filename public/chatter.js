@@ -12,9 +12,9 @@
 
   // Global Config with defaults
   const config = {
-    scale: 2.5,
-    groundY: 1030,
-    groundDepth: 45,
+    scale: 3.2,
+    groundY: 920,
+    groundDepth: 60,
     moveSpeed: 1.0,
     despawnTimeout: 300, // seconds
     maxChatters: 45,
@@ -739,7 +739,17 @@
           } else if (msg.type === 'CHATTER_EVENT' || msg.type === 'event') {
             handleEvent(msg.eventType || msg.event, msg.user, msg);
           } else if (msg.type === 'CHATTER_CONFIG' || msg.type === 'config') {
-            if (msg.config) Object.assign(config, msg.config);
+            if (msg.config) {
+              const oldGround = config.groundY;
+              Object.assign(config, msg.config);
+              if (oldGround !== config.groundY) {
+                for (const ch of chatters.values()) {
+                  ch.groundY = rand(config.groundY - config.groundDepth, config.groundY);
+                  ch.targetY = ch.groundY;
+                  ch.y = ch.groundY + ch.z;
+                }
+              }
+            }
           } else if (msg.type === 'CHATTER_CLEAR' || msg.type === 'clear') {
             chatters.clear();
           } else if (msg.type === 'CHATTER_SPAWN' || msg.type === 'spawn') {

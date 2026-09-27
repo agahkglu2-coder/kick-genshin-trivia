@@ -11,9 +11,9 @@
   "port": 3000,
   "chatterConfig": {
     "enabled": true,
-    "scale": 2.5,
-    "groundY": 1030,
-    "groundDepth": 45,
+    "scale": 3.2,
+    "groundY": 920,
+    "groundDepth": 60,
     "moveSpeed": 1.0,
     "despawnTimeout": 300,
     "maxChatters": 45,
