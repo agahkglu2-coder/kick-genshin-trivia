@@ -813,7 +813,8 @@
         botStatusBadge.style.border = '1px solid rgba(148, 163, 184, 0.3)';
       } else if (status.hasToken) {
         const who = status.botUsername ? ` (@${status.botUsername})` : '';
-        botStatusBadge.textContent = `🟢 Canlı Kick Modu${who}`;
+        const refreshText = status.hasRefreshToken ? ' 🔄 (Oto-Yenileme Aktif)' : '';
+        botStatusBadge.textContent = `🟢 Canlı Kick Modu${who}${refreshText}`;
         botStatusBadge.style.background = 'rgba(16, 185, 129, 0.2)';
         botStatusBadge.style.color = '#10b981';
         botStatusBadge.style.border = '1px solid rgba(16, 185, 129, 0.4)';
@@ -828,17 +829,21 @@
 
         // Auto-restore token & credentials from localStorage if server currently lacks token (e.g. after server sleep / F5 reload)
         const savedToken = localStorage.getItem('kick_bot_token');
+        const savedRefreshToken = localStorage.getItem('kick_bot_refresh_token');
+        const savedExpiresAt = localStorage.getItem('kick_bot_expires_at');
         const savedBotUser = localStorage.getItem('kick_bot_username');
         const savedCId = localStorage.getItem('kick_bot_client_id');
         const savedCSecret = localStorage.getItem('kick_bot_client_secret');
-        if (savedToken && !window._tokenRestoreSent) {
+        if ((savedToken || savedRefreshToken) && !window._tokenRestoreSent) {
           window._tokenRestoreSent = true;
-          console.log('[Admin] 🔄 Tarayıcı hafızasındaki Kick bot tokenı ve bilgileri sunucuya eşitleniyor...');
+          console.log('[Admin] 🔄 Tarayıcı hafızasındaki Kick bot tokenı ve refresh_token sunucuya eşitleniyor...');
           fetch('/api/bot/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              token: savedToken,
+              token: savedToken || undefined,
+              refreshToken: savedRefreshToken || undefined,
+              expiresAt: savedExpiresAt ? parseInt(savedExpiresAt, 10) : undefined,
               clientId: savedCId || undefined,
               clientSecret: savedCSecret || undefined,
               botUsername: savedBotUser || undefined
@@ -846,10 +851,10 @@
           }).then(r => r.json()).then(d => {
             if (d.success) {
               updateBotStatus(d.status);
-              console.log('[Admin] ✅ Kick bot bağlantısı otomatik geri yüklendi!');
+              console.log('[Admin] ✅ Kick bot bağlantısı ve otomatik yenileme anahtarı geri yüklendi!');
               if (botFeedback) {
                 botFeedback.style.color = '#10b981';
-                botFeedback.innerHTML = '🎉 <strong>Bot Yeniden Bağlandı:</strong> Render uykudan uyandı ve bot bağlantınız tarayıcı hafızanızdan otomatik aktifleştirildi!';
+                botFeedback.innerHTML = '🎉 <strong>Bot Yeniden Bağlandı:</strong> Render uykudan uyandı ve bot bağlantınız (kesintisiz oto-yenileme ile) otomatik aktifleştirildi!';
               }
             }
           }).catch(console.error);
@@ -1059,13 +1064,19 @@
       if (event.data.token && typeof event.data.token === 'string') {
         localStorage.setItem('kick_bot_token', event.data.token);
       }
+      if (event.data.refreshToken && typeof event.data.refreshToken === 'string') {
+        localStorage.setItem('kick_bot_refresh_token', event.data.refreshToken);
+      }
+      if (event.data.expiresAt) {
+        localStorage.setItem('kick_bot_expires_at', String(event.data.expiresAt));
+      }
       if (event.data.botUsername) {
         localStorage.setItem('kick_bot_username', event.data.botUsername);
       }
       if (botFeedback) {
         botFeedback.style.color = '#10b981';
         const who = event.data.botUsername ? `@${event.data.botUsername}` : 'Paimon Bot';
-        botFeedback.textContent = `🎉 Tebrikler! ${who} Kick kanalınıza başarıyla bağlandı (🟢 Canlı Kick Modu Aktif).`;
+        botFeedback.textContent = `🎉 Tebrikler! ${who} Kick kanalınıza başarıyla bağlandı (🟢 Canlı Kick Modu & Kesintisiz Oto-Yenileme Aktif).`;
       }
       try {
         const res = await fetch('/api/bot/status');
@@ -1424,6 +1435,14 @@
 
       case 'BOT_STATUS':
         if (msg.status) updateBotStatus(msg.status);
+        break;
+
+      case 'BOT_TOKENS_REFRESHED':
+        if (msg.token) localStorage.setItem('kick_bot_token', msg.token);
+        if (msg.refreshToken) localStorage.setItem('kick_bot_refresh_token', msg.refreshToken);
+        if (msg.expiresAt) localStorage.setItem('kick_bot_expires_at', String(msg.expiresAt));
+        if (msg.status) updateBotStatus(msg.status);
+        console.log('[Admin] 🔄 Bot tokeni otomatik yenilendi ve tarayıcı hafızası güncellendi.');
         break;
 
       case 'KICK_STATUS':
@@ -1816,5 +1835,10 @@
   loadGachaUsers();
   loadDbStatus();
   loadTimers();
+
+  // Keep-Alive Heartbeat (Pings Render every 2 minutes while Admin panel is open to prevent sleep)
+  setInterval(() => {
+    fetch('/api/ping').catch(() => {});
+  }, 120000);
 })();
 

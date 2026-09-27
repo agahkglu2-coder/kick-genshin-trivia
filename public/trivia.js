@@ -444,4 +444,9 @@
   }
 
   connectWS();
+
+  // Keep-Alive Heartbeat (Pings Render every 2 minutes while OBS overlay is loaded to prevent container sleep)
+  setInterval(() => {
+    fetch('/api/ping').catch(() => {});
+  }, 120000);
 })();

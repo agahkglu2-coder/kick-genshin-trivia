@@ -4,10 +4,19 @@ class KickBotService extends EventEmitter {
   constructor(options = {}) {
     super();
     this.token = options.token || '';
+    this.refreshToken = options.refreshToken || '';
+    this.expiresAt = options.expiresAt || 0;
+    this.clientId = options.clientId || '';
+    this.clientSecret = options.clientSecret || '';
+    this.redirectUri = options.redirectUri || '';
     this.botUsername = options.botUsername || null;
     this.enabled = options.enabled !== false;
     this.chatroomId = options.chatroomId || null;
     this.broadcasterUserId = options.broadcasterUserId || null;
+
+    // Refresh synchronization lock
+    this.isRefreshing = false;
+    this.refreshPromise = null;
 
     // Cooldown tracker: username -> timestamp
     this.userCooldowns = new Map();
@@ -18,12 +27,36 @@ class KickBotService extends EventEmitter {
     this.isProcessingQueue = false;
     this.lastSentTimestamp = 0;
     this.minSendIntervalMs = 1500;
+
+    // Proactive background auto-refresh loop (checks every 5 mins)
+    this.startTokenRefreshLoop();
+  }
+
+  setCredentials({ token, refreshToken, expiresAt, clientId, clientSecret, redirectUri, botUsername }) {
+    if (token !== undefined) this.token = (token || '').trim();
+    if (refreshToken !== undefined) this.refreshToken = (refreshToken || '').trim();
+    if (expiresAt !== undefined) this.expiresAt = parseInt(expiresAt, 10) || 0;
+    if (clientId !== undefined) this.clientId = (clientId || '').trim();
+    if (clientSecret !== undefined) this.clientSecret = (clientSecret || '').trim();
+    if (redirectUri !== undefined) this.redirectUri = (redirectUri || '').trim();
+    if (botUsername !== undefined) this.botUsername = (botUsername || '').trim();
+
+    console.log(`[KickBot] Kimlik bilgileri güncellendi -> Token: ${this.token ? 'Mevcut (****)' : 'Yok'}, RefreshToken: ${this.refreshToken ? 'Mevcut (****)' : 'Yok'}, Bitiş: ${this.expiresAt ? new Date(this.expiresAt).toLocaleTimeString('tr-TR') : 'Bilinmiyor'}`);
+    this.emit('config_updated', this.getStatus());
   }
 
   setToken(token) {
     this.token = (token || '').trim();
     console.log(`[KickBot] Bot Token güncellendi: ${this.token ? 'Mevcut (****)' : 'Boş'}`);
     this.emit('config_updated', this.getStatus());
+  }
+
+  setRefreshToken(rt) {
+    this.refreshToken = (rt || '').trim();
+  }
+
+  setExpiresAt(exp) {
+    this.expiresAt = parseInt(exp, 10) || 0;
   }
 
   setUsername(name) {
@@ -53,11 +86,100 @@ class KickBotService extends EventEmitter {
       enabled: this.enabled,
       hasToken: Boolean(this.token && this.token.length > 5),
       tokenPreview: this.token ? `${this.token.slice(0, 4)}...${this.token.slice(-4)}` : null,
+      hasRefreshToken: Boolean(this.refreshToken && this.refreshToken.length > 5),
+      expiresAt: this.expiresAt || null,
+      minutesUntilExpiry: this.expiresAt ? Math.max(0, Math.round((this.expiresAt - Date.now()) / 60000)) : null,
       botUsername: this.botUsername,
       chatroomId: this.chatroomId,
       broadcasterUserId: this.broadcasterUserId,
       queueLength: this.queue.length
     };
+  }
+
+  // Automatic OAuth Token Refresh using grant_type=refresh_token
+  async refreshAccessToken() {
+    if (this.isRefreshing && this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    if (!this.refreshToken || !this.clientId || !this.clientSecret) {
+      console.warn('[KickBot] Otomatik yenileme yapılamıyor: Refresh token, Client ID veya Client Secret eksik.');
+      return { success: false, error: 'Eksik kimlik bilgileri (Client ID, Secret veya Refresh Token yok)' };
+    }
+
+    this.isRefreshing = true;
+    this.refreshPromise = (async () => {
+      try {
+        console.log('[KickBot] 🔄 Kick OAuth Token otomatik yenileniyor (refresh_token)...');
+        const res = await fetch('https://id.kick.com/oauth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            grant_type: 'refresh_token',
+            client_id: this.clientId,
+            client_secret: this.clientSecret,
+            refresh_token: this.refreshToken
+          }).toString()
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          console.error(`[KickBot] ❌ Token yenileme başarısız (${res.status}):`, errText);
+          return { success: false, error: errText };
+        }
+
+        const data = await res.json();
+        const newAccessToken = data.access_token;
+        const newRefreshToken = data.refresh_token || this.refreshToken;
+        const expiresInSec = data.expires_in || 7200;
+        const newExpiresAt = Date.now() + (expiresInSec * 1000);
+
+        this.token = newAccessToken;
+        this.refreshToken = newRefreshToken;
+        this.expiresAt = newExpiresAt;
+
+        console.log(`[KickBot] ✅ Token başarıyla yenilendi! Yeni son kullanım: ${new Date(newExpiresAt).toLocaleTimeString('tr-TR')} (~${Math.round(expiresInSec / 60)} dakika geçerli)`);
+
+        this.emit('tokens_refreshed', {
+          token: newAccessToken,
+          refreshToken: newRefreshToken,
+          expiresAt: newExpiresAt,
+          expiresIn: expiresInSec
+        });
+
+        this.emit('config_updated', this.getStatus());
+        return {
+          success: true,
+          token: newAccessToken,
+          refreshToken: newRefreshToken,
+          expiresAt: newExpiresAt
+        };
+      } catch (err) {
+        console.error('[KickBot] Token yenileme ağ hatası:', err.message);
+        return { success: false, error: err.message };
+      } finally {
+        this.isRefreshing = false;
+        this.refreshPromise = null;
+      }
+    })();
+
+    return this.refreshPromise;
+  }
+
+  // Proactive background loop: checks every 5 minutes and refreshes if less than 20 minutes remain
+  startTokenRefreshLoop() {
+    if (this.refreshInterval) clearInterval(this.refreshInterval);
+    this.refreshInterval = setInterval(async () => {
+      if (this.token && this.refreshToken && this.expiresAt) {
+        const remainingMs = this.expiresAt - Date.now();
+        // If less than 20 minutes left before expiry, proactively refresh!
+        if (remainingMs < 20 * 60 * 1000) {
+          const mins = Math.max(0, Math.round(remainingMs / 60000));
+          console.log(`[KickBot] ⏳ Token süresinin dolmasına ${mins} dakika kaldı. Erken yenileme başlatılıyor...`);
+          await this.refreshAccessToken();
+        }
+      }
+    }, 5 * 60 * 1000);
   }
 
   // Check if a user is in cooldown
@@ -141,8 +263,15 @@ class KickBotService extends EventEmitter {
     }
   }
 
-  async dispatchMessage(content, replyToId = null) {
+  async dispatchMessage(content, replyToId = null, isRetry = false) {
     if (!this.token) {
+      if (!isRetry && this.refreshToken && this.clientId && this.clientSecret) {
+        console.log('[KickBot] dispatchMessage -> Token yok fakat refresh_token mevcut. Otomatik yenileniyor...');
+        const refRes = await this.refreshAccessToken();
+        if (refRes.success) {
+          return this.dispatchMessage(content, replyToId, true);
+        }
+      }
       return { success: false, error: 'Token girilmedi (Simülasyon modunda). Lütfen önce "Kick ile Yetkilendir" butonuna basarak botu bağlayın.' };
     }
 
@@ -200,6 +329,14 @@ class KickBotService extends EventEmitter {
             return { success: true };
           }
 
+          if (res.status === 401 && !isRetry && this.refreshToken) {
+            console.log('[KickBot] ⚠️ Kick API 401 Unauthorized döndürdü (Token süresi dolmuş). Otomatik yenilenip tekrar gönderilecek...');
+            const refRes = await this.refreshAccessToken();
+            if (refRes.success) {
+              return this.dispatchMessage(content, replyToId, true);
+            }
+          }
+
           const errText = await res.text();
           lastError = `Kick Public API (${res.status} [${msgType}]): ${errText}`;
           console.warn(`[KickBot] ${lastError}`);
@@ -230,6 +367,14 @@ class KickBotService extends EventEmitter {
         if (fallbackRes.ok) {
           console.log(`[KickBot] ✅ Mesaj Kick v2 API ile iletildi: "${content}"`);
           return { success: true };
+        }
+
+        if (fallbackRes.status === 401 && !isRetry && this.refreshToken) {
+          console.log('[KickBot] ⚠️ Kick v2 API 401 döndürdü. Otomatik yenilenip tekrar gönderilecek...');
+          const refRes = await this.refreshAccessToken();
+          if (refRes.success) {
+            return this.dispatchMessage(content, replyToId, true);
+          }
         }
 
         const errText2 = await fallbackRes.text();
@@ -376,8 +521,15 @@ class KickBotService extends EventEmitter {
   }
 
   // Update Kick Stream Title or Category via Kick Public API
-  async updateChannel({ stream_title, category_id }) {
+  async updateChannel({ stream_title, category_id }, isRetry = false) {
     if (!this.token) {
+      if (!isRetry && this.refreshToken && this.clientId && this.clientSecret) {
+        console.log('[KickBot] updateChannel -> Token yok fakat refresh_token mevcut. Otomatik yenileniyor...');
+        const refRes = await this.refreshAccessToken();
+        if (refRes.success) {
+          return this.updateChannel({ stream_title, category_id }, true);
+        }
+      }
       return {
         success: false,
         error: 'Bot bağlı değil veya token eksik. Lütfen panelden "Kick ile Yetkilendir" butonuna tıklayın.'
@@ -413,6 +565,14 @@ class KickBotService extends EventEmitter {
       if (res.ok || res.status === 204) {
         console.log(`[KickBot] ✅ Kanal bilgileri başarıyla güncellendi:`, payload);
         return { success: true, payload };
+      }
+
+      if (res.status === 401 && !isRetry && this.refreshToken) {
+        console.log('[KickBot] updateChannel -> 401 Unauthorized alındı. Token yenilenip tekrar deneniyor...');
+        const refRes = await this.refreshAccessToken();
+        if (refRes.success) {
+          return this.updateChannel({ stream_title, category_id }, true);
+        }
       }
 
       const errText = await res.text();

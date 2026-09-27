@@ -81,3 +81,4 @@ console.log('✅ Bot mesaj olayı başarıyla yakalandı!');
 console.log('========================================================');
 console.log('🎉 TÜM KICK BOT ENTEGRASYON TESTLERİ BAŞARIYLA GEÇTİ!');
 console.log('========================================================');
+process.exit(0);

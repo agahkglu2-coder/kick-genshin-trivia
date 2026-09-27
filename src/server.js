@@ -121,9 +121,38 @@ app.use(express.static(path.join(__dirname, '..', 'public'), {
 const kickClient = new KickClient();
 const kickBot = new KickBotService({
   token: config.botToken || '',
+  refreshToken: config.botRefreshToken || '',
+  expiresAt: config.botTokenExpiresAt || 0,
+  clientId: config.botClientId || '',
+  clientSecret: config.botClientSecret || '',
+  redirectUri: config.botRedirectUri || '',
   botUsername: config.botUsername || null,
   enabled: config.botEnabled !== false,
   cooldownSeconds: 8
+});
+
+// Automatically persist refreshed tokens to config and database
+kickBot.on('tokens_refreshed', async (data) => {
+  config.botToken = data.token;
+  config.botRefreshToken = data.refreshToken;
+  config.botTokenExpiresAt = data.expiresAt;
+  saveConfig(config);
+  await db.setSetting('botToken', data.token);
+  await db.setSetting('botRefreshToken', data.refreshToken);
+  await db.setSetting('botTokenExpiresAt', data.expiresAt);
+  broadcast({
+    type: 'BOT_TOKENS_REFRESHED',
+    token: data.token,
+    refreshToken: data.refreshToken,
+    expiresAt: data.expiresAt,
+    status: {
+      ...kickBot.getStatus(),
+      clientId: config.botClientId || '',
+      redirectUri: config.botRedirectUri || '',
+      targetChannel: config.botTargetChannel || config.channel || '',
+      expiresAt: data.expiresAt
+    }
+  });
 });
 
 // Pre-fill KickBot channel & broadcaster ID if known
@@ -154,6 +183,8 @@ db.init(process.env.DATABASE_URL || config.databaseUrl).then(async () => {
   timerService.init(savedTimers || []);
 
   const savedToken = db.getSetting('botToken');
+  const savedRefreshToken = db.getSetting('botRefreshToken');
+  const savedExpiresAt = db.getSetting('botTokenExpiresAt');
   const savedBotUser = db.getSetting('botUsername');
   const savedBotEnabled = db.getSetting('botEnabled');
   const savedClientId = db.getSetting('botClientId');
@@ -162,20 +193,31 @@ db.init(process.env.DATABASE_URL || config.databaseUrl).then(async () => {
   const savedTargetChan = db.getSetting('botTargetChannel');
   const savedChan = db.getSetting('channel');
 
+  if (savedClientId) config.botClientId = savedClientId;
+  if (savedClientSecret) config.botClientSecret = savedClientSecret;
+  if (savedRedirectUri) config.botRedirectUri = savedRedirectUri;
+  if (savedRefreshToken) config.botRefreshToken = savedRefreshToken;
+  if (savedExpiresAt) config.botTokenExpiresAt = parseInt(savedExpiresAt, 10) || 0;
+
   if (savedToken) {
     config.botToken = savedToken;
-    kickBot.setToken(savedToken);
   } else if (config.botToken) {
-    kickBot.setToken(config.botToken);
     await db.setSetting('botToken', config.botToken);
   }
 
   if (savedBotUser) {
     config.botUsername = savedBotUser;
-    kickBot.setUsername(savedBotUser);
-  } else if (config.botUsername) {
-    kickBot.setUsername(config.botUsername);
   }
+
+  kickBot.setCredentials({
+    token: config.botToken || '',
+    refreshToken: config.botRefreshToken || '',
+    expiresAt: config.botTokenExpiresAt || 0,
+    clientId: config.botClientId || '',
+    clientSecret: config.botClientSecret || '',
+    redirectUri: config.botRedirectUri || '',
+    botUsername: config.botUsername || null
+  });
 
   if (savedBotEnabled !== undefined && savedBotEnabled !== null) {
     config.botEnabled = Boolean(savedBotEnabled);
@@ -184,9 +226,15 @@ db.init(process.env.DATABASE_URL || config.databaseUrl).then(async () => {
     kickBot.setEnabled(Boolean(config.botEnabled));
   }
 
-  if (savedClientId) config.botClientId = savedClientId;
-  if (savedClientSecret) config.botClientSecret = savedClientSecret;
-  if (savedRedirectUri) config.botRedirectUri = savedRedirectUri;
+  // If token is missing/expired but refresh_token is available, automatically refresh!
+  if (config.botRefreshToken && config.botClientId && config.botClientSecret) {
+    const remainingMs = (config.botTokenExpiresAt || 0) - Date.now();
+    if (!config.botToken || remainingMs < 15 * 60 * 1000) {
+      console.log('[Server] 🔄 Başlangıçta token süresi dolmuş veya dolmak üzere. Otomatik yenileniyor...');
+      kickBot.refreshAccessToken().catch(console.error);
+    }
+  }
+
 
   if (savedTargetChan) {
     config.botTargetChannel = savedTargetChan;
@@ -641,20 +689,29 @@ app.get('/api/bot/status', (req, res) => {
     ...kickBot.getStatus(),
     clientId: config.botClientId || '',
     redirectUri: config.botRedirectUri || '',
-    targetChannel: config.botTargetChannel || config.channel || ''
+    targetChannel: config.botTargetChannel || config.channel || '',
+    hasRefreshToken: Boolean(config.botRefreshToken || kickBot.refreshToken),
+    expiresAt: config.botTokenExpiresAt || kickBot.expiresAt || null,
+    minutesUntilExpiry: kickBot.expiresAt ? Math.max(0, Math.round((kickBot.expiresAt - Date.now()) / 60000)) : null
   });
 });
 
 app.post('/api/bot/config', async (req, res) => {
-  const { token, enabled, clientId, clientSecret, redirectUri, targetChannel, botUsername } = req.body || {};
+  const { token, refreshToken, expiresAt, enabled, clientId, clientSecret, redirectUri, targetChannel, botUsername } = req.body || {};
   if (token !== undefined) {
     config.botToken = token;
-    kickBot.setToken(token);
     await db.setSetting('botToken', token);
+  }
+  if (refreshToken !== undefined) {
+    config.botRefreshToken = refreshToken;
+    await db.setSetting('botRefreshToken', refreshToken);
+  }
+  if (expiresAt !== undefined) {
+    config.botTokenExpiresAt = parseInt(expiresAt, 10) || 0;
+    await db.setSetting('botTokenExpiresAt', config.botTokenExpiresAt);
   }
   if (botUsername !== undefined) {
     config.botUsername = botUsername;
-    kickBot.setUsername(botUsername);
     await db.setSetting('botUsername', botUsername);
   }
   if (enabled !== undefined) {
@@ -674,6 +731,17 @@ app.post('/api/bot/config', async (req, res) => {
     config.botRedirectUri = redirectUri.trim();
     await db.setSetting('botRedirectUri', config.botRedirectUri);
   }
+
+  kickBot.setCredentials({
+    token: config.botToken || '',
+    refreshToken: config.botRefreshToken || '',
+    expiresAt: config.botTokenExpiresAt || 0,
+    clientId: config.botClientId || '',
+    clientSecret: config.botClientSecret || '',
+    redirectUri: config.botRedirectUri || '',
+    botUsername: config.botUsername || null
+  });
+
   if (targetChannel !== undefined) {
     config.botTargetChannel = targetChannel.trim();
     await db.setSetting('botTargetChannel', config.botTargetChannel);
@@ -693,7 +761,9 @@ app.post('/api/bot/config', async (req, res) => {
       ...kickBot.getStatus(),
       clientId: config.botClientId || '',
       redirectUri: config.botRedirectUri || '',
-      targetChannel: config.botTargetChannel || config.channel || ''
+      targetChannel: config.botTargetChannel || config.channel || '',
+      hasRefreshToken: Boolean(config.botRefreshToken || kickBot.refreshToken),
+      expiresAt: config.botTokenExpiresAt || kickBot.expiresAt || null
     }
   });
   res.json({
@@ -702,9 +772,34 @@ app.post('/api/bot/config', async (req, res) => {
       ...kickBot.getStatus(),
       clientId: config.botClientId || '',
       redirectUri: config.botRedirectUri || '',
-      targetChannel: config.botTargetChannel || config.channel || ''
+      targetChannel: config.botTargetChannel || config.channel || '',
+      hasRefreshToken: Boolean(config.botRefreshToken || kickBot.refreshToken),
+      expiresAt: config.botTokenExpiresAt || kickBot.expiresAt || null
     }
   });
+});
+
+app.post('/api/bot/refresh-token', async (req, res) => {
+  try {
+    const result = await kickBot.refreshAccessToken();
+    if (result.success) {
+      res.json({
+        success: true,
+        status: {
+          ...kickBot.getStatus(),
+          clientId: config.botClientId || '',
+          redirectUri: config.botRedirectUri || '',
+          targetChannel: config.botTargetChannel || config.channel || '',
+          hasRefreshToken: Boolean(config.botRefreshToken || kickBot.refreshToken),
+          expiresAt: kickBot.expiresAt
+        }
+      });
+    } else {
+      res.status(400).json({ success: false, error: result.error });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.post('/api/bot/target-channel', async (req, res) => {
@@ -856,9 +951,27 @@ app.get('/auth/kick/callback', async (req, res) => {
     }
 
     const tokenData = await tokenRes.json();
+    const expiresIn = tokenData.expires_in || 7200;
+    const expiresAt = Date.now() + (expiresIn * 1000);
+
     config.botToken = tokenData.access_token;
-    kickBot.setToken(tokenData.access_token);
+    config.botRefreshToken = tokenData.refresh_token || config.botRefreshToken || '';
+    config.botTokenExpiresAt = expiresAt;
+
+    kickBot.setCredentials({
+      token: tokenData.access_token,
+      refreshToken: config.botRefreshToken,
+      expiresAt: expiresAt,
+      clientId: cId,
+      clientSecret: cSecret,
+      redirectUri: session.redirectUri
+    });
+
     await db.setSetting('botToken', tokenData.access_token);
+    if (tokenData.refresh_token) {
+      await db.setSetting('botRefreshToken', tokenData.refresh_token);
+    }
+    await db.setSetting('botTokenExpiresAt', expiresAt);
 
     // Fetch the authenticated bot user's identity
     let botUsername = null;
@@ -892,12 +1005,15 @@ app.get('/auth/kick/callback', async (req, res) => {
         ...kickBot.getStatus(),
         clientId: config.botClientId || '',
         redirectUri: config.botRedirectUri || '',
-        targetChannel: config.botTargetChannel || config.channel || ''
+        targetChannel: config.botTargetChannel || config.channel || '',
+        hasRefreshToken: Boolean(config.botRefreshToken || kickBot.refreshToken),
+        expiresAt: expiresAt
       }
     });
 
     const safeUsername = botUsername ? encodeURIComponent(botUsername) : '';
     const safeToken = encodeURIComponent(tokenData.access_token);
+    const safeRefreshToken = encodeURIComponent(tokenData.refresh_token || '');
 
     // Send successful auto-closing page
     res.send(`
@@ -912,6 +1028,8 @@ app.get('/auth/kick/callback', async (req, res) => {
           <script>
             try {
               localStorage.setItem('kick_bot_token', '${tokenData.access_token}');
+              ${tokenData.refresh_token ? `localStorage.setItem('kick_bot_refresh_token', '${tokenData.refresh_token}');` : ''}
+              localStorage.setItem('kick_bot_expires_at', '${expiresAt}');
               ${botUsername ? `localStorage.setItem('kick_bot_username', '${botUsername}');` : ''}
             } catch(e) {}
             if (window.opener) {
@@ -919,6 +1037,8 @@ app.get('/auth/kick/callback', async (req, res) => {
                 window.opener.postMessage({
                   type: 'KICK_AUTH_SUCCESS',
                   token: '${tokenData.access_token}',
+                  refreshToken: '${tokenData.refresh_token || ''}',
+                  expiresAt: ${expiresAt},
                   botUsername: '${botUsername || ''}'
                 }, '*');
               } catch (e) {}
