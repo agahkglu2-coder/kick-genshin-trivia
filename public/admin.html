@@ -99,6 +99,7 @@
               <button id="tab-preview-trivia" class="btn btn-xs btn-primary active-tab">🎯 Trivia Önizleme</button>
               <button id="tab-preview-gacha" class="btn btn-xs btn-outline">✨ Gacha Önizleme</button>
               <button id="tab-preview-avatar" class="btn btn-xs btn-outline" style="border-color: #a855f7; color: #d8b4fe;">🐱 VTuber Avatar</button>
+              <button id="tab-preview-chatter" class="btn btn-xs btn-outline" style="border-color: #f472b6; color: #fbcfe8;">🐾 Pixel Chatter (Yeni)</button>
             </div>
             <a id="btn-open-active-preview" href="trivia.html" target="_blank" class="btn btn-xs btn-outline">👁️ Tam Ekran Aç</a>
           </div>
@@ -154,6 +155,19 @@
               <button id="btn-copy-avatar-url" class="btn btn-sm btn-outline">Kopyala</button>
               <a href="http://127.0.0.1:8765/overlay" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
               <a href="http://127.0.0.1:8765/" target="_blank" class="btn btn-sm" style="background: #a855f7; color: white;">⚙️ Ayar Paneli</a>
+            </div>
+          </div>
+
+          <!-- Source 4: Pixel Chatter -->
+          <div class="obs-source-box" style="margin-top: 14px; border-color: rgba(244, 114, 182, 0.4);">
+            <div class="source-box-title">
+              <span class="source-badge" style="background: rgba(244, 114, 182, 0.2); color: #fbcfe8; border: 1px solid rgba(244, 114, 182, 0.5);">KAYNAK 4: PIXEL CHATTER (Canlı Piksel İzleyici Katmanı)</span>
+              <span class="source-rec">Önerilen Boyut: 1920x1080 (Tam Ekran / Şeffaf Zemin)</span>
+            </div>
+            <div class="copy-url-group">
+              <input type="text" id="obs-chatter-url" readonly value="http://localhost:3000/chatter">
+              <button id="btn-copy-chatter-url" class="btn btn-sm btn-outline">Kopyala</button>
+              <a href="chatter.html" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
             </div>
           </div>
 
@@ -231,6 +245,89 @@
                 <tr><td colspan="8" class="text-center" style="padding: 16px; color: #94a3b8;">Henüz kayıtlı Gezgin yok. Chate yazan izleyiciler otomatik olarak buraya eklenecektir.</td></tr>
               </tbody>
             </table>
+          </div>
+        <!-- Pixel Chatter Livestream Overlay Panel -->
+        <div class="panel-card chatter-card" style="border-color: rgba(244, 114, 182, 0.4);">
+          <div class="panel-title">
+            <span style="color: #fbcfe8;">🐾 Pixel Chatter İzleyici Katmanı (20 Piksel Karakter)</span>
+            <span class="badge-mini" style="background: rgba(244, 114, 182, 0.2); color: #fbcfe8; border: 1px solid rgba(244,114,182,0.4);">OBS Canlı v2.0</span>
+          </div>
+
+          <!-- Quick Chatter Action Buttons Grid -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 16px;">
+            <button type="button" id="btn-chatter-spawn-random" class="btn btn-sm btn-outline" style="border-color: #f472b6; color: #fbcfe8;">
+              ✨ Rastgele İzleyici
+            </button>
+            <button type="button" id="btn-chatter-test-chat" class="btn btn-sm btn-primary">
+              💬 Test Mesajı At
+            </button>
+            <button type="button" id="btn-chatter-test-follow" class="btn btn-sm btn-warning">
+              ⭐ Takipçi Testi
+            </button>
+            <button type="button" id="btn-chatter-test-sub" class="btn btn-sm" style="background: #9333ea; color: white;">
+              👑 Abonelik Testi
+            </button>
+            <button type="button" id="btn-chatter-test-don" class="btn btn-sm btn-gold">
+              🪙 Bağış Testi
+            </button>
+            <button type="button" id="btn-chatter-test-raid" class="btn btn-sm btn-danger">
+              🚀 Raid Partisi
+            </button>
+            <button type="button" id="btn-chatter-cheer-all" class="btn btn-sm btn-secondary">
+              🎉 Herkesi Zıplat
+            </button>
+            <button type="button" id="btn-chatter-clear" class="btn btn-sm btn-outline" style="color: #f87171; border-color: #f87171;">
+              🧹 Temizle
+            </button>
+          </div>
+
+          <!-- Chatter Settings Controls Grid -->
+          <div class="form-grid" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+            <div class="form-group">
+              <label>Karakter Boyutu: <strong id="val-chatter-scale" style="color: #f472b6;">2.5x</strong></label>
+              <input type="range" id="cfg-chatter-scale" min="1.0" max="4.5" step="0.1" value="2.5">
+            </div>
+
+            <div class="form-group">
+              <label>Yürüme Hızı: <strong id="val-chatter-speed" style="color: #f472b6;">1.0x</strong></label>
+              <input type="range" id="cfg-chatter-speed" min="0.4" max="2.5" step="0.1" value="1.0">
+            </div>
+
+            <div class="form-group">
+              <label>Zemin Yüksekliği: <strong id="val-chatter-ground" style="color: #f472b6;">1030 px</strong></label>
+              <input type="range" id="cfg-chatter-ground" min="800" max="1060" step="5" value="1030">
+            </div>
+
+            <div class="form-group">
+              <label>Maksimum Aktif İzleyici</label>
+              <input type="number" id="cfg-chatter-max" min="10" max="100" value="45">
+            </div>
+
+            <div class="form-group">
+              <label>Balon Kalma Süresi (sn)</label>
+              <input type="number" id="cfg-chatter-bubble" min="2" max="12" step="0.5" value="5.5">
+            </div>
+
+            <div class="form-group checkbox-group" style="align-self: center;">
+              <label><input type="checkbox" id="cfg-chatter-nameplates" checked> İsimlikleri Göster</label>
+              <label style="margin-left: 14px;"><input type="checkbox" id="cfg-chatter-shadows" checked> Gölgeleri Göster</label>
+            </div>
+          </div>
+
+          <!-- 20 Avatars Gallery & VIP Overrides -->
+          <div style="font-weight: 700; color: #fbcfe8; font-size: 0.88rem; margin-bottom: 8px;">
+            🎨 20 Piksel Karakter & VIP Kullanıcı Eşleştirme:
+          </div>
+          <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 12px;">
+            Kendi Kick yayıncı adınızı veya moderatörlerinizi dilediğiniz karaktere yazın. O izleyici chate yazdığında daima o özel avatarla doğacaktır:
+          </p>
+
+          <div id="chatter-avatars-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; max-height: 380px; overflow-y: auto; padding-right: 4px;">
+            <!-- Populated dynamically via JS -->
+          </div>
+
+          <div style="margin-top: 14px; display: flex; justify-content: flex-end;">
+            <button type="button" id="btn-save-chatter-settings" class="btn btn-primary btn-sm">💾 Pixel Chatter Ayarlarını Kaydet</button>
           </div>
         </div>
 

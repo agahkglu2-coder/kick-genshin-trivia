@@ -27,10 +27,13 @@
   const btnCopyGachaUrl = document.getElementById('btn-copy-gacha-url');
   const obsAvatarUrl = document.getElementById('obs-avatar-url');
   const btnCopyAvatarUrl = document.getElementById('btn-copy-avatar-url');
+  const obsChatterUrl = document.getElementById('obs-chatter-url');
+  const btnCopyChatterUrl = document.getElementById('btn-copy-chatter-url');
 
   const tabPreviewTrivia = document.getElementById('tab-preview-trivia');
   const tabPreviewGacha = document.getElementById('tab-preview-gacha');
   const tabPreviewAvatar = document.getElementById('tab-preview-avatar');
+  const tabPreviewChatter = document.getElementById('tab-preview-chatter');
   const overlayPreviewFrame = document.getElementById('overlay-preview-frame');
   const previewTipText = document.getElementById('preview-tip-text');
   const btnOpenActivePreview = document.getElementById('btn-open-active-preview');
@@ -124,6 +127,7 @@
   const currentOrigin = window.location.origin || `http://${window.location.host || 'localhost:3000'}`;
   if (obsTriviaUrl) obsTriviaUrl.value = `${currentOrigin}/trivia.html`;
   if (obsGachaUrl) obsGachaUrl.value = `${currentOrigin}/gacha.html`;
+  if (obsChatterUrl) obsChatterUrl.value = `${currentOrigin}/chatter`;
   const defaultRedirectUri = `${currentOrigin}/auth/kick/callback`;
   if (displayRedirectUri) displayRedirectUri.value = defaultRedirectUri;
   if (cfgBotRedirectUri) cfgBotRedirectUri.value = defaultRedirectUri;
@@ -611,11 +615,21 @@
     });
   }
 
+  if (btnCopyChatterUrl && obsChatterUrl) {
+    btnCopyChatterUrl.addEventListener('click', () => {
+      obsChatterUrl.select();
+      navigator.clipboard.writeText(obsChatterUrl.value);
+      btnCopyChatterUrl.textContent = 'Kopyalandı! ✅';
+      setTimeout(() => { btnCopyChatterUrl.textContent = 'Kopyala'; }, 2000);
+    });
+  }
+
   if (tabPreviewTrivia && tabPreviewGacha && overlayPreviewFrame) {
     tabPreviewTrivia.addEventListener('click', () => {
       tabPreviewTrivia.className = 'btn btn-xs btn-primary active-tab';
       tabPreviewGacha.className = 'btn btn-xs btn-outline';
       if (tabPreviewAvatar) tabPreviewAvatar.className = 'btn btn-xs btn-outline';
+      if (tabPreviewChatter) tabPreviewChatter.className = 'btn btn-xs btn-outline';
       overlayPreviewFrame.src = 'trivia.html';
       if (btnOpenActivePreview) btnOpenActivePreview.href = 'trivia.html';
       if (previewTipText) {
@@ -627,6 +641,7 @@
       tabPreviewGacha.className = 'btn btn-xs btn-primary active-tab';
       tabPreviewTrivia.className = 'btn btn-xs btn-outline';
       if (tabPreviewAvatar) tabPreviewAvatar.className = 'btn btn-xs btn-outline';
+      if (tabPreviewChatter) tabPreviewChatter.className = 'btn btn-xs btn-outline';
       overlayPreviewFrame.src = 'gacha.html';
       if (btnOpenActivePreview) btnOpenActivePreview.href = 'gacha.html';
       if (previewTipText) {
@@ -639,10 +654,25 @@
         tabPreviewAvatar.className = 'btn btn-xs btn-primary active-tab';
         tabPreviewTrivia.className = 'btn btn-xs btn-outline';
         tabPreviewGacha.className = 'btn btn-xs btn-outline';
+        if (tabPreviewChatter) tabPreviewChatter.className = 'btn btn-xs btn-outline';
         overlayPreviewFrame.src = 'http://127.0.0.1:8765/overlay';
         if (btnOpenActivePreview) btnOpenActivePreview.href = 'http://127.0.0.1:8765/overlay';
         if (previewTipText) {
           previewTipText.innerHTML = `<span>🐱 Şu an <strong>Milka VTuber Avatar</strong> reaktif ekranı önizleniyor. Mikrofona konuştuğunuzda ağız reaksiyon verir, fareyi hareket ettirdiğinizde kafa takip eder. (Uygulamanın açık olması gerekir: <code>AvatarReactive.exe</code>)</span>`;
+        }
+      });
+    }
+
+    if (tabPreviewChatter) {
+      tabPreviewChatter.addEventListener('click', () => {
+        tabPreviewChatter.className = 'btn btn-xs btn-primary active-tab';
+        tabPreviewTrivia.className = 'btn btn-xs btn-outline';
+        tabPreviewGacha.className = 'btn btn-xs btn-outline';
+        if (tabPreviewAvatar) tabPreviewAvatar.className = 'btn btn-xs btn-outline';
+        overlayPreviewFrame.src = 'chatter.html';
+        if (btnOpenActivePreview) btnOpenActivePreview.href = 'chatter.html';
+        if (previewTipText) {
+          previewTipText.innerHTML = `<span>🐾 Şu an <strong>Pixel Chatter Katmanı</strong> önizleniyor. Kick chatinize yazanlar veya aşağıdaki <strong>"✨ Rastgele İzleyici"</strong>ye bastığınızda 20 piksel karakter ekranda canlanır.</span>`;
         }
       });
     }
@@ -1829,12 +1859,267 @@
     });
   }
 
+  // ==================== PIXEL CHATTER ADMIN MODULE ====================
+  function initChatterAdmin() {
+    const btnSpawnRandom = document.getElementById('btn-chatter-spawn-random');
+    const btnTestChat = document.getElementById('btn-chatter-test-chat');
+    const btnTestFollow = document.getElementById('btn-chatter-test-follow');
+    const btnTestSub = document.getElementById('btn-chatter-test-sub');
+    const btnTestDon = document.getElementById('btn-chatter-test-don');
+    const btnTestRaid = document.getElementById('btn-chatter-test-raid');
+    const btnCheerAll = document.getElementById('btn-chatter-cheer-all');
+    const btnClearChatter = document.getElementById('btn-chatter-clear');
+
+    const cfgScale = document.getElementById('cfg-chatter-scale');
+    const valScale = document.getElementById('val-chatter-scale');
+    const cfgSpeed = document.getElementById('cfg-chatter-speed');
+    const valSpeed = document.getElementById('val-chatter-speed');
+    const cfgGround = document.getElementById('cfg-chatter-ground');
+    const valGround = document.getElementById('val-chatter-ground');
+    const cfgMax = document.getElementById('cfg-chatter-max');
+    const cfgBubble = document.getElementById('cfg-chatter-bubble');
+    const cfgNameplates = document.getElementById('cfg-chatter-nameplates');
+    const cfgShadows = document.getElementById('cfg-chatter-shadows');
+
+    const avatarsGrid = document.getElementById('chatter-avatars-grid');
+    const btnSaveSettings = document.getElementById('btn-save-chatter-settings');
+
+    let currentChatterConfig = null;
+    let avatarsList = [];
+
+    // Range input listeners for live labels
+    if (cfgScale && valScale) {
+      cfgScale.addEventListener('input', () => {
+        valScale.textContent = `${parseFloat(cfgScale.value).toFixed(1)}x`;
+      });
+    }
+    if (cfgSpeed && valSpeed) {
+      cfgSpeed.addEventListener('input', () => {
+        valSpeed.textContent = `${parseFloat(cfgSpeed.value).toFixed(1)}x`;
+      });
+    }
+    if (cfgGround && valGround) {
+      cfgGround.addEventListener('input', () => {
+        valGround.textContent = `${cfgGround.value} px`;
+      });
+    }
+
+    // Load Chatter Config
+    async function loadChatterConfig() {
+      try {
+        const res = await fetch('/api/chatter/config');
+        if (res.ok) {
+          const cfg = await res.json();
+          currentChatterConfig = cfg;
+          if (cfgScale) {
+            cfgScale.value = cfg.scale || 2.5;
+            if (valScale) valScale.textContent = `${parseFloat(cfgScale.value).toFixed(1)}x`;
+          }
+          if (cfgSpeed) {
+            cfgSpeed.value = cfg.speed || 1.0;
+            if (valSpeed) valSpeed.textContent = `${parseFloat(cfgSpeed.value).toFixed(1)}x`;
+          }
+          if (cfgGround) {
+            cfgGround.value = cfg.groundY || 1030;
+            if (valGround) valGround.textContent = `${cfgGround.value} px`;
+          }
+          if (cfgMax) cfgMax.value = cfg.maxChatters || 45;
+          if (cfgBubble) cfgBubble.value = cfg.bubbleDurationSec || 5.5;
+          if (cfgNameplates) cfgNameplates.checked = cfg.showNameplates !== false;
+          if (cfgShadows) cfgShadows.checked = cfg.showShadows !== false;
+
+          renderAvatarsGrid();
+        }
+      } catch (e) {
+        console.warn('Chatter config load error:', e);
+      }
+    }
+
+    // Load Avatars and render VIP overrides grid
+    async function loadAvatars() {
+      try {
+        const res = await fetch('/assets/avatars/avatars.json');
+        if (res.ok) {
+          avatarsList = await res.json();
+          renderAvatarsGrid();
+        }
+      } catch (e) {
+        console.warn('Avatars list load error:', e);
+      }
+    }
+
+    function renderAvatarsGrid() {
+      if (!avatarsGrid || !avatarsList || avatarsList.length === 0) return;
+      avatarsGrid.innerHTML = '';
+
+      const vipMap = (currentChatterConfig && currentChatterConfig.vipOverrides) || {};
+
+      avatarsList.forEach(av => {
+        const currentVip = vipMap[av.id] || '';
+        const card = document.createElement('div');
+        card.style.cssText = 'background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;';
+
+        card.innerHTML = `
+          <div style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.04); border-radius: 4px; overflow: hidden;">
+            <img src="/assets/avatars/${av.id}/idle.png" alt="${av.name}" style="image-rendering: pixelated; width: 44px; height: 44px; object-fit: contain;">
+          </div>
+          <div style="font-size: 0.76rem; font-weight: 700; color: #fbcfe8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">
+            ${av.name}
+          </div>
+          <div style="width: 100%;">
+            <input type="text" class="input-chatter-vip" data-avatar-id="${av.id}" value="${currentVip}" placeholder="VIP Kick Adı" style="font-size: 0.72rem; padding: 4px 6px; width: 100%; border-radius: 4px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+          </div>
+        `;
+        avatarsGrid.appendChild(card);
+      });
+    }
+
+    // Save Chatter Settings
+    if (btnSaveSettings) {
+      btnSaveSettings.addEventListener('click', async () => {
+        const vipOverrides = {};
+        const vipInputs = document.querySelectorAll('.input-chatter-vip');
+        vipInputs.forEach(inp => {
+          const val = inp.value.trim().toLowerCase();
+          const avId = inp.dataset.avatarId;
+          if (val && avId) {
+            vipOverrides[avId] = val;
+          }
+        });
+
+        const newConfig = {
+          scale: parseFloat(cfgScale ? cfgScale.value : 2.5),
+          speed: parseFloat(cfgSpeed ? cfgSpeed.value : 1.0),
+          groundY: parseInt(cfgGround ? cfgGround.value : 1030, 10),
+          maxChatters: parseInt(cfgMax ? cfgMax.value : 45, 10),
+          bubbleDurationSec: parseFloat(cfgBubble ? cfgBubble.value : 5.5),
+          showNameplates: cfgNameplates ? cfgNameplates.checked : true,
+          showShadows: cfgShadows ? cfgShadows.checked : true,
+          vipOverrides: vipOverrides
+        };
+
+        try {
+          btnSaveSettings.disabled = true;
+          btnSaveSettings.textContent = 'Kaydediliyor...';
+          const res = await fetch('/api/chatter/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newConfig)
+          });
+          const data = await res.json();
+          if (data.success) {
+            currentChatterConfig = newConfig;
+            alert('✅ Pixel Chatter ayarları başarıyla kaydedildi ve canlı yayına iletildi!');
+          } else {
+            alert('Hata: ' + (data.error || 'Ayar kaydedilemedi'));
+          }
+        } catch (err) {
+          alert('Ayarlar kaydedilirken hata: ' + err.message);
+        } finally {
+          btnSaveSettings.disabled = false;
+          btnSaveSettings.textContent = '💾 Pixel Chatter Ayarlarını Kaydet';
+        }
+      });
+    }
+
+    // Quick Action Triggers
+    if (btnSpawnRandom) {
+      btnSpawnRandom.addEventListener('click', async () => {
+        await fetch('/api/chatter/test-event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'spawn' })
+        });
+      });
+    }
+
+    if (btnTestChat) {
+      btnTestChat.addEventListener('click', async () => {
+        const messages = [
+          'Selam yayıncı! Buradayım! 🎉',
+          'Harika yayın, kolay gelsin! 🚀',
+          'Piksel karakterler çok sevimli olmuş! ✨',
+          'GG bol şanslar! 🎮',
+          'Kazanana helal olsun! 🏆'
+        ];
+        const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+        const randomUser = 'Viewer_' + Math.floor(Math.random() * 900 + 100);
+        await fetch('/api/chatter/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: randomUser, text: randomMsg })
+        });
+      });
+    }
+
+    if (btnTestFollow) {
+      btnTestFollow.addEventListener('click', async () => {
+        await fetch('/api/chatter/test-event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'follow', username: 'Takipci_' + Math.floor(Math.random() * 100) })
+        });
+      });
+    }
+
+    if (btnTestSub) {
+      btnTestSub.addEventListener('click', async () => {
+        await fetch('/api/chatter/test-event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'sub', username: 'Abone_' + Math.floor(Math.random() * 100) })
+        });
+      });
+    }
+
+    if (btnTestDon) {
+      btnTestDon.addEventListener('click', async () => {
+        await fetch('/api/chatter/test-event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'donation', username: 'Bagisci_' + Math.floor(Math.random() * 100), amount: '100 TL' })
+        });
+      });
+    }
+
+    if (btnTestRaid) {
+      btnTestRaid.addEventListener('click', async () => {
+        await fetch('/api/chatter/test-event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'raid', username: 'RaidKanal', viewers: 15 })
+        });
+      });
+    }
+
+    if (btnCheerAll) {
+      btnCheerAll.addEventListener('click', async () => {
+        await fetch('/api/chatter/test-event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'cheer_all' })
+        });
+      });
+    }
+
+    if (btnClearChatter) {
+      btnClearChatter.addEventListener('click', async () => {
+        await fetch('/api/chatter/clear', { method: 'POST' });
+      });
+    }
+
+    // Initial fetch
+    loadChatterConfig();
+    loadAvatars();
+  }
+
   // Initialize
   connectWS();
   loadQuestions();
   loadGachaUsers();
   loadDbStatus();
   loadTimers();
+  initChatterAdmin();
 
   // Keep-Alive Heartbeat (Pings Render every 2 minutes while Admin panel is open to prevent sleep)
   setInterval(() => {

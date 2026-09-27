@@ -8,5 +8,18 @@
   "soundEnabled": true,
   "channel": "milka_e",
   "botTargetChannel": "milka_e",
-  "port": 3000
+  "port": 3000,
+  "chatterConfig": {
+    "enabled": true,
+    "scale": 2.5,
+    "groundY": 1030,
+    "groundDepth": 45,
+    "moveSpeed": 1.0,
+    "despawnTimeout": 300,
+    "maxChatters": 45,
+    "chatBubbleDuration": 5.5,
+    "showNameplates": true,
+    "showShadows": true,
+    "vipOverrides": {}
+  }
 }

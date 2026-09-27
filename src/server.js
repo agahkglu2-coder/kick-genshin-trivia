@@ -68,6 +68,11 @@ app.get(['/gacha.html', '/gacha', '/wish.html', '/wish'], (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'gacha.html'));
 });
 
+// Route Dedicated Pixel Chatter OBS Overlay
+app.get(['/chatter.html', '/chatter', '/chatter-overlay.html', '/chatter-overlay'], (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'chatter.html'));
+});
+
 // Local Asset Cache Proxy for high-res Genshin Splash Art and Icons
 const ASSET_CACHE_DIR = path.join(__dirname, '..', 'public', 'assets', 'genshin_cache');
 if (!fs.existsSync(ASSET_CACHE_DIR)) {
@@ -310,6 +315,18 @@ kickClient.on('message', async (chatMsg) => {
     }
   });
 
+  // Forward to Pixel Chatter Overlay
+  try {
+    const rawUser = (chatMsg.sender?.username || 'Viewer').trim();
+    const vipAv = (config.chatterConfig && config.chatterConfig.vipOverrides && config.chatterConfig.vipOverrides[rawUser.toLowerCase()]) || null;
+    broadcast({
+      type: 'CHATTER_CHAT',
+      user: rawUser,
+      text: chatMsg.content,
+      avatarId: vipAv
+    });
+  } catch (e) {}
+
   // Handle Broadcaster/Moderator Bot Commands (!başlık & !oyun)
   try {
     const content = (chatMsg.content || '').trim();
@@ -479,8 +496,65 @@ wss.on('connection', (ws) => {
       clientId: config.botClientId || '',
       redirectUri: config.botRedirectUri || ''
     },
-    config: gameEngine.config
+    config: gameEngine.config,
+    chatterConfig: config.chatterConfig || {}
   }));
+
+  ws.send(JSON.stringify({
+    type: 'CHATTER_CONFIG',
+    config: config.chatterConfig || {}
+  }));
+
+  ws.on('message', (raw) => {
+    try {
+      const data = JSON.parse(raw);
+      if (data.type === 'GET_CHATTER_CONFIG') {
+        ws.send(JSON.stringify({
+          type: 'CHATTER_CONFIG',
+          config: config.chatterConfig || {}
+        }));
+      } else if (data.type === 'SET_CHATTER_CONFIG' || data.type === 'CHATTER_CONFIG') {
+        config.chatterConfig = { ...config.chatterConfig, ...(data.config || {}) };
+        saveConfig(config);
+        broadcast({ type: 'CHATTER_CONFIG', config: config.chatterConfig });
+      } else if (data.type === 'TEST_CHATTER_CHAT' || data.type === 'CHATTER_CHAT') {
+        broadcast({ type: 'CHATTER_CHAT', user: data.user, text: data.text, avatarId: data.avatarId });
+      } else if (data.type === 'TEST_CHATTER_EVENT' || data.type === 'CHATTER_EVENT') {
+        broadcast({ type: 'CHATTER_EVENT', eventType: data.eventType || data.event, user: data.user, amount: data.amount });
+      } else if (data.type === 'CHATTER_CLEAR') {
+        broadcast({ type: 'CHATTER_CLEAR' });
+      }
+    } catch (e) {}
+  });
+});
+
+// Pixel Chatter REST Endpoints
+app.get('/api/chatter/config', (req, res) => {
+  res.json(config.chatterConfig || {});
+});
+
+app.post('/api/chatter/config', express.json(), (req, res) => {
+  config.chatterConfig = { ...config.chatterConfig, ...req.body };
+  saveConfig(config);
+  broadcast({ type: 'CHATTER_CONFIG', config: config.chatterConfig });
+  res.json({ success: true, config: config.chatterConfig });
+});
+
+app.post('/api/chatter/test-event', express.json(), (req, res) => {
+  const { eventType, user, amount } = req.body || {};
+  broadcast({ type: 'CHATTER_EVENT', eventType: eventType || 'sub', user: user || 'Viewer', amount });
+  res.json({ success: true });
+});
+
+app.post('/api/chatter/chat', express.json(), (req, res) => {
+  const { user, text, avatarId } = req.body || {};
+  broadcast({ type: 'CHATTER_CHAT', user: user || 'Viewer', text: text || 'Hello!', avatarId });
+  res.json({ success: true });
+});
+
+app.post('/api/chatter/clear', (req, res) => {
+  broadcast({ type: 'CHATTER_CLEAR' });
+  res.json({ success: true });
 });
 
 // REST API Endpoints

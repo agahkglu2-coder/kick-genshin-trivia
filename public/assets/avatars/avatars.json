@@ -1,0 +1,682 @@
+[
+  {
+    "id": "avatar_01",
+    "name": "Pink Cat",
+    "description": "Cute pink kitten with bow",
+    "folder": "avatar_01",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_02",
+    "name": "White Cat",
+    "description": "Pure white fluffy kitten",
+    "folder": "avatar_02",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_03",
+    "name": "Wizard Cat",
+    "description": "Black mage cat with wizard hat and magic staff",
+    "folder": "avatar_03",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_04",
+    "name": "Cool Cat",
+    "description": "Cool cat sporting dark sunglasses",
+    "folder": "avatar_04",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_05",
+    "name": "Calico Cat",
+    "description": "Calico cat enjoying warm coffee",
+    "folder": "avatar_05",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_06",
+    "name": "Frog Cat",
+    "description": "Playful cat in a green frog hoodie",
+    "folder": "avatar_06",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_07",
+    "name": "Scarf Cat",
+    "description": "White cat cozy in a blue winter scarf",
+    "folder": "avatar_07",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_08",
+    "name": "Shark Cat",
+    "description": "Charming cat wearing a blue shark costume",
+    "folder": "avatar_08",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_09",
+    "name": "Box Cat",
+    "description": "Mischievous black cat peeking out of a box",
+    "folder": "avatar_09",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_10",
+    "name": "Red Panda Cat",
+    "description": "Red panda cat wearing a striped winter scarf",
+    "folder": "avatar_10",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_11",
+    "name": "Gamer Cat",
+    "description": "Gray cat wearing purple gaming headphones",
+    "folder": "avatar_11",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_12",
+    "name": "Heart Cat",
+    "description": "Orange cat holding a big glowing heart",
+    "folder": "avatar_12",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_13",
+    "name": "Dino Cat",
+    "description": "Cute cat dressed in a green dinosaur onesie",
+    "folder": "avatar_13",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_14",
+    "name": "Streamer Cat",
+    "description": "Black cat wearing red pro streamer headset",
+    "folder": "avatar_14",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_15",
+    "name": "Panda",
+    "description": "Little panda wearing blue music headphones",
+    "folder": "avatar_15",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_16",
+    "name": "Royal Cat",
+    "description": "Regal black cat wearing a gold crown on a royal cushion",
+    "folder": "avatar_16",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_17",
+    "name": "Scholar Cat",
+    "description": "Brown cat wearing spectacles and reading a tome",
+    "folder": "avatar_17",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_18",
+    "name": "Rave Cat",
+    "description": "Party cat cheering with dual neon glowsticks",
+    "folder": "avatar_18",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_19",
+    "name": "Penguin",
+    "description": "Adorable chubby penguin wearing a warm beanie",
+    "folder": "avatar_19",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  },
+  {
+    "id": "avatar_20",
+    "name": "Skull Cat",
+    "description": "Gothic dark kitten wearing a skull beret",
+    "folder": "avatar_20",
+    "portrait": "portrait.png",
+    "frames": {
+      "portrait": "portrait.png",
+      "idle": [
+        "idle_0.png"
+      ],
+      "walk_right": [
+        "walk_right_0.png",
+        "walk_right_1.png"
+      ],
+      "walk_left": [
+        "walk_left_0.png",
+        "walk_left_1.png"
+      ],
+      "run": [
+        "run_0.png"
+      ],
+      "jump": [
+        "jump_0.png",
+        "jump_1.png"
+      ],
+      "emote": [
+        "emote_0.png"
+      ],
+      "sit_sleep": [
+        "sit_sleep_0.png"
+      ]
+    }
+  }
+]
