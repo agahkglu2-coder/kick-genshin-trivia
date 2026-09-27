@@ -16,7 +16,7 @@
     groundY: 920,
     groundDepth: 60,
     moveSpeed: 1.0,
-    despawnTimeout: 300, // seconds
+    despawnTimeout: 900, // seconds (15 minutes)
     maxChatters: 45,
     chatBubbleDuration: 5.5,
     showNameplates: true,
@@ -271,6 +271,8 @@
       this.bubbleText = text;
       this.bubbleTimer = config.chatBubbleDuration;
       this.lastActiveTime = Date.now();
+      this.isDespawning = false;
+      this.despawnAlpha = 1.0;
       if (this.state === 'sit_sleep' || Math.random() < 0.4) {
         this.triggerJump(rand(240, 320));
       } else {
@@ -302,6 +304,8 @@
 
     triggerCelebration(type = 'sub') {
       this.lastActiveTime = Date.now();
+      this.isDespawning = false;
+      this.despawnAlpha = 1.0;
       this.triggerJump(380);
       if (type === 'follow') {
         spawnBurst(this.x, this.groundY - 50, 'star', 14, {

@@ -1878,6 +1878,7 @@
     const valGround = document.getElementById('val-chatter-ground');
     const cfgMax = document.getElementById('cfg-chatter-max');
     const cfgBubble = document.getElementById('cfg-chatter-bubble');
+    const cfgTimeout = document.getElementById('cfg-chatter-timeout');
     const cfgNameplates = document.getElementById('cfg-chatter-nameplates');
     const cfgShadows = document.getElementById('cfg-chatter-shadows');
 
@@ -1898,6 +1899,7 @@
           groundY: parseInt(cfgGround ? cfgGround.value : 920, 10),
           maxChatters: parseInt(cfgMax ? cfgMax.value : 45, 10),
           bubbleDurationSec: parseFloat(cfgBubble ? cfgBubble.value : 5.5),
+          despawnTimeout: parseInt(cfgTimeout ? cfgTimeout.value : 15, 10) * 60,
           showNameplates: cfgNameplates ? cfgNameplates.checked : true,
           showShadows: cfgShadows ? cfgShadows.checked : true
         };
@@ -1927,6 +1929,11 @@
     if (cfgGround && valGround) {
       cfgGround.addEventListener('input', () => {
         valGround.textContent = `${cfgGround.value} px`;
+        liveUpdateChatterConfig();
+      });
+    }
+    if (cfgTimeout) {
+      cfgTimeout.addEventListener('input', () => {
         liveUpdateChatterConfig();
       });
     }
@@ -1964,6 +1971,7 @@
           }
           if (cfgMax) cfgMax.value = cfg.maxChatters || 45;
           if (cfgBubble) cfgBubble.value = cfg.bubbleDurationSec || 5.5;
+          if (cfgTimeout) cfgTimeout.value = Math.round((cfg.despawnTimeout || 900) / 60);
           if (cfgNameplates) cfgNameplates.checked = cfg.showNameplates !== false;
           if (cfgShadows) cfgShadows.checked = cfg.showShadows !== false;
 
@@ -2032,6 +2040,7 @@
           groundY: parseInt(cfgGround ? cfgGround.value : 920, 10),
           maxChatters: parseInt(cfgMax ? cfgMax.value : 45, 10),
           bubbleDurationSec: parseFloat(cfgBubble ? cfgBubble.value : 5.5),
+          despawnTimeout: parseInt(cfgTimeout ? cfgTimeout.value : 15, 10) * 60,
           showNameplates: cfgNameplates ? cfgNameplates.checked : true,
           showShadows: cfgShadows ? cfgShadows.checked : true,
           vipOverrides: vipOverrides

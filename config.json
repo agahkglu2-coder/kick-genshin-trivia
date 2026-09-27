@@ -15,7 +15,7 @@
     "groundY": 920,
     "groundDepth": 60,
     "moveSpeed": 1.0,
-    "despawnTimeout": 300,
+    "despawnTimeout": 900,
     "maxChatters": 45,
     "chatBubbleDuration": 5.5,
     "showNameplates": true,
