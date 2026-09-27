@@ -176,6 +176,15 @@
     "Doğru bilene primogem var! 💎"
   ];
 
+  const paimonGeneralQuotes = [
+    "Paimon'la Genel Kültür vakti! 🌍",
+    "Bakalım kim genel kültür şampiyonu? 🧠",
+    "Paimon bu soruyu kitapta okudu! 📚",
+    "Hadi bakalım, cevabı kim biliyor? 🎯",
+    "Genel kültür sorusu geldi! ✨",
+    "Doğru bilene +60 Primogem var! 💎"
+  ];
+
   function hideAllCards() {
     if (questionWrapper) {
       questionWrapper.classList.add('hidden');
@@ -199,12 +208,21 @@
 
     questionText.textContent = q.question;
     questionHint.textContent = q.hint ? `İpucu: ${q.hint}` : '';
-    questionCategory.textContent = q.category || 'Genshin';
+
+    const isGeneral = q.triviaMode === 'general';
+    if (isGeneral) {
+      questionCategory.textContent = `🌍 ${q.category || 'Genel Kültür'}`;
+      questionCategory.classList.add('tag-category-general');
+    } else {
+      questionCategory.textContent = `⚔️ ${q.category || 'Genshin'}`;
+      questionCategory.classList.remove('tag-category-general');
+    }
     questionDifficulty.textContent = q.difficulty || 'Normal';
 
     // Random Paimon quote
     if (paimonSpeech) {
-      const quote = paimonQuotes[Math.floor(Math.random() * paimonQuotes.length)];
+      const quotesPool = isGeneral ? paimonGeneralQuotes : paimonQuotes;
+      const quote = quotesPool[Math.floor(Math.random() * quotesPool.length)];
       paimonSpeech.innerHTML = `<span class="speech-text">${quote}</span>`;
     }
 

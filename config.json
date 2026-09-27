@@ -4,6 +4,7 @@
   "winnerDisplaySeconds": 12,
   "leaderboardCooldownSeconds": 60,
   "gameMode": "first_correct",
+  "triviaMode": "genshin",
   "soundEnabled": true,
   "channel": "milka_e",
   "botTargetChannel": "milka_e",

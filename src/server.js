@@ -26,6 +26,7 @@ function loadConfig() {
       winnerDisplaySeconds: 12,
       leaderboardCooldownSeconds: 60,
       gameMode: 'first_correct',
+      triviaMode: 'genshin',
       port: 3000,
       soundEnabled: true,
       botEnabled: true,
@@ -356,10 +357,17 @@ gameEngine.on('question_cancelled', () => {
 gameEngine.on('winner_declared', (winData) => {
   if (winData.winner && winData.winner.username) {
     gachaEngine.awardTriviaWinner(winData.winner.username, 60);
-    // Announce winner in Kick chat
-    kickBot.sendMessage(`🎉 Tebrikler @${winData.winner.username}! Doğru cevap vererek +60 Primogem kazandın!`);
+    // Announce winner in Kick chat with mode context
+    const modeName = winData.triviaMode === 'general' ? 'Genel Kültür' : 'Genshin';
+    kickBot.sendMessage(`🎉 Tebrikler @${winData.winner.username}! ${modeName} sorusunu doğru bilerek +60 Primogem kazandın!`);
   }
   broadcast({ type: 'WINNER_DECLARED', ...winData });
+});
+
+gameEngine.on('trivia_mode_changed', (modeData) => {
+  config.triviaMode = modeData.mode;
+  saveConfig(config);
+  broadcast({ type: 'TRIVIA_MODE_CHANGED', ...modeData, config: gameEngine.config });
 });
 
 gameEngine.on('question_timeout', (timeoutData) => {
@@ -524,13 +532,55 @@ app.post('/api/config', async (req, res) => {
   res.json({ success: true, config: gameEngine.config });
 });
 
+// Trivia Mode Switch Endpoint (Genshin / General / Mixed)
+app.post('/api/trivia-mode', (req, res) => {
+  const { mode } = req.body || {};
+  try {
+    const result = gameEngine.setTriviaMode(mode);
+    config.triviaMode = mode;
+    saveConfig(config);
+    broadcast({
+      type: 'TRIVIA_MODE_CHANGED',
+      mode: gameEngine.config.triviaMode,
+      activeCount: result.activeCount,
+      stats: gameEngine.getFullState().stats,
+      config: gameEngine.config
+    });
+    res.json({
+      success: true,
+      mode: gameEngine.config.triviaMode,
+      count: result.activeCount,
+      stats: gameEngine.getFullState().stats
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 app.get('/api/questions', (req, res) => {
-  res.json(gameEngine.questions);
+  const mode = req.query.mode;
+  if (mode === 'genshin') {
+    res.json(gameEngine.genshinQuestions);
+  } else if (mode === 'general') {
+    res.json(gameEngine.generalQuestions);
+  } else if (mode === 'all') {
+    res.json({
+      activeMode: gameEngine.config.triviaMode,
+      activeCount: gameEngine.questions.length,
+      genshinCount: gameEngine.genshinQuestions.length,
+      generalCount: gameEngine.generalQuestions.length,
+      genshin: gameEngine.genshinQuestions,
+      general: gameEngine.generalQuestions
+    });
+  } else {
+    res.json(gameEngine.questions);
+  }
 });
 
 app.post('/api/questions', (req, res) => {
   try {
-    const created = gameEngine.addQuestion(req.body);
+    const targetMode = req.body.mode || req.body.targetMode || gameEngine.config.triviaMode;
+    const created = gameEngine.addQuestion(req.body, targetMode);
     res.json({ success: true, question: created });
   } catch (e) {
     res.status(400).json({ error: e.message });

@@ -2,7 +2,8 @@ const EventEmitter = require('events');
 const fs = require('fs');
 const path = require('path');
 
-const QUESTIONS_FILE = path.join(__dirname, 'questions.json');
+const QUESTIONS_GENSHIN_FILE = path.join(__dirname, 'questions.json');
+const QUESTIONS_GENERAL_FILE = path.join(__dirname, 'questions_general.json');
 
 function normalizeText(str) {
   if (!str) return '';
@@ -31,6 +32,7 @@ class GameEngine extends EventEmitter {
       leaderboardCooldownSeconds: 60,
       gameMode: 'first_correct', // 'first_correct' or 'draw_from_all'
       soundEnabled: true,
+      triviaMode: 'genshin', // 'genshin', 'general', or 'mixed'
       ...config
     };
 
@@ -50,23 +52,99 @@ class GameEngine extends EventEmitter {
     this.askedQuestionIds = new Set();
     this.lastLeaderboardTrigger = 0;
 
+    this.genshinQuestions = [];
+    this.generalQuestions = [];
+    this.questions = [];
+
     this.loadQuestions();
   }
 
   loadQuestions() {
+    // 1. Load Genshin Questions
     try {
-      const data = fs.readFileSync(QUESTIONS_FILE, 'utf-8');
-      this.questions = JSON.parse(data);
-      console.log(`[GameEngine] ${this.questions.length} adet Genshin sorusu yüklendi.`);
+      if (fs.existsSync(QUESTIONS_GENSHIN_FILE)) {
+        const data = fs.readFileSync(QUESTIONS_GENSHIN_FILE, 'utf-8');
+        this.genshinQuestions = JSON.parse(data);
+      } else {
+        this.genshinQuestions = [];
+      }
     } catch (e) {
-      console.error('[GameEngine] Soru listesi yüklenemedi:', e);
-      this.questions = [];
+      console.error('[GameEngine] Genshin soru listesi yüklenemedi:', e);
+      this.genshinQuestions = [];
+    }
+
+    // 2. Load General Knowledge Questions
+    try {
+      if (fs.existsSync(QUESTIONS_GENERAL_FILE)) {
+        const data = fs.readFileSync(QUESTIONS_GENERAL_FILE, 'utf-8');
+        this.generalQuestions = JSON.parse(data);
+      } else {
+        this.generalQuestions = [];
+      }
+    } catch (e) {
+      console.error('[GameEngine] Genel Kültür soru listesi yüklenemedi:', e);
+      this.generalQuestions = [];
+    }
+
+    this.refreshActivePool();
+
+    console.log(`[GameEngine] Yüklendi -> Genshin: ${this.genshinQuestions.length}, Genel Kültür: ${this.generalQuestions.length}. Aktif Mod: "${this.config.triviaMode}" (${this.questions.length} soru aktif).`);
+  }
+
+  refreshActivePool() {
+    const mode = this.config.triviaMode || 'genshin';
+    if (mode === 'general') {
+      this.questions = this.generalQuestions;
+    } else if (mode === 'mixed') {
+      // Mark origins for mixed mode
+      const gMarked = this.genshinQuestions.map(q => ({ ...q, poolMode: 'genshin' }));
+      const genMarked = this.generalQuestions.map(q => ({ ...q, poolMode: 'general' }));
+      this.questions = [...gMarked, ...genMarked];
+    } else {
+      // default: genshin
+      this.questions = this.genshinQuestions;
     }
   }
 
-  saveQuestions() {
+  setTriviaMode(mode) {
+    if (!['genshin', 'general', 'mixed'].includes(mode)) {
+      throw new Error(`Geçersiz trivia modu: ${mode}. Geçerli modlar: genshin, general, mixed.`);
+    }
+
+    const previousMode = this.config.triviaMode;
+    this.config.triviaMode = mode;
+    this.askedQuestionIds.clear();
+    this.refreshActivePool();
+
+    console.log(`[GameEngine] 🎯 Trivia Modu değiştirildi: ${previousMode} -> ${mode} (${this.questions.length} soru aktif)`);
+
+    this.emit('trivia_mode_changed', {
+      mode: this.config.triviaMode,
+      previousMode,
+      activeCount: this.questions.length,
+      genshinCount: this.genshinQuestions.length,
+      generalCount: this.generalQuestions.length
+    });
+
+    this.emitState();
+    return {
+      success: true,
+      mode: this.config.triviaMode,
+      activeCount: this.questions.length
+    };
+  }
+
+  saveQuestions(targetMode = null) {
     try {
-      fs.writeFileSync(QUESTIONS_FILE, JSON.stringify(this.questions, null, 2), 'utf-8');
+      const mode = targetMode || this.config.triviaMode;
+      if (mode === 'general') {
+        fs.writeFileSync(QUESTIONS_GENERAL_FILE, JSON.stringify(this.generalQuestions, null, 2), 'utf-8');
+      } else if (mode === 'genshin') {
+        fs.writeFileSync(QUESTIONS_GENSHIN_FILE, JSON.stringify(this.genshinQuestions, null, 2), 'utf-8');
+      } else {
+        fs.writeFileSync(QUESTIONS_GENSHIN_FILE, JSON.stringify(this.genshinQuestions, null, 2), 'utf-8');
+        fs.writeFileSync(QUESTIONS_GENERAL_FILE, JSON.stringify(this.generalQuestions, null, 2), 'utf-8');
+      }
     } catch (e) {
       console.error('[GameEngine] Soru listesi kaydedilemedi:', e);
     }
@@ -152,7 +230,10 @@ class GameEngine extends EventEmitter {
     this.secondsRemainingInQuestion = this.config.questionDurationSeconds;
     this.correctParticipants = [];
 
-    console.log(`[GameEngine] 🔔 Soru soruldu (#${question.id}): "${question.question}"`);
+    const effectiveMode = question.poolMode || this.config.triviaMode || 'genshin';
+    const modeBadge = effectiveMode === 'general' ? '🌍 Genel Kültür' : '⚔️ Genshin Impact';
+
+    console.log(`[GameEngine] 🔔 Soru soruldu (#${question.id}) [${modeBadge}]: "${question.question}"`);
 
     this.emit('question_started', {
       question: {
@@ -160,10 +241,12 @@ class GameEngine extends EventEmitter {
         category: question.category,
         difficulty: question.difficulty,
         question: question.question,
-        hint: question.hint
+        hint: question.hint,
+        triviaMode: effectiveMode
       },
       duration: this.config.questionDurationSeconds,
-      gameMode: this.config.gameMode
+      gameMode: this.config.gameMode,
+      triviaMode: effectiveMode
     });
 
     this.emitState();
@@ -194,7 +277,6 @@ class GameEngine extends EventEmitter {
 
       // 2. Mesaj kelimeler içeriyorsa ve cevap 3 karakterden uzunsa kelime sınırında arama
       if (normAns.length >= 3) {
-        // Kelime öbeği veya kelime olarak içeriyor mu
         const regex = new RegExp(`(^|\\s)${normAns}($|\\s)`, 'i');
         if (regex.test(normMsg)) return true;
       }
@@ -211,7 +293,6 @@ class GameEngine extends EventEmitter {
       .some(cmd => trimmed === cmd || trimmed.startsWith(cmd + ' '));
 
     if (isLeaderboardCmd) {
-      // If a question is currently ACTIVE, ignore command so it doesn't disrupt answering
       if (this.state === 'ACTIVE') {
         console.log(`[GameEngine] !sıralama komutu atlandı: Soru şu an aktif (${sender.username}).`);
         return true;
@@ -296,7 +377,6 @@ class GameEngine extends EventEmitter {
     if (this.state !== 'ACTIVE' || !this.currentQuestion) return;
 
     if (this.config.gameMode === 'draw_from_all' && this.correctParticipants.length > 0) {
-      // Pick random winner from participants
       const randomIndex = Math.floor(Math.random() * this.correctParticipants.length);
       const chosen = this.correctParticipants[randomIndex];
       this.declareWinner({
@@ -351,6 +431,7 @@ class GameEngine extends EventEmitter {
       profilePic: winData.winner.profilePic,
       questionText: winData.question.question,
       answerGiven: winData.answerGiven,
+      triviaMode: winData.question.poolMode || this.config.triviaMode || 'genshin',
       wonAt: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     };
     this.recentWinners.unshift(logItem);
@@ -359,7 +440,8 @@ class GameEngine extends EventEmitter {
     this.emit('winner_declared', {
       ...winData,
       winsCount: this.leaderboard[user].count,
-      displaySeconds: this.config.winnerDisplaySeconds
+      displaySeconds: this.config.winnerDisplaySeconds,
+      triviaMode: winData.question.poolMode || this.config.triviaMode || 'genshin'
     });
 
     this.emitState();
@@ -375,21 +457,24 @@ class GameEngine extends EventEmitter {
 
   // Trigger preview test for OBS configuration
   triggerTestPreview() {
+    const isGeneral = this.config.triviaMode === 'general';
     this.emit('test_preview', {
       question: {
         id: 999,
-        category: "Test Kategorisi",
+        category: isGeneral ? "Coğrafya" : "Test Kategorisi",
         difficulty: "Kolay",
-        question: "Genshin Impact'te Paimon'un meşhur takma adı nedir?",
-        hint: "Acil durum yemeği!"
+        question: isGeneral ? "Türkiye'nin başkenti neresidir?" : "Genshin Impact'te Paimon'un meşhur takma adı nedir?",
+        hint: isGeneral ? "İç Anadolu'da yer alır." : "Acil durum yemeği!",
+        triviaMode: this.config.triviaMode
       },
       duration: 10,
       mockWinner: {
-        username: "GenshinGezgini",
+        username: isGeneral ? "BilgiAvcisi" : "GenshinGezgini",
         profilePic: null,
-        answerGiven: "Acil durum yemeği",
+        answerGiven: isGeneral ? "Ankara" : "Acil durum yemeği",
         winsCount: 3
-      }
+      },
+      triviaMode: this.config.triviaMode
     });
   }
 
@@ -407,9 +492,16 @@ class GameEngine extends EventEmitter {
         category: this.currentQuestion.category,
         difficulty: this.currentQuestion.difficulty,
         question: this.currentQuestion.question,
-        hint: this.currentQuestion.hint
+        hint: this.currentQuestion.hint,
+        triviaMode: this.currentQuestion.poolMode || this.config.triviaMode || 'genshin'
       } : null,
       config: this.config,
+      triviaMode: this.config.triviaMode || 'genshin',
+      stats: {
+        genshinCount: (this.genshinQuestions || []).length,
+        generalCount: (this.generalQuestions || []).length,
+        activeCount: (this.questions || []).length
+      },
       recentWinners: this.recentWinners,
       leaderboard: Object.entries(this.leaderboard)
         .map(([username, data]) => ({ username, count: data.count, profilePic: data.profilePic }))
@@ -418,29 +510,40 @@ class GameEngine extends EventEmitter {
   }
 
   updateConfig(newConfig) {
+    const modeChanged = newConfig.triviaMode && newConfig.triviaMode !== this.config.triviaMode;
     this.config = { ...this.config, ...newConfig };
+    if (modeChanged) {
+      this.setTriviaMode(this.config.triviaMode);
+    }
     if (this.state === 'WAITING') {
       this.secondsUntilNextQuestion = Math.min(this.secondsUntilNextQuestion, this.config.intervalMinutes * 60);
     }
     this.emitState();
   }
 
-  addQuestion(q) {
+  addQuestion(q, targetMode = null) {
     if (!q.question || !q.answers || q.answers.length === 0) {
       throw new Error('Soru metni ve en az bir geçerli cevap gereklidir.');
     }
-    const newId = this.questions.length > 0 ? Math.max(...this.questions.map(x => x.id || 0)) + 1 : 1;
+
+    const mode = targetMode || q.mode || this.config.triviaMode || 'genshin';
+    const targetPool = (mode === 'general') ? this.generalQuestions : this.genshinQuestions;
+
+    const newId = targetPool.length > 0 ? Math.max(...targetPool.map(x => x.id || 0)) + 1 : 1;
     const newQ = {
       id: newId,
-      category: q.category || 'Genel',
+      category: q.category || (mode === 'general' ? 'Genel Kültür' : 'Genel'),
       difficulty: q.difficulty || 'Orta',
       question: q.question.trim(),
       answers: Array.isArray(q.answers) ? q.answers.map(a => a.trim()).filter(Boolean) : [q.answers.trim()],
       hint: (q.hint || '').trim()
     };
-    this.questions.push(newQ);
-    this.saveQuestions();
-    return newQ;
+
+    targetPool.push(newQ);
+    this.saveQuestions(mode);
+    this.refreshActivePool();
+    this.emitState();
+    return { ...newQ, mode };
   }
 }
 

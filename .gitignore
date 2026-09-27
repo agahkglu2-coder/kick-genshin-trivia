@@ -3,3 +3,4 @@ bin/
 *.exe
 *.log
 .system_generated/
+avatar_app/

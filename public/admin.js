@@ -25,9 +25,12 @@
   const btnCopyTriviaUrl = document.getElementById('btn-copy-trivia-url');
   const obsGachaUrl = document.getElementById('obs-gacha-url');
   const btnCopyGachaUrl = document.getElementById('btn-copy-gacha-url');
+  const obsAvatarUrl = document.getElementById('obs-avatar-url');
+  const btnCopyAvatarUrl = document.getElementById('btn-copy-avatar-url');
 
   const tabPreviewTrivia = document.getElementById('tab-preview-trivia');
   const tabPreviewGacha = document.getElementById('tab-preview-gacha');
+  const tabPreviewAvatar = document.getElementById('tab-preview-avatar');
   const overlayPreviewFrame = document.getElementById('overlay-preview-frame');
   const previewTipText = document.getElementById('preview-tip-text');
   const btnOpenActivePreview = document.getElementById('btn-open-active-preview');
@@ -40,11 +43,26 @@
   const cfgWinnerDuration = document.getElementById('cfg-winner-duration');
   const cfgLbCooldown = document.getElementById('cfg-lb-cooldown');
   const cfgGamemode = document.getElementById('cfg-gamemode');
+  const cfgTriviaMode = document.getElementById('cfg-trivia-mode');
   const cfgSound = document.getElementById('cfg-sound');
 
+  // Trivia Mode Switcher DOM Elements
+  const currentModeBadge = document.getElementById('current-mode-badge');
+  const btnModeGenshin = document.getElementById('btn-mode-genshin');
+  const btnModeGeneral = document.getElementById('btn-mode-general');
+  const btnModeMixed = document.getElementById('btn-mode-mixed');
+  const countBadgeGenshin = document.getElementById('count-badge-genshin');
+  const countBadgeGeneral = document.getElementById('count-badge-general');
+  const countBadgeMixed = document.getElementById('count-badge-mixed');
+
+  // Questions Management DOM Elements
   const questionsCount = document.getElementById('questions-count');
+  const countPoolAll = document.getElementById('count-pool-all');
+  const countPoolGenshin = document.getElementById('count-pool-genshin');
+  const countPoolGeneral = document.getElementById('count-pool-general');
   const btnToggleAddQ = document.getElementById('btn-toggle-add-q');
   const addQuestionForm = document.getElementById('add-question-form');
+  const inputQMode = document.getElementById('input-q-mode');
   const inputQText = document.getElementById('input-q-text');
   const inputQAnswers = document.getElementById('input-q-answers');
   const inputQCategory = document.getElementById('input-q-category');
@@ -275,95 +293,271 @@
     })[m]);
   }
 
-  // Load and Render Questions
+  // Toast Notification System
+  function showToast(message, type = 'success') {
+    let container = document.getElementById('admin-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'admin-toast-container';
+      container.style.cssText = `
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+      `;
+      document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    const borderColor = type === 'error' ? '#ef4444' : '#3b82f6';
+    const bgColor = type === 'error' ? 'rgba(239, 68, 68, 0.95)' : 'rgba(15, 23, 42, 0.95)';
+    toast.style.cssText = `
+      background: ${bgColor};
+      border: 1px solid ${borderColor};
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(8px);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: translateY(-10px);
+      opacity: 0;
+      pointer-events: auto;
+    `;
+    toast.innerHTML = message;
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.style.transform = 'translateY(0)';
+      toast.style.opacity = '1';
+    });
+
+    setTimeout(() => {
+      toast.style.transform = 'translateY(-10px)';
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }, 3500);
+  }
+
+  // Trivia Mode Switching System
+  let currentTriviaMode = 'genshin';
+  let genshinQuestionsPool = [];
+  let generalQuestionsPool = [];
+  let currentPoolFilter = 'all';
+
+  function updateModeButtonsUI(mode) {
+    currentTriviaMode = mode || 'genshin';
+    const allBtns = [btnModeGenshin, btnModeGeneral, btnModeMixed];
+    allBtns.forEach(b => { if (b) b.classList.remove('active'); });
+
+    if (mode === 'general') {
+      if (btnModeGeneral) btnModeGeneral.classList.add('active');
+      if (currentModeBadge) {
+        currentModeBadge.className = 'badge-mode-pill badge-mode-general';
+        currentModeBadge.textContent = '🌍 Genel Kültür Modu';
+      }
+    } else if (mode === 'mixed') {
+      if (btnModeMixed) btnModeMixed.classList.add('active');
+      if (currentModeBadge) {
+        currentModeBadge.className = 'badge-mode-pill badge-mode-mixed';
+        currentModeBadge.textContent = '🎲 Karışık Mod';
+      }
+    } else {
+      if (btnModeGenshin) btnModeGenshin.classList.add('active');
+      if (currentModeBadge) {
+        currentModeBadge.className = 'badge-mode-pill badge-mode-genshin';
+        currentModeBadge.textContent = '⚔️ Genshin Impact Modu';
+      }
+    }
+  }
+
+  function updateStatsUI(stats) {
+    if (!stats) return;
+    const gCount = stats.genshinCount || 0;
+    const genCount = stats.generalCount || 0;
+    const totalCount = gCount + genCount;
+
+    if (countBadgeGenshin) countBadgeGenshin.textContent = gCount;
+    if (countBadgeGeneral) countBadgeGeneral.textContent = genCount;
+    if (countBadgeMixed) countBadgeMixed.textContent = totalCount;
+
+    if (countPoolAll) countPoolAll.textContent = totalCount;
+    if (countPoolGenshin) countPoolGenshin.textContent = gCount;
+    if (countPoolGeneral) countPoolGeneral.textContent = genCount;
+  }
+
+  async function setTriviaMode(mode) {
+    try {
+      updateModeButtonsUI(mode);
+      const res = await fetch('/api/trivia-mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode })
+      });
+      const data = await res.json();
+      if (data.success) {
+        let label = '⚔️ Genshin Impact';
+        if (mode === 'general') label = '🌍 Genel Kültür';
+        if (mode === 'mixed') label = '🎲 Karışık (Genshin + Genel Kültür)';
+        showToast(`🎯 Trivia Modu: <strong>${label}</strong> olarak ayarlandı! (${data.count} soru aktif)`);
+        if (cfgTriviaMode) cfgTriviaMode.value = mode;
+        if (data.stats) updateStatsUI(data.stats);
+        loadQuestions();
+      }
+    } catch (e) {
+      console.error('Trivia modu değiştirilemedi:', e);
+      showToast('❌ Mod değiştirilirken hata oluştu: ' + e.message, 'error');
+    }
+  }
+
+  if (btnModeGenshin) btnModeGenshin.addEventListener('click', () => setTriviaMode('genshin'));
+  if (btnModeGeneral) btnModeGeneral.addEventListener('click', () => setTriviaMode('general'));
+  if (btnModeMixed) btnModeMixed.addEventListener('click', () => setTriviaMode('mixed'));
+
+  // Load and Render Questions with Mode Filter Support
   async function loadQuestions() {
     try {
-      const res = await fetch('/api/questions');
-      allQuestions = await res.json();
-      questionsCount.textContent = allQuestions.length;
-      renderQuestionsList(allQuestions);
+      const res = await fetch('/api/questions?mode=all');
+      const data = await res.json();
+
+      if (data.genshin && data.general) {
+        genshinQuestionsPool = data.genshin.map(q => ({ ...q, poolMode: 'genshin' }));
+        generalQuestionsPool = data.general.map(q => ({ ...q, poolMode: 'general' }));
+        allQuestions = [...genshinQuestionsPool, ...generalQuestionsPool];
+        updateStatsUI({
+          genshinCount: genshinQuestionsPool.length,
+          generalCount: generalQuestionsPool.length
+        });
+      } else if (Array.isArray(data)) {
+        allQuestions = data;
+      }
+
+      filterAndRenderQuestions();
     } catch (e) {
       console.error('Sorular yüklenemedi:', e);
     }
   }
 
-  function renderQuestionsList(questions) {
-    if (!questions || questions.length === 0) {
-      questionsList.innerHTML = '<p class="empty-state">Soru bulunamadı.</p>';
-      return;
+  function filterAndRenderQuestions() {
+    let filtered = allQuestions;
+    if (currentPoolFilter === 'genshin') {
+      filtered = allQuestions.filter(q => q.poolMode === 'genshin');
+    } else if (currentPoolFilter === 'general') {
+      filtered = allQuestions.filter(q => q.poolMode === 'general');
     }
 
-    questionsList.innerHTML = questions.map((q) => `
-      <div class="q-item" data-id="${q.id}">
-        <div class="q-item-info">
-          <div class="q-item-title">#${q.id} ${escapeHtml(q.question)}</div>
-          <div class="q-item-ans">Cevaplar: <strong>${escapeHtml((q.answers || []).join(', '))}</strong></div>
-        </div>
-        <span class="q-item-badge">${escapeHtml(q.category || 'Genshin')} - ${escapeHtml(q.difficulty || '')}</span>
-      </div>
-    `).join('');
+    const val = (searchQuestions ? searchQuestions.value : '').toLowerCase().trim();
+    if (val) {
+      filtered = filtered.filter(q =>
+        q.question.toLowerCase().includes(val) ||
+        (q.answers || []).some(a => a.toLowerCase().includes(val)) ||
+        (q.category || '').toLowerCase().includes(val)
+      );
+    }
+
+    if (questionsCount) questionsCount.textContent = filtered.length;
+    renderQuestionsList(filtered);
   }
 
-  // Search Filter
-  searchQuestions.addEventListener('input', (e) => {
-    const val = e.target.value.toLowerCase().trim();
-    if (!val) {
-      renderQuestionsList(allQuestions);
+  function renderQuestionsList(questions) {
+    if (!questions || questions.length === 0) {
+      questionsList.innerHTML = '<p class="empty-state">Bu filtrede soru bulunamadı.</p>';
       return;
     }
-    const filtered = allQuestions.filter(q =>
-      q.question.toLowerCase().includes(val) ||
-      (q.answers || []).some(a => a.toLowerCase().includes(val)) ||
-      (q.category || '').toLowerCase().includes(val)
-    );
-    renderQuestionsList(filtered);
+
+    questionsList.innerHTML = questions.map((q) => {
+      const isGeneral = q.poolMode === 'general';
+      const modeBadge = isGeneral
+        ? `<span class="badge-mini" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); margin-right: 6px;">🌍 Genel Kültür</span>`
+        : `<span class="badge-mini" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); margin-right: 6px;">⚔️ Genshin</span>`;
+
+      return `
+      <div class="q-item" data-id="${q.id}">
+        <div class="q-item-info">
+          <div class="q-item-title">${modeBadge}#${q.id} ${escapeHtml(q.question)}</div>
+          <div class="q-item-ans">Cevaplar: <strong>${escapeHtml((q.answers || []).join(', '))}</strong></div>
+        </div>
+        <span class="q-item-badge">${escapeHtml(q.category || 'Genel')} - ${escapeHtml(q.difficulty || '')}</span>
+      </div>
+    `;
+    }).join('');
+  }
+
+  // Question Pool Filter Tabs
+  document.querySelectorAll('.q-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.q-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentPoolFilter = btn.getAttribute('data-pool') || 'all';
+      filterAndRenderQuestions();
+    });
   });
+
+  // Search Filter
+  if (searchQuestions) {
+    searchQuestions.addEventListener('input', () => {
+      filterAndRenderQuestions();
+    });
+  }
 
   // Toggle Add Question Form
-  btnToggleAddQ.addEventListener('click', () => {
-    addQuestionForm.classList.toggle('hidden');
-    btnToggleAddQ.textContent = addQuestionForm.classList.contains('hidden') ? '+ Yeni Soru Ekle' : '✕ Kapat';
-  });
+  if (btnToggleAddQ && addQuestionForm) {
+    btnToggleAddQ.addEventListener('click', () => {
+      addQuestionForm.classList.toggle('hidden');
+      btnToggleAddQ.textContent = addQuestionForm.classList.contains('hidden') ? '+ Yeni Soru Ekle' : '✕ Kapat';
+    });
+  }
 
   // Save New Question
-  btnSaveNewQuestion.addEventListener('click', async () => {
-    const text = inputQText.value.trim();
-    const answersRaw = inputQAnswers.value.trim();
-    if (!text || !answersRaw) {
-      alert('Lütfen soru metnini ve en az bir cevabı girin.');
-      return;
-    }
-
-    const answers = answersRaw.split(',').map(s => s.trim()).filter(Boolean);
-    const payload = {
-      question: text,
-      answers: answers,
-      category: inputQCategory.value,
-      difficulty: inputQDifficulty.value,
-      hint: inputQHint.value.trim()
-    };
-
-    try {
-      const res = await fetch('/api/questions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data.success) {
-        inputQText.value = '';
-        inputQAnswers.value = '';
-        inputQHint.value = '';
-        addQuestionForm.classList.add('hidden');
-        btnToggleAddQ.textContent = '+ Yeni Soru Ekle';
-        loadQuestions();
-      } else {
-        alert('Hata: ' + (data.error || 'Eklenemedi'));
+  if (btnSaveNewQuestion) {
+    btnSaveNewQuestion.addEventListener('click', async () => {
+      const text = inputQText.value.trim();
+      const answersRaw = inputQAnswers.value.trim();
+      if (!text || !answersRaw) {
+        alert('Lütfen soru metnini ve en az bir cevabı girin.');
+        return;
       }
-    } catch (e) {
-      alert('Soru kaydedilirken hata oluştu: ' + e.message);
-    }
-  });
+
+      const answers = answersRaw.split(',').map(s => s.trim()).filter(Boolean);
+      const mode = inputQMode ? inputQMode.value : currentTriviaMode;
+      const payload = {
+        mode: mode,
+        question: text,
+        answers: answers,
+        category: inputQCategory.value,
+        difficulty: inputQDifficulty.value,
+        hint: inputQHint.value.trim()
+      };
+
+      try {
+        const res = await fetch('/api/questions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          inputQText.value = '';
+          inputQAnswers.value = '';
+          inputQHint.value = '';
+          addQuestionForm.classList.add('hidden');
+          btnToggleAddQ.textContent = '+ Yeni Soru Ekle';
+          showToast(`✅ Yeni soru havuza eklendi! (#${data.question.id} - ${mode === 'general' ? 'Genel Kültür' : 'Genshin'})`);
+          loadQuestions();
+        } else {
+          alert('Hata: ' + (data.error || 'Eklenemedi'));
+        }
+      } catch (e) {
+        alert('Soru kaydedilirken hata oluştu: ' + e.message);
+      }
+    });
+  }
 
   // Action Buttons
   btnTrigger.addEventListener('click', async () => {
@@ -408,10 +602,20 @@
     });
   }
 
+  if (btnCopyAvatarUrl && obsAvatarUrl) {
+    btnCopyAvatarUrl.addEventListener('click', () => {
+      obsAvatarUrl.select();
+      navigator.clipboard.writeText(obsAvatarUrl.value);
+      btnCopyAvatarUrl.textContent = 'Kopyalandı! ✅';
+      setTimeout(() => { btnCopyAvatarUrl.textContent = 'Kopyala'; }, 2000);
+    });
+  }
+
   if (tabPreviewTrivia && tabPreviewGacha && overlayPreviewFrame) {
     tabPreviewTrivia.addEventListener('click', () => {
       tabPreviewTrivia.className = 'btn btn-xs btn-primary active-tab';
       tabPreviewGacha.className = 'btn btn-xs btn-outline';
+      if (tabPreviewAvatar) tabPreviewAvatar.className = 'btn btn-xs btn-outline';
       overlayPreviewFrame.src = 'trivia.html';
       if (btnOpenActivePreview) btnOpenActivePreview.href = 'trivia.html';
       if (previewTipText) {
@@ -422,12 +626,26 @@
     tabPreviewGacha.addEventListener('click', () => {
       tabPreviewGacha.className = 'btn btn-xs btn-primary active-tab';
       tabPreviewTrivia.className = 'btn btn-xs btn-outline';
+      if (tabPreviewAvatar) tabPreviewAvatar.className = 'btn btn-xs btn-outline';
       overlayPreviewFrame.src = 'gacha.html';
       if (btnOpenActivePreview) btnOpenActivePreview.href = 'gacha.html';
       if (previewTipText) {
         previewTipText.innerHTML = `<span>💡 Şu an <strong>Gacha Ekranı</strong> önizleniyor. <strong>"🌟 5★ Altın Dilek Testi"</strong> veya <strong>"🌧️ Primogem Yağmuru"</strong>na bastığınızda animasyon buraya gelir.</span>`;
       }
     });
+
+    if (tabPreviewAvatar) {
+      tabPreviewAvatar.addEventListener('click', () => {
+        tabPreviewAvatar.className = 'btn btn-xs btn-primary active-tab';
+        tabPreviewTrivia.className = 'btn btn-xs btn-outline';
+        tabPreviewGacha.className = 'btn btn-xs btn-outline';
+        overlayPreviewFrame.src = 'http://127.0.0.1:8765/overlay';
+        if (btnOpenActivePreview) btnOpenActivePreview.href = 'http://127.0.0.1:8765/overlay';
+        if (previewTipText) {
+          previewTipText.innerHTML = `<span>🐱 Şu an <strong>Milka VTuber Avatar</strong> reaktif ekranı önizleniyor. Mikrofona konuştuğunuzda ağız reaksiyon verir, fareyi hareket ettirdiğinizde kafa takip eder. (Uygulamanın açık olması gerekir: <code>AvatarReactive.exe</code>)</span>`;
+        }
+      });
+    }
   }
 
   btnResetLeaderboard.addEventListener('click', async () => {
@@ -446,6 +664,7 @@
       winnerDisplaySeconds: parseInt(cfgWinnerDuration.value, 10) || 12,
       leaderboardCooldownSeconds: parseInt(cfgLbCooldown?.value, 10) || 60,
       gameMode: cfgGamemode.value,
+      triviaMode: cfgTriviaMode ? cfgTriviaMode.value : currentTriviaMode,
       soundEnabled: cfgSound.checked
     };
 
@@ -1183,9 +1402,23 @@
           cfgGamemode.value = msg.config.gameMode || 'first_correct';
           if (cfgLbCooldown) cfgLbCooldown.value = msg.config.leaderboardCooldownSeconds || 60;
           cfgSound.checked = msg.config.soundEnabled ?? true;
+          if (cfgTriviaMode && msg.config.triviaMode) {
+            cfgTriviaMode.value = msg.config.triviaMode;
+          }
+          if (msg.config.triviaMode) {
+            updateModeButtonsUI(msg.config.triviaMode);
+          }
         }
         if (msg.kickStatus) updateKickStatus(msg.kickStatus);
-        if (msg.gameState) updateGameState(msg.gameState);
+        if (msg.gameState) {
+          updateGameState(msg.gameState);
+          if (msg.gameState.triviaMode) {
+            updateModeButtonsUI(msg.gameState.triviaMode);
+          }
+          if (msg.gameState.stats) {
+            updateStatsUI(msg.gameState.stats);
+          }
+        }
         if (msg.botStatus) updateBotStatus(msg.botStatus);
         break;
 
@@ -1199,6 +1432,31 @@
 
       case 'STATE_CHANGED':
         updateGameState(msg.state);
+        if (msg.state) {
+          if (msg.state.triviaMode) updateModeButtonsUI(msg.state.triviaMode);
+          if (msg.state.stats) updateStatsUI(msg.state.stats);
+        }
+        break;
+
+      case 'TRIVIA_MODE_CHANGED':
+        if (msg.mode) {
+          updateModeButtonsUI(msg.mode);
+          if (cfgTriviaMode) cfgTriviaMode.value = msg.mode;
+        }
+        if (msg.stats) {
+          updateStatsUI(msg.stats);
+        }
+        break;
+
+      case 'CONFIG_UPDATED':
+        if (msg.config) {
+          if (cfgTriviaMode && msg.config.triviaMode) {
+            cfgTriviaMode.value = msg.config.triviaMode;
+          }
+          if (msg.config.triviaMode) {
+            updateModeButtonsUI(msg.config.triviaMode);
+          }
+        }
         break;
 
       case 'TICK':

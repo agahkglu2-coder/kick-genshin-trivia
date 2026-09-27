@@ -312,6 +312,12 @@ body {
   color: #a8ccff;
 }
 
+.tag-category-general {
+  background: rgba(16, 185, 129, 0.25) !important;
+  border-color: #10b981 !important;
+  color: #6ee7b7 !important;
+}
+
 .tag-difficulty {
   background: rgba(230, 165, 30, 0.25);
   border: 1px solid #e6a51e;

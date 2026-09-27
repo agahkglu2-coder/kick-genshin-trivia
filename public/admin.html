@@ -36,6 +36,31 @@
             <span id="game-state-badge" class="state-pill">BEKLENİYOR</span>
           </div>
 
+          <!-- Trivia Soru Modu Seçici (Genshin / Genel Kültür / Karışık) -->
+          <div class="trivia-mode-control-box">
+            <div class="mode-control-header">
+              <span class="mode-control-label">🎯 Aktif Soru Modu:</span>
+              <span id="current-mode-badge" class="badge-mode-pill badge-mode-genshin">⚔️ Genshin Impact</span>
+            </div>
+            <div class="mode-btn-group">
+              <button type="button" id="btn-mode-genshin" class="btn btn-mode-toggle active" data-mode="genshin" title="Genshin Impact karakter, archon ve dünya soruları">
+                <span class="mode-emoji">⚔️</span>
+                <span class="mode-text">Genshin Modu</span>
+                <span class="mode-badge-count" id="count-badge-genshin">250</span>
+              </button>
+              <button type="button" id="btn-mode-general" class="btn btn-mode-toggle" data-mode="general" title="Tarih, Coğrafya, Bilim, Sinema, Müzik, Spor genel kültür soruları">
+                <span class="mode-emoji">🌍</span>
+                <span class="mode-text">Genel Kültür</span>
+                <span class="mode-badge-count" id="count-badge-general">120</span>
+              </button>
+              <button type="button" id="btn-mode-mixed" class="btn btn-mode-toggle" data-mode="mixed" title="Hem Genshin hem Genel Kültür soruları karışık sorulur">
+                <span class="mode-emoji">🎲</span>
+                <span class="mode-text">Karışık Mod</span>
+                <span class="mode-badge-count" id="count-badge-mixed">370</span>
+              </button>
+            </div>
+          </div>
+
           <div class="timer-display-box">
             <div class="timer-circle">
               <span id="timer-large-text">--:--</span>
@@ -73,6 +98,7 @@
             <div class="preview-tabs">
               <button id="tab-preview-trivia" class="btn btn-xs btn-primary active-tab">🎯 Trivia Önizleme</button>
               <button id="tab-preview-gacha" class="btn btn-xs btn-outline">✨ Gacha Önizleme</button>
+              <button id="tab-preview-avatar" class="btn btn-xs btn-outline" style="border-color: #a855f7; color: #d8b4fe;">🐱 VTuber Avatar</button>
             </div>
             <a id="btn-open-active-preview" href="trivia.html" target="_blank" class="btn btn-xs btn-outline">👁️ Tam Ekran Aç</a>
           </div>
@@ -87,9 +113,9 @@
         <!-- OBS Setup Instructions Card (Separated Sources) -->
         <div class="panel-card obs-info-card">
           <div class="panel-title">
-            <span>🎬 OBS Studio Entegrasyonu (2 Ayrı Tarayıcı Kaynağı)</span>
+            <span>🎬 OBS Studio Entegrasyonu (Tarayıcı Kaynakları)</span>
           </div>
-          <p class="info-p">OBS Studio'da <strong>Kaynaklar (+)</strong> &gt; <strong>Tarayıcı (Browser)</strong> seçerek aşağıdaki iki kaynağı dilediğiniz konumlara ekleyin:</p>
+          <p class="info-p">OBS Studio'da <strong>Kaynaklar (+)</strong> &gt; <strong>Tarayıcı (Browser)</strong> seçerek aşağıdaki kaynakları dilediğiniz konumlara ekleyin:</p>
           
           <!-- Source 1: Trivia -->
           <div class="obs-source-box">
@@ -117,8 +143,22 @@
             </div>
           </div>
 
+          <!-- Source 3: VTuber Avatar -->
+          <div class="obs-source-box" style="margin-top: 14px; border-color: rgba(168, 85, 247, 0.4);">
+            <div class="source-box-title">
+              <span class="source-badge" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.5);">KAYNAK 3: MILKA VTUBER AVATAR (Reaktif Canlı Yayın)</span>
+              <span class="source-rec">Önerilen Boyut: 1920x1080 (Tam Ekran / Şeffaf)</span>
+            </div>
+            <div class="copy-url-group">
+              <input type="text" id="obs-avatar-url" readonly value="http://127.0.0.1:8765/overlay">
+              <button id="btn-copy-avatar-url" class="btn btn-sm btn-outline">Kopyala</button>
+              <a href="http://127.0.0.1:8765/overlay" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
+              <a href="http://127.0.0.1:8765/" target="_blank" class="btn btn-sm" style="background: #a855f7; color: white;">⚙️ Ayar Paneli</a>
+            </div>
+          </div>
+
           <div class="obs-tips" style="margin-top: 14px;">
-            <span>💡 <strong>İpucu:</strong> Artık soru kartı ile dilek kartı birbirine karışmaz! Soruları ekranın üstüne, dilekleri ise ekranın altına veya yanına bağımsız yerleştirebilirsiniz.</span>
+            <span>💡 <strong>İpucu:</strong> VTuber Avatarınız mikrofonunuzla konuşur, göz kırpar ve fare hareketlerinizi takip eder. <strong>AvatarReactive.exe</strong> çalışırken doğrudan OBS'e ekleyebilirsiniz.</span>
           </div>
         </div>
 
@@ -201,26 +241,49 @@
             <button id="btn-toggle-add-q" class="btn btn-sm btn-outline">+ Yeni Soru Ekle</button>
           </div>
 
+          <!-- Question Pool Filter Tabs -->
+          <div class="q-pool-tabs">
+            <button type="button" class="btn btn-xs q-tab-btn active" data-pool="all">Tüm Sorular (<span id="count-pool-all">0</span>)</button>
+            <button type="button" class="btn btn-xs q-tab-btn" data-pool="genshin">⚔️ Genshin (<span id="count-pool-genshin">0</span>)</button>
+            <button type="button" class="btn btn-xs q-tab-btn" data-pool="general">🌍 Genel Kültür (<span id="count-pool-general">0</span>)</button>
+          </div>
+
           <!-- Add Question Form (Collapsible) -->
           <div id="add-question-form" class="add-q-container hidden">
-            <h3>Yeni Genshin Sorusu Ekle</h3>
+            <h3>Yeni Soru Ekle</h3>
             <div class="form-grid">
               <div class="form-group full-width">
+                <label>Soru Havuzu / Modu</label>
+                <select id="input-q-mode">
+                  <option value="genshin">⚔️ Genshin Impact Sorusu</option>
+                  <option value="general">🌍 Genel Kültür Sorusu</option>
+                </select>
+              </div>
+              <div class="form-group full-width">
                 <label>Soru Metni</label>
-                <input type="text" id="input-q-text" placeholder="Örn: Fontaine'in Başyargıcı kimdir?">
+                <input type="text" id="input-q-text" placeholder="Örn: Türkiye'nin başkenti neresidir?">
               </div>
               <div class="form-group full-width">
                 <label>Doğru Cevaplar (Virgülle birden çok alternatif yazabilirsiniz)</label>
-                <input type="text" id="input-q-answers" placeholder="Neuvillette, Monsieur Neuvillette">
+                <input type="text" id="input-q-answers" placeholder="Ankara">
               </div>
               <div class="form-group">
                 <label>Kategori</label>
                 <select id="input-q-category">
-                  <option value="Archonlar">Archonlar</option>
-                  <option value="Karakterler" selected>Karakterler</option>
-                  <option value="Lore & Coğrafya">Lore & Coğrafya</option>
-                  <option value="Oyun Mekaniği">Oyun Mekaniği</option>
-                  <option value="Genel">Genel</option>
+                  <!-- Dynamically populated or default options -->
+                  <option value="Genel Kültür">Genel Kültür</option>
+                  <option value="Tarih">Tarih</option>
+                  <option value="Coğrafya">Coğrafya</option>
+                  <option value="Bilim">Bilim</option>
+                  <option value="Sinema">Sinema</option>
+                  <option value="Müzik">Müzik</option>
+                  <option value="Spor">Spor</option>
+                  <option value="Edebiyat">Edebiyat</option>
+                  <option value="Popüler Kültür">Popüler Kültür</option>
+                  <option value="Archonlar">Archonlar (Genshin)</option>
+                  <option value="Karakterler">Karakterler (Genshin)</option>
+                  <option value="Lore & Coğrafya">Lore & Coğrafya (Genshin)</option>
+                  <option value="Oyun Mekaniği">Oyun Mekaniği (Genshin)</option>
                 </select>
               </div>
               <div class="form-group">
@@ -233,7 +296,7 @@
               </div>
               <div class="form-group full-width">
                 <label>İpucu (İsteğe Bağlı)</label>
-                <input type="text" id="input-q-hint" placeholder="Örn: Hydro Ejderha Hükümdarı">
+                <input type="text" id="input-q-hint" placeholder="Örn: İç Anadolu'da yer alır.">
               </div>
             </div>
             <div class="form-actions">
@@ -290,12 +353,22 @@
               </div>
             </div>
 
-            <div class="form-group">
-              <label>Oyun Modu</label>
-              <select id="cfg-gamemode">
-                <option value="first_correct">İlk Bilen Kazanır</option>
-                <option value="draw_from_all">Süre Sonu Çekiliş</option>
-              </select>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Oyun Tarzı</label>
+                <select id="cfg-gamemode">
+                  <option value="first_correct">İlk Bilen Kazanır</option>
+                  <option value="draw_from_all">Süre Sonu Çekiliş</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Varsayılan Trivia Modu</label>
+                <select id="cfg-trivia-mode">
+                  <option value="genshin">⚔️ Genshin Impact</option>
+                  <option value="general">🌍 Genel Kültür</option>
+                  <option value="mixed">🎲 Karışık Mod</option>
+                </select>
+              </div>
             </div>
 
             <div class="form-group checkbox-group">
