@@ -23,6 +23,8 @@
   const wishSpeech = document.getElementById('wish-speech');
   const wishBannerTag = document.getElementById('wish-banner-tag');
   const wishUsername = document.getElementById('wish-username');
+  const wish5050Badge = document.getElementById('wish-5050-badge');
+  let currentActiveBanner = null;
   
   const wishStageBackglow = document.getElementById('wish-stage-backglow');
   const wishElementCrest = document.getElementById('wish-element-crest');
@@ -483,6 +485,10 @@
       wishRefundBanner.classList.add('hidden');
       wishRefundBanner.style.display = 'none';
     }
+    if (wish5050Badge) {
+      wish5050Badge.classList.add('hidden');
+      wish5050Badge.style.display = 'none';
+    }
     if (wishDismissTimer) {
       clearTimeout(wishDismissTimer);
       wishDismissTimer = null;
@@ -681,18 +687,79 @@
     }
 
     wishUsername.textContent = username;
+    const bannerTitle = pull.bannerName || (currentActiveBanner ? (currentActiveBanner.nameTr || currentActiveBanner.name) : null);
+
     if (rarity === 5) {
-      wishBannerTag.textContent = '✨ 5★ EFSANEVİ DİLEK ✨';
-      wishPaimonImg.src = 'assets/paimon_cheer.png';
-      wishSpeech.textContent = 'İnanılmaz! 5 Yıldız Geldi! ⭐⭐⭐⭐⭐';
+      if (bannerTitle) {
+        wishBannerTag.textContent = `✨ ${bannerTitle.toUpperCase()} • 5★ DİLEK ✨`;
+      } else {
+        wishBannerTag.textContent = '✨ 5★ EFSANEVİ DİLEK ✨';
+      }
+
+      if (pull.bannerType === 'standard' || (pull.isStandardPool && pull.won5050 === null)) {
+        wishPaimonImg.src = 'assets/paimon_happy.png';
+        wishSpeech.textContent = 'Standart Havuzdan 5 Yıldız Geldi! ✨';
+        if (wish5050Badge) {
+          wish5050Badge.textContent = '🌌 STANDART DİLEK ÇAĞRISI';
+          wish5050Badge.className = 'wish-5050-badge badge-standard';
+          wish5050Badge.style.display = 'inline-flex';
+          wish5050Badge.classList.remove('hidden');
+        }
+      } else if (pull.isGuaranteedPull) {
+        wishPaimonImg.src = 'assets/paimon_cheer.png';
+        wishSpeech.textContent = 'Garanti patladı! İşte beklenen banner karakteri! 👑';
+        if (wish5050Badge) {
+          wish5050Badge.textContent = '👑 KESİN BANNER GARANTİSİ!';
+          wish5050Badge.className = 'wish-5050-badge badge-5050-guaranteed';
+          wish5050Badge.style.display = 'inline-flex';
+          wish5050Badge.classList.remove('hidden');
+        }
+      } else if (pull.won5050 === true) {
+        wishPaimonImg.src = 'assets/paimon_cheer.png';
+        wishSpeech.textContent = 'İnanılmaz Şans! 50/50 Kazandın! ⭐⭐⭐⭐⭐';
+        if (wish5050Badge) {
+          wish5050Badge.textContent = '🎉 50/50 KAZANILDI! BANNER KARAKTERİ!';
+          wish5050Badge.className = 'wish-5050-badge badge-5050-won';
+          wish5050Badge.style.display = 'inline-flex';
+          wish5050Badge.classList.remove('hidden');
+        }
+      } else if (pull.won5050 === false) {
+        wishPaimonImg.src = 'assets/paimon_thinking.png';
+        wishSpeech.textContent = '50/50 kaybedildi... Ama sonraki 5★ KESİN GARANTİ! 🛡️';
+        if (wish5050Badge) {
+          wish5050Badge.textContent = '💀 50/50 KAYBEDİLDİ... SONRAKİ 5★ KESİN GARANTİ!';
+          wish5050Badge.className = 'wish-5050-badge badge-5050-lost';
+          wish5050Badge.style.display = 'inline-flex';
+          wish5050Badge.classList.remove('hidden');
+        }
+      } else {
+        wishPaimonImg.src = 'assets/paimon_cheer.png';
+        wishSpeech.textContent = 'İnanılmaz! 5 Yıldız Geldi! ⭐⭐⭐⭐⭐';
+        if (wish5050Badge) {
+          wish5050Badge.classList.add('hidden');
+          wish5050Badge.style.display = 'none';
+        }
+      }
     } else if (rarity === 4) {
-      wishBannerTag.textContent = '⭐ 4★ DEĞERLİ DİLEK';
+      if (bannerTitle) {
+        wishBannerTag.textContent = `⭐ ${bannerTitle.toUpperCase()} • 4★ DİLEK`;
+      } else {
+        wishBannerTag.textContent = '⭐ 4★ DEĞERLİ DİLEK';
+      }
       wishPaimonImg.src = 'assets/paimon_happy.png';
       wishSpeech.textContent = 'Harika bir 4 Yıldız! ⭐⭐⭐⭐';
+      if (wish5050Badge) {
+        wish5050Badge.classList.add('hidden');
+        wish5050Badge.style.display = 'none';
+      }
     } else {
       wishBannerTag.textContent = '🗡️ 3★ DİLEK';
       wishPaimonImg.src = 'assets/paimon_thinking.png';
       wishSpeech.textContent = 'Bir dahakine kesin 5★ gelir! ✨';
+      if (wish5050Badge) {
+        wish5050Badge.classList.add('hidden');
+        wish5050Badge.style.display = 'none';
+      }
     }
 
     if (wishStageBackglow) {
@@ -877,6 +944,11 @@
     switch (msg.type) {
       case 'INIT_STATE':
         soundEnabled = msg.config?.soundEnabled ?? true;
+        if (msg.activeBanner) currentActiveBanner = msg.activeBanner;
+        break;
+
+      case 'GACHA_BANNER_CHANGED':
+        if (msg.banner) currentActiveBanner = msg.banner;
         break;
 
       case 'CONFIG_UPDATED':

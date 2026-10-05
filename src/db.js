@@ -75,6 +75,10 @@ class DatabaseManager {
             );
 
             ALTER TABLE gacha_users ADD COLUMN IF NOT EXISTS three_stars_count INT DEFAULT 0;
+            ALTER TABLE gacha_users ADD COLUMN IF NOT EXISTS is_guaranteed BOOLEAN DEFAULT FALSE;
+            ALTER TABLE gacha_users ADD COLUMN IF NOT EXISTS is_guaranteed_4 BOOLEAN DEFAULT FALSE;
+            ALTER TABLE gacha_users ADD COLUMN IF NOT EXISTS standard_pity5 INT DEFAULT 0;
+            ALTER TABLE gacha_users ADD COLUMN IF NOT EXISTS standard_pity4 INT DEFAULT 0;
 
             CREATE TABLE IF NOT EXISTS system_settings (
               key VARCHAR(100) PRIMARY KEY,
@@ -153,6 +157,10 @@ class DatabaseManager {
             fourStarsCount: row.four_stars_count,
             threeStarsCount: row.three_stars_count || 0,
             inventory: typeof row.inventory === 'string' ? JSON.parse(row.inventory) : (row.inventory || []),
+            isGuaranteed: Boolean(row.is_guaranteed),
+            isGuaranteed4: Boolean(row.is_guaranteed_4),
+            standardPity5: Number(row.standard_pity5 || 0),
+            standardPity4: Number(row.standard_pity4 || 0),
             lastChatAwardTime: Number(row.last_chat_award || 0),
             lastActiveTime: Number(row.last_active || 0),
             createdAt: row.created_at
@@ -185,6 +193,10 @@ class DatabaseManager {
         const raw = fs.readFileSync(USERS_FILE, 'utf-8');
         const data = JSON.parse(raw);
         for (const [k, v] of Object.entries(data)) {
+          if (v.isGuaranteed === undefined) v.isGuaranteed = false;
+          if (v.isGuaranteed4 === undefined) v.isGuaranteed4 = false;
+          if (v.standardPity5 === undefined) v.standardPity5 = 0;
+          if (v.standardPity4 === undefined) v.standardPity4 = 0;
           this.inMemoryUsers.set(k.toLowerCase(), v);
         }
         console.log(`[DB] Yerel dosyadan ${this.inMemoryUsers.size} kullanıcı yüklendi.`);
@@ -263,8 +275,9 @@ class DatabaseManager {
           INSERT INTO gacha_users (
             username, primogems, pity4, pity5, total_wishes,
             five_stars_count, four_stars_count, three_stars_count, inventory,
+            is_guaranteed, is_guaranteed_4, standard_pity5, standard_pity4,
             last_chat_award, last_active, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
           ON CONFLICT (username) DO UPDATE SET
             primogems = EXCLUDED.primogems,
             pity4 = EXCLUDED.pity4,
@@ -274,6 +287,10 @@ class DatabaseManager {
             four_stars_count = EXCLUDED.four_stars_count,
             three_stars_count = EXCLUDED.three_stars_count,
             inventory = EXCLUDED.inventory,
+            is_guaranteed = EXCLUDED.is_guaranteed,
+            is_guaranteed_4 = EXCLUDED.is_guaranteed_4,
+            standard_pity5 = EXCLUDED.standard_pity5,
+            standard_pity4 = EXCLUDED.standard_pity4,
             last_chat_award = EXCLUDED.last_chat_award,
             last_active = EXCLUDED.last_active;
         `;
@@ -287,6 +304,10 @@ class DatabaseManager {
           user.fourStarsCount || 0,
           user.threeStarsCount || 0,
           JSON.stringify(user.inventory || []),
+          Boolean(user.isGuaranteed),
+          Boolean(user.isGuaranteed4),
+          user.standardPity5 || 0,
+          user.standardPity4 || 0,
           user.lastChatAwardTime || 0,
           user.lastActiveTime || Date.now(),
           user.createdAt ? new Date(user.createdAt) : new Date()

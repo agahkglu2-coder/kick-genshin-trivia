@@ -101,7 +101,73 @@ const adminAdded = engine.addPrimogems('TestGezgin', 500);
 assert(adminAdded.primogems >= 500);
 console.log('✅ Primogem Yağmuru ve Admin bakiye yükleme testleri başarılı!');
 
+console.log('--- TEST 11: Banner Presets ve Banner Değiştirme ---');
+assert(engine.banners.length >= 10, 'En az 10 banner preseti olmalı');
+const bannerRes = engine.setActiveBanner('furina');
+assert.strictEqual(bannerRes.success, true);
+assert.strictEqual(engine.getActiveBanner().featured5, 'Furina');
+engine.setActiveBanner('raiden_shogun');
+assert.strictEqual(engine.getActiveBanner().featured5, 'Raiden Shogun');
+console.log('✅ Banner değiştirme ve önceden tanımlı bannerlar başarılı!');
+
+console.log('--- TEST 12: Garantili 5★ Çekiliş Kuralı (isGuaranteed = true -> %100 Banner Karakteri) ---');
+testUser.primogems = 10000;
+testUser.pity5 = 39; // Reach hard pity (threshold = 40 in test config)
+testUser.isGuaranteed = true;
+const guaranteedPull = engine.pull('TestGezgin', 1, 'event');
+assert.strictEqual(guaranteedPull.success, true);
+assert.strictEqual(guaranteedPull.pulls[0].rarity, 5);
+assert.strictEqual(guaranteedPull.pulls[0].name, 'Raiden Shogun', 'Garantili çekişte aktif banner 5★ karakteri çıkmalı');
+assert.strictEqual(guaranteedPull.pulls[0].isGuaranteedPull, true);
+assert.strictEqual(guaranteedPull.pulls[0].won5050, true);
+assert.strictEqual(testUser.isGuaranteed, false, 'Garantili karakter çıkınca isGuaranteed false olmalı');
+assert.strictEqual(testUser.pity5, 0, 'Pity sıfırlanmalı');
+console.log('✅ Garantili 5★ kuralı başarıyla doğrulandı!');
+
+console.log('--- TEST 13: Banner Değişiminde Pity ve Garanti Devri (Carry-over) ---');
+testUser.pity5 = 25;
+testUser.isGuaranteed = true;
+// Banner Raiden Shogun'dan Furina'ya geçiyor:
+engine.setActiveBanner('furina');
+assert.strictEqual(testUser.pity5, 25, 'Banner değişince pity SIFIRLANMAZ, devreder');
+assert.strictEqual(testUser.isGuaranteed, true, 'Banner değişince garanti hakkı kaybolmaz');
+
+// Şimdi Furina banner'ında pity'ye ulaşılıyor:
+testUser.pity5 = 39;
+const furinaPull = engine.pull('TestGezgin', 1, 'event');
+assert.strictEqual(furinaPull.pulls[0].name, 'Furina', 'Devreden garantiyle yeni banner karakteri çıkmalı');
+assert.strictEqual(testUser.isGuaranteed, false);
+console.log('✅ Banner değişiminde Pity ve Garanti devri (Carry-over) başarıyla doğrulandı!');
+
+console.log('--- TEST 14: Standart Banner İzolasyonu (Ayrı Pity ve 50/50 Etkileşimsiz) ---');
+testUser.pity5 = 15;
+testUser.isGuaranteed = true;
+testUser.standardPity5 = 0;
+
+// Standart banner'dan çekiş yapılıyor
+const stdPull = engine.pull('TestGezgin', 1, 'standard');
+assert.strictEqual(stdPull.success, true);
+assert.strictEqual(testUser.standardPity5, 1, 'Standart pity 1 artmalı');
+assert.strictEqual(testUser.pity5, 15, 'Etkinlik bannerı pitysi DEĞİŞMEMELİ');
+assert.strictEqual(testUser.isGuaranteed, true, 'Etkinlik garantisi standart çekişten ETKİLENMEMELİ');
+console.log('✅ Standart Banner ayrı pity izolasyonu başarıyla doğrulandı!');
+
+console.log('--- TEST 15: Yeni Chat Komutları (!banner, !wish standart, !pity) ---');
+engine.handleChatMessage({ content: '!banner', sender: { username: 'TestGezgin' } });
+assert(chatResp && chatResp.message.includes('Aktif Banner'));
+assert(chatResp.message.includes('Furina'));
+
+engine.handleChatMessage({ content: '!pity', sender: { username: 'TestGezgin' } });
+assert(chatResp && chatResp.message.includes('Etkinlik Pity'));
+assert(chatResp.message.includes('Standart Pity'));
+
+testUser.primogems = 1000;
+const beforeStdPity = testUser.standardPity5;
+engine.handleChatMessage({ content: '!wish standart', sender: { username: 'TestGezgin' } });
+assert.strictEqual(testUser.standardPity5, beforeStdPity + 1);
+console.log('✅ Yeni chat komutları (!banner, !wish standart, !pity) başarıyla doğrulandı!');
+
 console.log('========================================================');
-console.log('🎉 TÜM GACHA & PRIMOGEM EKONOMİ TESTLERİ BAŞARIYLA GEÇTİ!');
+console.log('🎉 TÜM GACHA, BANNER & 50/50 MEKANİK TESTLERİ BAŞARIYLA GEÇTİ!');
 console.log('========================================================');
 process.exit(0);

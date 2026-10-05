@@ -995,3 +995,63 @@ body {
   letter-spacing: 1px;
 }
 
+/* ========================================================
+   50/50 OUTCOME BADGES (WON / LOST / GUARANTEED / STANDARD)
+======================================================== */
+.wish-5050-badge {
+  align-self: flex-start;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-top: 6px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  animation: badgePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  backdrop-filter: blur(8px);
+}
+
+.wish-5050-badge.hidden {
+  display: none !important;
+}
+
+@keyframes badgePop {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.wish-5050-badge.badge-5050-won {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.35), rgba(202, 138, 4, 0.45));
+  border: 1.5px solid #ffd700;
+  color: #fffbeb;
+  box-shadow: 0 0 20px rgba(234, 179, 8, 0.6), inset 0 0 10px rgba(255, 215, 0, 0.3);
+  text-shadow: 0 0 8px rgba(234, 179, 8, 0.8);
+}
+
+.wish-5050-badge.badge-5050-guaranteed {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.4), rgba(217, 119, 6, 0.55));
+  border: 2px solid #fbbf24;
+  color: #fffbeb;
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.7), inset 0 0 12px rgba(251, 191, 36, 0.4);
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.9);
+}
+
+.wish-5050-badge.badge-5050-lost {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.35), rgba(219, 39, 119, 0.4));
+  border: 1.5px solid #ec4899;
+  color: #fdf2f8;
+  box-shadow: 0 0 20px rgba(236, 72, 153, 0.55), inset 0 0 10px rgba(168, 85, 247, 0.3);
+  text-shadow: 0 0 8px rgba(236, 72, 153, 0.8);
+}
+
+.wish-5050-badge.badge-standard {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(99, 102, 241, 0.4));
+  border: 1.5px solid #60a5fa;
+  color: #eff6ff;
+  box-shadow: 0 0 16px rgba(96, 165, 250, 0.5);
+  text-shadow: 0 0 6px rgba(96, 165, 250, 0.8);
+}
+

@@ -530,6 +530,14 @@ gachaEngine.on('chat_response', (resp) => {
   broadcast({ type: 'GACHA_CHAT_RESPONSE', ...resp });
 });
 
+gachaEngine.on('banner_changed', (bannerData) => {
+  broadcast({ type: 'GACHA_BANNER_CHANGED', ...bannerData });
+});
+
+gachaEngine.on('banners_updated', (data) => {
+  broadcast({ type: 'GACHA_BANNERS_UPDATED', ...data });
+});
+
 // KickBot Events
 kickBot.on('bot_message', (botMsg) => {
   // Add to live chat preview as a verified bot message
@@ -552,6 +560,8 @@ wss.on('connection', (ws) => {
   ws.send(JSON.stringify({
     type: 'INIT_STATE',
     gameState: gameEngine.getFullState(),
+    activeBanner: gachaEngine.getActiveBanner(),
+    banners: gachaEngine.getBannersList(),
     kickStatus: kickStatus,
     botStatus: {
       ...kickBot.getStatus(),
@@ -823,6 +833,29 @@ app.get('/api/gacha/users', (req, res) => {
   res.json(gachaEngine.getAllUsersList());
 });
 
+app.get('/api/gacha/banners', (req, res) => {
+  res.json({
+    activeBanner: gachaEngine.getActiveBanner(),
+    banners: gachaEngine.getBannersList()
+  });
+});
+
+app.post('/api/gacha/banner/set', (req, res) => {
+  const { bannerId } = req.body || {};
+  if (!bannerId) return res.status(400).json({ error: 'Banner ID gerekli.' });
+  const result = gachaEngine.setActiveBanner(bannerId);
+  if (!result.success) return res.status(400).json(result);
+  broadcast({ type: 'GACHA_BANNER_CHANGED', banner: result.banner, activeBannerId: bannerId });
+  res.json(result);
+});
+
+app.post('/api/gacha/banner/create', (req, res) => {
+  const result = gachaEngine.createCustomBanner(req.body || {});
+  if (!result.success) return res.status(400).json(result);
+  broadcast({ type: 'GACHA_BANNERS_UPDATED', banners: gachaEngine.getBannersList() });
+  res.json(result);
+});
+
 app.post('/api/gacha/add-primo', (req, res) => {
   const { username, amount } = req.body || {};
   if (!username) return res.status(400).json({ error: 'Kullanıcı adı gerekli.' });
@@ -837,13 +870,18 @@ app.post('/api/gacha/rain', (req, res) => {
 });
 
 app.post('/api/gacha/test-wish', (req, res) => {
-  const { rarity } = req.body || {};
-  const result = gachaEngine.triggerTestWish(parseInt(rarity, 10) || 5);
+  const { rarity, won5050, bannerType } = req.body || {};
+  const result = gachaEngine.triggerTestWish(
+    parseInt(rarity, 10) || 5,
+    won5050 !== false,
+    bannerType || 'event'
+  );
   res.json({ success: true, wish: result });
 });
 
 app.post('/api/gacha/test-wish-10', (req, res) => {
-  const result = gachaEngine.triggerTestWish10();
+  const { won5050 } = req.body || {};
+  const result = gachaEngine.triggerTestWish10(won5050 !== false);
   res.json({ success: true, wish: result });
 });
 

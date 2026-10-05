@@ -179,6 +179,114 @@
           </div>
         </div>
 
+        <!-- Genshin Impact Banner & Dilek Havuzu Yönetimi Card -->
+        <div class="panel-card banner-card" style="border-color: rgba(234, 179, 8, 0.45); background: linear-gradient(180deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98)); margin-bottom: 20px;">
+          <div class="panel-title">
+            <span style="color: #fde047;">🎪 Genshin Banner & 50/50 Havuz Yönetimi</span>
+            <span class="badge-mini" style="background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.5);">50/50 & Garanti Aktif</span>
+          </div>
+
+          <!-- Active Banner Display & Selector -->
+          <div class="banner-active-box" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <div style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">Aktif Etkinlik Dileği</div>
+                <div id="active-banner-title" style="font-size: 1.35rem; font-weight: 800; color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);">
+                  ✨ Sükûnetin Hükmü (Raiden Shogun)
+                </div>
+                <div id="active-banner-desc" style="font-size: 0.82rem; color: #cbd5e1; margin-top: 4px;">
+                  Ebediyet arayışındaki Narukami Ogosho, Şimşek Şogunu.
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div id="active-banner-version" class="badge-mini" style="background: rgba(234, 179, 8, 0.25); color: #fef08a; border: 1px solid #ffd700;">v4.3</div>
+              </div>
+            </div>
+
+            <!-- Featured Characters Pills -->
+            <div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center;">
+              <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 600;">Öne Çıkanlar:</span>
+              <span id="active-banner-5star" class="badge-mini" style="background: rgba(234, 179, 8, 0.25); color: #ffd700; border: 1px solid #eab308; font-weight: 700; font-size: 0.85rem;">
+                🌟 5★ Raiden Shogun
+              </span>
+              <div id="active-banner-4stars" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <span class="badge-mini" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid #c084fc;">⭐ 4★ Kujou Sara</span>
+                <span class="badge-mini" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid #c084fc;">⭐ 4★ Bennett</span>
+                <span class="badge-mini" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid #c084fc;">⭐ 4★ Chevreuse</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Banner Switch Form -->
+          <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 10px; margin-bottom: 16px;">
+            <select id="select-banner-preset" class="form-input" style="background: #0f172a; border-color: rgba(234, 179, 8, 0.4); color: #f8fafc; font-weight: 600;">
+              <!-- Dynamically populated -->
+            </select>
+            <button id="btn-set-banner" class="btn btn-warning" style="font-weight: 700;">
+              🎪 Bannerı Değiştir
+            </button>
+            <button id="btn-toggle-custom-banner" class="btn btn-outline" style="border-color: #ffd700; color: #ffd700;">
+              ➕ Özel Banner
+            </button>
+          </div>
+
+          <!-- Custom Banner Creator Form (Collapsible) -->
+          <div id="custom-banner-form" style="display: none; background: rgba(0,0,0,0.35); border: 1px dashed rgba(234, 179, 8, 0.4); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+            <h5 style="color: #ffd700; margin-bottom: 10px;">🛠️ Yeni Özel Banner Tanımla</h5>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 10px;">
+              <div>
+                <label style="font-size: 0.75rem; color: #94a3b8;">Banner ID</label>
+                <input type="text" id="custom-banner-id" placeholder="ornek: arlecchino_v2" class="form-input" style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.75rem; color: #94a3b8;">Banner Başlığı (TR)</label>
+                <input type="text" id="custom-banner-name-tr" placeholder="Ocağın Kül Gölgesi" class="form-input" style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.75rem; color: #94a3b8;">Öne Çıkan 5★ Karakter</label>
+                <select id="custom-banner-char5" class="form-input" style="width: 100%;"></select>
+              </div>
+              <div>
+                <label style="font-size: 0.75rem; color: #94a3b8;">Sürüm / Versiyon</label>
+                <input type="text" id="custom-banner-version" placeholder="5.0" class="form-input" style="width: 100%;">
+              </div>
+            </div>
+            <div style="margin-bottom: 10px;">
+              <label style="font-size: 0.75rem; color: #94a3b8;">Öne Çıkan 3 Adet 4★ Karakter (Virgülle ayırın)</label>
+              <input type="text" id="custom-banner-char4" placeholder="Bennett, Xiangling, Xingqiu" class="form-input" style="width: 100%;">
+            </div>
+            <div style="margin-bottom: 10px;">
+              <label style="font-size: 0.75rem; color: #94a3b8;">Açıklama</label>
+              <input type="text" id="custom-banner-desc" placeholder="Etkinlik dileği açıklaması..." class="form-input" style="width: 100%;">
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+              <button id="btn-cancel-custom-banner" class="btn btn-sm btn-outline">İptal</button>
+              <button id="btn-save-custom-banner" class="btn btn-sm btn-success">Kaydet ve Aktif Et</button>
+            </div>
+          </div>
+
+          <!-- Quick Test & Simulation Grid for Streamer -->
+          <div>
+            <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px; font-weight: 600;">
+              🧪 50/50 & Dilek Test Butonları (OBS Görselini Anında Gör):
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px;">
+              <button id="btn-test-5050-won" class="btn btn-gold" style="font-weight: 700;">
+                🎉 5★ (50/50 KAZANDI)
+              </button>
+              <button id="btn-test-5050-lost" class="btn btn-purple" style="font-weight: 700; background: linear-gradient(135deg, #7c3aed, #db2777); border: none;">
+                💀 5★ (50/50 KAYBETTİ)
+              </button>
+              <button id="btn-test-banner-10" class="btn btn-primary" style="background: linear-gradient(135deg, #f59e0b, #ec4899); border: none; font-weight: 700;">
+                ✨ 10'lu Dilek Testi
+              </button>
+              <button id="btn-test-standard" class="btn btn-outline" style="border-color: #60a5fa; color: #93c5fd;">
+                🌌 Standart Dilek Testi
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Gacha & Primogem Economy Panel -->
         <div class="panel-card gacha-card">
           <div class="panel-title">
@@ -207,11 +315,14 @@
 
           <!-- Chat Commands Quick Info Box -->
           <div class="chat-cmd-guide">
-            <div class="cmd-item"><code>!wish</code> <span>160 Primogem (1 Dilek)</span></div>
-            <div class="cmd-item"><code>!wish10</code> <span>1600 Primogem (10'lu Dilek)</span></div>
-            <div class="cmd-item"><code>!donustur</code> <span>5 Mavi Silah = +160 Primo</span></div>
-            <div class="cmd-item"><code>!bakiye</code> <span>Primogem, Pity & Silahlar</span></div>
-            <div class="cmd-item"><code>!envanter</code> <span>Kazanılan 5★ Karakterler</span></div>
+            <div class="cmd-item"><code>!wish</code> <span>160 Primo (1 Dilek)</span></div>
+            <div class="cmd-item"><code>!wish10</code> <span>1600 Primo (10'lu)</span></div>
+            <div class="cmd-item"><code>!wish standart</code> <span>Standart Dilek</span></div>
+            <div class="cmd-item"><code>!banner</code> <span>Aktif Banner & 50/50</span></div>
+            <div class="cmd-item"><code>!pity</code> <span>Pity & Garanti Durumu</span></div>
+            <div class="cmd-item"><code>!donustur</code> <span>5 Mavi = +160 Primo</span></div>
+            <div class="cmd-item"><code>!bakiye</code> <span>Primo & Silahlar</span></div>
+            <div class="cmd-item"><code>!envanter</code> <span>5★ Karakterler</span></div>
           </div>
 
           <!-- Manual Primogem Gifter -->
@@ -236,8 +347,9 @@
                 <tr>
                   <th>Gezgin</th>
                   <th>💎 Primogem</th>
-                  <th>🌟 5★ Pity</th>
-                  <th>⭐ 4★ Pity</th>
+                  <th>🌟 Etkinlik Pity</th>
+                  <th>🎲 50/50 Durumu</th>
+                  <th>🌌 Standart Pity</th>
                   <th>🗡️ 3★ Silah</th>
                   <th>5★ Karakter</th>
                   <th>Toplam Çekiş</th>
@@ -245,10 +357,11 @@
                 </tr>
               </thead>
               <tbody id="gacha-users-tbody">
-                <tr><td colspan="8" class="text-center" style="padding: 16px; color: #94a3b8;">Henüz kayıtlı Gezgin yok. Chate yazan izleyiciler otomatik olarak buraya eklenecektir.</td></tr>
+                <tr><td colspan="9" class="text-center" style="padding: 16px; color: #94a3b8;">Henüz kayıtlı Gezgin yok. Chate yazan izleyiciler otomatik olarak buraya eklenecektir.</td></tr>
               </tbody>
             </table>
           </div>
+        </div>
         <!-- Pixel Chatter Livestream Overlay Panel -->
         <div class="panel-card chatter-card" style="border-color: rgba(244, 114, 182, 0.4);">
           <div class="panel-title">

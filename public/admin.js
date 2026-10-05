@@ -96,6 +96,29 @@
   const btnRefreshGachaUsers = document.getElementById('btn-refresh-gacha-users');
   const gachaUsersTbody = document.getElementById('gacha-users-tbody');
 
+  // Banner DOM Elements
+  const activeBannerTitle = document.getElementById('active-banner-title');
+  const activeBannerDesc = document.getElementById('active-banner-desc');
+  const activeBannerVersion = document.getElementById('active-banner-version');
+  const activeBanner5star = document.getElementById('active-banner-5star');
+  const activeBanner4stars = document.getElementById('active-banner-4stars');
+  const selectBannerPreset = document.getElementById('select-banner-preset');
+  const btnSetBanner = document.getElementById('btn-set-banner');
+  const btnToggleCustomBanner = document.getElementById('btn-toggle-custom-banner');
+  const customBannerForm = document.getElementById('custom-banner-form');
+  const customBannerId = document.getElementById('custom-banner-id');
+  const customBannerNameTr = document.getElementById('custom-banner-name-tr');
+  const customBannerChar5 = document.getElementById('custom-banner-char5');
+  const customBannerVersion = document.getElementById('custom-banner-version');
+  const customBannerChar4 = document.getElementById('custom-banner-char4');
+  const customBannerDesc = document.getElementById('custom-banner-desc');
+  const btnCancelCustomBanner = document.getElementById('btn-cancel-custom-banner');
+  const btnSaveCustomBanner = document.getElementById('btn-save-custom-banner');
+  const btnTest5050Won = document.getElementById('btn-test-5050-won');
+  const btnTest5050Lost = document.getElementById('btn-test-5050-lost');
+  const btnTestBanner10 = document.getElementById('btn-test-banner-10');
+  const btnTestStandard = document.getElementById('btn-test-standard');
+
   // Kick Bot DOM Elements
   const botStatusBadge = document.getElementById('bot-status-badge');
   const botForm = document.getElementById('bot-form');
@@ -1533,12 +1556,211 @@
         loadGachaUsers();
         break;
 
+      case 'GACHA_BANNER_CHANGED':
+        if (msg.banner) {
+          updateActiveBannerUI(msg.banner);
+          if (selectBannerPreset && msg.activeBannerId) {
+            selectBannerPreset.value = msg.activeBannerId;
+          }
+        }
+        break;
+
+      case 'GACHA_BANNERS_UPDATED':
+        loadBanners();
+        break;
+
       default:
         break;
     }
   }
 
-  // Gacha Management Logic
+  // Banner Management Logic
+  let cachedBanners = [];
+  let currentActiveBanner = null;
+
+  async function loadBanners() {
+    try {
+      const res = await fetch('/api/gacha/banners');
+      const data = await res.json();
+      cachedBanners = data.banners || [];
+      currentActiveBanner = data.activeBanner || null;
+
+      if (selectBannerPreset && cachedBanners.length > 0) {
+        selectBannerPreset.innerHTML = cachedBanners.map(b => {
+          const typeBadge = b.type === 'standard' ? '[Standart]' : `[v${b.version || '1.0'}]`;
+          const feat = b.featured5 ? `5★ ${b.featured5}` : 'Standart Dilek';
+          return `<option value="${escapeHtml(b.id)}" ${currentActiveBanner && currentActiveBanner.id === b.id ? 'selected' : ''}>
+            ${typeBadge} ${escapeHtml(b.nameTr || b.name)} (${feat})
+          </option>`;
+        }).join('');
+      }
+
+      if (customBannerChar5 && customBannerChar5.children.length === 0) {
+        try {
+          const charsRes = await fetch('/data/characters.json');
+          if (charsRes.ok) {
+            const allChars = await charsRes.json();
+            const fiveStars = allChars.filter(c => c.rarity === 5);
+            customBannerChar5.innerHTML = fiveStars.map(c => 
+              `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)} (${c.element})</option>`
+            ).join('');
+          }
+        } catch (e) {}
+      }
+
+      updateActiveBannerUI(currentActiveBanner);
+    } catch (e) {
+      console.warn('[Admin] Bannerlar yüklenemedi:', e.message);
+    }
+  }
+
+  function updateActiveBannerUI(banner) {
+    if (!banner) return;
+    currentActiveBanner = banner;
+
+    if (activeBannerTitle) {
+      activeBannerTitle.textContent = `✨ ${banner.nameTr || banner.name} (${banner.featured5 || 'Standart'})`;
+    }
+    if (activeBannerDesc) {
+      activeBannerDesc.textContent = banner.description || '';
+    }
+    if (activeBannerVersion) {
+      activeBannerVersion.textContent = banner.type === 'standard' ? 'Kalıcı Havuz' : `v${banner.version || 'Etkinlik'}`;
+    }
+    if (activeBanner5star) {
+      activeBanner5star.textContent = banner.featured5 ? `🌟 5★ ${banner.featured5}` : '🌟 Tüm 5★ Standartlar';
+    }
+    if (activeBanner4stars) {
+      if (Array.isArray(banner.featured4) && banner.featured4.length > 0) {
+        activeBanner4stars.innerHTML = banner.featured4.map(f => 
+          `<span class="badge-mini" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid #c084fc;">⭐ 4★ ${escapeHtml(f)}</span>`
+        ).join('');
+      } else {
+        activeBanner4stars.innerHTML = `<span class="badge-mini" style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1;">⭐ Tüm 4★ Karakter ve Silahlar</span>`;
+      }
+    }
+  }
+
+  if (btnSetBanner) {
+    btnSetBanner.addEventListener('click', async () => {
+      const bannerId = selectBannerPreset?.value;
+      if (!bannerId) return;
+      btnSetBanner.disabled = true;
+      try {
+        const res = await fetch('/api/gacha/banner/set', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bannerId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          updateActiveBannerUI(data.banner);
+          alert(`✅ Aktif banner başarıyla değiştirildi: ${data.banner.nameTr || data.banner.name}!`);
+        } else {
+          alert('Hata: ' + (data.error || 'Banner değiştirilemedi'));
+        }
+      } catch (e) {
+        alert('İstek hatası: ' + e.message);
+      } finally {
+        btnSetBanner.disabled = false;
+      }
+    });
+  }
+
+  if (btnToggleCustomBanner && customBannerForm) {
+    btnToggleCustomBanner.addEventListener('click', () => {
+      const isHidden = customBannerForm.style.display === 'none';
+      customBannerForm.style.display = isHidden ? 'block' : 'none';
+    });
+  }
+
+  if (btnCancelCustomBanner && customBannerForm) {
+    btnCancelCustomBanner.addEventListener('click', () => {
+      customBannerForm.style.display = 'none';
+    });
+  }
+
+  if (btnSaveCustomBanner) {
+    btnSaveCustomBanner.addEventListener('click', async () => {
+      const id = customBannerId?.value.trim();
+      const nameTr = customBannerNameTr?.value.trim();
+      const featured5 = customBannerChar5?.value.trim();
+      const version = customBannerVersion?.value.trim() || 'Özel';
+      const featured4 = customBannerChar4?.value.trim();
+      const description = customBannerDesc?.value.trim();
+
+      if (!id || !featured5) {
+        alert('Lütfen en az Banner ID ve 5★ Karakter alanlarını doldurun.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/gacha/banner/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, nameTr, featured5, version, featured4, description })
+        });
+        const data = await res.json();
+        if (data.success) {
+          await fetch('/api/gacha/banner/set', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bannerId: data.banner.id })
+          });
+          customBannerForm.style.display = 'none';
+          alert(`🎉 Yeni özel banner kaydedildi ve aktif edildi: ${data.banner.nameTr}!`);
+          loadBanners();
+        } else {
+          alert('Hata: ' + (data.error || 'Kaydedilemedi'));
+        }
+      } catch (e) {
+        alert('Hata: ' + e.message);
+      }
+    });
+  }
+
+  // 50/50 and Wish Test Triggers
+  if (btnTest5050Won) {
+    btnTest5050Won.addEventListener('click', async () => {
+      await fetch('/api/gacha/test-wish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rarity: 5, won5050: true, bannerType: 'event' })
+      });
+    });
+  }
+
+  if (btnTest5050Lost) {
+    btnTest5050Lost.addEventListener('click', async () => {
+      await fetch('/api/gacha/test-wish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rarity: 5, won5050: false, bannerType: 'event' })
+      });
+    });
+  }
+
+  if (btnTestBanner10) {
+    btnTestBanner10.addEventListener('click', async () => {
+      await fetch('/api/gacha/test-wish-10', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ won5050: true })
+      });
+    });
+  }
+
+  if (btnTestStandard) {
+    btnTestStandard.addEventListener('click', async () => {
+      await fetch('/api/gacha/test-wish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rarity: 5, bannerType: 'standard' })
+      });
+    });
+  }
+
+  // Gacha Users Table & Management Logic
   async function loadGachaUsers() {
     try {
       const res = await fetch('/api/gacha/users');
@@ -1554,17 +1776,22 @@
     if (gachaUsersCount) gachaUsersCount.textContent = (users || []).length;
 
     if (!users || users.length === 0) {
-      gachaUsersTbody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding: 16px; color: #94a3b8;">Henüz kayıtlı Gezgin yok. Chate yazan veya yayını izleyen izleyiciler otomatik olarak buraya eklenecektir.</td></tr>`;
+      gachaUsersTbody.innerHTML = `<tr><td colspan="9" class="text-center" style="padding: 16px; color: #94a3b8;">Henüz kayıtlı Gezgin yok. Chate yazan veya yayını izleyen izleyiciler otomatik olarak buraya eklenecektir.</td></tr>`;
       return;
     }
 
     gachaUsersTbody.innerHTML = users.map(u => {
+      const guaranteeBadge = u.isGuaranteed
+        ? `<span class="badge-mini" style="background: rgba(234, 179, 8, 0.25); color: #ffd700; border: 1px solid #eab308; font-weight:700;">🌟 KESİN GARANTİ</span>`
+        : `<span class="badge-mini" style="background: rgba(148, 163, 184, 0.2); color: #94a3b8;">🎲 50/50</span>`;
+
       return `
         <tr>
           <td><strong>@${escapeHtml(u.username)}</strong></td>
           <td><span class="gacha-primo-badge">💎 ${u.primogems}</span></td>
           <td><span class="gacha-pity-badge">${u.pity5}/75</span></td>
-          <td><span class="gacha-pity-badge">${u.pity4}/10</span></td>
+          <td>${guaranteeBadge}</td>
+          <td><span class="gacha-pity-badge" style="color: #93c5fd;">${u.standardPity5 || 0}/75</span></td>
           <td><span class="gacha-pity-badge" style="color:#38bdf8;">🗡️ ${u.threeStarsCount || 0}</span></td>
           <td><strong style="color: #ffd700;">★ ${u.fiveStarsCount}</strong></td>
           <td>${u.totalWishes}</td>
@@ -2296,6 +2523,7 @@
   // Initialize
   connectWS();
   loadQuestions();
+  loadBanners();
   loadGachaUsers();
   loadDbStatus();
   loadTimers();

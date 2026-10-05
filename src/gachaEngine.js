@@ -6,6 +6,9 @@ const { db } = require('./db');
 const USERS_FILE = path.join(__dirname, '..', 'data', 'users.json');
 const CHARACTERS_FILE = path.join(__dirname, 'data', 'characters.json');
 const WEAPONS_FILE = path.join(__dirname, 'data', 'weapons.json');
+const BANNERS_FILE = path.join(__dirname, 'data', 'banners.json');
+
+const STANDARD_5_STARS = ['Diluc', 'Jean', 'Mona', 'Keqing', 'Qiqi', 'Tighnari', 'Dehya'];
 
 class GachaEngine extends EventEmitter {
   constructor(options = {}) {
@@ -29,6 +32,8 @@ class GachaEngine extends EventEmitter {
     this.users = {};
     this.characters = [];
     this.weapons = [];
+    this.banners = [];
+    this.activeBannerId = 'raiden_shogun';
     this.recentFiveStars = [];
 
     this.loadData();
@@ -56,6 +61,28 @@ class GachaEngine extends EventEmitter {
       this.weapons = [];
     }
 
+    // Load Banners
+    try {
+      if (fs.existsSync(BANNERS_FILE)) {
+        this.banners = JSON.parse(fs.readFileSync(BANNERS_FILE, 'utf8'));
+      }
+    } catch (e) {
+      console.error('[GachaEngine] Bannerlar yüklenemedi:', e);
+      this.banners = [];
+    }
+
+    // Restore active banner from db or default
+    try {
+      const savedBanner = db.getSetting('active_banner_id');
+      if (savedBanner && this.banners.some(b => b.id === savedBanner)) {
+        this.activeBannerId = savedBanner;
+      } else if (this.banners.length > 0) {
+        this.activeBannerId = this.banners[0].id;
+      }
+    } catch (e) {
+      this.activeBannerId = 'raiden_shogun';
+    }
+
     // Load Users from DatabaseManager
     try {
       this.users = db.getAllUsers() || {};
@@ -68,7 +95,7 @@ class GachaEngine extends EventEmitter {
       this.users = {};
     }
 
-    console.log(`[GachaEngine] ${this.characters.length} karakter, ${this.weapons.length} silah ve ${Object.keys(this.users).length} kayıtlı kullanıcı yüklendi.`);
+    console.log(`[GachaEngine] ${this.characters.length} karakter, ${this.weapons.length} silah, ${this.banners.length} banner ve ${Object.keys(this.users).length} kayıtlı kullanıcı yüklendi.`);
   }
 
   saveUsers() {
@@ -77,6 +104,59 @@ class GachaEngine extends EventEmitter {
     } catch (e) {
       console.error('[GachaEngine] Kullanıcı veritabanı kaydedilemedi:', e);
     }
+  }
+
+  saveBanners() {
+    try {
+      fs.writeFileSync(BANNERS_FILE, JSON.stringify(this.banners, null, 2), 'utf8');
+    } catch (e) {
+      console.error('[GachaEngine] Bannerlar kaydedilemedi:', e);
+    }
+  }
+
+  // Banner Operations
+  getActiveBanner() {
+    return this.banners.find(b => b.id === this.activeBannerId) || this.banners[0] || null;
+  }
+
+  getBannersList() {
+    return this.banners;
+  }
+
+  setActiveBanner(id) {
+    const banner = this.banners.find(b => b.id === id);
+    if (!banner) return { success: false, error: 'Banner bulunamadı' };
+    this.activeBannerId = id;
+    db.setSetting('active_banner_id', id);
+    console.log(`[GachaEngine] 🎪 Aktif Banner güncellendi: ${banner.nameTr || banner.name} (${banner.featured5 || 'Standart'})`);
+    this.emit('banner_changed', { banner, activeBannerId: id });
+    return { success: true, banner };
+  }
+
+  createCustomBanner({ id, name, nameTr, version, featured5, featured4, description, element }) {
+    if (!id || !featured5) return { success: false, error: 'Banner ID ve 5★ karakter adı zorunludur.' };
+    const char5 = this.characters.find(c => c.name.toLowerCase() === featured5.toLowerCase());
+    const newBanner = {
+      id: id.toLowerCase().replace(/[^a-z0-9_-]/g, '_'),
+      name: name || `${featured5} Event Wish`,
+      nameTr: nameTr || `${featured5} Özel Dileği`,
+      version: version || 'Özel',
+      type: 'character_event',
+      element: element || (char5 ? char5.element : 'All'),
+      featured5: char5 ? char5.name : featured5,
+      featured4: Array.isArray(featured4) ? featured4 : (featured4 ? featured4.split(',').map(s => s.trim()) : []),
+      description: description || `${featured5} için sınırlı süreli etkinlik dileği.`
+    };
+
+    const idx = this.banners.findIndex(b => b.id === newBanner.id);
+    if (idx >= 0) {
+      this.banners[idx] = newBanner;
+    } else {
+      this.banners.push(newBanner);
+    }
+    this.saveBanners();
+    this.emit('banners_updated', { banners: this.banners });
+    return { success: true, banner: newBanner };
   }
 
   getOrCreateUser(username) {
@@ -89,6 +169,10 @@ class GachaEngine extends EventEmitter {
         primogems: this.config.welcomePrimo,
         pity4: 0,
         pity5: 0,
+        isGuaranteed: false,
+        isGuaranteed4: false,
+        standardPity5: 0,
+        standardPity4: 0,
         totalWishes: 0,
         fiveStarsCount: 0,
         fourStarsCount: 0,
@@ -101,9 +185,12 @@ class GachaEngine extends EventEmitter {
       this.saveUsers();
       console.log(`[GachaEngine] 🎁 Yeni Gezgin kaydoldu: ${username} (Hoş geldin hediyesi: ${this.config.welcomePrimo} Primogem)`);
     } else {
-      // Keep proper username casing
       this.users[key].username = username;
       this.users[key].lastActiveTime = Date.now();
+      if (this.users[key].isGuaranteed === undefined) this.users[key].isGuaranteed = false;
+      if (this.users[key].isGuaranteed4 === undefined) this.users[key].isGuaranteed4 = false;
+      if (this.users[key].standardPity5 === undefined) this.users[key].standardPity5 = 0;
+      if (this.users[key].standardPity4 === undefined) this.users[key].standardPity4 = 0;
       if (this.users[key].threeStarsCount === undefined) {
         this.users[key].threeStarsCount = (this.users[key].inventory || []).filter(i => i.rarity === 3).length;
       }
@@ -145,11 +232,11 @@ class GachaEngine extends EventEmitter {
     });
   }
 
-  // 3. Passive Time Ticks (every 5 mins for active viewers)
+  // 3. Passive Time Ticks
   startPassiveInterval() {
     setInterval(() => {
       const now = Date.now();
-      const activeThreshold = 20 * 60 * 1000; // 20 minutes active window
+      const activeThreshold = 20 * 60 * 1000;
       let awardedCount = 0;
 
       for (const key in this.users) {
@@ -167,8 +254,8 @@ class GachaEngine extends EventEmitter {
     }, this.config.passiveTickMinutes * 60 * 1000);
   }
 
-  // 4. Gacha Pull Simulation
-  pull(username, count = 1) {
+  // 4. Gacha Pull Simulation (Event or Standard Banner)
+  pull(username, count = 1, bannerType = 'event') {
     const user = this.getOrCreateUser(username);
     if (!user) return { success: false, reason: 'user_not_found' };
 
@@ -186,8 +273,12 @@ class GachaEngine extends EventEmitter {
     user.primogems -= totalCost;
     const pulls = [];
 
+    const activeBanner = bannerType === 'standard' 
+      ? (this.banners.find(b => b.type === 'standard') || { id: 'standard', nameTr: 'Yolculuk Çağrısı', name: 'Wanderlust Invocation', type: 'standard' })
+      : this.getActiveBanner();
+
     for (let i = 0; i < count; i++) {
-      const pullResult = this.executeSinglePull(user);
+      const pullResult = this.executeSinglePull(user, bannerType, activeBanner);
       pulls.push(pullResult);
     }
 
@@ -203,6 +294,9 @@ class GachaEngine extends EventEmitter {
         characterName: p.name,
         rarity: 5,
         element: p.element,
+        won5050: p.won5050,
+        isGuaranteedPull: p.isGuaranteedPull,
+        bannerName: activeBanner ? (activeBanner.nameTr || activeBanner.name) : 'Etkinlik Dileği',
         timestamp: Date.now()
       });
     });
@@ -216,10 +310,16 @@ class GachaEngine extends EventEmitter {
       is10Pull: count === 10,
       highestRarity,
       featuredPull,
+      banner: activeBanner,
+      bannerType,
       stats: {
         primogems: user.primogems,
         pity5: user.pity5,
         pity4: user.pity4,
+        isGuaranteed: user.isGuaranteed,
+        isGuaranteed4: user.isGuaranteed4,
+        standardPity5: user.standardPity5,
+        standardPity4: user.standardPity4,
         totalWishes: user.totalWishes,
         fiveStarsCount: user.fiveStarsCount
       }
@@ -229,20 +329,41 @@ class GachaEngine extends EventEmitter {
     return { success: true, ...resultPayload };
   }
 
-  executeSinglePull(user) {
+  executeSinglePull(user, bannerType = 'event', activeBanner = null) {
+    if (!activeBanner) {
+      activeBanner = bannerType === 'standard' 
+        ? (this.banners.find(b => b.type === 'standard') || { id: 'standard', nameTr: 'Yolculuk Çağrısı', type: 'standard' })
+        : this.getActiveBanner();
+    }
+
     user.totalWishes = (user.totalWishes || 0) + 1;
-    user.pity5 = (user.pity5 || 0) + 1;
-    user.pity4 = (user.pity4 || 0) + 1;
+
+    const isStandard = bannerType === 'standard' || (activeBanner && activeBanner.type === 'standard');
+    
+    // Select pity trackers based on banner type
+    let currentPity5 = isStandard ? (user.standardPity5 || 0) : (user.pity5 || 0);
+    let currentPity4 = isStandard ? (user.standardPity4 || 0) : (user.pity4 || 0);
+
+    currentPity5 += 1;
+    currentPity4 += 1;
+
+    if (isStandard) {
+      user.standardPity5 = currentPity5;
+      user.standardPity4 = currentPity4;
+    } else {
+      user.pity5 = currentPity5;
+      user.pity4 = currentPity4;
+    }
 
     let rarity = 3;
     const rand = Math.random();
 
-    // Check 5-Star (Guaranteed pity or base rate)
-    if (user.pity5 >= this.config.pity5Threshold || rand < this.config.rate5) {
+    // 5-Star check
+    if (currentPity5 >= this.config.pity5Threshold || rand < this.config.rate5) {
       rarity = 5;
     }
-    // Check 4-Star (Guaranteed pity or base rate)
-    else if (user.pity4 >= this.config.pity4Threshold || rand < (this.config.rate5 + this.config.rate4)) {
+    // 4-Star check
+    else if (currentPity4 >= this.config.pity4Threshold || rand < (this.config.rate5 + this.config.rate4)) {
       rarity = 4;
     }
     else {
@@ -253,39 +374,154 @@ class GachaEngine extends EventEmitter {
     let itemType = 'character';
     let isRefund = false;
     let refundAmount = 0;
+    let won5050 = null;
+    let isGuaranteedPull = false;
+    let isStandardPool = false;
 
+    // Standard 5★ character pool
+    const standard5Chars = this.characters.filter(c => 
+      c.rarity === 5 && STANDARD_5_STARS.map(s => s.toLowerCase()).includes(c.name.toLowerCase())
+    );
+
+    // ==========================================
+    // 5-STAR LOGIC
+    // ==========================================
     if (rarity === 5) {
-      // 80% character, 20% weapon
-      const isChar = Math.random() < 0.8;
-      const pool = isChar 
-        ? this.characters.filter(c => c.rarity === 5)
-        : this.weapons.filter(w => w.rarity === 5);
+      if (isStandard) {
+        // Standard Banner: 50% Character, 50% Weapon
+        const isChar = Math.random() < 0.5;
+        if (isChar && standard5Chars.length > 0) {
+          item = standard5Chars[Math.floor(Math.random() * standard5Chars.length)];
+          itemType = 'character';
+        } else {
+          const weapon5s = this.weapons.filter(w => w.rarity === 5);
+          item = weapon5s.length > 0 ? weapon5s[Math.floor(Math.random() * weapon5s.length)] : standard5Chars[0];
+          itemType = isChar ? 'character' : 'weapon';
+        }
+        user.standardPity5 = 0;
+        won5050 = null;
+        isStandardPool = true;
+      } else {
+        // Character Event Banner: Authentic 50/50 & Guarantee Rule!
+        const featuredChar = this.characters.find(c => 
+          c.name.toLowerCase() === (activeBanner.featured5 || '').toLowerCase()
+        ) || this.characters.find(c => c.rarity === 5);
 
-      item = pool[Math.floor(Math.random() * pool.length)] || this.characters[0];
-      itemType = isChar ? 'character' : 'weapon';
+        if (user.isGuaranteed) {
+          // Guaranteed win!
+          item = featuredChar;
+          itemType = 'character';
+          won5050 = true;
+          isGuaranteedPull = true;
+          user.isGuaranteed = false; // Guarantee consumed
+        } else {
+          // 50/50 Roll
+          const winFiftyFifty = Math.random() < 0.5;
+          if (winFiftyFifty) {
+            item = featuredChar;
+            itemType = 'character';
+            won5050 = true;
+            isGuaranteedPull = false;
+            user.isGuaranteed = false;
+          } else {
+            // Lost 50/50! Standard 5★ character dropped
+            item = standard5Chars.length > 0
+              ? standard5Chars[Math.floor(Math.random() * standard5Chars.length)]
+              : (this.characters.find(c => c.rarity === 5 && c.name !== featuredChar.name) || featuredChar);
+            itemType = 'character';
+            won5050 = false;
+            isGuaranteedPull = false;
+            user.isGuaranteed = true; // Next 5★ is guaranteed!
+            isStandardPool = true;
+          }
+        }
+        user.pity5 = 0;
+      }
 
-      user.pity5 = 0;
       user.fiveStarsCount = (user.fiveStarsCount || 0) + 1;
-      console.log(`[GachaEngine] 🌟🌟🌟🌟🌟 EFSANEVİ 5★ ÇIKTI! Kullanıcı: ${user.username} -> ${item.name}!`);
-      this.emit('chat_response', {
-        username: user.username,
-        message: `🌟🌟🌟🌟🌟 İNANILMAZ! @${user.username} az önce 5★ ${item.name} çıkardı! Tebrikler Gezgin!`
-      });
-    } else if (rarity === 4) {
-      // 70% character, 30% weapon
-      const isChar = Math.random() < 0.7;
-      const pool = isChar
-        ? this.characters.filter(c => c.rarity === 4)
-        : this.weapons.filter(w => w.rarity === 4);
 
-      item = pool[Math.floor(Math.random() * pool.length)] || this.characters[1];
-      itemType = isChar ? 'character' : 'weapon';
+      // Announce in chat
+      if (won5050 === true && isGuaranteedPull) {
+        console.log(`[GachaEngine] 🌟🌟🌟🌟🌟 GARANTİLİ 5★ KAZANILDI! ${user.username} -> ${item.name} (${activeBanner.nameTr})!`);
+        this.emit('chat_response', {
+          username: user.username,
+          message: `🌟🌟🌟🌟🌟 GARANTİLİ DİLEK! @${user.username} beklenen 5★ [${item.name}] karakterini elde etti! Tebrikler Gezgin!`
+        });
+      } else if (won5050 === true) {
+        console.log(`[GachaEngine] 🌟🌟🌟🌟🌟 50/50 KAZANILDI! ${user.username} -> ${item.name}!`);
+        this.emit('chat_response', {
+          username: user.username,
+          message: `🎉 50/50 KAZANILDI! @${user.username} şansını konuşturdu ve 5★ [${item.name}] çıkardı!`
+        });
+      } else if (won5050 === false) {
+        console.log(`[GachaEngine] 💀 50/50 KAYBEDİLDİ! ${user.username} -> ${item.name} (Sonraki 5★ KESİN GARANTİ!)`);
+        this.emit('chat_response', {
+          username: user.username,
+          message: `💀 50/50 KAYBEDİLDİ... @${user.username} 5★ [${item.name}] çıkardı. Ancak üzülme Gezgin, SIRADAKİ 5★ KESİN BANNER GARANTİLİ!`
+        });
+      } else {
+        console.log(`[GachaEngine] 🌟🌟🌟🌟🌟 STANDART 5★: ${user.username} -> ${item.name}`);
+        this.emit('chat_response', {
+          username: user.username,
+          message: `🌌 STANDART DİLEK! @${user.username} 5★ [${item.name}] çıkardı! Tebrikler!`
+        });
+      }
+    } 
+    // ==========================================
+    // 4-STAR LOGIC
+    // ==========================================
+    else if (rarity === 4) {
+      if (isStandard) {
+        const isChar = Math.random() < 0.7;
+        const pool = isChar 
+          ? this.characters.filter(c => c.rarity === 4)
+          : this.weapons.filter(w => w.rarity === 4);
+        item = pool[Math.floor(Math.random() * pool.length)] || this.characters[1];
+        itemType = isChar ? 'character' : 'weapon';
+        user.standardPity4 = 0;
+      } else {
+        // Event Banner 4★ Logic
+        const featuredNames = Array.isArray(activeBanner.featured4) ? activeBanner.featured4 : [];
+        const featured4List = this.characters.filter(c => 
+          c.rarity === 4 && featuredNames.map(f => f.toLowerCase()).includes(c.name.toLowerCase())
+        );
 
-      user.pity4 = 0;
+        if (user.isGuaranteed4 && featured4List.length > 0) {
+          // Guaranteed featured 4★
+          item = featured4List[Math.floor(Math.random() * featured4List.length)];
+          itemType = 'character';
+          user.isGuaranteed4 = false;
+        } else {
+          const winRateUp4 = (Math.random() < 0.5) && featured4List.length > 0;
+          if (winRateUp4) {
+            item = featured4List[Math.floor(Math.random() * featured4List.length)];
+            itemType = 'character';
+            user.isGuaranteed4 = false;
+          } else {
+            // General 4★ pool (characters or weapons)
+            const isChar = Math.random() < 0.6;
+            const nonFeaturedChars = this.characters.filter(c => 
+              c.rarity === 4 && !featuredNames.map(f => f.toLowerCase()).includes(c.name.toLowerCase())
+            );
+            const pool = isChar && nonFeaturedChars.length > 0 
+              ? nonFeaturedChars 
+              : this.weapons.filter(w => w.rarity === 4);
+
+            item = pool[Math.floor(Math.random() * pool.length)] || (featured4List[0] || this.characters[1]);
+            itemType = isChar ? 'character' : 'weapon';
+            user.isGuaranteed4 = true; // Next 4★ is guaranteed featured!
+          }
+        }
+        user.pity4 = 0;
+      }
+
       user.fourStarsCount = (user.fourStarsCount || 0) + 1;
       console.log(`[GachaEngine] ⭐⭐⭐⭐ 4★ Çıktı: ${user.username} -> ${item.name}`);
-    } else {
-      // 3-Star Weapon
+    } 
+    // ==========================================
+    // 3-STAR LOGIC
+    // ==========================================
+    else {
       const pool = this.weapons.filter(w => w.rarity === 3);
       item = pool[Math.floor(Math.random() * pool.length)] || { name: "Debate Club", rarity: 3, type: "Claymore" };
       itemType = 'weapon';
@@ -300,7 +536,7 @@ class GachaEngine extends EventEmitter {
       }
     }
 
-    // Record to inventory
+    // Build entry
     const entry = {
       name: item.name,
       rarity: rarity,
@@ -325,7 +561,13 @@ class GachaEngine extends EventEmitter {
 
     return {
       ...entry,
-      pity5AtPull: user.pity5,
+      bannerId: activeBanner ? activeBanner.id : 'default',
+      bannerName: activeBanner ? (activeBanner.nameTr || activeBanner.name) : 'Teyvat Dileği',
+      bannerType: isStandard ? 'standard' : 'event',
+      won5050,
+      isGuaranteedPull,
+      isStandardPool,
+      pity5AtPull: currentPity5,
       isRefund,
       refundAmount
     };
@@ -339,7 +581,6 @@ class GachaEngine extends EventEmitter {
     const username = sender.username;
     this.handleChatActivity(username);
 
-    // Normalize Turkish characters and casing for robust command matching
     const text = (content || '').trim().toLowerCase()
       .replace(/ı/g, 'i')
       .replace(/İ/g, 'i')
@@ -349,9 +590,51 @@ class GachaEngine extends EventEmitter {
       .replace(/ö/g, 'o')
       .replace(/ç/g, 'c');
 
+    // Banner Info Check (!banner, !afis, !etkinlik)
+    if (text === '!banner' || text === '!afis' || text === '!etkinlik' || text === '!havuz') {
+      const activeBanner = this.getActiveBanner();
+      const user = this.getOrCreateUser(username);
+      if (!activeBanner) return null;
+
+      const feat4Str = (activeBanner.featured4 || []).join(', ');
+      const guaranteeStatus = user.isGuaranteed 
+        ? '🌟 KESİN GARANTİ (Sonraki 5★ %100 Banner Karakteri!)' 
+        : '🎲 50/50 Şansı';
+
+      this.emit('chat_response', {
+        username,
+        message: `🎪 Aktif Banner: [${activeBanner.nameTr || activeBanner.name}] | 5★ ${activeBanner.featured5} | 4★ ${feat4Str} | @${username} Pity: ${user.pity5}/${this.config.pity5Threshold} | Durum: ${guaranteeStatus}`
+      });
+      return { type: 'banner_info', banner: activeBanner, user };
+    }
+
+    // Standard Wish (!wish standart, !dilek standart, !standart)
+    if (text === '!wish standart' || text === '!wish standard' || text === '!dilek standart' || text === '!standart') {
+      const res = this.pull(username, 1, 'standard');
+      if (!res.success && res.reason === 'insufficient_primogems') {
+        this.emit('chat_response', {
+          username,
+          message: `@${username} Yetersiz Primogem! (Mevcut: ${res.current}, Gereken: ${res.needed}).`
+        });
+      }
+      return res;
+    }
+
+    // 10x Standard Wish (!wish10 standart, !10standart)
+    if (text === '!wish10 standart' || text === '!wish10 standard' || text === '!dilek10 standart' || text === '!10standart') {
+      const res = this.pull(username, 10, 'standard');
+      if (!res.success && res.reason === 'insufficient_primogems') {
+        this.emit('chat_response', {
+          username,
+          message: `@${username} 10'lu standart dilek için 1600 Primogem gerekir! (Mevcut: ${res.current}).`
+        });
+      }
+      return res;
+    }
+
     // Single Wish (!wish)
     if (text === '!wish' || text === '!dilek' || text === '!cek') {
-      const res = this.pull(username, 1);
+      const res = this.pull(username, 1, 'event');
       if (!res.success && res.reason === 'insufficient_primogems') {
         this.emit('chat_response', {
           username,
@@ -363,7 +646,7 @@ class GachaEngine extends EventEmitter {
 
     // 10x Wish (!wish10)
     if (text === '!wish10' || text === '!dilek10' || text === '!10cek') {
-      const res = this.pull(username, 10);
+      const res = this.pull(username, 10, 'event');
       if (!res.success && res.reason === 'insufficient_primogems') {
         this.emit('chat_response', {
           username,
@@ -377,9 +660,10 @@ class GachaEngine extends EventEmitter {
     if (text === '!bakiye' || text === '!primo' || text === '!primogem' || text === '!puan') {
       const user = this.getOrCreateUser(username);
       const weaponCount = user.threeStarsCount ?? (user.inventory || []).filter(i => i.rarity === 3).length;
+      const status5050 = user.isGuaranteed ? 'KESİN GARANTİ 🌟' : '50/50 🎲';
       this.emit('chat_response', {
         username,
-        message: `💎 @${username} Primogem: ${user.primogems} | 5★ Pity: ${user.pity5}/${this.config.pity5Threshold} | 3★ Mavi Silah: ${weaponCount} (Dönüştürmek için: !donustur)`
+        message: `💎 @${username} Primogem: ${user.primogems} | Etkinlik Pity: ${user.pity5}/${this.config.pity5Threshold} (${status5050}) | Standart Pity: ${user.standardPity5 || 0}/${this.config.pity5Threshold} | 3★ Silah: ${weaponCount} (!donustur)`
       });
       return { type: 'balance', user };
     }
@@ -405,9 +689,10 @@ class GachaEngine extends EventEmitter {
     if (text === '!pity' || text === '!garanti') {
       const user = this.getOrCreateUser(username);
       const remaining = Math.max(0, this.config.pity5Threshold - user.pity5);
+      const status5050 = user.isGuaranteed ? '🌟 KESİN BANNER GARANTİSİ' : '🎲 50/50 ŞANSI';
       this.emit('chat_response', {
         username,
-        message: `🎯 @${username} 5★ Garantisi: ${user.pity5}/${this.config.pity5Threshold} (${remaining === 0 ? 'Sıradaki çekiş kesin 5★!' : remaining + ' çekiş sonra kesin 5★!'})`
+        message: `🎯 @${username} Etkinlik Pity: ${user.pity5}/${this.config.pity5Threshold} (${remaining === 0 ? 'Sıradaki kesin 5★!' : remaining + ' çekiş sonra 5★'}) | Durum: ${status5050} | Standart Pity: ${user.standardPity5 || 0}/${this.config.pity5Threshold}`
       });
       return { type: 'pity', user };
     }
@@ -447,7 +732,7 @@ class GachaEngine extends EventEmitter {
     if (text === '!komutlar' || text === '!yardim' || text === '!help' || text === '!commands' || text === '!komut') {
       this.emit('chat_response', {
         username,
-        message: `📜 MilkaBot Komutları: !wish (1 Dilek / 160 Primo) | !wish10 (10'lu Dilek) | !bakiye (Primon, Pity & Mavi Silahların) | !donustur (5 Mavi Silah = 160 Primo) | !pity (5★ Garantin) | !envanter (5★ Karakterlerin) | !sıralama (Liderler) | 💡 Trivia sorularını ilk bilen +60 Primo kazanır!`
+        message: `📜 MilkaBot Komutları: !wish (Banner Dileği / 160 Primo) | !wish10 (10'lu Dilek) | !wish standart (Standart Dilek) | !banner (Aktif Banner ve 50/50 Durumu) | !pity (Pity ve Garanti) | !bakiye (Primon) | !donustur (5 Mavi Silah = 160 Primo) | !envanter | 💡 Trivia sorularını ilk bilen +60 Primo kazanır!`
       });
       return { type: 'help' };
     }
@@ -482,7 +767,6 @@ class GachaEngine extends EventEmitter {
     user.threeStarsCount -= weaponsToRecycle;
     user.primogems += gainedPrimo;
 
-    // Clean recycled weapons from inventory array if any
     if (Array.isArray(user.inventory)) {
       let removed = 0;
       user.inventory = user.inventory.filter(item => {
@@ -506,7 +790,7 @@ class GachaEngine extends EventEmitter {
     };
   }
 
-  // 6. Admin Panel Helpers
+  // 7. Admin Panel Helpers
   addPrimogems(username, amount) {
     const user = this.getOrCreateUser(username);
     if (!user) return null;
@@ -531,20 +815,39 @@ class GachaEngine extends EventEmitter {
     return { amount, userCount: count };
   }
 
-  triggerTestWish(rarity = 5) {
+  // Test Wish with explicit 50/50 simulation support!
+  triggerTestWish(rarity = 5, won5050 = true, bannerType = 'event') {
+    const activeBanner = this.getActiveBanner();
     const mockUser = {
       username: "GenshinGezgini",
       pity5: rarity === 5 ? 40 : 25,
       pity4: rarity === 4 ? 8 : 3,
+      isGuaranteed: !won5050,
+      standardPity5: 20,
+      standardPity4: 4,
       totalWishes: 50,
       primogems: 3200
     };
 
     let item;
+    let isGuaranteedPull = false;
+
     if (rarity === 5) {
-      item = this.characters.find(c => c.name === "Raiden Shogun") || this.characters[0];
+      if (bannerType === 'standard') {
+        const stdChar = this.characters.find(c => c.name === 'Diluc') || this.characters[0];
+        item = stdChar;
+        won5050 = null;
+      } else {
+        if (won5050) {
+          item = this.characters.find(c => c.name.toLowerCase() === (activeBanner.featured5 || '').toLowerCase()) || this.characters[0];
+        } else {
+          // Lost 50/50: Drops Qiqi or Diluc
+          item = this.characters.find(c => c.name === 'Qiqi') || this.characters.find(c => c.name === 'Diluc') || this.characters[0];
+        }
+      }
     } else if (rarity === 4) {
-      item = this.characters.find(c => c.name === "Bennett") || this.characters[1];
+      const feat4Name = (activeBanner.featured4 && activeBanner.featured4[0]) || 'Bennett';
+      item = this.characters.find(c => c.name.toLowerCase() === feat4Name.toLowerCase()) || this.characters.find(c => c.rarity === 4) || this.characters[1];
     } else {
       item = this.weapons.find(w => w.name === "Debate Club") || this.weapons[0];
     }
@@ -555,7 +858,7 @@ class GachaEngine extends EventEmitter {
         {
           name: item.name,
           rarity: rarity,
-          type: item.weapon ? 'character' : 'weapon',
+          type: item.weapon ? 'character' : (item.weaponType ? 'character' : 'weapon'),
           element: item.element || null,
           weaponType: item.weaponType || item.type || 'Sword',
           region: item.region || 'Teyvat',
@@ -568,33 +871,59 @@ class GachaEngine extends EventEmitter {
           portrait: item.portrait || null,
           internalName: item.internalName || null,
           slug: item.slug || null,
+          bannerId: activeBanner ? activeBanner.id : 'default',
+          bannerName: activeBanner ? (activeBanner.nameTr || activeBanner.name) : 'Teyvat Dileği',
+          bannerType: bannerType,
+          won5050: rarity === 5 ? won5050 : null,
+          isGuaranteedPull: false,
           pity5AtPull: mockUser.pity5,
           isRefund: false,
           refundAmount: 0
         }
       ],
+      banner: activeBanner,
+      bannerType: bannerType,
+      is10Pull: false,
+      highestRarity: rarity,
+      featuredPull: null,
       stats: mockUser
     };
+    payload.featuredPull = payload.pulls[0];
 
     this.emit('wish_result', payload);
     return payload;
   }
 
-  triggerTestWish10() {
+  triggerTestWish10(won5050 = true) {
+    const activeBanner = this.getActiveBanner();
     const mockUser = {
       username: "GenshinGezgini",
       pity5: 40,
       pity4: 8,
+      isGuaranteed: false,
+      standardPity5: 15,
+      standardPity4: 2,
       totalWishes: 90,
       primogems: 4800
     };
 
-    const char5 = this.characters.find(c => c.name === "Raiden Shogun") || this.characters[0];
-    const char4 = this.characters.find(c => c.name === "Bennett") || this.characters[1];
+    let char5;
+    if (won5050) {
+      char5 = this.characters.find(c => c.name.toLowerCase() === (activeBanner.featured5 || '').toLowerCase()) || this.characters[0];
+    } else {
+      char5 = this.characters.find(c => c.name === 'Qiqi') || this.characters.find(c => c.name === 'Diluc') || this.characters[0];
+    }
+
+    const feat4Name = (activeBanner.featured4 && activeBanner.featured4[0]) || 'Bennett';
+    const char4 = this.characters.find(c => c.name.toLowerCase() === feat4Name.toLowerCase()) || this.characters.find(c => c.rarity === 4) || this.characters[1];
     const weaponPool = this.weapons.length > 0 ? this.weapons : [{ name: "Debate Club", rarity: 3, weaponType: "Claymore" }];
 
     const pulls = [];
-    pulls.push(this.formatPullItem(char5, 5, 'character', 40));
+    const pull5 = this.formatPullItem(char5, 5, 'character', 40);
+    pull5.won5050 = won5050;
+    pull5.bannerName = activeBanner ? (activeBanner.nameTr || activeBanner.name) : 'Etkinlik Dileği';
+    pulls.push(pull5);
+
     pulls.push(this.formatPullItem(char4, 4, 'character', 8));
     for (let i = 0; i < 8; i++) {
       const w = weaponPool[i % weaponPool.length];
@@ -609,6 +938,8 @@ class GachaEngine extends EventEmitter {
       is10Pull: true,
       highestRarity: 5,
       featuredPull: pulls.find(p => p.rarity === 5),
+      banner: activeBanner,
+      bannerType: 'event',
       stats: mockUser
     };
 
@@ -646,6 +977,10 @@ class GachaEngine extends EventEmitter {
         primogems: u.primogems,
         pity5: u.pity5,
         pity4: u.pity4,
+        isGuaranteed: Boolean(u.isGuaranteed),
+        isGuaranteed4: Boolean(u.isGuaranteed4),
+        standardPity5: u.standardPity5 || 0,
+        standardPity4: u.standardPity4 || 0,
         threeStarsCount: u.threeStarsCount ?? (u.inventory || []).filter(i => i.rarity === 3).length,
         totalWishes: u.totalWishes,
         fiveStarsCount: (u.inventory || []).filter(i => i.rarity === 5).length,
@@ -656,4 +991,4 @@ class GachaEngine extends EventEmitter {
   }
 }
 
-module.exports = { GachaEngine };
+module.exports = { GachaEngine, STANDARD_5_STARS };

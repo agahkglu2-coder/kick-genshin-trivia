@@ -1,0 +1,112 @@
+[
+  {
+    "id": "raiden_shogun",
+    "name": "Reign of Serenity",
+    "nameTr": "Sükûnetin Hükmü",
+    "version": "4.3",
+    "type": "character_event",
+    "element": "Electro",
+    "featured5": "Raiden Shogun",
+    "featured4": ["Kujou Sara", "Bennett", "Chevreuse"],
+    "description": "Ebediyet arayışındaki Narukami Ogosho, Şimşek Şogunu."
+  },
+  {
+    "id": "furina",
+    "name": "Chanson of Many Waters",
+    "nameTr": "Suların Şarkısı",
+    "version": "4.2",
+    "type": "character_event",
+    "element": "Hydro",
+    "featured5": "Furina",
+    "featured4": ["Charlotte", "Collei", "Beidou"],
+    "description": "Adalet Diyarı Fontaine'in yıldız solisti ve eski Su Arkonu."
+  },
+  {
+    "id": "hu_tao",
+    "name": "Moment of Bloom",
+    "nameTr": "Açan Çiçek Anı",
+    "version": "4.1",
+    "type": "character_event",
+    "element": "Pyro",
+    "featured5": "Hu Tao",
+    "featured4": ["Xingqiu", "Thoma", "Diona"],
+    "description": "Wangsheng Cenaze Evi'nin 77. Müdürü, neşeli ve gizemli kelebek."
+  },
+  {
+    "id": "zhongli",
+    "name": "Gentry of Hermits",
+    "nameTr": "İnzivadaki Soylu",
+    "version": "4.0",
+    "type": "character_event",
+    "element": "Geo",
+    "featured5": "Zhongli",
+    "featured4": ["Yanfei", "Noelle", "Ningguang"],
+    "description": "Toprağın ve Sözleşmelerin Arkonu, sarsılmaz kalkan Rex Lapis."
+  },
+  {
+    "id": "nahida",
+    "name": "The Moongrass' Enlightenment",
+    "nameTr": "Hilal Otu Aydınlanması",
+    "version": "4.4",
+    "type": "character_event",
+    "element": "Dendro",
+    "featured5": "Nahida",
+    "featured4": ["Kuki Shinobu", "Dori", "Layla"],
+    "description": "Bilgelik Arkonu Küçük Lord Kusanali, Teyvat'ın en saf zihni."
+  },
+  {
+    "id": "neuvillette",
+    "name": "Decree of the Deeps",
+    "nameTr": "Derinlerin Hükmü",
+    "version": "4.5",
+    "type": "character_event",
+    "element": "Hydro",
+    "featured5": "Neuvillette",
+    "featured4": ["Fischl", "Xingqiu", "Sucrose"],
+    "description": "Fontaine Başyargıcı, Kadim Su Ejderi Hükümdarı."
+  },
+  {
+    "id": "mavuika",
+    "name": "Ancient Flame Unbound",
+    "nameTr": "Serbest Kalan Kadim Alev",
+    "version": "5.3",
+    "type": "character_event",
+    "element": "Pyro",
+    "featured5": "Mavuika",
+    "featured4": ["Kachina", "Bennett", "Xiangling"],
+    "description": "Natlan'ın Ateş Arkonu, küllerinden doğan alevli savaşçı."
+  },
+  {
+    "id": "arlecchino",
+    "name": "The Hearth's Ashen Shadow",
+    "nameTr": "Ocağın Kül Gölgesi",
+    "version": "4.6",
+    "type": "character_event",
+    "element": "Pyro",
+    "featured5": "Arlecchino",
+    "featured4": ["Lynette", "Freminet", "Xiangling"],
+    "description": "Fatui Öncülerinin Dördüncüsü, 'Baba' lakaplı Kül Hizmetkarı."
+  },
+  {
+    "id": "kazuha",
+    "name": "Leaves in the Wind",
+    "nameTr": "Rüzgardaki Yapraklar",
+    "version": "4.5",
+    "type": "character_event",
+    "element": "Anemo",
+    "featured5": "Kaedehara Kazuha",
+    "featured4": ["Shikanoin Heizou", "Rosaria", "Bennett"],
+    "description": "Rüzgarın ezgisini dinleyen gezgin samuray."
+  },
+  {
+    "id": "standard",
+    "name": "Wanderlust Invocation",
+    "nameTr": "Yolculuk Çağrısı",
+    "version": "Kalıcı",
+    "type": "standard",
+    "element": "All",
+    "featured5": null,
+    "featured4": [],
+    "description": "Standart 5★ Karakterler ve 5★ Silahların kalıcı Teyvat dilek havuzu."
+  }
+]
