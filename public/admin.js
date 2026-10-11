@@ -1433,6 +1433,272 @@
     });
   }
 
+  // ==================== CUSTOM CHAT COMMANDS (!bot, !dc vb.) LOGIC ====================
+  const commandsCountBadge = document.getElementById('commands-count-badge');
+  const addCommandForm = document.getElementById('add-command-form');
+  const editCommandId = document.getElementById('edit-command-id');
+  const inputCmdName = document.getElementById('input-cmd-name');
+  const inputCmdCooldown = document.getElementById('input-cmd-cooldown');
+  const inputCmdResponse = document.getElementById('input-cmd-response');
+  const inputCmdAliases = document.getElementById('input-cmd-aliases');
+  const btnCancelEditCmd = document.getElementById('btn-cancel-edit-cmd');
+  const btnSaveCmd = document.getElementById('btn-save-cmd');
+  const cmdFormFeedback = document.getElementById('cmd-form-feedback');
+  const btnResetDefaultCmds = document.getElementById('btn-reset-default-cmds');
+  const commandsList = document.getElementById('commands-list');
+
+  let cachedCommands = [];
+
+  async function loadCommands() {
+    try {
+      const res = await fetch('/api/commands');
+      const data = await res.json();
+      cachedCommands = data.commands || [];
+      renderCommands(cachedCommands);
+    } catch (e) {
+      console.warn('[Admin] Komutlar yüklenemedi:', e.message);
+    }
+  }
+
+  function resetCommandForm() {
+    if (editCommandId) editCommandId.value = '';
+    if (inputCmdName) inputCmdName.value = '';
+    if (inputCmdCooldown) inputCmdCooldown.value = '5';
+    if (inputCmdResponse) inputCmdResponse.value = '';
+    if (inputCmdAliases) inputCmdAliases.value = '';
+    if (btnSaveCmd) {
+      btnSaveCmd.textContent = '+ Komutu Kaydet';
+      btnSaveCmd.className = 'btn btn-success btn-sm';
+    }
+    if (btnCancelEditCmd) {
+      btnCancelEditCmd.classList.add('hidden');
+    }
+  }
+
+  function renderCommands(commands) {
+    cachedCommands = commands || [];
+    if (commandsCountBadge) {
+      commandsCountBadge.textContent = `${cachedCommands.length} Komut`;
+    }
+    if (!commandsList) return;
+
+    if (!cachedCommands || cachedCommands.length === 0) {
+      commandsList.innerHTML = `<div class="empty-state" style="padding: 12px; text-align: center; color: #94a3b8; font-size: 0.82rem;">Henüz özel komut bulunmuyor. Yukarıdaki formdan yeni bir komut ekleyebilirsiniz.</div>`;
+      return;
+    }
+
+    commandsList.innerHTML = cachedCommands.map(cmd => {
+      const statusBadge = cmd.enabled
+        ? `<span class="badge-mini" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);">🟢 Aktif</span>`
+        : `<span class="badge-mini" style="background: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3);">⚪ Kapalı</span>`;
+
+      const aliasesHtml = Array.isArray(cmd.aliases) && cmd.aliases.length > 0
+        ? cmd.aliases.map(a => `<span class="command-pill">${escapeHtml(a)}</span>`).join(' ')
+        : '';
+
+      return `
+        <div class="command-item ${cmd.enabled ? '' : 'disabled'}" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <strong style="color: #c084fc; font-size: 0.95rem; font-family: monospace;">${escapeHtml(cmd.name || cmd.command)}</strong>
+              ${aliasesHtml}
+            </div>
+            <div>${statusBadge}</div>
+          </div>
+          <div style="font-size: 0.83rem; color: #f1f5f9; background: rgba(0,0,0,0.25); padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04); word-break: break-word; white-space: pre-wrap;">${escapeHtml(cmd.response)}</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; flex-wrap: wrap; gap: 6px;">
+            <span style="font-size: 0.74rem; color: #a5b4fc; background: rgba(99, 102, 241, 0.15); padding: 2px 8px; border-radius: 4px;">
+              ⏱️ ${cmd.cooldown || cmd.cooldownSeconds || 5} sn bekleme
+            </span>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-xs ${cmd.enabled ? 'btn-outline' : 'btn-success'} btn-toggle-cmd" data-id="${escapeHtml(cmd.id)}" data-enabled="${cmd.enabled}">
+                ${cmd.enabled ? 'Durdur' : 'Aktif Et'}
+              </button>
+              <button class="btn btn-xs btn-outline btn-test-cmd" data-id="${escapeHtml(cmd.id)}" title="Komutu test et ve sohbete yanıt at">
+                💬 Test Et
+              </button>
+              <button class="btn btn-xs btn-outline btn-edit-cmd" data-id="${escapeHtml(cmd.id)}" title="Düzenle">
+                ✏️ Düzenle
+              </button>
+              <button class="btn btn-xs btn-danger btn-delete-cmd" data-id="${escapeHtml(cmd.id)}" title="Sil">
+                🗑️ Sil
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Attach listeners
+    commandsList.querySelectorAll('.btn-toggle-cmd').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const curEnabled = btn.getAttribute('data-enabled') === 'true';
+        btn.disabled = true;
+        try {
+          await fetch(`/api/commands/${id}/toggle`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: !curEnabled })
+          });
+          loadCommands();
+        } catch (e) {
+          alert('Hata: ' + e.message);
+        }
+      });
+    });
+
+    commandsList.querySelectorAll('.btn-test-cmd').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        btn.disabled = true;
+        btn.textContent = 'Test Edildi! ✅';
+        try {
+          const res = await fetch(`/api/commands/${id}/test`, { method: 'POST' });
+          const d = await res.json();
+          if (!res.ok) alert('Test hatası: ' + (d.error || 'Bilinmiyor'));
+        } catch (e) {
+          alert('Hata: ' + e.message);
+        } finally {
+          setTimeout(() => { btn.textContent = '💬 Test Et'; btn.disabled = false; }, 1500);
+        }
+      });
+    });
+
+    commandsList.querySelectorAll('.btn-edit-cmd').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const cmd = cachedCommands.find(c => c.id === id);
+        if (!cmd) return;
+
+        if (editCommandId) editCommandId.value = cmd.id;
+        if (inputCmdName) inputCmdName.value = cmd.name || cmd.command || '';
+        if (inputCmdCooldown) inputCmdCooldown.value = cmd.cooldown || cmd.cooldownSeconds || 5;
+        if (inputCmdResponse) inputCmdResponse.value = cmd.response || '';
+        if (inputCmdAliases) inputCmdAliases.value = Array.isArray(cmd.aliases) ? cmd.aliases.join(', ') : '';
+
+        if (btnSaveCmd) {
+          btnSaveCmd.textContent = '💾 Değişiklikleri Kaydet';
+          btnSaveCmd.className = 'btn btn-primary btn-sm';
+        }
+        if (btnCancelEditCmd) {
+          btnCancelEditCmd.classList.remove('hidden');
+        }
+        if (inputCmdName) {
+          inputCmdName.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          inputCmdName.focus();
+        }
+      });
+    });
+
+    commandsList.querySelectorAll('.btn-delete-cmd').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const cmd = cachedCommands.find(c => c.id === id);
+        const name = cmd ? (cmd.name || cmd.command) : 'Bu komutu';
+        if (confirm(`${name} komutunu silmek istediğinize emin misiniz?`)) {
+          btn.disabled = true;
+          try {
+            await fetch(`/api/commands/${id}`, { method: 'DELETE' });
+            loadCommands();
+          } catch (e) {
+            alert('Silinemedi: ' + e.message);
+          }
+        }
+      });
+    });
+  }
+
+  // Dynamic Variable buttons click helper
+  document.querySelectorAll('.btn-var-tag').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tag = btn.getAttribute('data-var');
+      if (!tag || !inputCmdResponse) return;
+
+      const start = inputCmdResponse.selectionStart || inputCmdResponse.value.length;
+      const end = inputCmdResponse.selectionEnd || inputCmdResponse.value.length;
+      const text = inputCmdResponse.value;
+      inputCmdResponse.value = text.substring(0, start) + tag + text.substring(end);
+      inputCmdResponse.focus();
+      const newPos = start + tag.length;
+      inputCmdResponse.setSelectionRange(newPos, newPos);
+    });
+  });
+
+  if (btnCancelEditCmd) {
+    btnCancelEditCmd.addEventListener('click', () => {
+      resetCommandForm();
+    });
+  }
+
+  if (btnResetDefaultCmds) {
+    btnResetDefaultCmds.addEventListener('click', async () => {
+      if (confirm('Tüm komutları varsayılan ayarlara (!bot, !dc, !komutlar vb.) sıfırlamak istiyor musunuz?')) {
+        btnResetDefaultCmds.disabled = true;
+        try {
+          const res = await fetch('/api/commands/reset', { method: 'POST' });
+          const data = await res.json();
+          if (data.success) {
+            resetCommandForm();
+            loadCommands();
+          }
+        } catch (e) {
+          alert('Sıfırlama hatası: ' + e.message);
+        } finally {
+          btnResetDefaultCmds.disabled = false;
+        }
+      }
+    });
+  }
+
+  if (addCommandForm) {
+    addCommandForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = editCommandId ? editCommandId.value.trim() : '';
+      const command = inputCmdName ? inputCmdName.value.trim() : '';
+      const cooldownSeconds = parseInt(inputCmdCooldown ? inputCmdCooldown.value : 5, 10) || 5;
+      const response = inputCmdResponse ? inputCmdResponse.value.trim() : '';
+      const rawAliases = inputCmdAliases ? inputCmdAliases.value.trim() : '';
+      const aliases = rawAliases ? rawAliases.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+      if (!command || !response) return;
+
+      if (btnSaveCmd) btnSaveCmd.disabled = true;
+
+      try {
+        const url = id ? `/api/commands/${id}` : '/api/commands';
+        const method = id ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: command, command, response, cooldown: cooldownSeconds, cooldownSeconds, aliases })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          resetCommandForm();
+          if (cmdFormFeedback) {
+            cmdFormFeedback.style.color = '#10b981';
+            cmdFormFeedback.textContent = id ? '✅ Komut güncellendi!' : '✅ Yeni komut eklendi!';
+            setTimeout(() => { if (cmdFormFeedback) cmdFormFeedback.textContent = ''; }, 3000);
+          }
+          loadCommands();
+        } else {
+          if (cmdFormFeedback) {
+            cmdFormFeedback.style.color = '#ef4444';
+            cmdFormFeedback.textContent = `❌ ${data.error || 'Kaydedilemedi.'}`;
+          }
+        }
+      } catch (err) {
+        if (cmdFormFeedback) {
+          cmdFormFeedback.style.color = '#ef4444';
+          cmdFormFeedback.textContent = 'Hata: ' + err.message;
+        }
+      } finally {
+        if (btnSaveCmd) btnSaveCmd.disabled = false;
+      }
+    });
+  }
+
   // WebSocket Connection
   function connectWS() {
     socket = new WebSocket(wsUrl);
@@ -1484,6 +1750,7 @@
           }
         }
         if (msg.botStatus) updateBotStatus(msg.botStatus);
+        if (msg.commands) renderCommands(msg.commands);
         break;
 
       case 'BOT_STATUS':
@@ -1567,6 +1834,12 @@
 
       case 'GACHA_BANNERS_UPDATED':
         loadBanners();
+        break;
+
+      case 'COMMANDS_UPDATED':
+        if (msg.commands) {
+          renderCommands(msg.commands);
+        }
         break;
 
       default:
@@ -2527,6 +2800,7 @@
   loadGachaUsers();
   loadDbStatus();
   loadTimers();
+  loadCommands();
   initChatterAdmin();
 
   // Keep-Alive Heartbeat (Pings Render every 2 minutes while Admin panel is open to prevent sleep)

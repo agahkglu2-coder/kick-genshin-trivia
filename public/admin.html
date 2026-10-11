@@ -812,6 +812,70 @@
           </div>
         </div>
 
+        <!-- Custom Chat Commands Card (!bot, !dc, etc.) -->
+        <div class="panel-card commands-card">
+          <div class="panel-title">
+            <span style="color: #d8b4fe;">💬 Özel Chat Komutları (!bot, !dc vb.)</span>
+            <span id="commands-count-badge" class="badge-mini" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.4);">6 Komut</span>
+          </div>
+
+          <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 12px; line-height: 1.4;">
+            İzleyiciler sohbete <code>!bot</code>, <code>!dc</code>, <code>!komutlar</code> veya kendi ekleyeceğiniz komutları yazdığında MilkaBot otomatik olarak belirlediğiniz cevabı yazar.
+          </div>
+
+          <!-- Add / Edit Command Form -->
+          <form id="add-command-form" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+            <input type="hidden" id="edit-command-id" value="">
+            
+            <div class="form-row" style="margin-bottom: 8px;">
+              <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                <label style="font-size: 0.78rem;">Komut Adı</label>
+                <input type="text" id="input-cmd-name" placeholder="Örn: !dc veya !bot" required>
+              </div>
+              <div class="form-group" style="width: 110px; margin-bottom: 0;">
+                <label style="font-size: 0.78rem;">Bekleme (Sn)</label>
+                <input type="number" id="input-cmd-cooldown" min="1" max="120" value="5" required>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 8px;">
+              <label style="font-size: 0.78rem;">Botun Yazacağı Yanıt Mesajı</label>
+              <textarea id="input-cmd-response" rows="2" class="form-input" style="width: 100%; resize: vertical; min-height: 48px; font-size: 0.82rem; font-family: inherit;" placeholder="Örn: 👾 Discord sunucumuza katıl: discord.gg/milka" required></textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 8px;">
+              <label style="font-size: 0.78rem;">Alternatif İsimler / Alias (İsteğe bağlı, virgülle)</label>
+              <input type="text" id="input-cmd-aliases" placeholder="Örn: !discord, !sunucu">
+            </div>
+
+            <!-- Dynamic Variables Helper Tags -->
+            <div style="margin-bottom: 10px;">
+              <span style="font-size: 0.73rem; color: #94a3b8; display: block; margin-bottom: 4px;">Değişkenler (Tıklayarak mesaja ekleyin):</span>
+              <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                <button type="button" class="btn-var-tag" data-var="{user}" title="Komutu yazan izleyicinin adı">{user}</button>
+                <button type="button" class="btn-var-tag" data-var="{hedef}" title="Etiketlenen kişi (varsa)">{hedef}</button>
+                <button type="button" class="btn-var-tag" data-var="{kanal}" title="Yayıncı adı">{kanal}</button>
+                <button type="button" class="btn-var-tag" data-var="{saat}" title="Şu anki saat">{saat}</button>
+                <button type="button" class="btn-var-tag" data-var="{komutlar}" title="Tüm aktif komutların listesi">{komutlar}</button>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center;">
+              <button type="button" id="btn-cancel-edit-cmd" class="btn btn-outline btn-xs hidden">İptal</button>
+              <button type="submit" id="btn-save-cmd" class="btn btn-success btn-sm">+ Komutu Kaydet</button>
+            </div>
+            <div id="cmd-form-feedback" class="field-hint" style="margin-top: 6px; font-weight: 600;"></div>
+          </form>
+
+          <!-- Commands List -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 0.8rem; font-weight: 600; color: #cbd5e1;">📋 Kayıtlı Komutlar:</span>
+            <button type="button" id="btn-reset-default-cmds" class="btn btn-xs btn-outline" style="font-size: 0.72rem;">🔄 Varsayılanları Yükle</button>
+          </div>
+          <div id="commands-list" class="commands-list-container" style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="empty-state" style="padding: 12px; text-align: center; color: #94a3b8; font-size: 0.82rem;">Henüz özel komut bulunmuyor.</div>
+          </div>
+        </div>
 
         <!-- Database & Persistence Settings Panel -->
         <div class="panel-card db-card">

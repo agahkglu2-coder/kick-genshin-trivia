@@ -199,11 +199,16 @@ const gameEngine = new GameEngine(config);
 const gachaEngine = new GachaEngine();
 const { TimerService } = require('./timerService');
 const timerService = new TimerService({ kickBot, db });
+const { CommandService } = require('./commandService');
+const commandService = new CommandService({ kickBot, db });
 
 // Initialize persistent database (PostgreSQL or local fallback)
 db.init(process.env.DATABASE_URL || config.databaseUrl).then(async () => {
   const savedTimers = db.getSetting('timed_messages');
   timerService.init(savedTimers || []);
+
+  const savedCommands = db.getSetting('custom_commands');
+  commandService.init(savedCommands);
 
   const savedToken = db.getSetting('botToken');
   const savedRefreshToken = db.getSetting('botRefreshToken');
@@ -440,6 +445,24 @@ kickClient.on('message', async (chatMsg) => {
         }
       }
     }
+
+    // 3. Handle Custom Configurable Chat Commands (!bot, !dc, !instagram, etc.)
+    const cmdReply = commandService.processMessage(chatMsg, {
+      channel: config.channel || 'milka_e',
+      isAuthorized
+    });
+    if (cmdReply) {
+      kickBot.sendMessage(cmdReply);
+      broadcast({
+        type: 'CHAT_MESSAGE',
+        message: {
+          username: kickBot.botUsername || 'MilkaBot',
+          content: cmdReply,
+          profilePic: null,
+          createdAt: new Date().toISOString()
+        }
+      });
+    }
   } catch (err) {
     console.error('[Server] Komut işleme hatası:', err.message);
   }
@@ -569,7 +592,8 @@ wss.on('connection', (ws) => {
       redirectUri: config.botRedirectUri || ''
     },
     config: gameEngine.config,
-    chatterConfig: config.chatterConfig || {}
+    chatterConfig: config.chatterConfig || {},
+    commands: commandService ? commandService.getCommands() : []
   }));
 
   ws.send(JSON.stringify({
@@ -1347,7 +1371,90 @@ app.post('/api/timers/:id/trigger', (req, res) => {
   }
 });
 
+// Custom Chat Commands REST Endpoints
+app.get('/api/commands', (req, res) => {
+  res.json({ commands: commandService.getCommands() });
+});
 
+app.post('/api/commands', (req, res) => {
+  try {
+    const { name, response, cooldown, enabled, aliases, permission, description } = req.body || {};
+    const cmd = commandService.addCommand({ name, response, cooldown, enabled, aliases, permission, description });
+    broadcast({ type: 'COMMANDS_UPDATED', commands: commandService.getCommands() });
+    res.json({ success: true, command: cmd, commands: commandService.getCommands() });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.put('/api/commands/:id', (req, res) => {
+  try {
+    const cmd = commandService.updateCommand(req.params.id, req.body || {});
+    broadcast({ type: 'COMMANDS_UPDATED', commands: commandService.getCommands() });
+    res.json({ success: true, command: cmd, commands: commandService.getCommands() });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/commands/:id/toggle', (req, res) => {
+  try {
+    const { enabled } = req.body || {};
+    const cmd = commandService.toggleCommand(req.params.id, enabled);
+    broadcast({ type: 'COMMANDS_UPDATED', commands: commandService.getCommands() });
+    res.json({ success: true, command: cmd, commands: commandService.getCommands() });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/commands/:id', (req, res) => {
+  try {
+    const deleted = commandService.deleteCommand(req.params.id);
+    broadcast({ type: 'COMMANDS_UPDATED', commands: commandService.getCommands() });
+    res.json({ success: true, deleted, commands: commandService.getCommands() });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/commands/reset', (req, res) => {
+  try {
+    const reset = commandService.resetToDefaults();
+    broadcast({ type: 'COMMANDS_UPDATED', commands: reset });
+    res.json({ success: true, commands: reset });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/commands/:id/test', async (req, res) => {
+  const cmd = commandService.getCommandById(req.params.id);
+  if (!cmd) return res.status(404).json({ success: false, error: 'Komut bulunamadı.' });
+
+  const nowObj = new Date();
+  const testMsg = cmd.response
+    .replace(/\{user\}/gi, 'Yayıncı')
+    .replace(/\{hedef\}/gi, '@Yayıncı')
+    .replace(/\{target\}/gi, '@Yayıncı')
+    .replace(/\{kanal\}/gi, config.channel || 'milka_e')
+    .replace(/\{channel\}/gi, config.channel || 'milka_e')
+    .replace(/\{saat\}/gi, nowObj.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }))
+    .replace(/\{tarih\}/gi, nowObj.toLocaleDateString('tr-TR'))
+    .replace(/\{komutlar\}/gi, commandService.getCommands().filter(c => c.enabled).map(c => c.name).join(', '));
+
+  kickBot.sendMessage(testMsg);
+  broadcast({
+    type: 'CHAT_MESSAGE',
+    message: {
+      username: kickBot.botUsername || 'MilkaBot',
+      content: testMsg,
+      profilePic: null,
+      createdAt: new Date().toISOString()
+    }
+  });
+  res.json({ success: true, message: testMsg });
+});
 
 // Database Management REST Endpoints
 app.get('/api/db/status', (req, res) => {
