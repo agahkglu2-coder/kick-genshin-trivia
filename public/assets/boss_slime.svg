@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <radialGradient id="slimeBody" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#bae6fd"/>
+      <stop offset="35%" stop-color="#38bdf8"/>
+      <stop offset="75%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </radialGradient>
+    <linearGradient id="crownGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="40%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#a16207"/>
+    </linearGradient>
+    <filter id="slimeGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Shadow / Water Pool -->
+  <ellipse cx="200" cy="355" rx="140" ry="25" fill="rgba(2, 132, 199, 0.35)"/>
+
+  <!-- Slime Body -->
+  <path d="M 80 320 C 60 250 100 160 200 150 C 300 160 340 250 320 320 C 300 365 100 365 80 320 Z" fill="url(#slimeBody)" stroke="#7dd3fc" stroke-width="4" filter="url(#slimeGlow)"/>
+
+  <!-- Jelly Highlights -->
+  <ellipse cx="140" cy="200" rx="35" ry="18" transform="rotate(-30 140 200)" fill="rgba(255, 255, 255, 0.6)"/>
+  <circle cx="120" cy="225" r="8" fill="rgba(255, 255, 255, 0.5)"/>
+
+  <!-- Golden Crown -->
+  <g transform="translate(140, 75) scale(1.2)">
+    <polygon points="10,60 10,25 35,45 50,15 65,45 90,25 90,60" fill="url(#crownGold)" stroke="#ca8a04" stroke-width="3" filter="url(#slimeGlow)"/>
+    <rect x="10" y="55" width="80" height="10" rx="3" fill="#ca8a04"/>
+    <!-- Jewels -->
+    <circle cx="50" cy="40" r="6" fill="#ef4444"/>
+    <circle cx="30" cy="48" r="4" fill="#3b82f6"/>
+    <circle cx="70" cy="48" r="4" fill="#10b981"/>
+  </g>
+
+  <!-- Eyes (Determined / Cute Anime Eyes) -->
+  <g>
+    <!-- Left Eye -->
+    <ellipse cx="160" cy="245" rx="14" ry="20" fill="#0f172a"/>
+    <ellipse cx="157" cy="238" rx="6" ry="8" fill="#fff"/>
+    <ellipse cx="164" cy="254" rx="3" ry="4" fill="#fff"/>
+    <!-- Right Eye -->
+    <ellipse cx="240" cy="245" rx="14" ry="20" fill="#0f172a"/>
+    <ellipse cx="237" cy="238" rx="6" ry="8" fill="#fff"/>
+    <ellipse cx="244" cy="254" rx="3" ry="4" fill="#fff"/>
+  </g>
+
+  <!-- Cute Determined Eyebrows -->
+  <path d="M 142 220 Q 160 228 175 224" stroke="#0369a1" stroke-width="5" stroke-linecap="round" fill="none"/>
+  <path d="M 258 220 Q 240 228 225 224" stroke="#0369a1" stroke-width="5" stroke-linecap="round" fill="none"/>
+
+  <!-- Cheeks -->
+  <ellipse cx="135" cy="265" rx="12" ry="7" fill="rgba(244, 63, 94, 0.4)"/>
+  <ellipse cx="265" cy="265" rx="12" ry="7" fill="rgba(244, 63, 94, 0.4)"/>
+
+  <!-- Mouth -->
+  <path d="M 190 268 Q 200 278 210 268" stroke="#0f172a" stroke-width="4" stroke-linecap="round" fill="none"/>
+
+  <!-- Bubbles floating -->
+  <circle cx="95" cy="180" r="8" fill="rgba(255, 255, 255, 0.4)"/>
+  <circle cx="305" cy="190" r="12" fill="rgba(255, 255, 255, 0.4)"/>
+  <circle cx="325" cy="160" r="6" fill="rgba(255, 255, 255, 0.5)"/>
+</svg>

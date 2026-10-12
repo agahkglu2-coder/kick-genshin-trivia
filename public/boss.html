@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>World Boss Raid Overlay - OBS</title>
+  <link rel="stylesheet" href="boss.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Main Overlay Container (Transparent 1920x1080) -->
+  <div id="boss-overlay" class="state-idle">
+    
+    <!-- Alarm & Entry Flash Overlay -->
+    <div id="boss-alarm-flash" class="alarm-flash hidden"></div>
+
+    <!-- Active Boss Main Stage -->
+    <div id="boss-stage" class="hidden">
+
+      <!-- Top Boss HUD (Genshin / Dark Souls Style Bar) -->
+      <div id="boss-hud-card" class="hud-card">
+        <div class="hud-top-row">
+          <div class="boss-info-col">
+            <div class="boss-title-row">
+              <span id="boss-element-badge" class="element-badge">Void</span>
+              <h2 id="boss-name" class="boss-name">Kozmik Gölge Ejderhası</h2>
+            </div>
+            <div id="boss-title" class="boss-title">Karanlık Galaksi Lordu - Astrax</div>
+          </div>
+          <div class="boss-status-col">
+            <div id="boss-timer-badge" class="timer-badge">
+              <span id="timer-icon">⏳</span>
+              <span id="boss-timer-text">45s</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- HP Bar Container with Ghost Damage Layer -->
+        <div class="hp-bar-wrapper">
+          <div class="hp-bar-border">
+            <div id="hp-bar-ghost" class="hp-fill ghost-fill"></div>
+            <div id="hp-bar-current" class="hp-fill current-fill"></div>
+            <div class="hp-sheen"></div>
+          </div>
+          <div class="hp-metrics">
+            <span id="hp-exact-text">50,000 / 50,000</span>
+            <span id="hp-percent-text">100%</span>
+          </div>
+        </div>
+
+        <!-- Tactical Shield Bar (Appears during tactical phase) -->
+        <div id="shield-bar-wrapper" class="shield-wrapper hidden">
+          <div class="shield-label-row">
+            <span id="shield-title">⚡ KALKAN KIRMA FAZI (!kalkan / !ulti)</span>
+            <span id="shield-metric">7,500 / 7,500</span>
+          </div>
+          <div class="shield-bar-border">
+            <div id="shield-bar-fill" class="shield-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Boss Arena & Floating Combat Canvas -->
+      <div id="boss-arena" class="arena-container">
+        
+        <!-- Boss Avatar Entity with Idle & Hit Animations -->
+        <div id="boss-entity" class="boss-entity">
+          <div id="boss-aura-glow" class="boss-aura"></div>
+          <img id="boss-avatar-img" src="/assets/boss_dragon.svg" alt="Boss" class="boss-img">
+          <div id="boss-hit-flash" class="hit-flash"></div>
+          
+          <!-- Boss Dialogue Speech Bubble -->
+          <div id="boss-dialogue-bubble" class="boss-dialogue hidden">
+            <span id="boss-dialogue-text">Karanlık yıldızlar fısıldıyor...</span>
+          </div>
+        </div>
+
+        <!-- Floating Combat Text Particle Layer -->
+        <div id="fct-container" class="fct-layer"></div>
+
+        <!-- Tactical Phase Warning Banner -->
+        <div id="tactical-banner" class="tactical-banner hidden">
+          <div class="tactical-banner-content">
+            <div class="tactical-banner-badge">⚠️ KRİTİK FAZ</div>
+            <h3 id="tactical-skill-name">Kara Delik Kalkanı Aktif!</h3>
+            <p id="tactical-skill-prompt">Kalkanı kırmak için sohbete <strong>!kalkan</strong> veya <strong>!ulti</strong> yazın!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Warriors Squad Bar -->
+      <div id="warriors-bar" class="warriors-bar">
+        <div class="warriors-header">
+          <div class="warriors-count-badge">
+            <span class="swords-icon">⚔️</span>
+            <span id="warriors-count">0 Savaşçı</span>
+          </div>
+          <div class="warriors-hint" id="warriors-call-hint">Sohbete <strong>!katil</strong> yazarak savaşa katılın!</div>
+        </div>
+        
+        <!-- Live Warriors Pill Chips Row -->
+        <div id="warriors-pills-row" class="warriors-pills-row"></div>
+      </div>
+
+    </div>
+
+    <!-- Victory Screen (Golden Chalice, Confetti & MVP Cards) -->
+    <div id="victory-screen" class="victory-modal hidden">
+      <div class="victory-backdrop"></div>
+      <div class="victory-card">
+        <div class="sunburst-rays"></div>
+        <div class="victory-badge">⚔️ DÜNYA BOSSU HEZİMETE UĞRADI ⚔️</div>
+        <h1 class="victory-title">ZAFER!</h1>
+        <div class="victory-subtitle">Tüm savaşçılara Primogem ödülleri dağıtıldı!</div>
+
+        <!-- Rewards Spotlight Podium -->
+        <div class="podium-grid">
+          <!-- MVP Card -->
+          <div id="mvp-card" class="podium-card mvp-card">
+            <div class="podium-crown">🌟 EN ÇOK HASAR (MVP)</div>
+            <div id="mvp-username" class="podium-username">@Yayıncı</div>
+            <div id="mvp-damage" class="podium-stat">24,800 Hasar</div>
+            <div class="podium-reward">💎 +160 Primogem & ✨ Altın Aura</div>
+          </div>
+
+          <!-- Last Hit Card -->
+          <div id="lasthit-card" class="podium-card lasthit-card">
+            <div class="podium-crown">👑 SON VURUŞ (LAST HIT)</div>
+            <div id="lasthit-username" class="podium-username">@Savaşçı</div>
+            <div class="podium-reward">💎 +100 Primogem & 👑 Bilgelik Tacı</div>
+          </div>
+        </div>
+
+        <div class="participation-reward-tag">
+          🎉 Savaşa katılan herkese <strong>+60 Primogem</strong> aktarıldı!
+        </div>
+      </div>
+    </div>
+
+    <!-- Defeat Screen (Time Expired) -->
+    <div id="defeat-screen" class="defeat-modal hidden">
+      <div class="defeat-card">
+        <div class="defeat-badge">💀 SÜRE DOLDU 💀</div>
+        <h2 class="defeat-title">BOSS KAÇTI!</h2>
+        <p class="defeat-desc">Boss ağır darbeler alsa da karanlığa çekilmeyi başardı. Cesur savaşçılara +25 Primogem teselli ödülü verildi.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="boss.js"></script>
+</body>
+</html>

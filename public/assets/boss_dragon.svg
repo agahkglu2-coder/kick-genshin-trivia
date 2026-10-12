@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <radialGradient id="voidGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#c084fc" stop-opacity="0.8"/>
+      <stop offset="60%" stop-color="#7e22ce" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#3b0764" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="dragonSkin" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4c1d95"/>
+      <stop offset="50%" stop-color="#2e1065"/>
+      <stop offset="100%" stop-color="#0f0728"/>
+    </linearGradient>
+    <linearGradient id="hornGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e9d5ff"/>
+      <stop offset="60%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#581c87"/>
+    </linearGradient>
+    <filter id="purpleGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Cosmic Aura -->
+  <circle cx="200" cy="200" r="180" fill="url(#voidGlow)"/>
+
+  <!-- Left Wing -->
+  <path d="M 170 180 Q 70 80 20 120 Q 50 190 130 220 Z" fill="#2e1065" stroke="#a855f7" stroke-width="3" filter="url(#purpleGlow)"/>
+  <path d="M 60 130 Q 110 170 140 200" stroke="#c084fc" stroke-width="2" fill="none"/>
+  
+  <!-- Right Wing -->
+  <path d="M 230 180 Q 330 80 380 120 Q 350 190 270 220 Z" fill="#2e1065" stroke="#a855f7" stroke-width="3" filter="url(#purpleGlow)"/>
+  <path d="M 340 130 Q 290 170 260 200" stroke="#c084fc" stroke-width="2" fill="none"/>
+
+  <!-- Neck and Torso -->
+  <path d="M 160 210 Q 150 290 170 350 Q 200 370 230 350 Q 250 290 240 210 Z" fill="url(#dragonSkin)" stroke="#7e22ce" stroke-width="3"/>
+  <!-- Belly Scales -->
+  <path d="M 180 240 Q 200 250 220 240 Q 225 280 220 320 Q 200 330 180 320 Z" fill="#3b0764" stroke="#c084fc" stroke-width="1.5"/>
+  <line x1="185" y1="260" x2="215" y2="260" stroke="#a855f7" stroke-width="1.5"/>
+  <line x1="185" y1="280" x2="215" y2="280" stroke="#a855f7" stroke-width="1.5"/>
+  <line x1="185" y1="300" x2="215" y2="300" stroke="#a855f7" stroke-width="1.5"/>
+
+  <!-- Dragon Head -->
+  <path d="M 140 160 Q 200 110 260 160 Q 240 230 200 240 Q 160 230 140 160 Z" fill="url(#dragonSkin)" stroke="#a855f7" stroke-width="3"/>
+
+  <!-- Left Horn -->
+  <path d="M 160 150 Q 120 70 80 60 Q 110 110 145 155 Z" fill="url(#hornGrad)" stroke="#c084fc" stroke-width="2"/>
+  <!-- Right Horn -->
+  <path d="M 240 150 Q 280 70 320 60 Q 290 110 255 155 Z" fill="url(#hornGrad)" stroke="#c084fc" stroke-width="2"/>
+  <!-- Sub Horns -->
+  <path d="M 145 170 Q 110 140 90 150 Q 115 175 140 185 Z" fill="url(#hornGrad)" stroke="#a855f7" stroke-width="1.5"/>
+  <path d="M 255 170 Q 290 140 310 150 Q 285 175 260 185 Z" fill="url(#hornGrad)" stroke="#a855f7" stroke-width="1.5"/>
+
+  <!-- Glowing Eyes -->
+  <ellipse cx="175" cy="175" rx="14" ry="7" transform="rotate(-12 175 175)" fill="#f43f5e" filter="url(#purpleGlow)"/>
+  <ellipse cx="175" cy="175" rx="8" ry="3" transform="rotate(-12 175 175)" fill="#fff"/>
+  <ellipse cx="225" cy="175" rx="14" ry="7" transform="rotate(12 225 175)" fill="#f43f5e" filter="url(#purpleGlow)"/>
+  <ellipse cx="225" cy="175" rx="8" ry="3" transform="rotate(12 225 175)" fill="#fff"/>
+
+  <!-- Snout & Spikes -->
+  <path d="M 190 205 L 200 195 L 210 205" fill="none" stroke="#a855f7" stroke-width="2"/>
+  <!-- Cosmic Mouth -->
+  <path d="M 180 220 Q 200 230 220 220" stroke="#f43f5e" stroke-width="3" fill="none" filter="url(#purpleGlow)"/>
+  <polygon points="190,222 195,217 200,222" fill="#fff"/>
+  <polygon points="200,222 205,217 210,222" fill="#fff"/>
+
+  <!-- Forehead Rune -->
+  <polygon points="200,140 206,152 200,164 194,152" fill="#38bdf8" filter="url(#purpleGlow)"/>
+</svg>

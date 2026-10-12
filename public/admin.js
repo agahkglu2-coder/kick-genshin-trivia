@@ -29,6 +29,8 @@
   const btnCopyAvatarUrl = document.getElementById('btn-copy-avatar-url');
   const obsChatterUrl = document.getElementById('obs-chatter-url');
   const btnCopyChatterUrl = document.getElementById('btn-copy-chatter-url');
+  const obsBossUrl = document.getElementById('obs-boss-url');
+  const btnCopyBossUrl = document.getElementById('btn-copy-boss-url');
 
   const tabPreviewTrivia = document.getElementById('tab-preview-trivia');
   const tabPreviewGacha = document.getElementById('tab-preview-gacha');
@@ -151,6 +153,7 @@
   if (obsTriviaUrl) obsTriviaUrl.value = `${currentOrigin}/trivia.html`;
   if (obsGachaUrl) obsGachaUrl.value = `${currentOrigin}/gacha.html`;
   if (obsChatterUrl) obsChatterUrl.value = `${currentOrigin}/chatter`;
+  if (obsBossUrl) obsBossUrl.value = `${currentOrigin}/boss.html`;
   const defaultRedirectUri = `${currentOrigin}/auth/kick/callback`;
   if (displayRedirectUri) displayRedirectUri.value = defaultRedirectUri;
   if (cfgBotRedirectUri) cfgBotRedirectUri.value = defaultRedirectUri;
@@ -644,6 +647,15 @@
       navigator.clipboard.writeText(obsChatterUrl.value);
       btnCopyChatterUrl.textContent = 'Kopyalandı! ✅';
       setTimeout(() => { btnCopyChatterUrl.textContent = 'Kopyala'; }, 2000);
+    });
+  }
+
+  if (btnCopyBossUrl && obsBossUrl) {
+    btnCopyBossUrl.addEventListener('click', () => {
+      obsBossUrl.select();
+      navigator.clipboard.writeText(obsBossUrl.value);
+      btnCopyBossUrl.textContent = 'Kopyalandı! ✅';
+      setTimeout(() => { btnCopyBossUrl.textContent = 'Kopyala'; }, 2000);
     });
   }
 
@@ -1751,6 +1763,7 @@
         }
         if (msg.botStatus) updateBotStatus(msg.botStatus);
         if (msg.commands) renderCommands(msg.commands);
+        if (msg.bossState) updateBossUI(msg.bossState);
         break;
 
       case 'BOT_STATUS':
@@ -1840,6 +1853,27 @@
         if (msg.commands) {
           renderCommands(msg.commands);
         }
+        break;
+
+      case 'BOSS_STATE':
+        if (msg.state) updateBossUI(msg.state);
+        break;
+
+      case 'BOSS_ATTACK':
+        if (adminBossLiveBox && adminBossLiveBox.style.display !== 'none') {
+          updateBossHpUI(msg.bossRemainingHp, msg.bossMaxHp);
+        }
+        break;
+
+      case 'BOSS_TICK':
+        if (adminBossActiveTimer && msg.secondsRemaining !== undefined) {
+          adminBossActiveTimer.textContent = `${msg.secondsRemaining}s`;
+        }
+        break;
+
+      case 'BOSS_VICTORY':
+      case 'BOSS_DEFEAT':
+        fetchBossState();
         break;
 
       default:
@@ -2793,6 +2827,191 @@
     loadAvatars();
   }
 
+  // ==================== WORLD BOSS RAID ADMIN MODULE ====================
+  const selectBossTemplate = document.getElementById('select-boss-template');
+  const btnStartBossRaid = document.getElementById('btn-start-boss-raid');
+  const btnTestBossRaid = document.getElementById('btn-test-boss-raid');
+  const btnStopBossRaid = document.getElementById('btn-stop-boss-raid');
+  const bossStatusBadge = document.getElementById('boss-status-badge');
+  const adminBossLiveBox = document.getElementById('admin-boss-live-box');
+  const adminBossActiveName = document.getElementById('admin-boss-active-name');
+  const adminBossActiveTimer = document.getElementById('admin-boss-active-timer');
+  const adminBossHpBar = document.getElementById('admin-boss-hp-bar');
+  const adminBossHpNumbers = document.getElementById('admin-boss-hp-numbers');
+  const adminBossWarriorsCount = document.getElementById('admin-boss-warriors-count');
+  const adminBossTopList = document.getElementById('admin-boss-top-list');
+  const cfgBossAutoInterval = document.getElementById('cfg-boss-auto-interval');
+  const cfgBossRewardMult = document.getElementById('cfg-boss-reward-mult');
+  const btnSaveBossConfig = document.getElementById('btn-save-boss-config');
+
+  let cachedBosses = [];
+
+  async function loadBosses() {
+    try {
+      const res = await fetch('/api/boss/bosses');
+      const data = await res.json();
+      cachedBosses = data.bosses || [];
+      if (selectBossTemplate && cachedBosses.length > 0) {
+        selectBossTemplate.innerHTML = cachedBosses.map(b => 
+          `<option value="${b.id}">${b.icon || '🐉'} ${escapeHtml(b.name)} (${b.hp.toLocaleString('tr-TR')} HP / ${b.element})</option>`
+        ).join('');
+      }
+    } catch (e) {
+      console.warn('[Admin] Boss listesi yüklenemedi:', e);
+    }
+  }
+
+  async function fetchBossState() {
+    try {
+      const res = await fetch('/api/boss/state');
+      const data = await res.json();
+      updateBossUI(data);
+    } catch (e) {}
+  }
+
+  function updateBossUI(stateObj) {
+    if (!stateObj) return;
+    const st = stateObj.state || 'IDLE';
+    const boss = stateObj.activeBoss;
+
+    if (bossStatusBadge) {
+      if (st === 'IDLE') {
+        bossStatusBadge.textContent = '⚪ Beklemede';
+        bossStatusBadge.style.background = 'rgba(148, 163, 184, 0.2)';
+        bossStatusBadge.style.color = '#cbd5e1';
+      } else if (st === 'LOBBY') {
+        bossStatusBadge.textContent = '⏳ Hazırlık Lobisi';
+        bossStatusBadge.style.background = 'rgba(234, 179, 8, 0.25)';
+        bossStatusBadge.style.color = '#fde047';
+      } else if (st === 'BATTLE') {
+        bossStatusBadge.textContent = '⚔️ Savaş Sürüyor';
+        bossStatusBadge.style.background = 'rgba(239, 68, 68, 0.25)';
+        bossStatusBadge.style.color = '#fca5a5';
+      } else if (st === 'TACTICAL') {
+        bossStatusBadge.textContent = '⚡ Kalkan Fazı';
+        bossStatusBadge.style.background = 'rgba(56, 189, 248, 0.25)';
+        bossStatusBadge.style.color = '#7dd3fc';
+      } else if (st === 'VICTORY') {
+        bossStatusBadge.textContent = '🏆 Zafer!';
+        bossStatusBadge.style.background = 'rgba(16, 185, 129, 0.25)';
+        bossStatusBadge.style.color = '#86efac';
+      } else if (st === 'DEFEAT') {
+        bossStatusBadge.textContent = '💀 Süre Doldu';
+        bossStatusBadge.style.background = 'rgba(100, 116, 139, 0.25)';
+        bossStatusBadge.style.color = '#94a3b8';
+      }
+    }
+
+    if (st !== 'IDLE' && boss) {
+      if (adminBossLiveBox) adminBossLiveBox.style.display = 'block';
+      if (btnStopBossRaid) btnStopBossRaid.style.display = 'inline-block';
+      if (adminBossActiveName) adminBossActiveName.textContent = `${boss.icon || '🐉'} ${boss.name} (${boss.title})`;
+      updateBossHpUI(boss.currentHp, boss.maxHp);
+      if (adminBossWarriorsCount) adminBossWarriorsCount.textContent = `${stateObj.participantsCount || 0} Savaşçı`;
+
+      if (adminBossTopList && Array.isArray(stateObj.topDamagers)) {
+        adminBossTopList.innerHTML = stateObj.topDamagers.map((w, idx) => 
+          `<span style="background:rgba(255,255,255,0.06); padding:2px 8px; border-radius:4px; border:1px solid rgba(255,255,255,0.08);">
+            ${idx === 0 ? '👑' : '#' + (idx + 1)} @${escapeHtml(w.username)}: <strong>${w.damage.toLocaleString('tr-TR')}</strong>
+          </span>`
+        ).join('');
+      }
+    } else {
+      if (adminBossLiveBox) adminBossLiveBox.style.display = 'none';
+      if (btnStopBossRaid) btnStopBossRaid.style.display = 'none';
+    }
+
+    if (stateObj.config) {
+      if (cfgBossAutoInterval) cfgBossAutoInterval.value = stateObj.config.autoIntervalMinutes || 0;
+      if (cfgBossRewardMult) cfgBossRewardMult.value = stateObj.config.rewardParticipationMultiplier || 1.0;
+    }
+  }
+
+  function updateBossHpUI(current, max) {
+    if (!adminBossHpBar || !adminBossHpNumbers) return;
+    const cur = Math.max(0, current || 0);
+    const m = max || 1;
+    const pct = Math.min(100, Math.max(0, (cur / m) * 100));
+    adminBossHpBar.style.width = `${pct}%`;
+    adminBossHpNumbers.textContent = `${cur.toLocaleString('tr-TR')} / ${m.toLocaleString('tr-TR')} HP (%${pct.toFixed(1)})`;
+  }
+
+  function initBossAdmin() {
+    if (btnStartBossRaid) {
+      btnStartBossRaid.addEventListener('click', async () => {
+        const bossId = selectBossTemplate ? selectBossTemplate.value : null;
+        btnStartBossRaid.disabled = true;
+        try {
+          const res = await fetch('/api/boss/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bossId })
+          });
+          const data = await res.json();
+          if (!data.success) alert('Başlatılamadı: ' + (data.error || 'Bilinmiyor'));
+          else fetchBossState();
+        } catch (e) {
+          alert('Hata: ' + e.message);
+        } finally {
+          btnStartBossRaid.disabled = false;
+        }
+      });
+    }
+
+    if (btnTestBossRaid) {
+      btnTestBossRaid.addEventListener('click', async () => {
+        const bossId = selectBossTemplate ? selectBossTemplate.value : null;
+        btnTestBossRaid.disabled = true;
+        try {
+          await fetch('/api/boss/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bossId })
+          });
+          fetchBossState();
+        } catch (e) {
+          alert('Test başlatılamadı: ' + e.message);
+        } finally {
+          setTimeout(() => { btnTestBossRaid.disabled = false; }, 2000);
+        }
+      });
+    }
+
+    if (btnStopBossRaid) {
+      btnStopBossRaid.addEventListener('click', async () => {
+        if (confirm('Aktif Boss savaşını iptal etmek istediğinize emin misiniz?')) {
+          await fetch('/api/boss/stop', { method: 'POST' });
+          fetchBossState();
+        }
+      });
+    }
+
+    if (btnSaveBossConfig) {
+      btnSaveBossConfig.addEventListener('click', async () => {
+        const autoInterval = parseInt(cfgBossAutoInterval ? cfgBossAutoInterval.value : 0, 10);
+        const mult = parseFloat(cfgBossRewardMult ? cfgBossRewardMult.value : 1.0);
+        btnSaveBossConfig.disabled = true;
+        btnSaveBossConfig.textContent = 'Kaydediliyor...';
+        try {
+          await fetch('/api/boss/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ autoIntervalMinutes: autoInterval, rewardParticipationMultiplier: mult })
+          });
+          alert('✅ Boss savaşı ayarları kaydedildi!');
+        } catch (e) {
+          alert('Hata: ' + e.message);
+        } finally {
+          btnSaveBossConfig.disabled = false;
+          btnSaveBossConfig.textContent = '💾 Boss Ayarlarını Kaydet';
+        }
+      });
+    }
+
+    loadBosses();
+    fetchBossState();
+  }
+
   // Initialize
   connectWS();
   loadQuestions();
@@ -2802,6 +3021,7 @@
   loadTimers();
   loadCommands();
   initChatterAdmin();
+  initBossAdmin();
 
   // Keep-Alive Heartbeat (Pings Render every 2 minutes while Admin panel is open to prevent sleep)
   setInterval(() => {

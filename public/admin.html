@@ -174,6 +174,19 @@
             </div>
           </div>
 
+          <!-- Source 5: World Boss Raid -->
+          <div class="obs-source-box" style="margin-top: 14px; border-color: rgba(168, 85, 247, 0.4);">
+            <div class="source-box-title">
+              <span class="source-badge" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.5);">KAYNAK 5: WORLD BOSS RAID (Boss Savaşı Mini-Oyunu)</span>
+              <span class="source-rec">Önerilen Boyut: 1920x1080 (Şeffaf / Savaş Yokken Gizli)</span>
+            </div>
+            <div class="copy-url-group">
+              <input type="text" id="obs-boss-url" readonly value="http://localhost:3000/boss.html">
+              <button id="btn-copy-boss-url" class="btn btn-sm btn-outline">Kopyala</button>
+              <a href="boss.html" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
+            </div>
+          </div>
+
           <div class="obs-tips" style="margin-top: 14px;">
             <span>💡 <strong>İpucu:</strong> VTuber Avatarınız mikrofonunuzla konuşur, göz kırpar ve fare hareketlerinizi takip eder. <strong>AvatarReactive.exe</strong> çalışırken doğrudan OBS'e ekleyebilirsiniz.</span>
           </div>
@@ -516,6 +529,81 @@
 
           <div style="margin-top: 14px; display: flex; justify-content: flex-end;">
             <button type="button" id="btn-save-chatter-settings" class="btn btn-primary btn-sm">💾 Pixel Chatter Ayarlarını Kaydet</button>
+          </div>
+        </div>
+
+        <!-- World Boss Raid Panel -->
+        <div class="panel-card boss-card" style="border-color: rgba(168, 85, 247, 0.4);">
+          <div class="panel-title">
+            <span style="color: #d8b4fe;">🐉 World Boss Raid (Boss Savaşı Mini-Oyunu)</span>
+            <span id="boss-status-badge" class="badge-mini" style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3);">⚪ Beklemede</span>
+          </div>
+
+          <!-- Boss Info Box -->
+          <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 0.8rem; color: #e9d5ff; line-height: 1.5;">
+            <strong>⚔️ Sıfır Chat Spamı Mekaniği:</strong> İzleyiciler savaşa katılmak için sohbete <strong>yalnızca 1 kez</strong> <code>!katil</code> veya <code>!boss</code> yazar. Katılan herkesin karakteri ekranda otomatik vurur. Taktiksel kalkan fazında ise tek bir <code>!kalkan</code> veya <code>!ulti</code> ile kalkanı kırarlar. Boss yenildiğinde Primogemler herkese otomatik dağıtılır!
+          </div>
+
+          <!-- Quick Action Controls -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px;">
+            <div style="flex: 1; min-width: 200px;">
+              <select id="select-boss-template" style="width: 100%; height: 38px; background: rgba(0,0,0,0.4); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 8px; color: #fff; padding: 0 10px; font-family: inherit; font-size: 0.85rem;">
+                <!-- Populated via JS -->
+              </select>
+            </div>
+            <button type="button" id="btn-start-boss-raid" class="btn btn-sm btn-success" style="font-weight: 700;">
+              ⚔️ Boss Savaşını Başlat
+            </button>
+            <button type="button" id="btn-test-boss-raid" class="btn btn-sm btn-outline" style="border-color: #a855f7; color: #d8b4fe;">
+              🧪 Test Simülasyonu (15 sn)
+            </button>
+            <button type="button" id="btn-stop-boss-raid" class="btn btn-sm btn-danger" style="display: none;">
+              ⏹️ Savaşı İptal Et
+            </button>
+          </div>
+
+          <!-- Live Battle Tracker Box -->
+          <div id="admin-boss-live-box" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span id="admin-boss-active-name" style="font-weight: 700; color: #fff; font-size: 0.95rem;">-</span>
+              <span id="admin-boss-active-timer" style="font-weight: 800; font-family: monospace; color: #f87171; background: rgba(239,68,68,0.15); padding: 2px 8px; border-radius: 4px;">-</span>
+            </div>
+            <div style="width: 100%; height: 12px; background: rgba(0,0,0,0.5); border-radius: 6px; overflow: hidden; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.1);">
+              <div id="admin-boss-hp-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ef4444, #f59e0b); transition: width 0.2s ease;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: #94a3b8; margin-bottom: 8px;">
+              <span id="admin-boss-hp-numbers">-</span>
+              <span id="admin-boss-warriors-count">0 Savaşçı</span>
+            </div>
+            <!-- Top Damagers Mini List -->
+            <div id="admin-boss-top-list" style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 0.76rem;"></div>
+          </div>
+
+          <!-- Boss Configuration Form -->
+          <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: #cbd5e1; margin-bottom: 8px;">⚙️ Savaş & Ödül Ayarları:</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-size: 0.73rem;">Otomatik Döngü</label>
+                <select id="cfg-boss-auto-interval" style="height: 32px; font-size: 0.8rem;">
+                  <option value="0">Manuel (Sadece Butonla)</option>
+                  <option value="30">Her 30 Dakikada Bir</option>
+                  <option value="45">Her 45 Dakikada Bir</option>
+                  <option value="60">Her 60 Dakikada Bir</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-size: 0.73rem;">Ödül Çarpanı</label>
+                <select id="cfg-boss-reward-mult" style="height: 32px; font-size: 0.8rem;">
+                  <option value="1.0">Standart (x1.0 - 60 Primo)</option>
+                  <option value="1.5">Büyük Etkinlik (x1.5 - 90 Primo)</option>
+                  <option value="2.0">Çift Ödül (x2.0 - 120 Primo)</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
+              <button type="button" id="btn-save-boss-config" class="btn btn-primary btn-xs">💾 Boss Ayarlarını Kaydet</button>
+            </div>
           </div>
         </div>
 

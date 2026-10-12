@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="mechaMetal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="50%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="neonCyan" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Power Grid / Hexagons -->
+  <polygon points="200,40 240,65 240,115 200,140 160,115 160,65" fill="none" stroke="rgba(56, 189, 248, 0.25)" stroke-width="2"/>
+  <polygon points="120,90 160,115 160,165 120,190 80,165 80,115" fill="none" stroke="rgba(56, 189, 248, 0.2)" stroke-width="2"/>
+  <polygon points="280,90 320,115 320,165 280,190 240,165 240,115" fill="none" stroke="rgba(56, 189, 248, 0.2)" stroke-width="2"/>
+
+  <!-- Heavy Mecha Shoulders -->
+  <!-- Left Shoulder -->
+  <polygon points="50,150 140,130 150,230 40,210" fill="url(#mechaMetal)" stroke="#64748b" stroke-width="3"/>
+  <polygon points="45,170 90,160 90,190 40,195" fill="#0284c7" filter="url(#neonGlow)"/>
+  <circle cx="85" cy="195" r="14" fill="#0f172a" stroke="#38bdf8" stroke-width="2"/>
+  <circle cx="85" cy="195" r="6" fill="#38bdf8" filter="url(#neonGlow)"/>
+
+  <!-- Right Shoulder -->
+  <polygon points="350,150 260,130 250,230 360,210" fill="url(#mechaMetal)" stroke="#64748b" stroke-width="3"/>
+  <polygon points="355,170 310,160 310,190 360,195" fill="#0284c7" filter="url(#neonGlow)"/>
+  <circle cx="315" cy="195" r="14" fill="#0f172a" stroke="#38bdf8" stroke-width="2"/>
+  <circle cx="315" cy="195" r="6" fill="#38bdf8" filter="url(#neonGlow)"/>
+
+  <!-- Chest Plate & Power Core -->
+  <polygon points="140,210 260,210 240,360 160,360" fill="url(#mechaMetal)" stroke="#94a3b8" stroke-width="3"/>
+  <!-- Glowing Reactor Core -->
+  <circle cx="200" cy="270" r="30" fill="#0f172a" stroke="#06b6d4" stroke-width="4"/>
+  <polygon points="200,250 218,260 218,280 200,290 182,280 182,260" fill="url(#neonCyan)" filter="url(#neonGlow)"/>
+  <circle cx="200" cy="270" r="8" fill="#fff" filter="url(#neonGlow)"/>
+
+  <!-- Mecha Head / Helmet -->
+  <polygon points="150,140 200,80 250,140 240,210 160,210" fill="url(#mechaMetal)" stroke="#38bdf8" stroke-width="3"/>
+
+  <!-- Antennae / V-Fin -->
+  <polygon points="200,105 130,40 145,35 200,85 255,35 270,40" fill="#facc15" stroke="#ca8a04" stroke-width="2" filter="url(#neonGlow)"/>
+
+  <!-- Visor / Cyber Eye Lens -->
+  <polygon points="160,150 240,150 230,175 170,175" fill="#f43f5e" filter="url(#neonGlow)"/>
+  <rect x="180" y="157" width="40" height="10" fill="#fff"/>
+
+  <!-- Mouthplate / Ventilation Grill -->
+  <polygon points="175,185 225,185 220,205 180,205" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+  <line x1="185" y1="192" x2="215" y2="192" stroke="#64748b" stroke-width="2"/>
+  <line x1="188" y1="198" x2="212" y2="198" stroke="#64748b" stroke-width="2"/>
+
+  <!-- Warning Decals -->
+  <text x="148" y="240" font-family="monospace" font-size="11" font-weight="bold" fill="#facc15">UNIT-01</text>
+  <text x="210" y="240" font-family="monospace" font-size="11" font-weight="bold" fill="#ef4444">[DANGER]</text>
+</svg>

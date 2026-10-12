@@ -11,7 +11,7 @@
       "!botbilgi"
     ],
     "permission": "everyone",
-    "useCount": 4,
+    "useCount": 5,
     "description": "MilkaBot tanıtımı ve genel bilgi."
   },
   {
@@ -25,7 +25,7 @@
       "!sunucu"
     ],
     "permission": "everyone",
-    "useCount": 4,
+    "useCount": 5,
     "description": "Discord sunucu davet linki."
   },
   {

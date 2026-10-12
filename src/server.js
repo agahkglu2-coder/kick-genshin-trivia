@@ -201,6 +201,8 @@ const { TimerService } = require('./timerService');
 const timerService = new TimerService({ kickBot, db });
 const { CommandService } = require('./commandService');
 const commandService = new CommandService({ kickBot, db });
+const { BossEngine } = require('./bossEngine');
+const bossEngine = new BossEngine({ gachaEngine, kickBot, db });
 
 // Initialize persistent database (PostgreSQL or local fallback)
 db.init(process.env.DATABASE_URL || config.databaseUrl).then(async () => {
@@ -209,6 +211,7 @@ db.init(process.env.DATABASE_URL || config.databaseUrl).then(async () => {
 
   const savedCommands = db.getSetting('custom_commands');
   commandService.init(savedCommands);
+  bossEngine.setDb(db);
 
   const savedToken = db.getSetting('botToken');
   const savedRefreshToken = db.getSetting('botRefreshToken');
@@ -326,6 +329,9 @@ kickClient.on('message', async (chatMsg) => {
 
   // Feed to GachaEngine for Primogem rewards & commands (!wish, !bakiye, !envanter, etc.)
   gachaEngine.handleChatMessage(chatMsg);
+
+  // Feed to BossEngine for World Boss Raid (!katil, !kalkan, !ulti, etc.)
+  bossEngine.handleChatMessage(chatMsg);
 
   // Broadcast to admin dashboard chat preview
   broadcast({
@@ -577,6 +583,62 @@ kickBot.on('bot_message', (botMsg) => {
   broadcast({ type: 'BOT_MESSAGE', message: botMsg });
 });
 
+// BossEngine Events
+bossEngine.on('state_changed', (state) => {
+  broadcast({ type: 'BOSS_STATE', state });
+});
+
+bossEngine.on('boss_lobby', (data) => {
+  broadcast({ type: 'BOSS_LOBBY', ...data });
+});
+
+bossEngine.on('battle_started', (data) => {
+  broadcast({ type: 'BOSS_BATTLE_STARTED', ...data });
+});
+
+bossEngine.on('warrior_joined', (data) => {
+  broadcast({ type: 'BOSS_WARRIOR_JOINED', ...data });
+});
+
+bossEngine.on('boss_attack', (attackData) => {
+  broadcast({ type: 'BOSS_ATTACK', ...attackData });
+});
+
+bossEngine.on('tactical_phase_started', (data) => {
+  broadcast({ type: 'BOSS_TACTICAL_STARTED', ...data });
+});
+
+bossEngine.on('tactical_hit', (data) => {
+  broadcast({ type: 'BOSS_TACTICAL_HIT', ...data });
+});
+
+bossEngine.on('tactical_success', (data) => {
+  broadcast({ type: 'BOSS_TACTICAL_SUCCESS', ...data });
+});
+
+bossEngine.on('tactical_fail', (data) => {
+  broadcast({ type: 'BOSS_TACTICAL_FAIL', ...data });
+});
+
+bossEngine.on('boss_victory', (winData) => {
+  if (winData.mvp && winData.mvp.username) {
+    broadcast({ type: 'CHATTER_AURA', user: winData.mvp.username, duration: 900 });
+  }
+  if (winData.lastHit && winData.lastHit.username) {
+    broadcast({ type: 'CHATTER_CROWN', winner: winData.lastHit.username });
+  }
+  broadcast({ type: 'CHATTER_PRIMO_RAIN' });
+  broadcast({ type: 'BOSS_VICTORY', ...winData });
+});
+
+bossEngine.on('boss_defeat', (defeatData) => {
+  broadcast({ type: 'BOSS_DEFEAT', ...defeatData });
+});
+
+bossEngine.on('tick', (tickData) => {
+  broadcast({ type: 'BOSS_TICK', ...tickData });
+});
+
 // WebSocket Connection Handler
 wss.on('connection', (ws) => {
   // Send initial full state immediately upon connect
@@ -593,7 +655,8 @@ wss.on('connection', (ws) => {
     },
     config: gameEngine.config,
     chatterConfig: config.chatterConfig || {},
-    commands: commandService ? commandService.getCommands() : []
+    commands: commandService ? commandService.getCommands() : [],
+    bossState: bossEngine ? bossEngine.getState() : null
   }));
 
   ws.send(JSON.stringify({
@@ -1456,6 +1519,37 @@ app.post('/api/commands/:id/test', async (req, res) => {
   res.json({ success: true, message: testMsg });
 });
 
+// World Boss Raid REST Endpoints
+app.get('/api/boss/state', (req, res) => {
+  res.json(bossEngine.getState());
+});
+
+app.get('/api/boss/bosses', (req, res) => {
+  res.json({ bosses: bossEngine.getBosses() });
+});
+
+app.post('/api/boss/start', express.json(), (req, res) => {
+  const { bossId, hp, prepSeconds, battleSeconds } = req.body || {};
+  const result = bossEngine.startBoss(bossId, { hp, prepSeconds, battleSeconds });
+  res.json(result);
+});
+
+app.post('/api/boss/stop', express.json(), (req, res) => {
+  const result = bossEngine.stopBoss('ADMIN_STOP');
+  res.json(result);
+});
+
+app.post('/api/boss/config', express.json(), (req, res) => {
+  const updated = bossEngine.saveConfig(req.body || {});
+  res.json({ success: true, config: updated });
+});
+
+app.post('/api/boss/test', express.json(), (req, res) => {
+  const { bossId } = req.body || {};
+  const result = bossEngine.simulateTestFight(bossId);
+  res.json(result);
+});
+
 // Database Management REST Endpoints
 app.get('/api/db/status', (req, res) => {
   res.json({
@@ -1552,6 +1646,7 @@ server.listen(PORT, () => {
   console.log(`🌟 Kick Milka Trivia Sunucusu Çalışıyor: http://localhost:${PORT}`);
   console.log(`🎯 OBS Trivia Kaynağı URL:       http://localhost:${PORT}/trivia.html`);
   console.log(`✨ OBS Gacha Dilek Kaynağı URL:   http://localhost:${PORT}/gacha.html`);
+  console.log(`🐉 OBS Boss Raid Kaynağı URL:    http://localhost:${PORT}/boss.html`);
   console.log(`⚙️  Yayıncı Kontrol Paneli:         http://localhost:${PORT}/admin.html`);
   console.log('========================================================');
 
