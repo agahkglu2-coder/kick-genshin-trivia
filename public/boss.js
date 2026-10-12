@@ -51,6 +51,32 @@
   let currentBoss = null;
   let currentState = 'IDLE';
   let ghostTimeout = null;
+  let hitFrameTimeout = null;
+  const preloadedFrames = {};
+
+  function preloadFrames(frames) {
+    if (!frames) return;
+    Object.entries(frames).forEach(([key, url]) => {
+      if (!preloadedFrames[url]) {
+        const img = new Image();
+        img.src = url;
+        preloadedFrames[url] = img;
+      }
+    });
+  }
+
+  function setBossFrame(frameType) {
+    if (!currentBoss) return;
+    let targetUrl = currentBoss.avatarUrl;
+    if (currentBoss.frames && currentBoss.frames[frameType]) {
+      targetUrl = currentBoss.frames[frameType];
+    }
+    if (targetUrl && bossAvatarImg.getAttribute('src') !== targetUrl) {
+      bossAvatarImg.src = targetUrl;
+    }
+    bossEntity.classList.remove('frame-idle', 'frame-hit', 'frame-attack');
+    bossEntity.classList.add(`frame-${frameType}`);
+  }
 
   // Sound Effects Generator (Web Audio API Synthesizer)
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -241,9 +267,10 @@
       bossElementBadge.style.borderColor = boss.elementColor;
       bossElementBadge.style.color = boss.elementColor;
     }
-    if (boss.avatarUrl) {
-      bossAvatarImg.src = boss.avatarUrl;
+    if (boss.frames) {
+      preloadFrames(boss.frames);
     }
+    setBossFrame('idle');
     if (boss.elementColor) {
       bossAuraGlow.style.background = `radial-gradient(circle, ${boss.elementColor}55 0%, ${boss.elementColor}22 50%, transparent 75%)`;
     }
@@ -312,6 +339,19 @@
     void bossEntity.offsetWidth;
     bossEntity.classList.add('hit');
 
+    // Dynamically switch to hit reaction frame
+    setBossFrame('hit');
+    clearTimeout(hitFrameTimeout);
+    hitFrameTimeout = setTimeout(() => {
+      if (currentState === 'TACTICAL') {
+        setBossFrame('attack');
+      } else if (currentState === 'VICTORY' || currentState === 'DEFEAT') {
+        setBossFrame('hit');
+      } else {
+        setBossFrame('idle');
+      }
+    }, 420);
+
     playSound(attackData.isCrit ? 'crit' : 'hit');
 
     // Update HP
@@ -357,6 +397,9 @@
     currentState = 'TACTICAL';
     playSound('alarm');
 
+    // Switch to enraged attack/charge frame during tactical shield phase
+    setBossFrame('attack');
+
     tacticalSkillName.textContent = data.skillName || 'Kalkan Fazı';
     tacticalBanner.classList.remove('hidden');
     shieldBarWrapper.classList.remove('hidden');
@@ -392,17 +435,23 @@
     playSound('crit');
     tacticalBanner.classList.add('hidden');
     shieldBarWrapper.classList.add('hidden');
+    setBossFrame('hit');
+    setTimeout(() => {
+      if (currentState === 'BATTLE') setBossFrame('idle');
+    }, 1500);
     showBossDialogue('Kalkanım... parçalandı?!', 3500);
   }
 
   function onTacticalFail(data) {
     tacticalBanner.classList.add('hidden');
     shieldBarWrapper.classList.add('hidden');
+    setBossFrame('idle');
   }
 
   function onVictory(winData) {
     currentState = 'VICTORY';
     playSound('victory');
+    setBossFrame('hit');
 
     if (winData.mvp) {
       mvpUsername.textContent = `@${winData.mvp.username}`;

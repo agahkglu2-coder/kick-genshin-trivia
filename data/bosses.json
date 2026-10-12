@@ -10,7 +10,12 @@
     "prepSeconds": 45,
     "battleSeconds": 75,
     "icon": "🐉",
-    "avatarUrl": "/assets/boss_dragon.svg",
+    "avatarUrl": "/assets/bosses/dragon_idle.png",
+    "frames": {
+      "idle": "/assets/bosses/dragon_idle.png",
+      "hit": "/assets/bosses/dragon_hit.png",
+      "attack": "/assets/bosses/dragon_attack.png"
+    },
     "quote": "Karanlık yıldızlar fısıldıyor... Hiçliğin gücüne karşı koyamazsınız!",
     "defeatQuote": "Yıldızların ışığı... karanlığı yardı...",
     "tacticalSkill": "Kara Delik Kalkanı",
@@ -30,7 +35,12 @@
     "prepSeconds": 40,
     "battleSeconds": 65,
     "icon": "👑",
-    "avatarUrl": "/assets/boss_slime.svg",
+    "avatarUrl": "/assets/bosses/slime_idle.png",
+    "frames": {
+      "idle": "/assets/bosses/slime_idle.png",
+      "hit": "/assets/bosses/slime_hit.png",
+      "attack": "/assets/bosses/slime_attack.png"
+    },
     "quote": "Bööyle zıplarım, tacımı kimseye kaptırmam! Boing boing!",
     "defeatQuote": "Vıcık vıcık... Tacım... düştü mü?!",
     "tacticalSkill": "Mega Jelatin Zırhı",
@@ -50,7 +60,12 @@
     "prepSeconds": 45,
     "battleSeconds": 80,
     "icon": "🤖",
-    "avatarUrl": "/assets/boss_mecha.svg",
+    "avatarUrl": "/assets/bosses/mecha_idle.png",
+    "frames": {
+      "idle": "/assets/bosses/mecha_idle.png",
+      "hit": "/assets/bosses/mecha_hit.png",
+      "attack": "/assets/bosses/mecha_attack.png"
+    },
     "quote": "[SİSTEM UYARISI: Tehdit algılandı. Aşırı Şarj Lazeri devreye sokuluyor!]",
     "defeatQuote": "[HATA 404: Güç çekirdeği çöktü... Sistem kapanıyor...]",
     "tacticalSkill": "Aşırı Yüklü EMP Bariyeri",
@@ -70,7 +85,12 @@
     "prepSeconds": 45,
     "battleSeconds": 70,
     "icon": "🔥",
-    "avatarUrl": "/assets/boss_demon.svg",
+    "avatarUrl": "/assets/bosses/demon_idle.png",
+    "frames": {
+      "idle": "/assets/bosses/demon_idle.png",
+      "hit": "/assets/bosses/demon_hit.png",
+      "attack": "/assets/bosses/demon_attack.png"
+    },
     "quote": "Külleriniz bile rüzgarda savrulmayacak! Cehennem alevinde kavrulun!",
     "defeatQuote": "Bu alev... nasıl söndürülebilir?!",
     "tacticalSkill": "Magma Savunması",

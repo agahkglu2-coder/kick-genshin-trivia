@@ -233,11 +233,24 @@ body {
 
 .boss-entity {
   position: relative;
-  width: 380px;
-  height: 380px;
+  width: 440px;
+  height: 440px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: transform 0.25s ease-out;
+}
+
+.boss-entity.frame-idle,
+.boss-entity:not(.frame-attack):not(.frame-hit) {
+  animation: bossFloat 4s ease-in-out infinite alternate;
+}
+
+.boss-entity.frame-attack {
+  animation: bossAttackPulse 0.8s ease-in-out infinite alternate;
+}
+
+.boss-entity.frame-hit {
   animation: bossFloat 4s ease-in-out infinite alternate;
 }
 
@@ -247,10 +260,15 @@ body {
   100% { transform: translateY(0px) rotate(0deg); }
 }
 
+@keyframes bossAttackPulse {
+  0% { transform: scale(1.02) translateY(0); filter: drop-shadow(0 0 25px rgba(250, 204, 21, 0.6)); }
+  100% { transform: scale(1.08) translateY(-8px); filter: drop-shadow(0 0 45px rgba(239, 68, 68, 0.9)); }
+}
+
 .boss-aura {
   position: absolute;
-  width: 440px;
-  height: 440px;
+  width: 500px;
+  height: 500px;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(168, 85, 247, 0.35) 0%, rgba(126, 34, 206, 0.15) 50%, rgba(0, 0, 0, 0) 75%);
   animation: auraPulse 3s ease-in-out infinite alternate;
@@ -266,20 +284,21 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.9));
+  filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.85));
   transition: transform 0.1s ease;
+  user-select: none;
 }
 
 /* Boss Hit Shake & Red Flash */
 .boss-entity.hit {
-  animation: bossHitShake 0.25s ease-out;
+  animation: bossHitShake 0.3s ease-out;
 }
 
 @keyframes bossHitShake {
-  0% { transform: translate(0, 0) scale(1); filter: brightness(1.7) drop-shadow(0 0 25px rgba(239, 68, 68, 0.9)); }
-  25% { transform: translate(-8px, 4px) scale(0.97); }
-  50% { transform: translate(8px, -4px) scale(1.02); }
-  75% { transform: translate(-4px, 2px) scale(0.99); }
+  0% { transform: translate(0, 0) scale(1); filter: brightness(1.6) drop-shadow(0 0 30px rgba(239, 68, 68, 0.9)); }
+  25% { transform: translate(-10px, 4px) scale(0.96); }
+  50% { transform: translate(10px, -4px) scale(1.03); }
+  75% { transform: translate(-5px, 2px) scale(0.98); }
   100% { transform: translate(0, 0) scale(1); filter: brightness(1); }
 }
 
