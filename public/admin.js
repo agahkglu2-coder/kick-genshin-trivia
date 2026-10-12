@@ -2425,6 +2425,8 @@
     const cfgShadows = document.getElementById('cfg-chatter-shadows');
     const cfgInteractions = document.getElementById('cfg-chatter-interactions');
     const cfgCommands = document.getElementById('cfg-chatter-commands');
+    const cfgBoss = document.getElementById('cfg-chatter-boss');
+    const btnTestBoss = document.getElementById('btn-chatter-test-boss');
 
     const avatarsGrid = document.getElementById('chatter-avatars-grid');
     const btnSaveSettings = document.getElementById('btn-save-chatter-settings');
@@ -2448,7 +2450,8 @@
           showNameplates: cfgNameplates ? cfgNameplates.checked : true,
           showShadows: cfgShadows ? cfgShadows.checked : true,
           enableInteractions: cfgInteractions ? cfgInteractions.checked : true,
-          enableCommands: cfgCommands ? cfgCommands.checked : true
+          enableCommands: cfgCommands ? cfgCommands.checked : true,
+          enableBossOverlay: cfgBoss ? cfgBoss.checked : true
         };
         try {
           await fetch('/api/chatter/config', {
@@ -2561,6 +2564,7 @@
           if (cfgShadows) cfgShadows.checked = cfg.showShadows !== false;
           if (cfgInteractions) cfgInteractions.checked = cfg.enableInteractions !== false;
           if (cfgCommands) cfgCommands.checked = cfg.enableCommands !== false;
+          if (cfgBoss) cfgBoss.checked = cfg.enableBossOverlay !== false;
 
           renderAvatarsGrid();
         }
@@ -2813,6 +2817,27 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'cheer_all' })
         });
+      });
+    }
+
+    if (btnTestBoss) {
+      btnTestBoss.addEventListener('click', async () => {
+        try {
+          btnTestBoss.disabled = true;
+          btnTestBoss.textContent = '⏳ Boss İniyor...';
+          await fetch('/api/boss/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ warriorsCount: 4 })
+          });
+        } catch (e) {
+          alert('Boss testi hatası: ' + e.message);
+        } finally {
+          setTimeout(() => {
+            btnTestBoss.disabled = false;
+            btnTestBoss.textContent = '🐉 Boss İnişi Testi';
+          }, 3000);
+        }
       });
     }
 

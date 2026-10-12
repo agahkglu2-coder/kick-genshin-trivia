@@ -24,6 +24,7 @@
     showShadows: true,
     enableInteractions: true,
     enableCommands: true,
+    enableBossOverlay: true,
     vipOverrides: {},
   };
 
@@ -35,6 +36,8 @@
   const particles = [];
   let lastTimestamp = 0;
   let socket = null;
+  let activeBoss = null;
+  let screenShake = 0;
 
   function rand(min, max) {
     return Math.random() * (max - min) + min;
@@ -118,7 +121,7 @@
       this.y = y;
       this.vx = vx;
       this.vy = vy;
-      this.type = type; // "heart", "star", "confetti", "coin", "sleep_z", "dust"
+      this.type = type; // "heart", "star", "confetti", "coin", "sleep_z", "dust", "meteor", "slime_glob", "void_meteor", "hero_proj", "damage_text", "shockwave", "spark"
       this.life = options.life || rand(1.0, 2.5);
       this.maxLife = this.life;
       this.color = options.color || '#ff4f81';
@@ -128,10 +131,65 @@
       this.text = options.text || 'z';
       this.rot = rand(0, Math.PI * 2);
       this.vrot = rand(-4, 4);
+      this.targetX = options.targetX || 0;
+      this.targetY = options.targetY || 0;
+      this.onImpact = options.onImpact || null;
+      this.element = options.element || 'Pyro';
+      this.trailTimer = 0;
     }
 
     update(dt) {
       this.life -= dt;
+      this.trailTimer += dt;
+
+      if (this.type === 'hero_proj') {
+        const dx = this.targetX - this.x;
+        const dy = this.targetY - this.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 40 || this.life <= 0) {
+          this.life = 0;
+          if (this.onImpact) this.onImpact();
+          return;
+        }
+        const speed = 1400;
+        this.x += (dx / dist) * speed * dt;
+        this.y += (dy / dist) * speed * dt;
+        return;
+      }
+
+      if (this.type === 'damage_text') {
+        this.y += this.vy * dt;
+        return;
+      }
+
+      if (this.type === 'shockwave') {
+        this.size += dt * 220;
+        return;
+      }
+
+      if (this.type === 'meteor' || this.type === 'slime_glob' || this.type === 'void_meteor') {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        this.rot += this.vrot * dt;
+
+        // Trail spark
+        if (this.trailTimer > 0.04) {
+          this.trailTimer = 0;
+          const trailColor = this.type === 'meteor' ? '#f97316' : this.type === 'slime_glob' ? '#38bdf8' : '#a855f7';
+          particles.push(new Particle(this.x + rand(-6, 6), this.y + rand(-6, 6), rand(-20, 20), rand(-20, 20), 'spark', {
+            color: trailColor,
+            size: rand(3, 6),
+            life: 0.25
+          }));
+        }
+
+        if (this.y >= config.groundY - rand(0, 35)) {
+          this.life = 0;
+          onCalamityImpact(this);
+        }
+        return;
+      }
+
       this.x += this.vx * dt;
       this.y += this.vy * dt;
       this.vy += this.gravity * dt;
@@ -220,6 +278,73 @@
         ctx.lineTo(-s * 0.45, 0);
         ctx.closePath();
         ctx.fill();
+      } else if (this.type === 'spark') {
+        ctx.fillStyle = this.color;
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 6;
+        ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+      } else if (this.type === 'meteor') {
+        ctx.rotate(this.rot);
+        const rad = this.size;
+        const grad = ctx.createRadialGradient(0, 0, rad * 0.2, 0, 0, rad);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.3, '#facc15');
+        grad.addColorStop(0.7, '#ea580c');
+        grad.addColorStop(1, '#7c2d12');
+        ctx.fillStyle = grad;
+        ctx.shadowColor = '#ea580c';
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.arc(0, 0, rad, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (this.type === 'slime_glob') {
+        ctx.rotate(this.rot);
+        const rad = this.size;
+        const grad = ctx.createRadialGradient(-rad * 0.3, -rad * 0.3, rad * 0.1, 0, 0, rad);
+        grad.addColorStop(0, '#bae6fd');
+        grad.addColorStop(0.4, '#38bdf8');
+        grad.addColorStop(1, '#0369a1');
+        ctx.fillStyle = grad;
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.arc(0, 0, rad, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (this.type === 'void_meteor') {
+        ctx.rotate(this.rot);
+        const rad = this.size;
+        const grad = ctx.createRadialGradient(0, 0, rad * 0.2, 0, 0, rad);
+        grad.addColorStop(0, '#e9d5ff');
+        grad.addColorStop(0.4, '#a855f7');
+        grad.addColorStop(1, '#3b0764');
+        ctx.fillStyle = grad;
+        ctx.shadowColor = '#a855f7';
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.arc(0, 0, rad, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (this.type === 'shockwave') {
+        ctx.strokeStyle = this.color || '#ea580c';
+        ctx.lineWidth = Math.max(1, (1 - this.life / this.maxLife) * 8);
+        ctx.beginPath();
+        ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (this.type === 'hero_proj') {
+        const s = this.size || 10;
+        ctx.fillStyle = this.color || '#ffd700';
+        ctx.shadowColor = this.color || '#ffd700';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(0, 0, s, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (this.type === 'damage_text') {
+        ctx.font = `bold ${Math.round(this.size)}px Cinzel, Nunito, sans-serif`;
+        ctx.fillStyle = this.color || '#facc15';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 4;
+        ctx.textAlign = 'center';
+        ctx.strokeText(this.text, 0, 0);
+        ctx.fillText(this.text, 0, 0);
       }
 
       ctx.restore();
@@ -394,6 +519,528 @@
         ch.triggerEmote(2.5);
       }, delay);
       delay += rand(100, 250);
+    }
+  }
+
+  // Boss Calamity & Combat Effects
+  function onCalamityImpact(p) {
+    screenShake = Math.max(screenShake, 16);
+
+    // Shockwave ring
+    particles.push(new Particle(p.x, p.y, 0, 0, 'shockwave', {
+      color: p.color || '#ea580c',
+      size: 15,
+      life: 0.45
+    }));
+
+    // Explosion burst of sparks and smoke
+    spawnBurst(p.x, p.y, 'spark', 16, {
+      color: p.color || '#f97316',
+      minSpeed: 80,
+      maxSpeed: 280,
+      gravity: 200,
+      size: rand(4, 7),
+      life: 0.6
+    });
+
+    spawnBurst(p.x, p.y, 'dust', 8, {
+      minSpeed: 40,
+      maxSpeed: 140,
+      size: rand(5, 10),
+      gravity: 50,
+      life: 0.8
+    });
+
+    // Knockback nearby chatters!
+    for (const ch of chatters.values()) {
+      const dx = ch.x - p.x;
+      const dist = Math.abs(dx);
+      if (dist < 140) {
+        const dir = dx >= 0 ? 1 : -1;
+        ch.vx += dir * rand(120, 220);
+        ch.triggerJump(rand(340, 440));
+        ch.reactionTimer = 2.0;
+        if (p.element === 'Pyro') ch.reactionIcon = '🔥';
+        else if (p.element === 'Hydro') ch.reactionIcon = '🧪';
+        else if (p.element === 'Void') ch.reactionIcon = '💫';
+        else if (p.element === 'Electro') ch.reactionIcon = '⚡';
+        else ch.reactionIcon = '💥';
+        ch.triggerEmote(1.5);
+      }
+    }
+  }
+
+  function spawnCalamityProjectile(boss) {
+    if (!boss) return;
+    const element = boss.element;
+    const px = rand(150, 1770);
+    const py = rand(-80, -30);
+    const vx = rand(-60, 60);
+    const vy = rand(460, 700);
+
+    if (element === 'Pyro') {
+      particles.push(new Particle(px, py, vx, vy, 'meteor', {
+        size: rand(18, 28),
+        life: 3.5,
+        gravity: 0,
+        element: 'Pyro',
+        color: '#f97316'
+      }));
+    } else if (element === 'Hydro') {
+      particles.push(new Particle(px, py, vx, vy, 'slime_glob', {
+        size: rand(16, 25),
+        life: 3.5,
+        gravity: 0,
+        element: 'Hydro',
+        color: '#38bdf8'
+      }));
+    } else if (element === 'Void') {
+      particles.push(new Particle(px, py, vx, vy, 'void_meteor', {
+        size: rand(16, 26),
+        life: 3.5,
+        gravity: 0,
+        element: 'Void',
+        color: '#a855f7'
+      }));
+    } else if (element === 'Electro') {
+      const strikeX = rand(180, 1740);
+      particles.push(new Particle(strikeX, -40, 0, 950, 'meteor', {
+        size: rand(16, 24),
+        life: 2.0,
+        gravity: 0,
+        element: 'Electro',
+        color: '#facc15'
+      }));
+    } else {
+      particles.push(new Particle(px, py, vx, vy, 'meteor', {
+        size: 18,
+        life: 3.5,
+        gravity: 0,
+        element: 'Pyro',
+        color: '#f97316'
+      }));
+    }
+  }
+
+  function spawnHeroProjectile(startX, startY, targetX, targetY, options = {}) {
+    const isCrit = options.isCrit || false;
+    const rarity = options.rarity || 3;
+    const color = rarity === 5 ? '#ffd700' : rarity === 4 ? '#c084fc' : '#38bdf8';
+    const size = isCrit ? 14 : 9;
+
+    particles.push(new Particle(startX, startY, 0, 0, 'hero_proj', {
+      targetX: targetX,
+      targetY: targetY,
+      color: color,
+      size: size,
+      life: 2.0,
+      gravity: 0,
+      onImpact: () => {
+        if (options.onHit) options.onHit();
+      }
+    }));
+  }
+
+  function spawnDamageNumber(x, y, damage, isCrit, reaction) {
+    let text = `${damage.toLocaleString('tr-TR')}`;
+    let color = '#f8fafc';
+    let size = 26;
+
+    if (isCrit) {
+      text = `CRIT ${text}!`;
+      color = '#facc15';
+      size = 36;
+    } else if (reaction === 'MELT') {
+      text = `MELT ${text}!`;
+      color = '#f87171';
+      size = 32;
+    } else if (reaction === 'VAPORIZE') {
+      text = `VAPORIZE ${text}!`;
+      color = '#38bdf8';
+      size = 32;
+    }
+
+    particles.push(new Particle(x, y, rand(-30, 30), -120, 'damage_text', {
+      text: text,
+      color: color,
+      size: size,
+      life: 1.1,
+      gravity: 0
+    }));
+  }
+
+  // BossVisualEntity Class
+  class BossVisualEntity {
+    constructor(bossData) {
+      this.id = bossData.id || 'void_dragon';
+      this.name = bossData.name || 'Bilinmeyen Boss';
+      this.title = bossData.title || '';
+      this.element = bossData.element || 'Void';
+      this.elementColor = bossData.elementColor || '#a855f7';
+      this.themeColor = bossData.themeColor || '#7e22ce';
+      this.maxHp = bossData.maxHp || bossData.hp || 50000;
+      this.currentHp = bossData.currentHp || this.maxHp;
+      this.ghostHp = this.currentHp;
+      this.state = 'LOBBY';
+      this.secondsRemaining = bossData.prepSeconds || 45;
+
+      this.x = 960;
+      this.y = -320;
+      this.targetY = 320;
+      this.targetX = 960;
+      this.width = 360;
+      this.height = 360;
+
+      this.animTimer = 0;
+      this.currentFrame = 'idle';
+      this.hitTimer = 0;
+      this.shakeTimer = 0;
+      this.calamityCooldown = 3.5;
+      this.tacticalActive = false;
+      this.tacticalSkillName = '';
+      this.shieldHp = 0;
+      this.shieldMax = 0;
+      this.alpha = 1.0;
+      this.isDefeated = false;
+
+      this.images = {};
+      const slug = this.getSlug(this.id);
+      const frames = bossData.frames || {
+        idle: bossData.avatarUrl || `/assets/bosses/${slug}_idle.png`,
+        hit: `/assets/bosses/${slug}_hit.png`,
+        attack: `/assets/bosses/${slug}_attack.png`
+      };
+      for (const [key, url] of Object.entries(frames)) {
+        const img = new Image();
+        img.src = url;
+        this.images[key] = img;
+      }
+
+      this.dialogue = bossData.quote || 'Karanlık galaksi fısıldıyor...';
+      this.dialogueTimer = 5.0;
+    }
+
+    getSlug(id) {
+      if (id.includes('dragon')) return 'dragon';
+      if (id.includes('slime')) return 'slime';
+      if (id.includes('mecha')) return 'mecha';
+      if (id.includes('demon')) return 'demon';
+      return 'dragon';
+    }
+
+    setFrame(frameName, duration = 0.4) {
+      this.currentFrame = frameName;
+      if (frameName === 'hit') {
+        this.hitTimer = duration;
+      }
+    }
+
+    takeDamage(damage, isCrit, reaction) {
+      this.setFrame('hit', 0.35);
+      this.shakeTimer = 0.25;
+      spawnDamageNumber(this.x + rand(-60, 60), this.y - 40 + rand(-20, 20), damage, isCrit, reaction);
+    }
+
+    updateHp(cur, max) {
+      this.currentHp = Math.max(0, cur);
+      this.maxHp = max || this.maxHp;
+    }
+
+    startTactical(skillName, shieldHp) {
+      this.tacticalActive = true;
+      this.tacticalSkillName = skillName || 'Kalkan Fazı';
+      this.shieldHp = shieldHp;
+      this.shieldMax = shieldHp;
+      this.setFrame('attack', 4.0);
+      this.dialogue = `⚠️ ${this.tacticalSkillName}! Kalkanı Kırın!`;
+      this.dialogueTimer = 4.0;
+      this.triggerCalamityWave(8);
+    }
+
+    updateShield(remaining, max) {
+      this.shieldHp = Math.max(0, remaining);
+      this.shieldMax = max || this.shieldMax;
+      this.shakeTimer = 0.15;
+    }
+
+    endTactical(success) {
+      this.tacticalActive = false;
+      if (success) {
+        this.setFrame('hit', 1.5);
+        this.dialogue = 'Kalkanım... tuzla buz oldu?!';
+        this.dialogueTimer = 3.5;
+      } else {
+        this.setFrame('idle');
+      }
+    }
+
+    triggerCalamityWave(count = 4) {
+      for (let i = 0; i < count; i++) {
+        setTimeout(() => {
+          if (!activeBoss) return;
+          spawnCalamityProjectile(this);
+        }, i * rand(120, 240));
+      }
+    }
+
+    update(dt) {
+      this.animTimer += dt;
+      this.y += (this.targetY - this.y) * Math.min(1, dt * 2.5);
+
+      if (this.ghostHp > this.currentHp) {
+        this.ghostHp -= (this.ghostHp - this.currentHp) * Math.min(1, dt * 3.0);
+      } else {
+        this.ghostHp = this.currentHp;
+      }
+
+      if (this.hitTimer > 0) {
+        this.hitTimer -= dt;
+        if (this.hitTimer <= 0) {
+          this.currentFrame = this.tacticalActive ? 'attack' : 'idle';
+        }
+      }
+      if (this.shakeTimer > 0) {
+        this.shakeTimer -= dt;
+      }
+      if (this.dialogueTimer > 0) {
+        this.dialogueTimer -= dt;
+      }
+
+      if (this.state === 'BATTLE' || this.state === 'TACTICAL') {
+        this.calamityCooldown -= dt;
+        if (this.calamityCooldown <= 0) {
+          const waveCount = this.tacticalActive ? rand(5, 8) : rand(3, 5);
+          this.triggerCalamityWave(waveCount);
+          this.calamityCooldown = this.tacticalActive ? rand(1.8, 2.8) : rand(3.5, 5.5);
+        }
+      }
+
+      if (this.isDefeated) {
+        this.alpha = Math.max(0, this.alpha - dt * 0.35);
+        this.y -= dt * 40;
+      }
+    }
+
+    render(ctx) {
+      if (this.alpha <= 0) return;
+      ctx.save();
+      ctx.globalAlpha = this.alpha;
+
+      const floatY = Math.sin(this.animTimer * 2.2) * 12;
+      let renderX = this.x;
+      let renderY = this.y + floatY;
+
+      if (this.shakeTimer > 0) {
+        renderX += (Math.random() - 0.5) * 16;
+        renderY += (Math.random() - 0.5) * 16;
+      }
+
+      // Elemental Glow behind boss
+      const pulse = 1.0 + Math.sin(this.animTimer * 3.5) * 0.12;
+      const auraRad = (this.width / 2 + 50) * pulse;
+      const auraGrad = ctx.createRadialGradient(renderX, renderY, auraRad * 0.2, renderX, renderY, auraRad);
+      auraGrad.addColorStop(0, `${this.elementColor}66`);
+      auraGrad.addColorStop(0.55, `${this.elementColor}22`);
+      auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = auraGrad;
+      ctx.beginPath();
+      ctx.arc(renderX, renderY, auraRad, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Boss Sprite Frame
+      const frameImg = this.images[this.currentFrame] || this.images.idle;
+      if (frameImg && frameImg.complete && frameImg.naturalWidth > 0) {
+        const sw = this.width;
+        const sh = this.height;
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+        ctx.shadowBlur = 30;
+        ctx.shadowOffsetY = 15;
+
+        if (this.currentFrame === 'attack') {
+          const atkScale = 1.0 + Math.sin(this.animTimer * 8.0) * 0.04;
+          ctx.translate(renderX, renderY);
+          ctx.scale(atkScale, atkScale);
+          ctx.drawImage(frameImg, -sw / 2, -sh / 2, sw, sh);
+        } else {
+          ctx.drawImage(frameImg, renderX - sw / 2, renderY - sh / 2, sw, sh);
+        }
+        ctx.restore();
+
+        if (this.hitTimer > 0) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'source-atop';
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+          ctx.fillRect(renderX - sw / 2, renderY - sh / 2, sw, sh);
+          ctx.restore();
+        }
+      }
+
+      if (this.dialogueTimer > 0 && this.dialogue) {
+        this.renderDialogue(ctx, renderX, renderY - this.height / 2 - 10);
+      }
+
+      ctx.restore();
+    }
+
+    renderDialogue(ctx, x, y) {
+      ctx.save();
+      ctx.font = 'bold 18px Nunito, sans-serif';
+      const textWidth = ctx.measureText(this.dialogue).width;
+      const bw = textWidth + 36;
+      const bh = 38;
+      const bx = x - bw / 2;
+      const by = y - bh;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+      ctx.strokeStyle = this.elementColor;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.roundRect(bx, by, bw, bh, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x - 6, by + bh);
+      ctx.lineTo(x, by + bh + 8);
+      ctx.lineTo(x + 6, by + bh);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowBlur = 0;
+      ctx.fillText(this.dialogue, x, by + bh / 2);
+      ctx.restore();
+    }
+
+    renderHUD(ctx) {
+      if (this.alpha <= 0) return;
+      ctx.save();
+      ctx.globalAlpha = this.alpha;
+
+      const barW = 820;
+      const barH = 22;
+      const barX = 960 - barW / 2;
+      const barY = 55;
+
+      // HUD Card Backdrop
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+      ctx.shadowBlur = 16;
+      const cardH = this.tacticalActive ? 120 : 90;
+      ctx.beginPath();
+      ctx.roundRect(barX - 25, barY - 35, barW + 50, cardH, 14);
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Boss Title Row
+      ctx.font = 'bold 20px Cinzel, serif';
+      ctx.fillStyle = '#f8fafc';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(this.name, barX, barY - 26);
+
+      // Element Badge
+      ctx.font = 'bold 12px Nunito, sans-serif';
+      const badgeText = this.element.toUpperCase();
+      const badgeW = ctx.measureText(badgeText).width + 16;
+      const badgeX = barX + ctx.measureText(this.name).width + 12;
+      ctx.fillStyle = `${this.elementColor}33`;
+      ctx.strokeStyle = this.elementColor;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(badgeX, barY - 26, badgeW, 20, 4);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = this.elementColor;
+      ctx.textAlign = 'center';
+      ctx.fillText(badgeText, badgeX + badgeW / 2, barY - 22);
+
+      // Timer on the right
+      ctx.font = 'bold 18px monospace';
+      ctx.fillStyle = '#fca5a5';
+      ctx.textAlign = 'right';
+      const timerStr = `${this.state === 'LOBBY' ? '⏳' : '⚔️'} ${this.secondsRemaining}s`;
+      ctx.fillText(timerStr, barX + barW, barY - 25);
+
+      // HP Bar Outer
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.95)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(barX, barY, barW, barH, 11);
+      ctx.fill();
+      ctx.stroke();
+
+      // Ghost Lag Bar
+      const ghostPct = Math.min(1, Math.max(0, this.ghostHp / this.maxHp));
+      if (ghostPct > 0) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.beginPath();
+        ctx.roundRect(barX, barY, barW * ghostPct, barH, 11);
+        ctx.fill();
+      }
+
+      // Current HP Gradient
+      const hpPct = Math.min(1, Math.max(0, this.currentHp / this.maxHp));
+      if (hpPct > 0) {
+        const hpGrad = ctx.createLinearGradient(barX, barY, barX + barW, barY);
+        hpGrad.addColorStop(0, '#ef4444');
+        hpGrad.addColorStop(0.7, '#f97316');
+        hpGrad.addColorStop(1, '#facc15');
+        ctx.fillStyle = hpGrad;
+        ctx.beginPath();
+        ctx.roundRect(barX, barY, barW * hpPct, barH, 11);
+        ctx.fill();
+      }
+
+      // HP Text
+      ctx.font = 'bold 12px Nunito, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'left';
+      ctx.fillText(`${Math.round(this.currentHp).toLocaleString('tr-TR')} / ${this.maxHp.toLocaleString('tr-TR')}`, barX + 12, barY + 5);
+
+      ctx.textAlign = 'right';
+      ctx.fillText(`${(hpPct * 100).toFixed(1)}%`, barX + barW - 12, barY + 5);
+
+      // Tactical Shield Bar (if active)
+      if (this.tacticalActive) {
+        const sBarY = barY + 30;
+        const sBarH = 12;
+        ctx.font = 'bold 11px Nunito, sans-serif';
+        ctx.fillStyle = '#38bdf8';
+        ctx.textAlign = 'left';
+        ctx.fillText(`⚡ ${this.tacticalSkillName} (!kalkan / !ulti)`, barX, sBarY - 14);
+
+        ctx.textAlign = 'right';
+        ctx.fillText(`${Math.round(this.shieldHp).toLocaleString('tr-TR')} / ${this.shieldMax.toLocaleString('tr-TR')}`, barX + barW, sBarY - 14);
+
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.95)';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(barX, sBarY, barW, sBarH, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        const sPct = Math.min(1, Math.max(0, this.shieldHp / this.shieldMax));
+        if (sPct > 0) {
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.roundRect(barX, sBarY, barW * sPct, sBarH, 6);
+          ctx.fill();
+        }
+      }
+
+      ctx.restore();
     }
   }
 
@@ -1347,6 +1994,147 @@
               handleChat(sender, content);
             }
           }
+          // 3. World Boss Raid Live Integration
+          else if (msg.type === 'INIT_STATE') {
+            if (msg.bossState && msg.bossState.state && msg.bossState.state !== 'IDLE' && msg.bossState.activeBoss) {
+              if (config.enableBossOverlay !== false) {
+                activeBoss = new BossVisualEntity(msg.bossState.activeBoss);
+                activeBoss.state = msg.bossState.state;
+                if (activeBoss.state === 'TACTICAL') activeBoss.tacticalActive = true;
+              }
+            }
+          } else if (msg.type === 'BOSS_STATE') {
+            if (msg.state) {
+              if (msg.state.state === 'IDLE') {
+                activeBoss = null;
+              } else if (msg.state.activeBoss && config.enableBossOverlay !== false) {
+                if (!activeBoss) activeBoss = new BossVisualEntity(msg.state.activeBoss);
+                activeBoss.state = msg.state.state;
+              }
+            }
+          } else if (msg.type === 'BOSS_LOBBY') {
+            if (config.enableBossOverlay !== false && msg.boss) {
+              activeBoss = new BossVisualEntity(msg.boss);
+              for (const ch of chatters.values()) {
+                ch.reactionIcon = '😱';
+                ch.reactionTimer = 3.0;
+                ch.triggerJump(rand(280, 380));
+              }
+            }
+          } else if (msg.type === 'BOSS_BATTLE_STARTED') {
+            if (activeBoss) {
+              activeBoss.state = 'BATTLE';
+              activeBoss.dialogue = 'Savaş başladı! Hiçliğin gücünü tadın!';
+              activeBoss.dialogueTimer = 4.0;
+            }
+          } else if (msg.type === 'BOSS_WARRIOR_JOINED') {
+            const w = msg.warrior;
+            if (w && w.username) {
+              let ch = chatters.get(w.username.toLowerCase());
+              if (!ch) {
+                ch = new Chatter(w.username);
+                chatters.set(w.username.toLowerCase(), ch);
+              }
+              ch.reactionIcon = '⚔️';
+              ch.reactionTimer = 2.5;
+              ch.triggerJump(400);
+              ch.say('Savaşa katıldım! ⚔️');
+            }
+          } else if (msg.type === 'BOSS_ATTACK') {
+            if (activeBoss) {
+              activeBoss.updateHp(msg.bossRemainingHp, msg.bossMaxHp);
+            }
+            const username = msg.warrior ? msg.warrior.username : (msg.username || null);
+            if (username) {
+              let ch = chatters.get(username.toLowerCase());
+              if (ch && activeBoss) {
+                ch.facing = ch.x < activeBoss.x ? 1 : -1;
+                ch.triggerJump(rand(320, 420));
+                ch.reactionIcon = msg.isCrit ? '💥' : '⚔️';
+                ch.reactionTimer = 1.5;
+
+                spawnHeroProjectile(ch.x, ch.y + ch.z - 35, activeBoss.x + rand(-50, 50), activeBoss.y + rand(-30, 30), {
+                  isCrit: msg.isCrit,
+                  rarity: msg.warrior ? msg.warrior.rarity : 3,
+                  onHit: () => {
+                    if (activeBoss) {
+                      activeBoss.takeDamage(msg.damage, msg.isCrit, msg.reaction);
+                    }
+                  }
+                });
+              } else if (activeBoss) {
+                activeBoss.takeDamage(msg.damage, msg.isCrit, msg.reaction);
+              }
+            }
+          } else if (msg.type === 'BOSS_TACTICAL_STARTED') {
+            if (activeBoss) {
+              activeBoss.state = 'TACTICAL';
+              activeBoss.startTactical(msg.skillName, msg.shieldHp);
+            }
+          } else if (msg.type === 'BOSS_TACTICAL_HIT') {
+            if (activeBoss) {
+              activeBoss.updateShield(msg.shieldRemaining, msg.shieldMax);
+              spawnDamageNumber(activeBoss.x + rand(-40, 40), activeBoss.y + 40, msg.shieldDamage, true, 'VAPORIZE');
+            }
+            const username = msg.warrior ? msg.warrior.username : null;
+            if (username && activeBoss) {
+              let ch = chatters.get(username.toLowerCase());
+              if (ch) {
+                ch.triggerJump(380);
+                ch.reactionIcon = '⚡';
+                ch.reactionTimer = 1.5;
+                spawnHeroProjectile(ch.x, ch.y + ch.z - 35, activeBoss.x, activeBoss.y + 40, {
+                  isCrit: true,
+                  rarity: 5
+                });
+              }
+            }
+          } else if (msg.type === 'BOSS_TACTICAL_SUCCESS') {
+            if (activeBoss) {
+              activeBoss.endTactical(true);
+            }
+          } else if (msg.type === 'BOSS_TACTICAL_FAIL') {
+            if (activeBoss) {
+              activeBoss.endTactical(false);
+              activeBoss.triggerCalamityWave(10);
+            }
+          } else if (msg.type === 'BOSS_VICTORY') {
+            if (activeBoss) {
+              activeBoss.state = 'VICTORY';
+              activeBoss.isDefeated = true;
+              activeBoss.setFrame('hit');
+              activeBoss.dialogue = 'İmkânsız... Mağlup oldum!';
+              activeBoss.dialogueTimer = 5.0;
+            }
+            triggerPrimoRain(50);
+            for (const ch of chatters.values()) {
+              ch.triggerCelebration('sub');
+              if (msg.lastHit && ch.username.toLowerCase() === msg.lastHit.username.toLowerCase()) {
+                ch.hasCrown = true;
+              }
+              if (msg.mvp && ch.username.toLowerCase() === msg.mvp.username.toLowerCase()) {
+                ch.hasGoldenAura = true;
+                ch.auraTimer = 600;
+              }
+            }
+            setTimeout(() => {
+              activeBoss = null;
+            }, 14000);
+          } else if (msg.type === 'BOSS_DEFEAT') {
+            if (activeBoss) {
+              activeBoss.state = 'DEFEAT';
+              activeBoss.isDefeated = true;
+              activeBoss.dialogue = 'Karanlığa çekiliyorum...';
+              activeBoss.dialogueTimer = 4.0;
+            }
+            setTimeout(() => {
+              activeBoss = null;
+            }, 8000);
+          } else if (msg.type === 'BOSS_TICK') {
+            if (activeBoss && msg.secondsRemaining !== undefined) {
+              activeBoss.secondsRemaining = msg.secondsRemaining;
+            }
+          }
         } catch (e) {
           console.error('[PixelChatter] Error parsing WS message:', e);
         }
@@ -1372,6 +2160,22 @@
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    ctx.save();
+    // Screen shake on calamity impact
+    if (screenShake > 0) {
+      const ox = (Math.random() - 0.5) * screenShake;
+      const oy = (Math.random() - 0.5) * screenShake;
+      ctx.translate(ox, oy);
+      screenShake = Math.max(0, screenShake - dt * 32);
+    }
+
+    // 1. Update and render active boss (floating above chatters)
+    if (activeBoss && config.enableBossOverlay !== false) {
+      activeBoss.update(dt);
+      activeBoss.render(ctx);
+    }
+
+    // 2. Chatters
     const chatterList = Array.from(chatters.values());
     for (const ch of chatterList) {
       const alive = ch.update(dt, chatterList);
@@ -1386,6 +2190,7 @@
       ch.render(ctx);
     }
 
+    // 3. Particles & Projectiles
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.update(dt);
@@ -1394,6 +2199,13 @@
         particles.splice(i, 1);
       }
     }
+
+    // 4. Boss Top HUD
+    if (activeBoss && config.enableBossOverlay !== false) {
+      activeBoss.renderHUD(ctx);
+    }
+
+    ctx.restore();
 
     requestAnimationFrame(loop);
   }
@@ -1419,6 +2231,8 @@
     handleEvent,
     handleChatAction,
     triggerPrimoRain,
+    getActiveBoss: () => activeBoss,
+    spawnCalamity: () => { if (activeBoss) spawnCalamityProjectile(activeBoss); }
   };
 
   init();
