@@ -1,13 +1,50 @@
 {
-  "zerkacy": { "chatroomId": 40879165, "broadcasterUserId": 42256338 },
-  "elraenn": { "chatroomId": 25712360, "broadcasterUserId": 27018175 },
-  "wtcn": { "chatroomId": 1000890, "broadcasterUserId": 1045493 },
-  "kendinemuzisyen": { "chatroomId": 25364532, "broadcasterUserId": 26667654 },
-  "xqc": { "chatroomId": 668, "broadcasterUserId": 676 },
-  "mithrain": { "chatroomId": 31082592, "broadcasterUserId": 32423480 },
-  "hikaru": { "chatroomId": 85080, "broadcasterUserId": 85080 },
-  "ibrahimhaskologlu": { "chatroomId": 25784805, "broadcasterUserId": 27150774 },
-  "milka-e": { "chatroomId": 33950239, "broadcasterUserId": 35302615 },
-  "milka_e": { "chatroomId": 33950239, "broadcasterUserId": 35302615 },
-  "milka": { "chatroomId": 33950239, "broadcasterUserId": 35302615 }
+  "zerkacy": {
+    "chatroomId": 40879165,
+    "broadcasterUserId": 42256338
+  },
+  "elraenn": {
+    "chatroomId": 25712360,
+    "broadcasterUserId": 27018175
+  },
+  "wtcn": {
+    "chatroomId": 1000890,
+    "broadcasterUserId": 1045493
+  },
+  "kendinemuzisyen": {
+    "chatroomId": 25364532,
+    "broadcasterUserId": 26667654
+  },
+  "xqc": {
+    "chatroomId": 668,
+    "broadcasterUserId": 676
+  },
+  "mithrain": {
+    "chatroomId": 31082592,
+    "broadcasterUserId": 32423480
+  },
+  "hikaru": {
+    "chatroomId": 85080,
+    "broadcasterUserId": 85080
+  },
+  "ibrahimhaskologlu": {
+    "chatroomId": 25784805,
+    "broadcasterUserId": 27150774
+  },
+  "milka-e": {
+    "chatroomId": 33950239,
+    "broadcasterUserId": 35302615
+  },
+  "milka_e": {
+    "chatroomId": 33950239,
+    "broadcasterUserId": 35302615
+  },
+  "milka": {
+    "chatroomId": 33950239,
+    "broadcasterUserId": 35302615
+  },
+  "odablock": {
+    "chatroomId": 2393554,
+    "broadcasterUserId": 2455830
+  }
 }

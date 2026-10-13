@@ -3,8 +3,8 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const PUSHER_APP_KEY = '32cbd69e4b950bf97679';
-const PUSHER_WS_URL = `wss://ws-us2.pusher.com/app/${PUSHER_APP_KEY}?protocol=7&client=js&version=8.4.0-rc2&flash=false`;
+const CENTRIFUGO_DEFAULT_WS_URL = 'wss://realtime.us-west-2.platform.kick.com/connection/websocket';
+const REALTIME_AUTH_URL = 'https://web.kick.com/api/v1/realtime/auth/connection';
 
 const KNOWN_CHANNELS_FILE = path.join(__dirname, '..', 'data', 'known_channels.json');
 
@@ -62,7 +62,7 @@ function saveKnownChannel(slug, chatroomId, broadcasterUserId = null) {
 loadKnownChannels();
 
 // Helper: Execute curl directly via child_process.spawn (with desktop browser headers)
-function curlFetch(url, timeoutMs = 7000) {
+function curlFetch(url, timeoutMs = 7000, postData = null) {
   return new Promise((resolve, reject) => {
     const curlCmd = process.platform === 'win32' ? 'curl.exe' : 'curl';
     let stdout = '';
@@ -70,11 +70,20 @@ function curlFetch(url, timeoutMs = 7000) {
 
     const args = [
       '-s', '-L',
-      '-H', 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+      '-H', 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
       '-H', 'Accept: application/json, text/plain, */*',
       '-H', 'Accept-Language: tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
-      url
+      '-H', 'Referer: https://kick.com/',
+      '-H', 'Origin: https://kick.com'
     ];
+
+    if (postData) {
+      args.push('-H', 'Content-Type: application/json');
+      args.push('-H', 'x-app-platform: web');
+      args.push('-d', typeof postData === 'string' ? postData : JSON.stringify(postData));
+    }
+
+    args.push(url);
 
     const proc = spawn(curlCmd, args);
 
@@ -102,17 +111,56 @@ function curlFetch(url, timeoutMs = 7000) {
   });
 }
 
+// Helper: Get guest auth token for Kick Centrifugo Realtime WebSocket
+async function fetchRealtimeAuth(clientId = null) {
+  const cId = clientId || `guest_${Math.random().toString(36).substring(2, 10)}`;
+  const payload = { client_id: cId };
+
+  // 1. Try curlFetch
+  try {
+    const stdout = await curlFetch(REALTIME_AUTH_URL, 7000, payload);
+    if (stdout && stdout.trim().startsWith('{')) {
+      const data = JSON.parse(stdout);
+      if (data.data?.token) return data.data.token;
+    }
+  } catch (errCurl) {}
+
+  // 2. Try native fetch
+  try {
+    const res = await fetch(REALTIME_AUTH_URL, {
+      method: 'POST',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'x-app-platform': 'web',
+        'Referer': 'https://kick.com/',
+        'Origin': 'https://kick.com'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.data?.token) return data.data.token;
+    }
+  } catch (errFetch) {}
+
+  return null;
+}
+
 class KickClient extends EventEmitter {
   constructor() {
     super();
     this.channel = '';
     this.chatroomId = null;
+    this.broadcasterUserId = null;
     this.ws = null;
     this.isConnected = false;
     this.reconnectTimer = null;
     this.pingInterval = null;
     this.manualDisconnect = false;
     this.connectSeq = 0;
+    this.cmdId = 1;
   }
 
   // Universal channel resolver: works for ANY channel on both Windows and Linux
@@ -284,7 +332,7 @@ class KickClient extends EventEmitter {
         channel: this.channel,
         chatroomId: this.chatroomId,
         broadcasterUserId: this.broadcasterUserId,
-        message: `Kanal (#${this.chatroomId}) bulundu, Pusher'a bağlanılıyor...`
+        message: `Kanal (#${this.chatroomId}) bulundu, Kick Realtime sunucusuna bağlanılıyor...`
       });
 
       this.initWebSocket(currentSeq);
@@ -299,20 +347,39 @@ class KickClient extends EventEmitter {
     }
   }
 
-  initWebSocket(seq) {
+  async initWebSocket(seq) {
     if (this.manualDisconnect || seq !== this.connectSeq) return;
 
     try {
+      this.cmdId = 1;
       const WebSocket = require('ws');
-      this.ws = new WebSocket(PUSHER_WS_URL);
+
+      // Fetch guest token for Centrifugo authentication
+      let token = null;
+      try {
+        token = await fetchRealtimeAuth();
+      } catch (eToken) {
+        console.warn('[KickClient] Realtime auth token alınamadı:', eToken.message);
+      }
+
+      if (seq !== this.connectSeq || this.manualDisconnect) return;
+
+      this.ws = new WebSocket(CENTRIFUGO_DEFAULT_WS_URL);
 
       this.ws.on('open', () => {
         if (seq !== this.connectSeq) {
           try { this.ws.close(); } catch(e) {}
           return;
         }
-        console.log('[KickClient] Pusher bağlandı. Odaya abone olunuyor...');
-        this.subscribeChatroom();
+        console.log('[KickClient] Realtime (Centrifugo) bağlantısı açıldı. Kimlik doğrulanıyor...');
+        // Centrifugo Connect command
+        const connectCmd = {
+          id: this.cmdId++,
+          connect: {
+            token: token || ''
+          }
+        };
+        this.ws.send(JSON.stringify(connectCmd));
         this.startPing();
       });
 
@@ -326,7 +393,7 @@ class KickClient extends EventEmitter {
         this.isConnected = false;
         if (seq !== this.connectSeq) return;
 
-        console.warn(`[KickClient] Pusher bağlantısı kapandı (${code}).`);
+        console.warn(`[KickClient] Realtime bağlantısı kapandı (${code}).`);
         this.emit('status', {
           connected: false,
           channel: this.channel,
@@ -355,67 +422,75 @@ class KickClient extends EventEmitter {
     if (!this.ws || this.ws.readyState !== 1 || !this.chatroomId) return;
 
     const subPayload = {
-      event: 'pusher:subscribe',
-      data: {
-        auth: '',
+      id: this.cmdId++,
+      subscribe: {
         channel: `chatrooms.${this.chatroomId}.v2`
       }
     };
 
     this.ws.send(JSON.stringify(subPayload));
-    console.log(`[KickClient] #${this.chatroomId} odasına abone olundu.`);
+    console.log(`[KickClient] #${this.chatroomId} odasına abone olma isteği gönderildi.`);
   }
 
   handleMessage(raw) {
     try {
-      const msg = JSON.parse(raw.toString());
-
-      // 1. Pusher Handshake
-      if (msg.event === 'pusher:connection_established') {
-        this.subscribeChatroom();
-      }
-
-      // 2. Subscription Succeeded
-      if (msg.event === 'pusher_internal:subscription_succeeded') {
-        this.isConnected = true;
-        console.log(`[KickClient] ✅ ${this.channel} (ID: ${this.chatroomId}, User: #${this.broadcasterUserId || '?'}) sohbetine başarıyla bağlanıldı!`);
-        this.emit('status', {
-          connected: true,
-          channel: this.channel,
-          chatroomId: this.chatroomId,
-          broadcasterUserId: this.broadcasterUserId,
-          message: `${this.channel} sohbeti dinleniyor.`
-        });
-      }
-
-      // 3. Chat Message Event
-      if (msg.event === 'App\\Events\\ChatMessageEvent') {
-        const chatData = typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data;
-        if (!chatData) return;
-
-        const parsed = {
-          id: chatData.id,
-          chatroomId: chatData.chatroom_id,
-          content: chatData.content,
-          type: chatData.type,
-          createdAt: chatData.created_at,
-          sender: {
-            id: chatData.sender?.id,
-            username: chatData.sender?.username,
-            slug: chatData.sender?.slug,
-            profilePic: chatData.sender?.profile_pic,
-            badges: chatData.sender?.identity?.badges || []
+      const lines = raw.toString().split('\n').filter(Boolean);
+      for (const line of lines) {
+        // Centrifugo empty JSON heartbeat
+        if (line === '{}') {
+          if (this.ws && this.ws.readyState === 1) {
+            this.ws.send('{}');
           }
-        };
+          continue;
+        }
 
-        this.emit('message', parsed);
+        const msg = JSON.parse(line);
+
+        // 1. Centrifugo Connect Response
+        if (msg.id === 1 && msg.connect) {
+          console.log('[KickClient] Realtime oturumu açıldı. Sohbet odasına abone olunuyor...');
+          this.subscribeChatroom();
+        }
+
+        // 2. Subscription Succeeded (either response to subscribe command or subscribe confirmation)
+        if (msg.subscribe && (msg.id !== undefined || msg.push?.pub === undefined)) {
+          this.isConnected = true;
+          console.log(`[KickClient] ✅ ${this.channel} (ID: ${this.chatroomId}, User: #${this.broadcasterUserId || '?'}) sohbetine başarıyla bağlanıldı!`);
+          this.emit('status', {
+            connected: true,
+            channel: this.channel,
+            chatroomId: this.chatroomId,
+            broadcasterUserId: this.broadcasterUserId,
+            message: `${this.channel} sohbeti dinleniyor.`
+          });
+        }
+
+        // 3. Chat Message Event from push.pub
+        if (msg.push && msg.push.pub && msg.push.pub.data) {
+          const pubData = msg.push.pub.data;
+          if (pubData.event === 'App\\Events\\ChatMessageEvent') {
+            const chatData = typeof pubData.data === 'string' ? JSON.parse(pubData.data) : pubData.data;
+            if (!chatData) continue;
+
+            const parsed = {
+              id: chatData.id,
+              chatroomId: chatData.chatroom_id,
+              content: chatData.content,
+              type: chatData.type,
+              createdAt: chatData.created_at,
+              sender: {
+                id: chatData.sender?.id,
+                username: chatData.sender?.username,
+                slug: chatData.sender?.slug,
+                profilePic: chatData.sender?.profile_pic,
+                badges: chatData.sender?.identity?.badges || []
+              }
+            };
+
+            this.emit('message', parsed);
+          }
+        }
       }
-
-      // 4. Ping response
-      if (msg.event === 'pusher:pong') {
-        // Healthy connection
-      }
-
     } catch (e) {
       console.error('[KickClient] Mesaj ayrıştırma hatası:', e);
     }
@@ -425,9 +500,9 @@ class KickClient extends EventEmitter {
     this.stopPing();
     this.pingInterval = setInterval(() => {
       if (this.ws && this.ws.readyState === 1) {
-        this.ws.send(JSON.stringify({ event: 'pusher:ping', data: {} }));
+        this.ws.send('{}');
       }
-    }, 30000);
+    }, 20000);
   }
 
   stopPing() {
