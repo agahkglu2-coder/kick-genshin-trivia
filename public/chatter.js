@@ -42,23 +42,23 @@
   let screenShake = 0;
 
   const DOCK_SLOTS = [
-    { x: 95, y: 920 },
-    { x: 155, y: 915 },
-    { x: 215, y: 920 },
-    { x: 275, y: 910 },
+    { x: 105, y: 920 },
+    { x: 150, y: 915 },
+    { x: 195, y: 920 },
+    { x: 240, y: 915 },
     { x: 125, y: 895 },
-    { x: 185, y: 890 },
-    { x: 245, y: 895 }
+    { x: 170, y: 890 },
+    { x: 215, y: 895 }
   ];
 
   const MINE_SLOTS = [
-    { x: 1630, y: 920 },
-    { x: 1685, y: 915 },
     { x: 1740, y: 920 },
-    { x: 1795, y: 915 },
-    { x: 1655, y: 895 },
-    { x: 1710, y: 890 },
-    { x: 1765, y: 895 }
+    { x: 1690, y: 915 },
+    { x: 1775, y: 920 },
+    { x: 1645, y: 915 },
+    { x: 1720, y: 895 },
+    { x: 1670, y: 890 },
+    { x: 1620, y: 895 }
   ];
 
   function getExpeditionSlot(type, index) {
@@ -78,8 +78,6 @@
 
   async function loadExpeditionAssets() {
     const assets = [
-      { key: 'fishing_dock', src: '/assets/expeditions/fishing_dock.png' },
-      { key: 'mining_cave', src: '/assets/expeditions/mining_cave.png' },
       { key: 'cat_fisherman', src: '/assets/expeditions/cat_fisherman.png' },
       { key: 'cat_miner', src: '/assets/expeditions/cat_miner.png' }
     ];
@@ -89,68 +87,245 @@
       img.onload = () => { loadedExpeditionAssets[item.key] = img; resolve(); };
       img.onerror = () => { resolve(); };
     })));
-    console.log(`[PixelChatter] Loaded ${Object.keys(loadedExpeditionAssets).length} expedition assets.`);
+    console.log(`[PixelChatter] Loaded ${Object.keys(loadedExpeditionAssets).length} expedition character assets.`);
   }
 
   function renderExpeditionZones(ctx) {
-    // 1. Fishing Dock (Left)
-    if (loadedExpeditionAssets.fishing_dock) {
-      const dw = 370;
-      const dh = 300;
-      const dx = -20;
-      const dy = config.groundY - 250;
-      ctx.drawImage(loadedExpeditionAssets.fishing_dock, dx, dy, dw, dh);
+    const time = Date.now() / 1000;
+    const gy = config.groundY;
 
-      // Sign / Title Badge
-      ctx.save();
-      ctx.fillStyle = 'rgba(10, 20, 35, 0.85)';
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 1.8;
+    // ==========================================
+    // 1. ZARİF BALIKÇILIK İSKELESİ & SU (SOL TARAF)
+    // ==========================================
+    ctx.save();
+
+    // A) Su Dalgaları & Şeffaf Göl Kenarı (x: 0 - 80)
+    const waveSin = Math.sin(time * 3.0);
+    const waterGrad = ctx.createLinearGradient(0, gy - 20, 90, gy + 30);
+    waterGrad.addColorStop(0, 'rgba(14, 116, 144, 0.35)');
+    waterGrad.addColorStop(1, 'rgba(3, 105, 161, 0.15)');
+    ctx.fillStyle = waterGrad;
+    ctx.beginPath();
+    ctx.ellipse(35, gy + 10, 55, 22, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ritmik Su Halka Dalgaları (Ripples)
+    const ripPhase = (time * 1.5) % 1;
+    const ripR1 = 12 + ripPhase * 28;
+    ctx.strokeStyle = `rgba(56, 189, 248, ${0.45 * (1 - ripPhase)})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(35, gy + 8, ripR1, ripR1 * 0.45, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Sevimli Kırmızı-Beyaz Balıkçı Şamandırası (Bobber)
+    const bobY = gy + 4 + waveSin * 3;
+    const bobX = 35;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(bobX, bobY + 2, 4, 0, Math.PI);
+    ctx.fill();
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(bobX, bobY + 2, 4, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(bobX, bobY - 4);
+    ctx.lineTo(bobX, bobY + 5);
+    ctx.stroke();
+
+    // B) Zarif Ahşap İskele Tahtaları (x: 65 - 280)
+    // Destek Kazıkları (Pillars)
+    ctx.fillStyle = '#451a03';
+    ctx.fillRect(80, gy - 8, 10, 40);
+    ctx.fillRect(170, gy - 8, 10, 40);
+    ctx.fillRect(250, gy - 8, 10, 40);
+
+    // Ana İskele Güvertesi Tahtaları
+    ctx.fillStyle = '#78350f';
+    ctx.beginPath();
+    ctx.roundRect(70, gy + 4, 210, 14, 4);
+    ctx.fill();
+
+    // Tahta Üst Yüzeyi (Vurgu)
+    ctx.fillStyle = '#92400e';
+    ctx.beginPath();
+    ctx.roundRect(70, gy, 210, 6, 3);
+    ctx.fill();
+
+    // Tahta Aralık Çizgileri
+    ctx.strokeStyle = '#451a03';
+    ctx.lineWidth = 1;
+    for (let px = 95; px < 275; px += 26) {
       ctx.beginPath();
-      ctx.roundRect(40, dy - 22, 160, 26, 13);
-      ctx.fill();
+      ctx.moveTo(px, gy - 1);
+      ctx.lineTo(px, gy + 17);
       ctx.stroke();
+    }
 
-      ctx.fillStyle = '#e0f2fe';
-      ctx.font = 'bold 12px "Fredoka", "Nunito", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('🎣 Balıkçı İskelesi', 120, dy - 9);
+    // Mini Balık Kovası
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(74, gy - 16, 14, 16);
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(72, gy - 18, 18, 4);
+    ctx.font = '10px serif';
+    ctx.fillText('🐟', 73, gy - 18);
+
+    // Zarif Mini Alan Başlığı
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.70)';
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(110, gy - 32, 115, 20, 10);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#e0f2fe';
+    ctx.font = 'bold 11px "Fredoka", "Nunito", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🎣 Balıkçı İskelesi', 167, gy - 22);
+
+    ctx.restore();
+
+    // ==========================================
+    // 2. ZARİF PARILDAYAN KRİSTAL KÜMESİ (SAĞ TARAF)
+    // ==========================================
+    ctx.save();
+    const pulse = (Math.sin(time * 2.5) + 1) * 0.5;
+
+    // A) Kristallerin Çevresinde Yumuşak Mor/Camgöbeği Büyü Işıltısı
+    const glowGrad = ctx.createRadialGradient(1835, gy - 25, 10, 1835, gy - 25, 80);
+    glowGrad.addColorStop(0, `rgba(192, 132, 252, ${0.30 + pulse * 0.15})`);
+    glowGrad.addColorStop(0.6, `rgba(56, 189, 248, ${0.12 + pulse * 0.08})`);
+    glowGrad.addColorStop(1, 'rgba(192, 132, 252, 0)');
+    ctx.fillStyle = glowGrad;
+    ctx.beginPath();
+    ctx.arc(1835, gy - 25, 80, 0, Math.PI * 2);
+    ctx.fill();
+
+    // B) Kaya Kaidesi
+    ctx.fillStyle = '#334155';
+    ctx.beginPath();
+    ctx.ellipse(1835, gy + 4, 60, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.ellipse(1835, gy + 8, 62, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // C) Kristal 1: Büyük Mor Ametist (Orta, x: 1835)
+    ctx.save();
+    ctx.shadowColor = '#c084fc';
+    ctx.shadowBlur = 12 + pulse * 10;
+    // Sol Faset (Koyu Mor)
+    ctx.fillStyle = '#7e22ce';
+    ctx.beginPath();
+    ctx.moveTo(1835, gy - 58);
+    ctx.lineTo(1820, gy - 20);
+    ctx.lineTo(1824, gy);
+    ctx.lineTo(1835, gy + 2);
+    ctx.closePath();
+    ctx.fill();
+    // Sağ Faset (Açık Parlak Mor)
+    ctx.fillStyle = '#c084fc';
+    ctx.beginPath();
+    ctx.moveTo(1835, gy - 58);
+    ctx.lineTo(1835, gy + 2);
+    ctx.lineTo(1846, gy);
+    ctx.lineTo(1848, gy - 22);
+    ctx.closePath();
+    ctx.fill();
+    // Merkez Kenar Parıltısı
+    ctx.strokeStyle = '#f3e8ff';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(1835, gy - 58);
+    ctx.lineTo(1835, gy + 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // D) Kristal 2: Camgöbeği Kristal (Sol, x: 1805)
+    ctx.save();
+    ctx.shadowColor = '#38bdf8';
+    ctx.shadowBlur = 8 + pulse * 6;
+    ctx.fillStyle = '#0284c7';
+    ctx.beginPath();
+    ctx.moveTo(1808, gy - 40);
+    ctx.lineTo(1796, gy - 14);
+    ctx.lineTo(1800, gy + 2);
+    ctx.lineTo(1808, gy + 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.moveTo(1808, gy - 40);
+    ctx.lineTo(1808, gy + 4);
+    ctx.lineTo(1818, gy + 2);
+    ctx.lineTo(1819, gy - 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // E) Kristal 3: Altın Işıltılı Küçük Kristal (Sağ, x: 1862)
+    ctx.save();
+    ctx.shadowColor = '#facc15';
+    ctx.shadowBlur = 6 + pulse * 6;
+    ctx.fillStyle = '#ca8a04';
+    ctx.beginPath();
+    ctx.moveTo(1862, gy - 34);
+    ctx.lineTo(1853, gy - 12);
+    ctx.lineTo(1856, gy + 3);
+    ctx.lineTo(1862, gy + 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.moveTo(1862, gy - 34);
+    ctx.lineTo(1862, gy + 4);
+    ctx.lineTo(1870, gy + 2);
+    ctx.lineTo(1871, gy - 14);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Uç Parıltı Yıldızı (Glint Star on tip)
+    const glint = (Math.sin(time * 5.0) + 1) * 0.5;
+    if (glint > 0.4) {
+      ctx.save();
+      ctx.translate(1835, gy - 58);
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = 8;
+      const gSize = 2.5 + glint * 2.5;
+      ctx.beginPath();
+      ctx.moveTo(0, -gSize);
+      ctx.lineTo(gSize * 0.3, 0);
+      ctx.lineTo(0, gSize);
+      ctx.lineTo(-gSize * 0.3, 0);
+      ctx.closePath();
+      ctx.fill();
       ctx.restore();
     }
 
-    // 2. Mining Cave (Right)
-    if (loadedExpeditionAssets.mining_cave) {
-      const cw = 360;
-      const ch = 310;
-      const cx = 1570;
-      const cy = config.groundY - 265;
+    // Zarif Mini Alan Başlığı
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.70)';
+    ctx.strokeStyle = 'rgba(192, 132, 252, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(1765, gy - 32, 120, 20, 10);
+    ctx.fill();
+    ctx.stroke();
 
-      // Subtle glowing crystal pulse
-      const pulse = (Math.sin(Date.now() / 600) + 1) * 0.5;
-      ctx.save();
-      ctx.shadowColor = '#c084fc';
-      ctx.shadowBlur = 10 + pulse * 15;
-      ctx.drawImage(loadedExpeditionAssets.mining_cave, cx, cy, cw, ch);
-      ctx.restore();
+    ctx.fillStyle = '#f3e8ff';
+    ctx.font = 'bold 11px "Fredoka", "Nunito", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('⛏️ Kristal Madeni', 1825, gy - 22);
 
-      // Sign / Title Badge
-      ctx.save();
-      ctx.fillStyle = 'rgba(25, 12, 35, 0.85)';
-      ctx.strokeStyle = '#c084fc';
-      ctx.lineWidth = 1.8;
-      ctx.beginPath();
-      ctx.roundRect(1670, cy - 22, 170, 26, 13);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = '#f3e8ff';
-      ctx.font = 'bold 12px "Fredoka", "Nunito", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('⛏️ Kristal Mağarası', 1755, cy - 9);
-      ctx.restore();
-    }
+    ctx.restore();
   }
 
   function rand(min, max) {
