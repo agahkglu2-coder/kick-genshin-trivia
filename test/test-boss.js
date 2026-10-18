@@ -15,23 +15,45 @@ const startRes = engine.startBoss('void_dragon', { hp: 5000, prepSeconds: 5, bat
 assert(startRes.success, 'Boss başlatılabilmeli');
 assert.strictEqual(engine.state, 'LOBBY');
 
-// Test single join
+// Test single join with standard !katil
 engine.handleChatMessage({ content: '!katil', sender: { username: 'ZerkTester' } });
 assert.strictEqual(engine.participants.size, 1);
 const warrior = engine.participants.get('zerktester');
 assert.strictEqual(warrior.username, 'ZerkTester');
 
+// Test joining with Turkish character '!katıl'
+engine.handleChatMessage({ content: '!katıl', sender: { username: 'TurkishViewer1' } });
+assert.strictEqual(engine.participants.size, 2, '!katıl ile savaşa katılabilmeli');
+assert(engine.participants.has('turkishviewer1'), 'TurkishViewer1 participants içinde olmalı');
+
+// Test joining with capitalized '!Katıl'
+engine.handleChatMessage({ content: '!Katıl', sender: { username: 'TurkishViewer2' } });
+assert.strictEqual(engine.participants.size, 3, '!Katıl ile savaşa katılabilmeli');
+
+// Test joining with uppercase '!KATIL'
+engine.handleChatMessage({ content: '!KATIL', sender: { username: 'TurkishViewer3' } });
+assert.strictEqual(engine.participants.size, 4, '!KATIL ile savaşa katılabilmeli');
+
+// Test joining with trailing punctuation '!katıl!'
+engine.handleChatMessage({ content: '!katıl!', sender: { username: 'TurkishViewer4' } });
+assert.strictEqual(engine.participants.size, 5, '!katıl! ile savaşa katılabilmeli');
+
+// Test joining with '!saldır'
+engine.handleChatMessage({ content: '!saldır', sender: { username: 'TurkishViewer5' } });
+assert.strictEqual(engine.participants.size, 6, '!saldır ile savaşa katılabilmeli');
+
 // Test anti-spam duplicate join (must NOT add again or crash)
 engine.handleChatMessage({ content: '!katil', sender: { username: 'ZerkTester' } });
+engine.handleChatMessage({ content: '!katıl', sender: { username: 'ZerkTester' } });
 engine.handleChatMessage({ content: '!boss', sender: { username: 'ZerkTester' } });
 engine.handleChatMessage({ content: '!join', sender: { username: 'ZerkTester' } });
-assert.strictEqual(engine.participants.size, 1, 'Aynı kullanıcı spam yapsa bile sadece 1 kez kaydedilmeli');
-console.log('✅ Anti-Spam tekil katılım başarılı! Katılımcı sayısı: 1');
+assert.strictEqual(engine.participants.size, 6, 'Aynı kullanıcı spam yapsa bile sadece 1 kez kaydedilmeli');
+console.log('✅ Anti-Spam ve Türkçe !katıl / !saldır testleri başarılı! Katılımcı sayısı: 6');
 
-// Add second warrior
+// Add another warrior
 engine.handleChatMessage({ content: '!katil', sender: { username: 'AyakaMain' } });
-assert.strictEqual(engine.participants.size, 2);
-console.log('✅ İkinci katılımcı eklendi:', Array.from(engine.participants.keys()).join(', '));
+assert.strictEqual(engine.participants.size, 7);
+console.log('✅ Katılımcılar eklendi:', Array.from(engine.participants.keys()).join(', '));
 
 console.log('\n=== TEST 3: Savaşa Geçiş & Otomatik Vuruşlar ===');
 engine.beginBattle();

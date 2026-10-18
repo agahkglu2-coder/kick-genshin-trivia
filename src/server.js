@@ -201,6 +201,10 @@ const { TimerService } = require('./timerService');
 const timerService = new TimerService({ kickBot, db });
 const { CommandService } = require('./commandService');
 const commandService = new CommandService({ kickBot, db });
+
+// Initialize commandService immediately from config.customCommands or file fallback
+// (prevents empty commands or stale defaults during async db.init)
+commandService.init(config.customCommands || null);
 const { BossEngine } = require('./bossEngine');
 const bossEngine = new BossEngine({ gachaEngine, kickBot, db });
 const { ExpeditionEngine } = require('./expeditionEngine');
@@ -212,7 +216,12 @@ db.init(process.env.DATABASE_URL || config.databaseUrl).then(async () => {
   timerService.init(savedTimers || []);
 
   const savedCommands = db.getSetting('custom_commands');
-  commandService.init(savedCommands);
+  if (Array.isArray(savedCommands) && savedCommands.length > 0) {
+    commandService.init(savedCommands);
+  } else if (commandService.commands && commandService.commands.length > 0) {
+    // Migrate current active commands into DB so newly connected DB preserves them
+    await db.setSetting('custom_commands', commandService.commands);
+  }
   bossEngine.setDb(db);
 
   const savedToken = db.getSetting('botToken');
@@ -1536,6 +1545,20 @@ app.post('/api/commands/reset', (req, res) => {
     const reset = commandService.resetToDefaults();
     broadcast({ type: 'COMMANDS_UPDATED', commands: reset });
     res.json({ success: true, commands: reset });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/commands/sync', (req, res) => {
+  try {
+    const { commands } = req.body || {};
+    if (!Array.isArray(commands) || commands.length === 0) {
+      return res.status(400).json({ success: false, error: 'Geçersiz komut listesi.' });
+    }
+    const updated = commandService.setCommands(commands);
+    broadcast({ type: 'COMMANDS_UPDATED', commands: updated });
+    res.json({ success: true, commands: updated });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }

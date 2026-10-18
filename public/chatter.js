@@ -42,23 +42,23 @@
   let screenShake = 0;
 
   const DOCK_SLOTS = [
-    { x: 140, y: 905 },
-    { x: 185, y: 905 },
-    { x: 230, y: 905 },
-    { x: 275, y: 905 },
+    { x: 175, y: 905 },
+    { x: 215, y: 905 },
+    { x: 145, y: 905 },
+    { x: 255, y: 905 },
+    { x: 195, y: 890 },
     { x: 160, y: 890 },
-    { x: 205, y: 890 },
-    { x: 250, y: 890 }
+    { x: 235, y: 890 }
   ];
 
   const MINE_SLOTS = [
-    { x: 1710, y: 905 },
-    { x: 1665, y: 905 },
-    { x: 1750, y: 905 },
-    { x: 1620, y: 905 },
-    { x: 1690, y: 890 },
-    { x: 1645, y: 890 },
-    { x: 1730, y: 890 }
+    { x: 1680, y: 905 },
+    { x: 1635, y: 905 },
+    { x: 1720, y: 905 },
+    { x: 1595, y: 905 },
+    { x: 1660, y: 890 },
+    { x: 1615, y: 890 },
+    { x: 1700, y: 890 }
   ];
 
   function getExpeditionSlot(type, index) {
@@ -282,7 +282,7 @@
     ctx.strokeStyle = '#38bdf8';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(150, gy - 55, 145, 25, 6);
+    ctx.roundRect(250, gy - 175, 145, 26, 6);
     ctx.fill();
     ctx.stroke();
 
@@ -290,7 +290,7 @@
     ctx.font = 'bold 12px "Fredoka", "Nunito", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🎣 BALIKÇI İSKELESİ', 222, gy - 42);
+    ctx.fillText('🎣 BALIKÇI İSKELESİ', 322, gy - 162);
 
     ctx.restore();
 
@@ -470,7 +470,7 @@
     ctx.strokeStyle = '#c084fc';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(1650, gy - 55, 145, 25, 6);
+    ctx.roundRect(1710, gy - 185, 150, 26, 6);
     ctx.fill();
     ctx.stroke();
 
@@ -478,7 +478,7 @@
     ctx.font = 'bold 12px "Fredoka", "Nunito", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('⛏️ KRİSTAL MADENİ', 1722, gy - 42);
+    ctx.fillText('⛏️ KRİSTAL MADENİ', 1785, gy - 172);
 
     ctx.restore();
   }

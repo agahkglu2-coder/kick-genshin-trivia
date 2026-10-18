@@ -88,4 +88,44 @@ const replyRankDeleted = cmdService.processMessage({
 assert.strictEqual(replyRankDeleted, null, 'Silinen komut çalışmamalı');
 console.log('✅ Silme işlemi başarılı!');
 
+console.log('--- TEST 5: Kalıcılık Koruması (!dc Değiştirme ve Yeniden Başlatma) ---');
+// Find !dc command
+const dcCmd = cmdService.getCommands().find(c => c.name === '!dc');
+assert(dcCmd, '!dc komutu bulunmalı');
+
+// Update !dc to user custom Discord link
+const customDiscordUrl = 'https://discord.gg/streamer-ozel-topluluk';
+cmdService.updateCommand(dcCmd.id, {
+  response: `👾 Özel Discord topluluğumuz: ${customDiscordUrl}`
+});
+
+// Verify update in current instance
+const updatedDcCmd = cmdService.getCommandById(dcCmd.id);
+assert.strictEqual(updatedDcCmd.response, `👾 Özel Discord topluluğumuz: ${customDiscordUrl}`);
+
+// Simulate container restart with a brand new CommandService instance
+const restartedCmdService = new CommandService();
+// Initialize without passing DB (simulating reboot fallback)
+restartedCmdService.init();
+
+const restartedDcCmd = restartedCmdService.getCommands().find(c => c.name === '!dc');
+assert(restartedDcCmd, 'Yeniden başlatılan serviste !dc komutu bulunmalı');
+assert.strictEqual(restartedDcCmd.response, `👾 Özel Discord topluluğumuz: ${customDiscordUrl}`, 'Yeniden başlatma sonrası kullanıcının düzenlediği Discord linki korunmalı, milka\'ya sıfırlanmamalı!');
+console.log('✅ Yeniden başlatma kalıcılık testi başarılı! Güncel link korundu:', restartedDcCmd.response);
+
+console.log('--- TEST 6: Türkçe Karakter Komut Tetikleme (!yardım / !yardim) ---');
+// Ensure !komutlar triggers with both !komutlar, !KOMUTLAR, !yardim, !yardım
+const replyKomutlarTR = restartedCmdService.processMessage({
+  content: '!yardım',
+  sender: { username: 'GezginTR' }
+});
+assert(replyKomutlarTR !== null, '!yardım Türkçe karakterle de tetiklenmeli');
+assert(replyKomutlarTR.includes('Komutlar'), 'Komutlar yanıtı dönmeli');
+console.log('✅ Türkçe !yardım komut yanıtı:', replyKomutlarTR);
+
+// Restore default commands at the end of test
+restartedCmdService.resetToDefaults();
+console.log('✅ Test temizliği tamamlandı.');
+
 console.log('--- TÜM COMMAND SERVICE TESTLERİ BAŞARIYLA GEÇTİ! ---');
+process.exit(0);

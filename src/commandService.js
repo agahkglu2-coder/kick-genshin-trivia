@@ -76,8 +76,24 @@ const DEFAULT_COMMANDS = [
 
 function normalizeCmd(str) {
   if (!str) return '';
-  let s = String(str).trim().toLowerCase();
-  s = s.replace(/İ/g, 'i').replace(/I/g, 'ı').replace(/Ğ/g, 'g').replace(/Ü/g, 'u').replace(/Ş/g, 's').replace(/Ö/g, 'o').replace(/Ç/g, 'c');
+  let s = String(str).trim();
+  // Strip trailing punctuation like ! ? .
+  s = s.replace(/[!?.,#]+$/, '');
+  // Normalize Turkish characters so both 'i' and 'ı' match, as well as 'ş'->'s', 'ç'->'c', etc.
+  s = s.replace(/İ/g, 'i')
+       .replace(/I/g, 'i')
+       .replace(/ı/g, 'i')
+       .replace(/Ş/g, 's')
+       .replace(/ş/g, 's')
+       .replace(/Ğ/g, 'g')
+       .replace(/ğ/g, 'g')
+       .replace(/Ü/g, 'u')
+       .replace(/ü/g, 'u')
+       .replace(/Ö/g, 'o')
+       .replace(/ö/g, 'o')
+       .replace(/Ç/g, 'c')
+       .replace(/ç/g, 'c')
+       .toLowerCase();
   if (!s.startsWith('!')) s = '!' + s;
   return s;
 }
@@ -89,6 +105,7 @@ class CommandService extends EventEmitter {
     this.db = options.db || null;
     this.commands = [];
     this.cooldowns = new Map(); // cmdId -> timestamp
+    this._saveTimer = null;
   }
 
   setBot(kickBot) {
@@ -104,17 +121,45 @@ class CommandService extends EventEmitter {
       this.commands = savedCommands;
       console.log(`[CommandService] ${this.commands.length} adet özel komut veritabanından yüklendi.`);
     } else {
-      // Check local file fallback
+      // 1. Try config.json (config.customCommands)
       try {
-        if (fs.existsSync(COMMANDS_FILE)) {
-          const fileData = JSON.parse(fs.readFileSync(COMMANDS_FILE, 'utf-8'));
-          if (Array.isArray(fileData) && fileData.length > 0) {
-            this.commands = fileData;
-            console.log(`[CommandService] ${this.commands.length} adet özel komut commands.json dosyasından yüklendi.`);
+        const CONFIG_FILE = path.join(__dirname, '..', 'config.json');
+        if (fs.existsSync(CONFIG_FILE)) {
+          const cfg = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
+          if (Array.isArray(cfg.customCommands) && cfg.customCommands.length > 0) {
+            this.commands = cfg.customCommands;
+            console.log(`[CommandService] ${this.commands.length} adet özel komut config.json dosyasından yüklendi.`);
           }
         }
-      } catch (e) {
-        console.warn('[CommandService] commands.json okunamadı:', e.message);
+      } catch (e) {}
+
+      // 2. Try data/settings.json (custom_commands)
+      if (!this.commands || this.commands.length === 0) {
+        try {
+          const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+          if (fs.existsSync(SETTINGS_FILE)) {
+            const settingsData = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'));
+            if (Array.isArray(settingsData.custom_commands) && settingsData.custom_commands.length > 0) {
+              this.commands = settingsData.custom_commands;
+              console.log(`[CommandService] ${this.commands.length} adet özel komut settings.json dosyasından yüklendi.`);
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 3. Try local file fallback (data/commands.json)
+      if (!this.commands || this.commands.length === 0) {
+        try {
+          if (fs.existsSync(COMMANDS_FILE)) {
+            const fileData = JSON.parse(fs.readFileSync(COMMANDS_FILE, 'utf-8'));
+            if (Array.isArray(fileData) && fileData.length > 0) {
+              this.commands = fileData;
+              console.log(`[CommandService] ${this.commands.length} adet özel komut commands.json dosyasından yüklendi.`);
+            }
+          }
+        } catch (e) {
+          console.warn('[CommandService] commands.json okunamadı:', e.message);
+        }
       }
     }
 
@@ -128,6 +173,15 @@ class CommandService extends EventEmitter {
     return this.commands;
   }
 
+  scheduleDebouncedSave() {
+    if (this._saveTimer) return;
+    this._saveTimer = setTimeout(() => {
+      this._saveTimer = null;
+      this.save();
+    }, 10000);
+    if (this._saveTimer && this._saveTimer.unref) this._saveTimer.unref();
+  }
+
   save() {
     try {
       if (!fs.existsSync(DATA_DIR)) {
@@ -138,6 +192,30 @@ class CommandService extends EventEmitter {
       console.error('[CommandService] commands.json kaydedilemedi:', e.message);
     }
 
+    // Mirror to config.json so restarts/deploys never wipe edited commands
+    try {
+      const CONFIG_FILE = path.join(__dirname, '..', 'config.json');
+      if (fs.existsSync(CONFIG_FILE)) {
+        const cfg = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
+        cfg.customCommands = this.commands;
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf-8');
+      }
+    } catch (e) {
+      console.warn('[CommandService] config.json aynalanamadı:', e.message);
+    }
+
+    // Mirror to settings.json
+    try {
+      const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+      let curSettings = {};
+      if (fs.existsSync(SETTINGS_FILE)) {
+        try { curSettings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8')); } catch (e) {}
+      }
+      curSettings.custom_commands = this.commands;
+      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(curSettings, null, 2), 'utf-8');
+    } catch (e) {}
+
+    // Save to Database
     if (this.db) {
       try {
         this.db.setSetting('custom_commands', this.commands);
@@ -145,6 +223,15 @@ class CommandService extends EventEmitter {
         console.error('[CommandService] DB kaydedilemedi:', e.message);
       }
     }
+  }
+
+  setCommands(newCommands) {
+    if (!Array.isArray(newCommands) || newCommands.length === 0) return this.commands;
+    this.commands = newCommands;
+    this.save();
+    console.log(`[CommandService] 🔄 ${this.commands.length} adet komut topluca güncellendi ve kaydedildi.`);
+    this.emit('commands_updated', this.getCommands());
+    return this.commands;
   }
 
   getCommands() {
@@ -318,7 +405,7 @@ class CommandService extends EventEmitter {
 
     this.cooldowns.set(cmd.id, now);
     cmd.useCount = (cmd.useCount || 0) + 1;
-    this.save();
+    this.scheduleDebouncedSave();
 
     // Variable substitutions
     const username = (chatMsg.sender?.username || 'Gezgin').trim();

@@ -4,6 +4,32 @@ const path = require('path');
 
 const BOSSES_FILE = path.join(__dirname, '..', 'data', 'bosses.json');
 
+function normalizeBossCommand(str) {
+  if (!str) return '';
+  let s = String(str).trim();
+  // Extract the first word in case chatter types '!katıl beni de al'
+  s = s.split(/\s+/)[0];
+  // Strip trailing punctuation like !, ?, ., ,
+  s = s.replace(/[!?.,#]+$/, '');
+  // Normalize Turkish characters so both 'i' and 'ı' match, as well as 'ş'->'s', 'ç'->'c', etc.
+  s = s.replace(/İ/g, 'i')
+       .replace(/I/g, 'i')
+       .replace(/ı/g, 'i')
+       .replace(/Ş/g, 's')
+       .replace(/ş/g, 's')
+       .replace(/Ğ/g, 'g')
+       .replace(/ğ/g, 'g')
+       .replace(/Ü/g, 'u')
+       .replace(/ü/g, 'u')
+       .replace(/Ö/g, 'o')
+       .replace(/ö/g, 'o')
+       .replace(/Ç/g, 'c')
+       .replace(/ç/g, 'c')
+       .toLowerCase();
+  if (!s.startsWith('!')) s = '!' + s;
+  return s;
+}
+
 class BossEngine extends EventEmitter {
   constructor(options = {}) {
     super();
@@ -129,7 +155,7 @@ class BossEngine extends EventEmitter {
 
     // Announce via Kick bot
     if (this.kickBot && this.kickBot.sendMessage) {
-      this.kickBot.sendMessage(`⚠️ DÜNYA BOSSU BELİRDİ: [${this.activeBoss.name} - ${this.activeBoss.title}]! ⚔️ Katılmak için sohbete !katil yazın! (Hazırlık: ${prepSeconds} sn)`);
+      this.kickBot.sendMessage(`🐲 DÜNYA BOSSU BELİRDİ: [${this.activeBoss.name} - ${this.activeBoss.title}]! ⚔️ Katılmak için sohbete !katil veya !katıl yazın! (Hazırlık: ${prepSeconds} sn)`);
     }
 
     this.emit('state_changed', this.getState());
@@ -173,19 +199,40 @@ class BossEngine extends EventEmitter {
     const username = (chatMsg.sender?.username || '').trim();
     if (!rawContent || !username) return;
 
-    const lower = rawContent.toLowerCase();
+    const cmd = normalizeBossCommand(rawContent);
 
-    // 1. LOBBY / PREPARATION PHASE: !katil, !boss, !join, !raid
+    // 1. LOBBY / PREPARATION OR BATTLE PHASE JOIN: !katil, !katıl, !boss, !join, !raid, !savas, !saldır, !gir
     if (this.state === 'LOBBY' || this.state === 'BATTLE') {
-      if (lower === '!katil' || lower === '!boss' || lower === '!join' || lower === '!raid' || lower === '!savas' || lower === '!savaş') {
+      const JOIN_COMMANDS = new Set([
+        '!katil', // matches !katil, !katıl, !KATIL, !Katıl, !katıl!, !katil!
+        '!boss',
+        '!join',
+        '!raid',
+        '!savas', // matches !savas, !savaş
+        '!saldir', // matches !saldir, !saldır
+        '!gir',
+        '!vur'
+      ]);
+      if (JOIN_COMMANDS.has(cmd)) {
         this.joinWarrior(username);
         return;
       }
     }
 
-    // 2. TACTICAL PHASE ACTION: !kalkan, !ulti, !vur, !patlat, !sondur, !shield
+    // 2. TACTICAL PHASE ACTION: !kalkan, !ulti, !vur, !patlat, !sondur, !shield, !kir, !saldir
     if (this.state === 'TACTICAL') {
-      if (lower === '!kalkan' || lower === '!ulti' || lower === '!vur' || lower === '!patlat' || lower === '!sondur' || lower === '!shield' || lower === '!kir' || lower === '!kır') {
+      const TACTICAL_COMMANDS = new Set([
+        '!kalkan',
+        '!ulti',
+        '!vur',
+        '!patlat',
+        '!sondur',
+        '!shield',
+        '!kir', // matches !kir, !kır
+        '!saldir',
+        '!attack'
+      ]);
+      if (TACTICAL_COMMANDS.has(cmd)) {
         this.handleTacticalAction(username);
         return;
       }

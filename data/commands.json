@@ -11,7 +11,7 @@
       "!botbilgi"
     ],
     "permission": "everyone",
-    "useCount": 5,
+    "useCount": 0,
     "description": "MilkaBot tanıtımı ve genel bilgi."
   },
   {
@@ -25,13 +25,13 @@
       "!sunucu"
     ],
     "permission": "everyone",
-    "useCount": 5,
+    "useCount": 0,
     "description": "Discord sunucu davet linki."
   },
   {
     "id": "cmd_komutlar",
     "name": "!komutlar",
-    "response": "📜 Kullanılabilir Komutlar: {komutlar} | Oyunlar: !wish, !bakiye, !pity, !envanter, !donustur | Karakter: !zipla, !dans, !sev",
+    "response": "📜 Komutlar: {komutlar} | 🐾 AFK Sefer: !balik, !maden, !sefer, !topla | ⚔️ Oyunlar: !wish, !bakiye, !pity, !envanter | 🐱 Karakter: !zipla, !dans, !sev",
     "cooldown": 8,
     "enabled": true,
     "aliases": [

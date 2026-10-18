@@ -337,14 +337,18 @@ class DatabaseManager {
     this.inMemorySettings.set(key, val);
     this.saveLocalSettings();
 
-    // Mirror bot settings into config.json so restarts never wipe bot connection
-    const criticalKeys = ['botToken', 'botUsername', 'botEnabled', 'botClientId', 'botClientSecret', 'botTargetChannel', 'channel'];
+    // Mirror bot settings and custom commands into config.json so restarts never wipe them
+    const criticalKeys = ['botToken', 'botUsername', 'botEnabled', 'botClientId', 'botClientSecret', 'botTargetChannel', 'channel', 'custom_commands', 'customCommands', 'timed_messages'];
     if (criticalKeys.includes(key)) {
       try {
         const cfgPath = path.join(__dirname, '..', 'config.json');
         if (fs.existsSync(cfgPath)) {
           const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
-          cfg[key] = val;
+          if (key === 'custom_commands') {
+            cfg.customCommands = val;
+          } else {
+            cfg[key] = val;
+          }
           fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2), 'utf-8');
         }
       } catch (e) {}

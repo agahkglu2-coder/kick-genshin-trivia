@@ -1465,7 +1465,42 @@
     try {
       const res = await fetch('/api/commands');
       const data = await res.json();
-      cachedCommands = data.commands || [];
+      let serverCommands = data.commands || [];
+
+      // Check browser localStorage (prevents reset when Render restarts or wakes from sleep)
+      const cachedLocal = localStorage.getItem('milka_custom_commands');
+      if (cachedLocal) {
+        try {
+          const localCmds = JSON.parse(cachedLocal);
+          if (Array.isArray(localCmds) && localCmds.length > 0) {
+            // Check if server is currently holding stale defaults while local storage has user edits
+            const localDc = localCmds.find(c => c.id === 'cmd_dc' || c.name === '!dc');
+            const serverDc = serverCommands.find(c => c.id === 'cmd_dc' || c.name === '!dc');
+            const serverHasStaleMilka = serverDc && serverDc.response.includes('discord.gg/milka');
+            const localHasCustomDc = localDc && !localDc.response.includes('discord.gg/milka');
+
+            if (serverCommands.length === 0 || (serverHasStaleMilka && localHasCustomDc)) {
+              console.log('[Admin] 🛡️ Tarayıcı hafızasındaki özel komutlar sunucuya otomatik geri yükleniyor...');
+              const syncRes = await fetch('/api/commands/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ commands: localCmds })
+              });
+              if (syncRes.ok) {
+                const syncData = await syncRes.json();
+                serverCommands = syncData.commands || localCmds;
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('[Admin] Yerel komut ayrıştırma hatası:', e);
+        }
+      }
+
+      cachedCommands = serverCommands;
+      if (cachedCommands && cachedCommands.length > 0) {
+        localStorage.setItem('milka_custom_commands', JSON.stringify(cachedCommands));
+      }
       renderCommands(cachedCommands);
     } catch (e) {
       console.warn('[Admin] Komutlar yüklenemedi:', e.message);
@@ -1489,6 +1524,11 @@
 
   function renderCommands(commands) {
     cachedCommands = commands || [];
+    if (cachedCommands && cachedCommands.length > 0) {
+      try {
+        localStorage.setItem('milka_custom_commands', JSON.stringify(cachedCommands));
+      } catch (e) {}
+    }
     if (commandsCountBadge) {
       commandsCountBadge.textContent = `${cachedCommands.length} Komut`;
     }
@@ -1652,6 +1692,9 @@
           const data = await res.json();
           if (data.success) {
             resetCommandForm();
+            if (data.commands) {
+              try { localStorage.setItem('milka_custom_commands', JSON.stringify(data.commands)); } catch (e) {}
+            }
             loadCommands();
           }
         } catch (e) {
@@ -1688,6 +1731,9 @@
         const data = await res.json();
         if (res.ok && data.success) {
           resetCommandForm();
+          if (data.commands) {
+            try { localStorage.setItem('milka_custom_commands', JSON.stringify(data.commands)); } catch (e) {}
+          }
           if (cmdFormFeedback) {
             cmdFormFeedback.style.color = '#10b981';
             cmdFormFeedback.textContent = id ? '✅ Komut güncellendi!' : '✅ Yeni komut eklendi!';

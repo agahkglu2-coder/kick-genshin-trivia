@@ -239,7 +239,7 @@
     if (currentState === 'LOBBY') {
       alarmFlash.classList.remove('hidden');
       timerIcon.textContent = '⏳';
-      warriorsCallHint.innerHTML = 'Sohbete <strong>!katil</strong> yazarak savaşa katılın!';
+      warriorsCallHint.innerHTML = 'Sohbete <strong>!katil</strong> veya <strong>!katıl</strong> yazarak savaşa katılın!';
     } else if (currentState === 'BATTLE') {
       alarmFlash.classList.add('hidden');
       timerIcon.textContent = '⚔️';
@@ -308,7 +308,7 @@
 
     warriorsPillsRow.innerHTML = '';
     warriorsCount.textContent = '0 Savaşçı';
-    warriorsCallHint.innerHTML = 'Sohbete <strong>!katil</strong> yazarak savaşa katılın!';
+    warriorsCallHint.innerHTML = 'Sohbete <strong>!katil</strong> veya <strong>!katıl</strong> yazarak savaşa katılın!';
 
     // Show initial boss quote
     if (boss.quote) {

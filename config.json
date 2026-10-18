@@ -14,12 +14,98 @@
     "scale": 3.2,
     "groundY": 920,
     "groundDepth": 60,
-    "moveSpeed": 1.0,
+    "moveSpeed": 1,
     "despawnTimeout": 900,
     "maxChatters": 45,
     "chatBubbleDuration": 5.5,
     "showNameplates": true,
     "showShadows": true,
     "vipOverrides": {}
-  }
+  },
+  "customCommands": [
+    {
+      "id": "cmd_bot",
+      "name": "!bot",
+      "response": "🤖 Merhaba @{user}! Ben Milka'nın yayın asistanı MilkaBot. Canlı yayın oyunları, dilekler ve sohbet için buradayım! Tüm komutlar için: !komutlar",
+      "cooldown": 5,
+      "enabled": true,
+      "aliases": [
+        "!milkabot",
+        "!asistan",
+        "!botbilgi"
+      ],
+      "permission": "everyone",
+      "useCount": 0,
+      "description": "MilkaBot tanıtımı ve genel bilgi."
+    },
+    {
+      "id": "cmd_dc",
+      "name": "!dc",
+      "response": "👾 Discord topluluğumuza katılmayı unutmayın! Sohbet, etkinlikler ve duyurular burada: https://discord.gg/milka",
+      "cooldown": 5,
+      "enabled": true,
+      "aliases": [
+        "!discord",
+        "!sunucu"
+      ],
+      "permission": "everyone",
+      "useCount": 0,
+      "description": "Discord sunucu davet linki."
+    },
+    {
+      "id": "cmd_komutlar",
+      "name": "!komutlar",
+      "response": "📜 Komutlar: {komutlar} | 🐾 AFK Sefer: !balik, !maden, !sefer, !topla | ⚔️ Oyunlar: !wish, !bakiye, !pity, !envanter | 🐱 Karakter: !zipla, !dans, !sev",
+      "cooldown": 8,
+      "enabled": true,
+      "aliases": [
+        "!commands",
+        "!help",
+        "!yardim",
+        "!yardım"
+      ],
+      "permission": "everyone",
+      "useCount": 0,
+      "description": "Tüm aktif komutların listesi."
+    },
+    {
+      "id": "cmd_instagram",
+      "name": "!instagram",
+      "response": "📸 Instagram hesabımız: https://instagram.com/milka_e Takip etmeyi unutmayın!",
+      "cooldown": 5,
+      "enabled": true,
+      "aliases": [
+        "!ig"
+      ],
+      "permission": "everyone",
+      "useCount": 0,
+      "description": "Instagram profil linki."
+    },
+    {
+      "id": "cmd_tiktok",
+      "name": "!tiktok",
+      "response": "🎵 TikTok hesabımız: https://tiktok.com/@milka_e Eğlenceli klipler ve kesitler burada!",
+      "cooldown": 5,
+      "enabled": true,
+      "aliases": [
+        "!tt"
+      ],
+      "permission": "everyone",
+      "useCount": 0,
+      "description": "TikTok profil linki."
+    },
+    {
+      "id": "cmd_kurallar",
+      "name": "!kurallar",
+      "response": "📜 Chat Kuralları: Saygılı ve kibar olun, spam ve küfür yapmayın, din/siyaset tartışması yasaktır. İyi seyirler! 💜",
+      "cooldown": 10,
+      "enabled": true,
+      "aliases": [
+        "!kural"
+      ],
+      "permission": "everyone",
+      "useCount": 0,
+      "description": "Yayın ve sohbet kuralları."
+    }
+  ]
 }
