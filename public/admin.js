@@ -3083,7 +3083,159 @@
     fetchBossState();
   }
 
+  function initAdminNavigation() {
+    const navTabs = document.querySelectorAll('#admin-nav-tabs .nav-tab');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    const contentWrapper = document.getElementById('tab-content-wrapper');
+
+    function switchTab(targetTab) {
+      if (!targetTab) targetTab = 'trivia';
+
+      navTabs.forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === targetTab);
+      });
+
+      if (targetTab === 'all') {
+        if (contentWrapper) contentWrapper.classList.add('show-all-panes');
+        tabPanes.forEach(pane => pane.classList.add('active'));
+      } else {
+        if (contentWrapper) contentWrapper.classList.remove('show-all-panes');
+        tabPanes.forEach(pane => {
+          pane.classList.toggle('active', pane.getAttribute('data-tab-pane') === targetTab);
+        });
+      }
+
+      try {
+        localStorage.setItem('milka_admin_tab', targetTab);
+      } catch (e) {}
+
+      // Scroll smoothly to top of dashboard content
+      const streamerBar = document.getElementById('streamer-quick-bar');
+      if (streamerBar) {
+        streamerBar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    navTabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-tab');
+        switchTab(target);
+      });
+    });
+
+    // Restore saved tab from localStorage or default to trivia
+    const savedTab = localStorage.getItem('milka_admin_tab') || 'trivia';
+    switchTab(savedTab);
+
+    // Sticky Streamer Bar Actions
+    const barBtnTrigger = document.getElementById('bar-btn-trigger');
+    const origBtnTrigger = document.getElementById('btn-trigger');
+    if (barBtnTrigger && origBtnTrigger) {
+      barBtnTrigger.addEventListener('click', () => origBtnTrigger.click());
+    }
+
+    const barBtnShowLb = document.getElementById('bar-btn-show-lb');
+    const origBtnShowLb = document.getElementById('btn-show-lb');
+    if (barBtnShowLb && origBtnShowLb) {
+      barBtnShowLb.addEventListener('click', () => origBtnShowLb.click());
+    }
+
+    const barBtnRain = document.getElementById('bar-btn-rain');
+    const origBtnRain = document.getElementById('btn-gacha-rain');
+    if (barBtnRain && origBtnRain) {
+      barBtnRain.addEventListener('click', () => origBtnRain.click());
+    }
+
+    // OBS Overlays Dropdown
+    const btnToggleOverlayMenu = document.getElementById('btn-toggle-overlay-menu');
+    const overlayMenuDropdown = document.getElementById('overlay-menu-dropdown');
+    if (btnToggleOverlayMenu && overlayMenuDropdown) {
+      btnToggleOverlayMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        overlayMenuDropdown.classList.toggle('hidden');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!overlayMenuDropdown.contains(e.target) && e.target !== btnToggleOverlayMenu) {
+          overlayMenuDropdown.classList.add('hidden');
+        }
+      });
+    }
+
+    // Live sync for Streamer Bar timer & status
+    const timerLargeText = document.getElementById('timer-large-text');
+    const barTimerText = document.getElementById('bar-timer-text');
+    const kickStatusText = document.getElementById('kick-status-text');
+    const barBotText = document.getElementById('bar-bot-text');
+    const barBotDot = document.getElementById('bar-bot-dot');
+    const barChannelName = document.getElementById('bar-channel-name');
+    const cfgChannel = document.getElementById('cfg-channel');
+
+    setInterval(() => {
+      if (timerLargeText && barTimerText) {
+        barTimerText.textContent = timerLargeText.textContent || '--:--';
+      }
+      if (kickStatusText && barBotText) {
+        barBotText.textContent = kickStatusText.textContent || 'Bilinmiyor';
+        if (barBotDot) {
+          const isLive = kickStatusText.textContent && kickStatusText.textContent.includes('Canlı');
+          barBotDot.className = 'status-dot-sm ' + (isLive ? 'live' : 'offline');
+        }
+      }
+      if (cfgChannel && barChannelName && cfgChannel.value) {
+        barChannelName.textContent = cfgChannel.value.trim();
+      }
+
+      // Check Boss status for nav badge & bar
+      const bossBadge = document.getElementById('boss-status-badge');
+      const barBossText = document.getElementById('bar-boss-text');
+      const navBossBadge = document.getElementById('nav-boss-badge');
+      if (bossBadge) {
+        const txt = (bossBadge.textContent || '').trim();
+        const isActive = txt.includes('SAVAŞ') || txt.includes('LOBİ') || txt.includes('KALKAN') || txt.includes('BATTLE');
+        if (barBossText) {
+          barBossText.textContent = isActive ? `🔥 ${txt}` : 'Beklemede';
+          barBossText.style.color = isActive ? '#f43f5e' : '#cbd5e1';
+        }
+        if (navBossBadge) {
+          navBossBadge.classList.toggle('hidden', !isActive);
+          navBossBadge.classList.toggle('live-glow', isActive);
+        }
+      }
+    }, 1000);
+
+    // Search filter for Custom Commands
+    const searchCmdInput = document.getElementById('search-commands-input');
+    if (searchCmdInput) {
+      searchCmdInput.addEventListener('input', (e) => {
+        const query = (e.target.value || '').trim().toLowerCase();
+        const cmdItems = document.querySelectorAll('#commands-list .command-item');
+        cmdItems.forEach(item => {
+          const itemText = (item.textContent || '').toLowerCase();
+          item.style.display = (!query || itemText.includes(query)) ? '' : 'none';
+        });
+      });
+    }
+
+    // Enhance all Copy Buttons with animated feedback
+    document.querySelectorAll('[id^="btn-copy-"]').forEach(btn => {
+      const origText = btn.textContent;
+      btn.addEventListener('click', () => {
+        const currentText = btn.textContent;
+        if (!currentText.includes('Kopyalandı')) {
+          btn.textContent = 'Kopyalandı! 📋';
+          btn.classList.add('btn-success');
+          setTimeout(() => {
+            btn.textContent = origText;
+            btn.classList.remove('btn-success');
+          }, 1800);
+        }
+      });
+    });
+  }
+
   // Initialize
+  initAdminNavigation();
   connectWS();
   loadQuestions();
   loadBanners();

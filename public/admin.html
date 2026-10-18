@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kick Milka Trivia - Yayıncı Kontrol Paneli</title>
   <link rel="stylesheet" href="admin.css">
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="dashboard-container">
@@ -26,10 +26,99 @@
       </div>
     </header>
 
-    <div class="dashboard-grid">
-      <!-- Left Column: Controls & Game State -->
-      <div class="col-main">
-        <!-- Live Status & Quick Action Card -->
+    <!-- Category Navigation Bar -->
+    <nav class="admin-nav-tabs" id="admin-nav-tabs">
+      <button type="button" class="nav-tab active" data-tab="trivia">
+        <span class="tab-icon">🎮</span>
+        <span class="tab-label">Trivia & Yayın</span>
+      </button>
+      <button type="button" class="nav-tab" data-tab="boss">
+        <span class="tab-icon">🐉</span>
+        <span class="tab-label">World Boss Raid</span>
+        <span id="nav-boss-badge" class="nav-pill-badge hidden">CANLI</span>
+      </button>
+      <button type="button" class="nav-tab" data-tab="chatter">
+        <span class="tab-icon">🐾</span>
+        <span class="tab-label">Pixel Chatter & Sefer</span>
+      </button>
+      <button type="button" class="nav-tab" data-tab="gacha">
+        <span class="tab-icon">🎪</span>
+        <span class="tab-label">Gacha & Banner</span>
+      </button>
+      <button type="button" class="nav-tab" data-tab="bot">
+        <span class="tab-icon">🤖</span>
+        <span class="tab-label">Kick Bot & Komutlar</span>
+        <span id="nav-cmd-count" class="nav-pill-badge">6</span>
+      </button>
+      <button type="button" class="nav-tab" data-tab="settings">
+        <span class="tab-icon">⚙️</span>
+        <span class="tab-label">Ayarlar & Veritabanı</span>
+      </button>
+      <button type="button" class="nav-tab tab-all-btn" data-tab="all" title="Tüm panelleri tek sayfada göster">
+        <span class="tab-icon">👁️</span>
+        <span class="tab-label">Tüm Paneller</span>
+      </button>
+    </nav>
+
+    <!-- Sticky Streamer Quick Action Bar -->
+    <div class="streamer-quick-bar" id="streamer-quick-bar">
+      <!-- Left: Status Chips -->
+      <div class="quick-status-group">
+        <div class="quick-status-chip" title="Kick Kanal Adı">
+          <span class="status-dot-sm live"></span>
+          <span class="quick-label">Kanal:</span>
+          <strong id="bar-channel-name">milka_e</strong>
+        </div>
+        <div class="quick-status-chip" id="bar-bot-chip" title="Kick Bot Durumu">
+          <span class="status-dot-sm" id="bar-bot-dot"></span>
+          <span class="quick-label">Bot:</span>
+          <strong id="bar-bot-text">Hazırlanıyor...</strong>
+        </div>
+        <div class="quick-status-chip" id="bar-boss-chip" title="World Boss Durumu">
+          <span class="quick-label">Boss:</span>
+          <strong id="bar-boss-text">Beklemede</strong>
+        </div>
+      </div>
+
+      <!-- Center: Quick Trivia Timer -->
+      <div class="quick-timer-group">
+        <span class="quick-timer-icon">⏳</span>
+        <span class="quick-timer-label">Sonraki Soru:</span>
+        <strong id="bar-timer-text">--:--</strong>
+      </div>
+
+      <!-- Right: Fast Action Buttons -->
+      <div class="quick-actions-group">
+        <button type="button" id="bar-btn-trigger" class="btn btn-primary btn-sm btn-glow" title="Hemen soru sor">
+          ⚡ Soru Sor
+        </button>
+        <button type="button" id="bar-btn-show-lb" class="btn btn-secondary btn-sm" title="Sıralamayı ekrana yansıt">
+          👑 Sıralama
+        </button>
+        <button type="button" id="bar-btn-rain" class="btn btn-accent btn-sm" title="Tüm chate +160 Primogem yağdır" style="background: linear-gradient(135deg, #f59e0b, #ec4899); border: none; color: #fff;">
+          🌧️ Primo Yağmuru
+        </button>
+        <div class="quick-overlay-dropdown" id="quick-overlay-dropdown">
+          <button type="button" class="btn btn-outline btn-sm dropdown-trigger" id="btn-toggle-overlay-menu">
+            🔗 OBS Ekranları ▾
+          </button>
+          <div class="overlay-menu hidden" id="overlay-menu-dropdown">
+            <a href="trivia.html" target="_blank" class="overlay-item">🎯 Trivia Overlay ↗</a>
+            <a href="gacha.html" target="_blank" class="overlay-item">✨ Gacha Overlay ↗</a>
+            <a href="chatter.html" target="_blank" class="overlay-item">🐾 Pixel Chatter Overlay ↗</a>
+            <a href="boss.html" target="_blank" class="overlay-item">🐉 World Boss Overlay ↗</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Content Wrapper -->
+    <div class="tab-content-wrapper" id="tab-content-wrapper">
+      
+      <!-- PANE 1: TRIVIA & CANLI YAYIN -->
+      <div class="tab-pane active" id="pane-trivia" data-tab-pane="trivia">
+        <div class="pane-grid">
+          <div class="pane-col">
         <div class="panel-card hero-card">
           <div class="panel-title">
             <span>🎮 Oyun Durumu & Hızlı İşlemler</span>
@@ -91,8 +180,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Live OBS Overlay & Paimon Preview Card -->
         <div class="panel-card">
           <div class="panel-title">
             <div class="preview-tabs">
@@ -110,272 +197,187 @@
             <span>💡 Şu an <strong>Trivia Ekranı</strong> önizleniyor. <strong>"⚡ Hemen Soru Sor"</strong> veya <strong>"🧪 Test Önizlemesi"</strong>ne bastığınızda soru kartı buraya gelir.</span>
           </div>
         </div>
-
-        <!-- OBS Setup Instructions Card (Separated Sources) -->
-        <div class="panel-card obs-info-card">
+          </div>
+          <div class="pane-col">
+        <div class="panel-card">
           <div class="panel-title">
-            <span>🎬 OBS Studio Entegrasyonu (Tarayıcı Kaynakları)</span>
+            <span>📚 Soru Yönetimi (<span id="questions-count">0</span> Soru)</span>
+            <button id="btn-toggle-add-q" class="btn btn-sm btn-outline">+ Yeni Soru Ekle</button>
           </div>
-          <p class="info-p">OBS Studio'da <strong>Kaynaklar (+)</strong> &gt; <strong>Tarayıcı (Browser)</strong> seçerek aşağıdaki kaynakları dilediğiniz konumlara ekleyin:</p>
-          
-          <!-- Source 1: Trivia -->
-          <div class="obs-source-box">
-            <div class="source-box-title">
-              <span class="source-badge badge-trivia">KAYNAK 1: TRIVIA (Soru &amp; Sıralama)</span>
-              <span class="source-rec">Önerilen Boyut: 860x600 (Üst / Orta Konum)</span>
+
+          <!-- Question Pool Filter Tabs -->
+          <div class="q-pool-tabs">
+            <button type="button" class="btn btn-xs q-tab-btn active" data-pool="all">Tüm Sorular (<span id="count-pool-all">0</span>)</button>
+            <button type="button" class="btn btn-xs q-tab-btn" data-pool="genshin">⚔️ Genshin (<span id="count-pool-genshin">0</span>)</button>
+            <button type="button" class="btn btn-xs q-tab-btn" data-pool="general">🌍 Genel Kültür (<span id="count-pool-general">0</span>)</button>
+          </div>
+
+          <!-- Add Question Form (Collapsible) -->
+          <div id="add-question-form" class="add-q-container hidden">
+            <h3>Yeni Soru Ekle</h3>
+            <div class="form-grid">
+              <div class="form-group full-width">
+                <label>Soru Havuzu / Modu</label>
+                <select id="input-q-mode">
+                  <option value="genshin">⚔️ Genshin Impact Sorusu</option>
+                  <option value="general">🌍 Genel Kültür Sorusu</option>
+                </select>
+              </div>
+              <div class="form-group full-width">
+                <label>Soru Metni</label>
+                <input type="text" id="input-q-text" placeholder="Örn: Türkiye'nin başkenti neresidir?">
+              </div>
+              <div class="form-group full-width">
+                <label>Doğru Cevaplar (Virgülle birden çok alternatif yazabilirsiniz)</label>
+                <input type="text" id="input-q-answers" placeholder="Ankara">
+              </div>
+              <div class="form-group">
+                <label>Kategori</label>
+                <select id="input-q-category">
+                  <!-- Dynamically populated or default options -->
+                  <option value="Genel Kültür">Genel Kültür</option>
+                  <option value="Tarih">Tarih</option>
+                  <option value="Coğrafya">Coğrafya</option>
+                  <option value="Bilim">Bilim</option>
+                  <option value="Sinema">Sinema</option>
+                  <option value="Müzik">Müzik</option>
+                  <option value="Spor">Spor</option>
+                  <option value="Edebiyat">Edebiyat</option>
+                  <option value="Popüler Kültür">Popüler Kültür</option>
+                  <option value="Archonlar">Archonlar (Genshin)</option>
+                  <option value="Karakterler">Karakterler (Genshin)</option>
+                  <option value="Lore & Coğrafya">Lore & Coğrafya (Genshin)</option>
+                  <option value="Oyun Mekaniği">Oyun Mekaniği (Genshin)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Zorluk</label>
+                <select id="input-q-difficulty">
+                  <option value="Kolay">Kolay</option>
+                  <option value="Orta" selected>Orta</option>
+                  <option value="Zor">Zor</option>
+                </select>
+              </div>
+              <div class="form-group full-width">
+                <label>İpucu (İsteğe Bağlı)</label>
+                <input type="text" id="input-q-hint" placeholder="Örn: İç Anadolu'da yer alır.">
+              </div>
             </div>
-            <div class="copy-url-group">
-              <input type="text" id="obs-trivia-url" readonly value="http://localhost:3000/trivia.html">
-              <button id="btn-copy-trivia-url" class="btn btn-sm btn-outline">Kopyala</button>
-              <a href="trivia.html" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
+            <div class="form-actions">
+              <button id="btn-save-new-question" class="btn btn-success">Soruyu Havuza Ekle</button>
             </div>
           </div>
 
-          <!-- Source 2: Gacha -->
-          <div class="obs-source-box" style="margin-top: 14px;">
-            <div class="source-box-title">
-              <span class="source-badge badge-gacha">KAYNAK 2: GACHA (Dilekler &amp; Kayan Yıldız)</span>
-              <span class="source-rec">Önerilen Boyut: 860x600 (Sağ/Sol Alt Konum)</span>
-            </div>
-            <div class="copy-url-group">
-              <input type="text" id="obs-gacha-url" readonly value="http://localhost:3000/gacha.html">
-              <button id="btn-copy-gacha-url" class="btn btn-sm btn-outline">Kopyala</button>
-              <a href="gacha.html" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
-            </div>
-          </div>
-
-          <!-- Source 3: VTuber Avatar -->
-          <div class="obs-source-box" style="margin-top: 14px; border-color: rgba(168, 85, 247, 0.4);">
-            <div class="source-box-title">
-              <span class="source-badge" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.5);">KAYNAK 3: MILKA VTUBER AVATAR (Reaktif Canlı Yayın)</span>
-              <span class="source-rec">Önerilen Boyut: 1920x1080 (Tam Ekran / Şeffaf)</span>
-            </div>
-            <div class="copy-url-group">
-              <input type="text" id="obs-avatar-url" readonly value="http://127.0.0.1:8765/overlay">
-              <button id="btn-copy-avatar-url" class="btn btn-sm btn-outline">Kopyala</button>
-              <a href="http://127.0.0.1:8765/overlay" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
-              <a href="http://127.0.0.1:8765/" target="_blank" class="btn btn-sm" style="background: #a855f7; color: white;">⚙️ Ayar Paneli</a>
-            </div>
-          </div>
-
-          <!-- Source 4: Pixel Chatter -->
-          <div class="obs-source-box" style="margin-top: 14px; border-color: rgba(244, 114, 182, 0.4);">
-            <div class="source-box-title">
-              <span class="source-badge" style="background: rgba(244, 114, 182, 0.2); color: #fbcfe8; border: 1px solid rgba(244, 114, 182, 0.5);">KAYNAK 4: PIXEL CHATTER (Canlı Piksel İzleyici Katmanı)</span>
-              <span class="source-rec">Önerilen Boyut: 1920x1080 (Tam Ekran / Şeffaf Zemin)</span>
-            </div>
-            <div class="copy-url-group">
-              <input type="text" id="obs-chatter-url" readonly value="http://localhost:3000/chatter">
-              <button id="btn-copy-chatter-url" class="btn btn-sm btn-outline">Kopyala</button>
-              <a href="chatter.html" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
-            </div>
-            <div style="font-size: 0.76rem; color: #fbcfe8; margin-top: 8px; background: rgba(244, 114, 182, 0.1); border-radius: 6px; padding: 6px 10px;">
-              ⚠️ <strong>OBS Ayarı:</strong> OBS'te Tarayıcı kaynağı oluştururken Genişlik: <strong>1920</strong>, Yükseklik: <strong>1080</strong> girin. Karakterlerin ekrandaki yükseklik ve boyutunu aşağıdaki <strong>Pixel Chatter Paneli</strong>nden dilediğiniz gibi ayarlayabilirsiniz!
-            </div>
-          </div>
-
-          <!-- Source 5: World Boss Raid -->
-          <div class="obs-source-box" style="margin-top: 14px; border-color: rgba(168, 85, 247, 0.4);">
-            <div class="source-box-title">
-              <span class="source-badge" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.5);">KAYNAK 5: WORLD BOSS RAID (Boss Savaşı Mini-Oyunu)</span>
-              <span class="source-rec">Önerilen Boyut: 1920x1080 (Şeffaf / Savaş Yokken Gizli)</span>
-            </div>
-            <div class="copy-url-group">
-              <input type="text" id="obs-boss-url" readonly value="http://localhost:3000/boss.html">
-              <button id="btn-copy-boss-url" class="btn btn-sm btn-outline">Kopyala</button>
-              <a href="boss.html" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
-            </div>
-          </div>
-
-          <div class="obs-tips" style="margin-top: 14px;">
-            <span>💡 <strong>İpucu:</strong> VTuber Avatarınız mikrofonunuzla konuşur, göz kırpar ve fare hareketlerinizi takip eder. <strong>AvatarReactive.exe</strong> çalışırken doğrudan OBS'e ekleyebilirsiniz.</span>
+          <!-- Questions List -->
+          <div class="questions-list-wrapper">
+            <input type="text" id="search-questions" class="search-input" placeholder="Sorularda ara...">
+            <div id="questions-list" class="questions-list"></div>
           </div>
         </div>
-
-        <!-- Genshin Impact Banner & Dilek Havuzu Yönetimi Card -->
-        <div class="panel-card banner-card" style="border-color: rgba(234, 179, 8, 0.45); background: linear-gradient(180deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98)); margin-bottom: 20px;">
+        <div class="panel-card">
           <div class="panel-title">
-            <span style="color: #fde047;">🎪 Genshin Banner & 50/50 Havuz Yönetimi</span>
-            <span class="badge-mini" style="background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.5);">50/50 & Garanti Aktif</span>
+            <span>🏆 Günün Kazananları</span>
+            <button id="btn-reset-leaderboard" class="btn btn-xs btn-outline">Sıfırla</button>
+          </div>
+          <div id="leaderboard-list" class="leaderboard-container">
+            <p class="empty-state">Henüz soru kazananı yok.</p>
+          </div>
+        </div>
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>💬 Canlı Chat Akışı</span>
+            <span class="badge-mini">Kick Canlı</span>
+          </div>
+          <div id="chat-feed" class="chat-feed-box">
+            <p class="empty-state">Sohbet mesajları burada akacak...</p>
+          </div>
+        </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE 2: WORLD BOSS RAID -->
+      <div class="tab-pane" id="pane-boss" data-tab-pane="boss">
+        <div class="pane-grid-wide">
+        <div class="panel-card boss-card" style="border-color: rgba(168, 85, 247, 0.4);">
+          <div class="panel-title">
+            <span style="color: #d8b4fe;">🐉 World Boss Raid (Boss Savaşı Mini-Oyunu)</span>
+            <span id="boss-status-badge" class="badge-mini" style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3);">⚪ Beklemede</span>
           </div>
 
-          <!-- Active Banner Display & Selector -->
-          <div class="banner-active-box" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-              <div>
-                <div style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">Aktif Etkinlik Dileği</div>
-                <div id="active-banner-title" style="font-size: 1.35rem; font-weight: 800; color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);">
-                  ✨ Sükûnetin Hükmü (Raiden Shogun)
-                </div>
-                <div id="active-banner-desc" style="font-size: 0.82rem; color: #cbd5e1; margin-top: 4px;">
-                  Ebediyet arayışındaki Narukami Ogosho, Şimşek Şogunu.
-                </div>
-              </div>
-              <div style="text-align: right;">
-                <div id="active-banner-version" class="badge-mini" style="background: rgba(234, 179, 8, 0.25); color: #fef08a; border: 1px solid #ffd700;">v4.3</div>
-              </div>
-            </div>
-
-            <!-- Featured Characters Pills -->
-            <div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center;">
-              <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 600;">Öne Çıkanlar:</span>
-              <span id="active-banner-5star" class="badge-mini" style="background: rgba(234, 179, 8, 0.25); color: #ffd700; border: 1px solid #eab308; font-weight: 700; font-size: 0.85rem;">
-                🌟 5★ Raiden Shogun
-              </span>
-              <div id="active-banner-4stars" style="display: flex; gap: 6px; flex-wrap: wrap;">
-                <span class="badge-mini" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid #c084fc;">⭐ 4★ Kujou Sara</span>
-                <span class="badge-mini" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid #c084fc;">⭐ 4★ Bennett</span>
-                <span class="badge-mini" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid #c084fc;">⭐ 4★ Chevreuse</span>
-              </div>
-            </div>
+          <!-- Boss Info Box -->
+          <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 0.8rem; color: #e9d5ff; line-height: 1.5;">
+            <strong>⚔️ Sıfır Chat Spamı Mekaniği:</strong> İzleyiciler savaşa katılmak için sohbete <strong>yalnızca 1 kez</strong> <code>!katil</code>, <code>!katıl</code> veya <code>!boss</code> yazar. Katılan herkesin karakteri ekranda otomatik vurur. Taktiksel kalkan fazında ise tek bir <code>!kalkan</code> veya <code>!ulti</code> ile kalkanı kırarlar. Boss yenildiğinde Primogemler herkese otomatik dağıtılır!
           </div>
 
-          <!-- Quick Banner Switch Form -->
-          <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 10px; margin-bottom: 16px;">
-            <select id="select-banner-preset" class="form-input" style="background: #0f172a; border-color: rgba(234, 179, 8, 0.4); color: #f8fafc; font-weight: 600;">
-              <!-- Dynamically populated -->
-            </select>
-            <button id="btn-set-banner" class="btn btn-warning" style="font-weight: 700;">
-              🎪 Bannerı Değiştir
+          <!-- Quick Action Controls -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px;">
+            <div style="flex: 1; min-width: 200px;">
+              <select id="select-boss-template" style="width: 100%; height: 38px; background: rgba(0,0,0,0.4); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 8px; color: #fff; padding: 0 10px; font-family: inherit; font-size: 0.85rem;">
+                <!-- Populated via JS -->
+              </select>
+            </div>
+            <button type="button" id="btn-start-boss-raid" class="btn btn-sm btn-success" style="font-weight: 700;">
+              ⚔️ Boss Savaşını Başlat
             </button>
-            <button id="btn-toggle-custom-banner" class="btn btn-outline" style="border-color: #ffd700; color: #ffd700;">
-              ➕ Özel Banner
+            <button type="button" id="btn-test-boss-raid" class="btn btn-sm btn-outline" style="border-color: #a855f7; color: #d8b4fe;">
+              🧪 Test Simülasyonu (15 sn)
+            </button>
+            <button type="button" id="btn-stop-boss-raid" class="btn btn-sm btn-danger" style="display: none;">
+              ⏹️ Savaşı İptal Et
             </button>
           </div>
 
-          <!-- Custom Banner Creator Form (Collapsible) -->
-          <div id="custom-banner-form" style="display: none; background: rgba(0,0,0,0.35); border: 1px dashed rgba(234, 179, 8, 0.4); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
-            <h5 style="color: #ffd700; margin-bottom: 10px;">🛠️ Yeni Özel Banner Tanımla</h5>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 10px;">
-              <div>
-                <label style="font-size: 0.75rem; color: #94a3b8;">Banner ID</label>
-                <input type="text" id="custom-banner-id" placeholder="ornek: arlecchino_v2" class="form-input" style="width: 100%;">
-              </div>
-              <div>
-                <label style="font-size: 0.75rem; color: #94a3b8;">Banner Başlığı (TR)</label>
-                <input type="text" id="custom-banner-name-tr" placeholder="Ocağın Kül Gölgesi" class="form-input" style="width: 100%;">
-              </div>
-              <div>
-                <label style="font-size: 0.75rem; color: #94a3b8;">Öne Çıkan 5★ Karakter</label>
-                <select id="custom-banner-char5" class="form-input" style="width: 100%;"></select>
-              </div>
-              <div>
-                <label style="font-size: 0.75rem; color: #94a3b8;">Sürüm / Versiyon</label>
-                <input type="text" id="custom-banner-version" placeholder="5.0" class="form-input" style="width: 100%;">
-              </div>
+          <!-- Live Battle Tracker Box -->
+          <div id="admin-boss-live-box" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span id="admin-boss-active-name" style="font-weight: 700; color: #fff; font-size: 0.95rem;">-</span>
+              <span id="admin-boss-active-timer" style="font-weight: 800; font-family: monospace; color: #f87171; background: rgba(239,68,68,0.15); padding: 2px 8px; border-radius: 4px;">-</span>
             </div>
-            <div style="margin-bottom: 10px;">
-              <label style="font-size: 0.75rem; color: #94a3b8;">Öne Çıkan 3 Adet 4★ Karakter (Virgülle ayırın)</label>
-              <input type="text" id="custom-banner-char4" placeholder="Bennett, Xiangling, Xingqiu" class="form-input" style="width: 100%;">
+            <div style="width: 100%; height: 12px; background: rgba(0,0,0,0.5); border-radius: 6px; overflow: hidden; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.1);">
+              <div id="admin-boss-hp-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ef4444, #f59e0b); transition: width 0.2s ease;"></div>
             </div>
-            <div style="margin-bottom: 10px;">
-              <label style="font-size: 0.75rem; color: #94a3b8;">Açıklama</label>
-              <input type="text" id="custom-banner-desc" placeholder="Etkinlik dileği açıklaması..." class="form-input" style="width: 100%;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: #94a3b8; margin-bottom: 8px;">
+              <span id="admin-boss-hp-numbers">-</span>
+              <span id="admin-boss-warriors-count">0 Savaşçı</span>
             </div>
-            <div style="display: flex; gap: 8px; justify-content: flex-end;">
-              <button id="btn-cancel-custom-banner" class="btn btn-sm btn-outline">İptal</button>
-              <button id="btn-save-custom-banner" class="btn btn-sm btn-success">Kaydet ve Aktif Et</button>
-            </div>
+            <!-- Top Damagers Mini List -->
+            <div id="admin-boss-top-list" style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 0.76rem;"></div>
           </div>
 
-          <!-- Quick Test & Simulation Grid for Streamer -->
-          <div>
-            <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px; font-weight: 600;">
-              🧪 50/50 & Dilek Test Butonları (OBS Görselini Anında Gör):
+          <!-- Boss Configuration Form -->
+          <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: #cbd5e1; margin-bottom: 8px;">⚙️ Savaş & Ödül Ayarları:</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-size: 0.73rem;">Otomatik Döngü</label>
+                <select id="cfg-boss-auto-interval" style="height: 32px; font-size: 0.8rem;">
+                  <option value="0">Manuel (Sadece Butonla)</option>
+                  <option value="30">Her 30 Dakikada Bir</option>
+                  <option value="45">Her 45 Dakikada Bir</option>
+                  <option value="60">Her 60 Dakikada Bir</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-size: 0.73rem;">Ödül Çarpanı</label>
+                <select id="cfg-boss-reward-mult" style="height: 32px; font-size: 0.8rem;">
+                  <option value="1.0">Standart (x1.0 - 60 Primo)</option>
+                  <option value="1.5">Büyük Etkinlik (x1.5 - 90 Primo)</option>
+                  <option value="2.0">Çift Ödül (x2.0 - 120 Primo)</option>
+                </select>
+              </div>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px;">
-              <button id="btn-test-5050-won" class="btn btn-gold" style="font-weight: 700;">
-                🎉 5★ (50/50 KAZANDI)
-              </button>
-              <button id="btn-test-5050-lost" class="btn btn-purple" style="font-weight: 700; background: linear-gradient(135deg, #7c3aed, #db2777); border: none;">
-                💀 5★ (50/50 KAYBETTİ)
-              </button>
-              <button id="btn-test-banner-10" class="btn btn-primary" style="background: linear-gradient(135deg, #f59e0b, #ec4899); border: none; font-weight: 700;">
-                ✨ 10'lu Dilek Testi
-              </button>
-              <button id="btn-test-standard" class="btn btn-outline" style="border-color: #60a5fa; color: #93c5fd;">
-                🌌 Standart Dilek Testi
-              </button>
+            <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
+              <button type="button" id="btn-save-boss-config" class="btn btn-primary btn-xs">💾 Boss Ayarlarını Kaydet</button>
             </div>
           </div>
         </div>
-
-        <!-- Gacha & Primogem Economy Panel -->
-        <div class="panel-card gacha-card">
-          <div class="panel-title">
-            <span>✨ Gacha & Primogem Yönetimi</span>
-            <span class="badge-mini" style="background: rgba(255, 215, 0, 0.2); color: #ffd700; border: 1px solid rgba(255,215,0,0.4);">Genshin Wish v2.0</span>
-          </div>
-
-          <!-- Quick Gacha Action Buttons -->
-          <div class="gacha-actions-grid">
-            <button id="btn-gacha-rain" class="btn btn-warning btn-glow">
-              🌧️ Chate Primogem Yağmuru (+160)
-            </button>
-            <button id="btn-test-wish-10" class="btn btn-primary" style="background: linear-gradient(135deg, #f59e0b, #ec4899); border: none; font-weight: 700;">
-              ✨ 10'lu Dilek Testi (!wish10)
-            </button>
-            <button id="btn-test-wish-5" class="btn btn-gold">
-              🌟 5★ Altın Dilek Testi
-            </button>
-            <button id="btn-test-wish-4" class="btn btn-purple">
-              ⭐ 4★ Mor Dilek Testi
-            </button>
-            <button id="btn-test-wish-3" class="btn btn-outline">
-              🗡️ 3★ Mavi Dilek Testi
-            </button>
-          </div>
-
-          <!-- Chat Commands Quick Info Box -->
-          <div class="chat-cmd-guide">
-            <div class="cmd-item"><code>!wish</code> <span>160 Primo (1 Dilek)</span></div>
-            <div class="cmd-item"><code>!wish10</code> <span>1600 Primo (10'lu)</span></div>
-            <div class="cmd-item"><code>!wish standart</code> <span>Standart Dilek</span></div>
-            <div class="cmd-item"><code>!banner</code> <span>Aktif Banner & 50/50</span></div>
-            <div class="cmd-item"><code>!pity</code> <span>Pity & Garanti Durumu</span></div>
-            <div class="cmd-item"><code>!donustur</code> <span>5 Mavi = +160 Primo</span></div>
-            <div class="cmd-item"><code>!bakiye</code> <span>Primo & Silahlar</span></div>
-            <div class="cmd-item"><code>!envanter</code> <span>5★ Karakterler</span></div>
-          </div>
-
-          <!-- Manual Primogem Gifter -->
-          <div class="gift-primo-box">
-            <h4>🎁 İzleyiciye Özel Primogem Ekle</h4>
-            <div class="gift-inputs">
-              <input type="text" id="gift-username" placeholder="Kick Kullanıcı Adı">
-              <input type="number" id="gift-amount" placeholder="Miktar" value="160" min="10" step="10">
-              <button id="btn-gift-primo" class="btn btn-success btn-sm">+ Primogem Gönder</button>
-            </div>
-            <div id="gift-feedback" class="field-hint" style="margin-top: 4px; font-weight: 600;"></div>
-          </div>
-
-          <!-- Viewers Primogem Balance & Inventory Table -->
-          <div class="gacha-users-header">
-            <h4>👥 Kayıtlı Gezginler & Bakiyeler (<span id="gacha-users-count">0</span>)</h4>
-            <button id="btn-refresh-gacha-users" class="btn btn-xs btn-outline">🔄 Yenile</button>
-          </div>
-          <div class="gacha-users-table-wrap">
-            <table class="gacha-table">
-              <thead>
-                <tr>
-                  <th>Gezgin</th>
-                  <th>💎 Primogem</th>
-                  <th>🌟 Etkinlik Pity</th>
-                  <th>🎲 50/50 Durumu</th>
-                  <th>🌌 Standart Pity</th>
-                  <th>🗡️ 3★ Silah</th>
-                  <th>5★ Karakter</th>
-                  <th>Toplam Çekiş</th>
-                  <th>Hızlı İşlem</th>
-                </tr>
-              </thead>
-              <tbody id="gacha-users-tbody">
-                <tr><td colspan="9" class="text-center" style="padding: 16px; color: #94a3b8;">Henüz kayıtlı Gezgin yok. Chate yazan izleyiciler otomatik olarak buraya eklenecektir.</td></tr>
-              </tbody>
-            </table>
-          </div>
         </div>
-        <!-- Pixel Chatter Livestream Overlay Panel -->
+      </div>
+
+      <!-- PANE 3: PIXEL CHATTER & AFK SEFERLER -->
+      <div class="tab-pane" id="pane-chatter" data-tab-pane="chatter">
+        <div class="pane-grid-wide">
         <div class="panel-card chatter-card" style="border-color: rgba(244, 114, 182, 0.4);">
           <div class="panel-title">
             <span style="color: #fbcfe8;">🐾 Pixel Chatter İzleyici Katmanı (20 Piksel Karakter)</span>
@@ -538,231 +540,203 @@
             <button type="button" id="btn-save-chatter-settings" class="btn btn-primary btn-sm">💾 Pixel Chatter Ayarlarını Kaydet</button>
           </div>
         </div>
+        </div>
+      </div>
 
-        <!-- World Boss Raid Panel -->
-        <div class="panel-card boss-card" style="border-color: rgba(168, 85, 247, 0.4);">
+      <!-- PANE 4: GACHA & BANNER YÖNETİMİ -->
+      <div class="tab-pane" id="pane-gacha" data-tab-pane="gacha">
+        <div class="pane-grid">
+          <div class="pane-col">
+        <div class="panel-card banner-card" style="border-color: rgba(234, 179, 8, 0.45); background: linear-gradient(180deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98)); margin-bottom: 20px;">
           <div class="panel-title">
-            <span style="color: #d8b4fe;">🐉 World Boss Raid (Boss Savaşı Mini-Oyunu)</span>
-            <span id="boss-status-badge" class="badge-mini" style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3);">⚪ Beklemede</span>
+            <span style="color: #fde047;">🎪 Genshin Banner & 50/50 Havuz Yönetimi</span>
+            <span class="badge-mini" style="background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.5);">50/50 & Garanti Aktif</span>
           </div>
 
-          <!-- Boss Info Box -->
-          <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 0.8rem; color: #e9d5ff; line-height: 1.5;">
-            <strong>⚔️ Sıfır Chat Spamı Mekaniği:</strong> İzleyiciler savaşa katılmak için sohbete <strong>yalnızca 1 kez</strong> <code>!katil</code>, <code>!katıl</code> veya <code>!boss</code> yazar. Katılan herkesin karakteri ekranda otomatik vurur. Taktiksel kalkan fazında ise tek bir <code>!kalkan</code> veya <code>!ulti</code> ile kalkanı kırarlar. Boss yenildiğinde Primogemler herkese otomatik dağıtılır!
-          </div>
-
-          <!-- Quick Action Controls -->
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px;">
-            <div style="flex: 1; min-width: 200px;">
-              <select id="select-boss-template" style="width: 100%; height: 38px; background: rgba(0,0,0,0.4); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 8px; color: #fff; padding: 0 10px; font-family: inherit; font-size: 0.85rem;">
-                <!-- Populated via JS -->
-              </select>
-            </div>
-            <button type="button" id="btn-start-boss-raid" class="btn btn-sm btn-success" style="font-weight: 700;">
-              ⚔️ Boss Savaşını Başlat
-            </button>
-            <button type="button" id="btn-test-boss-raid" class="btn btn-sm btn-outline" style="border-color: #a855f7; color: #d8b4fe;">
-              🧪 Test Simülasyonu (15 sn)
-            </button>
-            <button type="button" id="btn-stop-boss-raid" class="btn btn-sm btn-danger" style="display: none;">
-              ⏹️ Savaşı İptal Et
-            </button>
-          </div>
-
-          <!-- Live Battle Tracker Box -->
-          <div id="admin-boss-live-box" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span id="admin-boss-active-name" style="font-weight: 700; color: #fff; font-size: 0.95rem;">-</span>
-              <span id="admin-boss-active-timer" style="font-weight: 800; font-family: monospace; color: #f87171; background: rgba(239,68,68,0.15); padding: 2px 8px; border-radius: 4px;">-</span>
-            </div>
-            <div style="width: 100%; height: 12px; background: rgba(0,0,0,0.5); border-radius: 6px; overflow: hidden; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.1);">
-              <div id="admin-boss-hp-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ef4444, #f59e0b); transition: width 0.2s ease;"></div>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: #94a3b8; margin-bottom: 8px;">
-              <span id="admin-boss-hp-numbers">-</span>
-              <span id="admin-boss-warriors-count">0 Savaşçı</span>
-            </div>
-            <!-- Top Damagers Mini List -->
-            <div id="admin-boss-top-list" style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 0.76rem;"></div>
-          </div>
-
-          <!-- Boss Configuration Form -->
-          <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px;">
-            <div style="font-size: 0.8rem; font-weight: 700; color: #cbd5e1; margin-bottom: 8px;">⚙️ Savaş & Ödül Ayarları:</div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
-              <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 0.73rem;">Otomatik Döngü</label>
-                <select id="cfg-boss-auto-interval" style="height: 32px; font-size: 0.8rem;">
-                  <option value="0">Manuel (Sadece Butonla)</option>
-                  <option value="30">Her 30 Dakikada Bir</option>
-                  <option value="45">Her 45 Dakikada Bir</option>
-                  <option value="60">Her 60 Dakikada Bir</option>
-                </select>
+          <!-- Active Banner Display & Selector -->
+          <div class="banner-active-box" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <div style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">Aktif Etkinlik Dileği</div>
+                <div id="active-banner-title" style="font-size: 1.35rem; font-weight: 800; color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);">
+                  ✨ Sükûnetin Hükmü (Raiden Shogun)
+                </div>
+                <div id="active-banner-desc" style="font-size: 0.82rem; color: #cbd5e1; margin-top: 4px;">
+                  Ebediyet arayışındaki Narukami Ogosho, Şimşek Şogunu.
+                </div>
               </div>
-              <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 0.73rem;">Ödül Çarpanı</label>
-                <select id="cfg-boss-reward-mult" style="height: 32px; font-size: 0.8rem;">
-                  <option value="1.0">Standart (x1.0 - 60 Primo)</option>
-                  <option value="1.5">Büyük Etkinlik (x1.5 - 90 Primo)</option>
-                  <option value="2.0">Çift Ödül (x2.0 - 120 Primo)</option>
-                </select>
+              <div style="text-align: right;">
+                <div id="active-banner-version" class="badge-mini" style="background: rgba(234, 179, 8, 0.25); color: #fef08a; border: 1px solid #ffd700;">v4.3</div>
               </div>
             </div>
-            <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
-              <button type="button" id="btn-save-boss-config" class="btn btn-primary btn-xs">💾 Boss Ayarlarını Kaydet</button>
+
+            <!-- Featured Characters Pills -->
+            <div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center;">
+              <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 600;">Öne Çıkanlar:</span>
+              <span id="active-banner-5star" class="badge-mini" style="background: rgba(234, 179, 8, 0.25); color: #ffd700; border: 1px solid #eab308; font-weight: 700; font-size: 0.85rem;">
+                🌟 5★ Raiden Shogun
+              </span>
+              <div id="active-banner-4stars" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <span class="badge-mini" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid #c084fc;">⭐ 4★ Kujou Sara</span>
+                <span class="badge-mini" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid #c084fc;">⭐ 4★ Bennett</span>
+                <span class="badge-mini" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid #c084fc;">⭐ 4★ Chevreuse</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Banner Switch Form -->
+          <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 10px; margin-bottom: 16px;">
+            <select id="select-banner-preset" class="form-input" style="background: #0f172a; border-color: rgba(234, 179, 8, 0.4); color: #f8fafc; font-weight: 600;">
+              <!-- Dynamically populated -->
+            </select>
+            <button id="btn-set-banner" class="btn btn-warning" style="font-weight: 700;">
+              🎪 Bannerı Değiştir
+            </button>
+            <button id="btn-toggle-custom-banner" class="btn btn-outline" style="border-color: #ffd700; color: #ffd700;">
+              ➕ Özel Banner
+            </button>
+          </div>
+
+          <!-- Custom Banner Creator Form (Collapsible) -->
+          <div id="custom-banner-form" style="display: none; background: rgba(0,0,0,0.35); border: 1px dashed rgba(234, 179, 8, 0.4); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+            <h5 style="color: #ffd700; margin-bottom: 10px;">🛠️ Yeni Özel Banner Tanımla</h5>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 10px;">
+              <div>
+                <label style="font-size: 0.75rem; color: #94a3b8;">Banner ID</label>
+                <input type="text" id="custom-banner-id" placeholder="ornek: arlecchino_v2" class="form-input" style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.75rem; color: #94a3b8;">Banner Başlığı (TR)</label>
+                <input type="text" id="custom-banner-name-tr" placeholder="Ocağın Kül Gölgesi" class="form-input" style="width: 100%;">
+              </div>
+              <div>
+                <label style="font-size: 0.75rem; color: #94a3b8;">Öne Çıkan 5★ Karakter</label>
+                <select id="custom-banner-char5" class="form-input" style="width: 100%;"></select>
+              </div>
+              <div>
+                <label style="font-size: 0.75rem; color: #94a3b8;">Sürüm / Versiyon</label>
+                <input type="text" id="custom-banner-version" placeholder="5.0" class="form-input" style="width: 100%;">
+              </div>
+            </div>
+            <div style="margin-bottom: 10px;">
+              <label style="font-size: 0.75rem; color: #94a3b8;">Öne Çıkan 3 Adet 4★ Karakter (Virgülle ayırın)</label>
+              <input type="text" id="custom-banner-char4" placeholder="Bennett, Xiangling, Xingqiu" class="form-input" style="width: 100%;">
+            </div>
+            <div style="margin-bottom: 10px;">
+              <label style="font-size: 0.75rem; color: #94a3b8;">Açıklama</label>
+              <input type="text" id="custom-banner-desc" placeholder="Etkinlik dileği açıklaması..." class="form-input" style="width: 100%;">
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+              <button id="btn-cancel-custom-banner" class="btn btn-sm btn-outline">İptal</button>
+              <button id="btn-save-custom-banner" class="btn btn-sm btn-success">Kaydet ve Aktif Et</button>
+            </div>
+          </div>
+
+          <!-- Quick Test & Simulation Grid for Streamer -->
+          <div>
+            <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px; font-weight: 600;">
+              🧪 50/50 & Dilek Test Butonları (OBS Görselini Anında Gör):
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px;">
+              <button id="btn-test-5050-won" class="btn btn-gold" style="font-weight: 700;">
+                🎉 5★ (50/50 KAZANDI)
+              </button>
+              <button id="btn-test-5050-lost" class="btn btn-purple" style="font-weight: 700; background: linear-gradient(135deg, #7c3aed, #db2777); border: none;">
+                💀 5★ (50/50 KAYBETTİ)
+              </button>
+              <button id="btn-test-banner-10" class="btn btn-primary" style="background: linear-gradient(135deg, #f59e0b, #ec4899); border: none; font-weight: 700;">
+                ✨ 10'lu Dilek Testi
+              </button>
+              <button id="btn-test-standard" class="btn btn-outline" style="border-color: #60a5fa; color: #93c5fd;">
+                🌌 Standart Dilek Testi
+              </button>
             </div>
           </div>
         </div>
-
-        <!-- Question Management Section -->
-        <div class="panel-card">
+          </div>
+          <div class="pane-col">
+        <div class="panel-card gacha-card">
           <div class="panel-title">
-            <span>📚 Soru Yönetimi (<span id="questions-count">0</span> Soru)</span>
-            <button id="btn-toggle-add-q" class="btn btn-sm btn-outline">+ Yeni Soru Ekle</button>
+            <span>✨ Gacha & Primogem Yönetimi</span>
+            <span class="badge-mini" style="background: rgba(255, 215, 0, 0.2); color: #ffd700; border: 1px solid rgba(255,215,0,0.4);">Genshin Wish v2.0</span>
           </div>
 
-          <!-- Question Pool Filter Tabs -->
-          <div class="q-pool-tabs">
-            <button type="button" class="btn btn-xs q-tab-btn active" data-pool="all">Tüm Sorular (<span id="count-pool-all">0</span>)</button>
-            <button type="button" class="btn btn-xs q-tab-btn" data-pool="genshin">⚔️ Genshin (<span id="count-pool-genshin">0</span>)</button>
-            <button type="button" class="btn btn-xs q-tab-btn" data-pool="general">🌍 Genel Kültür (<span id="count-pool-general">0</span>)</button>
+          <!-- Quick Gacha Action Buttons -->
+          <div class="gacha-actions-grid">
+            <button id="btn-gacha-rain" class="btn btn-warning btn-glow">
+              🌧️ Chate Primogem Yağmuru (+160)
+            </button>
+            <button id="btn-test-wish-10" class="btn btn-primary" style="background: linear-gradient(135deg, #f59e0b, #ec4899); border: none; font-weight: 700;">
+              ✨ 10'lu Dilek Testi (!wish10)
+            </button>
+            <button id="btn-test-wish-5" class="btn btn-gold">
+              🌟 5★ Altın Dilek Testi
+            </button>
+            <button id="btn-test-wish-4" class="btn btn-purple">
+              ⭐ 4★ Mor Dilek Testi
+            </button>
+            <button id="btn-test-wish-3" class="btn btn-outline">
+              🗡️ 3★ Mavi Dilek Testi
+            </button>
           </div>
 
-          <!-- Add Question Form (Collapsible) -->
-          <div id="add-question-form" class="add-q-container hidden">
-            <h3>Yeni Soru Ekle</h3>
-            <div class="form-grid">
-              <div class="form-group full-width">
-                <label>Soru Havuzu / Modu</label>
-                <select id="input-q-mode">
-                  <option value="genshin">⚔️ Genshin Impact Sorusu</option>
-                  <option value="general">🌍 Genel Kültür Sorusu</option>
-                </select>
-              </div>
-              <div class="form-group full-width">
-                <label>Soru Metni</label>
-                <input type="text" id="input-q-text" placeholder="Örn: Türkiye'nin başkenti neresidir?">
-              </div>
-              <div class="form-group full-width">
-                <label>Doğru Cevaplar (Virgülle birden çok alternatif yazabilirsiniz)</label>
-                <input type="text" id="input-q-answers" placeholder="Ankara">
-              </div>
-              <div class="form-group">
-                <label>Kategori</label>
-                <select id="input-q-category">
-                  <!-- Dynamically populated or default options -->
-                  <option value="Genel Kültür">Genel Kültür</option>
-                  <option value="Tarih">Tarih</option>
-                  <option value="Coğrafya">Coğrafya</option>
-                  <option value="Bilim">Bilim</option>
-                  <option value="Sinema">Sinema</option>
-                  <option value="Müzik">Müzik</option>
-                  <option value="Spor">Spor</option>
-                  <option value="Edebiyat">Edebiyat</option>
-                  <option value="Popüler Kültür">Popüler Kültür</option>
-                  <option value="Archonlar">Archonlar (Genshin)</option>
-                  <option value="Karakterler">Karakterler (Genshin)</option>
-                  <option value="Lore & Coğrafya">Lore & Coğrafya (Genshin)</option>
-                  <option value="Oyun Mekaniği">Oyun Mekaniği (Genshin)</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Zorluk</label>
-                <select id="input-q-difficulty">
-                  <option value="Kolay">Kolay</option>
-                  <option value="Orta" selected>Orta</option>
-                  <option value="Zor">Zor</option>
-                </select>
-              </div>
-              <div class="form-group full-width">
-                <label>İpucu (İsteğe Bağlı)</label>
-                <input type="text" id="input-q-hint" placeholder="Örn: İç Anadolu'da yer alır.">
-              </div>
+          <!-- Chat Commands Quick Info Box -->
+          <div class="chat-cmd-guide">
+            <div class="cmd-item"><code>!wish</code> <span>160 Primo (1 Dilek)</span></div>
+            <div class="cmd-item"><code>!wish10</code> <span>1600 Primo (10'lu)</span></div>
+            <div class="cmd-item"><code>!wish standart</code> <span>Standart Dilek</span></div>
+            <div class="cmd-item"><code>!banner</code> <span>Aktif Banner & 50/50</span></div>
+            <div class="cmd-item"><code>!pity</code> <span>Pity & Garanti Durumu</span></div>
+            <div class="cmd-item"><code>!donustur</code> <span>5 Mavi = +160 Primo</span></div>
+            <div class="cmd-item"><code>!bakiye</code> <span>Primo & Silahlar</span></div>
+            <div class="cmd-item"><code>!envanter</code> <span>5★ Karakterler</span></div>
+          </div>
+
+          <!-- Manual Primogem Gifter -->
+          <div class="gift-primo-box">
+            <h4>🎁 İzleyiciye Özel Primogem Ekle</h4>
+            <div class="gift-inputs">
+              <input type="text" id="gift-username" placeholder="Kick Kullanıcı Adı">
+              <input type="number" id="gift-amount" placeholder="Miktar" value="160" min="10" step="10">
+              <button id="btn-gift-primo" class="btn btn-success btn-sm">+ Primogem Gönder</button>
             </div>
-            <div class="form-actions">
-              <button id="btn-save-new-question" class="btn btn-success">Soruyu Havuza Ekle</button>
-            </div>
+            <div id="gift-feedback" class="field-hint" style="margin-top: 4px; font-weight: 600;"></div>
           </div>
 
-          <!-- Questions List -->
-          <div class="questions-list-wrapper">
-            <input type="text" id="search-questions" class="search-input" placeholder="Sorularda ara...">
-            <div id="questions-list" class="questions-list"></div>
+          <!-- Viewers Primogem Balance & Inventory Table -->
+          <div class="gacha-users-header">
+            <h4>👥 Kayıtlı Gezginler & Bakiyeler (<span id="gacha-users-count">0</span>)</h4>
+            <button id="btn-refresh-gacha-users" class="btn btn-xs btn-outline">🔄 Yenile</button>
+          </div>
+          <div class="gacha-users-table-wrap">
+            <table class="gacha-table">
+              <thead>
+                <tr>
+                  <th>Gezgin</th>
+                  <th>💎 Primogem</th>
+                  <th>🌟 Etkinlik Pity</th>
+                  <th>🎲 50/50 Durumu</th>
+                  <th>🌌 Standart Pity</th>
+                  <th>🗡️ 3★ Silah</th>
+                  <th>5★ Karakter</th>
+                  <th>Toplam Çekiş</th>
+                  <th>Hızlı İşlem</th>
+                </tr>
+              </thead>
+              <tbody id="gacha-users-tbody">
+                <tr><td colspan="9" class="text-center" style="padding: 16px; color: #94a3b8;">Henüz kayıtlı Gezgin yok. Chate yazan izleyiciler otomatik olarak buraya eklenecektir.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
           </div>
         </div>
       </div>
 
-      <!-- Right Column: Settings, Live Chat, Leaderboard -->
-      <div class="col-side">
-        <!-- Channel & Bot Settings -->
-        <div class="panel-card">
-          <div class="panel-title">
-            <span>⚙️ Sistem Ayarları</span>
-          </div>
-
-          <form id="settings-form">
-            <div class="form-group">
-              <label>Kick Kanal Adı veya Linki</label>
-              <div class="input-with-btn">
-                <input type="text" id="cfg-channel" placeholder="Örn: milka_e veya 33950239" required>
-                <button type="button" id="btn-connect-kick" class="btn btn-success btn-sm">Bağlan</button>
-              </div>
-              <span class="field-hint">Kanal adı (milka_e), profil linki veya Sohbet Odası (Chatroom) ID numarasını girebilirsiniz.</span>
-              <div id="connect-feedback" class="field-hint" style="margin-top: 4px; font-weight: 600;"></div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>Soru Aralığı (Dk)</label>
-                <input type="number" id="cfg-interval" min="1" max="60" value="10">
-              </div>
-              <div class="form-group">
-                <label>Soru Süresi (Sn)</label>
-                <input type="number" id="cfg-duration" min="15" max="180" value="45">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>Kazanan Ekranı (Sn)</label>
-                <input type="number" id="cfg-winner-duration" min="5" max="30" value="12">
-              </div>
-              <div class="form-group">
-                <label>!sıralama Bekleme (Sn)</label>
-                <input type="number" id="cfg-lb-cooldown" min="10" max="300" value="60">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>Oyun Tarzı</label>
-                <select id="cfg-gamemode">
-                  <option value="first_correct">İlk Bilen Kazanır</option>
-                  <option value="draw_from_all">Süre Sonu Çekiliş</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Varsayılan Trivia Modu</label>
-                <select id="cfg-trivia-mode">
-                  <option value="genshin">⚔️ Genshin Impact</option>
-                  <option value="general">🌍 Genel Kültür</option>
-                  <option value="mixed">🎲 Karışık Mod</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-group checkbox-group">
-              <label>
-                <input type="checkbox" id="cfg-sound" checked>
-                OBS Ses Efektleri Açık
-              </label>
-            </div>
-
-            <button type="submit" class="btn btn-primary full-width">Ayarları Kaydet</button>
-          </form>
-        </div>
-
-        <!-- Kick Chat Bot Settings Panel -->
+      <!-- PANE 5: KICK BOT & ÖZEL KOMUTLAR -->
+      <div class="tab-pane" id="pane-bot" data-tab-pane="bot">
+        <div class="pane-grid">
+          <div class="pane-col">
         <div class="panel-card bot-card">
           <div class="panel-title">
             <span>🤖 Kick Chat Botu (Paimon Bot)</span>
@@ -873,8 +847,6 @@
             <div id="bot-feedback" class="field-hint" style="margin-top: 8px; font-weight: 600;"></div>
           </form>
         </div>
-
-        <!-- Timed Messages / Scheduled Announcements Card -->
         <div class="panel-card timer-card">
           <div class="panel-title">
             <span>⏱️ Zamanlanmış Chat Mesajları (Oto-Duyuru)</span>
@@ -906,8 +878,8 @@
             <div class="empty-state" style="padding: 12px; text-align: center; color: #94a3b8; font-size: 0.82rem;">Henüz zamanlanmış mesaj eklenmedi. Yukarıdan yeni bir duyuru ekleyebilirsiniz.</div>
           </div>
         </div>
-
-        <!-- Custom Chat Commands Card (!bot, !dc, etc.) -->
+          </div>
+          <div class="pane-col">
         <div class="panel-card commands-card">
           <div class="panel-title">
             <span style="color: #d8b4fe;">💬 Özel Chat Komutları (!bot, !dc vb.)</span>
@@ -967,12 +939,168 @@
             <span style="font-size: 0.8rem; font-weight: 600; color: #cbd5e1;">📋 Kayıtlı Komutlar:</span>
             <button type="button" id="btn-reset-default-cmds" class="btn btn-xs btn-outline" style="font-size: 0.72rem;">🔄 Varsayılanları Yükle</button>
           </div>
+                    <div class="commands-search-box" style="margin-bottom: 8px;">
+            <input type="text" id="search-commands-input" placeholder="🔍 Komut veya yanıt ara (!dc, discord, vb.)..." style="width: 100%; font-size: 0.82rem; padding: 7px 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 6px; color: #fff;">
+          </div>
           <div id="commands-list" class="commands-list-container" style="display: flex; flex-direction: column; gap: 8px;">
             <div class="empty-state" style="padding: 12px; text-align: center; color: #94a3b8; font-size: 0.82rem;">Henüz özel komut bulunmuyor.</div>
           </div>
         </div>
+          </div>
+        </div>
+      </div>
 
-        <!-- Database & Persistence Settings Panel -->
+      <!-- PANE 6: AYARLAR & VERİTABANI -->
+      <div class="tab-pane" id="pane-settings" data-tab-pane="settings">
+        <div class="pane-grid">
+          <div class="pane-col">
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>⚙️ Sistem Ayarları</span>
+          </div>
+
+          <form id="settings-form">
+            <div class="form-group">
+              <label>Kick Kanal Adı veya Linki</label>
+              <div class="input-with-btn">
+                <input type="text" id="cfg-channel" placeholder="Örn: milka_e veya 33950239" required>
+                <button type="button" id="btn-connect-kick" class="btn btn-success btn-sm">Bağlan</button>
+              </div>
+              <span class="field-hint">Kanal adı (milka_e), profil linki veya Sohbet Odası (Chatroom) ID numarasını girebilirsiniz.</span>
+              <div id="connect-feedback" class="field-hint" style="margin-top: 4px; font-weight: 600;"></div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Soru Aralığı (Dk)</label>
+                <input type="number" id="cfg-interval" min="1" max="60" value="10">
+              </div>
+              <div class="form-group">
+                <label>Soru Süresi (Sn)</label>
+                <input type="number" id="cfg-duration" min="15" max="180" value="45">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Kazanan Ekranı (Sn)</label>
+                <input type="number" id="cfg-winner-duration" min="5" max="30" value="12">
+              </div>
+              <div class="form-group">
+                <label>!sıralama Bekleme (Sn)</label>
+                <input type="number" id="cfg-lb-cooldown" min="10" max="300" value="60">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Oyun Tarzı</label>
+                <select id="cfg-gamemode">
+                  <option value="first_correct">İlk Bilen Kazanır</option>
+                  <option value="draw_from_all">Süre Sonu Çekiliş</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Varsayılan Trivia Modu</label>
+                <select id="cfg-trivia-mode">
+                  <option value="genshin">⚔️ Genshin Impact</option>
+                  <option value="general">🌍 Genel Kültür</option>
+                  <option value="mixed">🎲 Karışık Mod</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group checkbox-group">
+              <label>
+                <input type="checkbox" id="cfg-sound" checked>
+                OBS Ses Efektleri Açık
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary full-width">Ayarları Kaydet</button>
+          </form>
+        </div>
+        <div class="panel-card obs-info-card">
+          <div class="panel-title">
+            <span>🎬 OBS Studio Entegrasyonu (Tarayıcı Kaynakları)</span>
+          </div>
+          <p class="info-p">OBS Studio'da <strong>Kaynaklar (+)</strong> &gt; <strong>Tarayıcı (Browser)</strong> seçerek aşağıdaki kaynakları dilediğiniz konumlara ekleyin:</p>
+          
+          <!-- Source 1: Trivia -->
+          <div class="obs-source-box">
+            <div class="source-box-title">
+              <span class="source-badge badge-trivia">KAYNAK 1: TRIVIA (Soru &amp; Sıralama)</span>
+              <span class="source-rec">Önerilen Boyut: 860x600 (Üst / Orta Konum)</span>
+            </div>
+            <div class="copy-url-group">
+              <input type="text" id="obs-trivia-url" readonly value="http://localhost:3000/trivia.html">
+              <button id="btn-copy-trivia-url" class="btn btn-sm btn-outline">Kopyala</button>
+              <a href="trivia.html" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
+            </div>
+          </div>
+
+          <!-- Source 2: Gacha -->
+          <div class="obs-source-box" style="margin-top: 14px;">
+            <div class="source-box-title">
+              <span class="source-badge badge-gacha">KAYNAK 2: GACHA (Dilekler &amp; Kayan Yıldız)</span>
+              <span class="source-rec">Önerilen Boyut: 860x600 (Sağ/Sol Alt Konum)</span>
+            </div>
+            <div class="copy-url-group">
+              <input type="text" id="obs-gacha-url" readonly value="http://localhost:3000/gacha.html">
+              <button id="btn-copy-gacha-url" class="btn btn-sm btn-outline">Kopyala</button>
+              <a href="gacha.html" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
+            </div>
+          </div>
+
+          <!-- Source 3: VTuber Avatar -->
+          <div class="obs-source-box" style="margin-top: 14px; border-color: rgba(168, 85, 247, 0.4);">
+            <div class="source-box-title">
+              <span class="source-badge" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.5);">KAYNAK 3: MILKA VTUBER AVATAR (Reaktif Canlı Yayın)</span>
+              <span class="source-rec">Önerilen Boyut: 1920x1080 (Tam Ekran / Şeffaf)</span>
+            </div>
+            <div class="copy-url-group">
+              <input type="text" id="obs-avatar-url" readonly value="http://127.0.0.1:8765/overlay">
+              <button id="btn-copy-avatar-url" class="btn btn-sm btn-outline">Kopyala</button>
+              <a href="http://127.0.0.1:8765/overlay" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
+              <a href="http://127.0.0.1:8765/" target="_blank" class="btn btn-sm" style="background: #a855f7; color: white;">⚙️ Ayar Paneli</a>
+            </div>
+          </div>
+
+          <!-- Source 4: Pixel Chatter -->
+          <div class="obs-source-box" style="margin-top: 14px; border-color: rgba(244, 114, 182, 0.4);">
+            <div class="source-box-title">
+              <span class="source-badge" style="background: rgba(244, 114, 182, 0.2); color: #fbcfe8; border: 1px solid rgba(244, 114, 182, 0.5);">KAYNAK 4: PIXEL CHATTER (Canlı Piksel İzleyici Katmanı)</span>
+              <span class="source-rec">Önerilen Boyut: 1920x1080 (Tam Ekran / Şeffaf Zemin)</span>
+            </div>
+            <div class="copy-url-group">
+              <input type="text" id="obs-chatter-url" readonly value="http://localhost:3000/chatter">
+              <button id="btn-copy-chatter-url" class="btn btn-sm btn-outline">Kopyala</button>
+              <a href="chatter.html" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
+            </div>
+            <div style="font-size: 0.76rem; color: #fbcfe8; margin-top: 8px; background: rgba(244, 114, 182, 0.1); border-radius: 6px; padding: 6px 10px;">
+              ⚠️ <strong>OBS Ayarı:</strong> OBS'te Tarayıcı kaynağı oluştururken Genişlik: <strong>1920</strong>, Yükseklik: <strong>1080</strong> girin. Karakterlerin ekrandaki yükseklik ve boyutunu aşağıdaki <strong>Pixel Chatter Paneli</strong>nden dilediğiniz gibi ayarlayabilirsiniz!
+            </div>
+          </div>
+
+          <!-- Source 5: World Boss Raid -->
+          <div class="obs-source-box" style="margin-top: 14px; border-color: rgba(168, 85, 247, 0.4);">
+            <div class="source-box-title">
+              <span class="source-badge" style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.5);">KAYNAK 5: WORLD BOSS RAID (Boss Savaşı Mini-Oyunu)</span>
+              <span class="source-rec">Önerilen Boyut: 1920x1080 (Şeffaf / Savaş Yokken Gizli)</span>
+            </div>
+            <div class="copy-url-group">
+              <input type="text" id="obs-boss-url" readonly value="http://localhost:3000/boss.html">
+              <button id="btn-copy-boss-url" class="btn btn-sm btn-outline">Kopyala</button>
+              <a href="boss.html" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
+            </div>
+          </div>
+
+          <div class="obs-tips" style="margin-top: 14px;">
+            <span>💡 <strong>İpucu:</strong> VTuber Avatarınız mikrofonunuzla konuşur, göz kırpar ve fare hareketlerinizi takip eder. <strong>AvatarReactive.exe</strong> çalışırken doğrudan OBS'e ekleyebilirsiniz.</span>
+          </div>
+        </div>
+          </div>
+          <div class="pane-col">
         <div class="panel-card db-card">
           <div class="panel-title">
             <span>🗄️ Veritabanı & Kalıcı Hafıza</span>
@@ -1017,29 +1145,10 @@
             </label>
           </div>
         </div>
-
-        <!-- Session Leaderboard -->
-        <div class="panel-card">
-          <div class="panel-title">
-            <span>🏆 Günün Kazananları</span>
-            <button id="btn-reset-leaderboard" class="btn btn-xs btn-outline">Sıfırla</button>
-          </div>
-          <div id="leaderboard-list" class="leaderboard-container">
-            <p class="empty-state">Henüz soru kazananı yok.</p>
-          </div>
-        </div>
-
-        <!-- Live Chat Feed Preview -->
-        <div class="panel-card">
-          <div class="panel-title">
-            <span>💬 Canlı Chat Akışı</span>
-            <span class="badge-mini">Kick Canlı</span>
-          </div>
-          <div id="chat-feed" class="chat-feed-box">
-            <p class="empty-state">Sohbet mesajları burada akacak...</p>
           </div>
         </div>
       </div>
+
     </div>
   </div>
 
