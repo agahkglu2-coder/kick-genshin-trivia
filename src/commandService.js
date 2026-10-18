@@ -31,7 +31,7 @@ const DEFAULT_COMMANDS = [
   {
     id: 'cmd_komutlar',
     name: '!komutlar',
-    response: '📜 Kullanılabilir Komutlar: {komutlar} | Oyunlar: !wish, !bakiye, !pity, !envanter, !donustur | Karakter: !zipla, !dans, !sev',
+    response: '📜 Komutlar: {komutlar} | 🐾 AFK Sefer: !balik, !maden, !sefer, !topla | ⚔️ Oyunlar: !wish, !bakiye, !pity, !envanter | 🐱 Karakter: !zipla, !dans, !sev',
     cooldown: 8,
     enabled: true,
     aliases: ['!commands', '!help', '!yardim', '!yardım'],

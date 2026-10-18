@@ -32,12 +32,126 @@
   let currentCrownWinner = null;
   let avatarRegistry = [];
   const loadedSprites = {};
+  const loadedExpeditionAssets = {};
+  const activeExpeditions = new Map();
   const chatters = new Map();
   const particles = [];
   let lastTimestamp = 0;
   let socket = null;
   let activeBoss = null;
   let screenShake = 0;
+
+  const DOCK_SLOTS = [
+    { x: 95, y: 920 },
+    { x: 155, y: 915 },
+    { x: 215, y: 920 },
+    { x: 275, y: 910 },
+    { x: 125, y: 895 },
+    { x: 185, y: 890 },
+    { x: 245, y: 895 }
+  ];
+
+  const MINE_SLOTS = [
+    { x: 1630, y: 920 },
+    { x: 1685, y: 915 },
+    { x: 1740, y: 920 },
+    { x: 1795, y: 915 },
+    { x: 1655, y: 895 },
+    { x: 1710, y: 890 },
+    { x: 1765, y: 895 }
+  ];
+
+  function getExpeditionSlot(type, index) {
+    const slots = type === 'fishing' ? DOCK_SLOTS : MINE_SLOTS;
+    return slots[index % slots.length];
+  }
+
+  function getUserSlotIndex(username) {
+    if (!username) return 0;
+    let hash = 0;
+    for (let i = 0; i < username.length; i++) {
+      hash = (hash << 5) - hash + username.charCodeAt(i);
+      hash |= 0;
+    }
+    return Math.abs(hash);
+  }
+
+  async function loadExpeditionAssets() {
+    const assets = [
+      { key: 'fishing_dock', src: '/assets/expeditions/fishing_dock.png' },
+      { key: 'mining_cave', src: '/assets/expeditions/mining_cave.png' },
+      { key: 'cat_fisherman', src: '/assets/expeditions/cat_fisherman.png' },
+      { key: 'cat_miner', src: '/assets/expeditions/cat_miner.png' }
+    ];
+    await Promise.all(assets.map(item => new Promise(resolve => {
+      const img = new Image();
+      img.src = item.src;
+      img.onload = () => { loadedExpeditionAssets[item.key] = img; resolve(); };
+      img.onerror = () => { resolve(); };
+    })));
+    console.log(`[PixelChatter] Loaded ${Object.keys(loadedExpeditionAssets).length} expedition assets.`);
+  }
+
+  function renderExpeditionZones(ctx) {
+    // 1. Fishing Dock (Left)
+    if (loadedExpeditionAssets.fishing_dock) {
+      const dw = 370;
+      const dh = 300;
+      const dx = -20;
+      const dy = config.groundY - 250;
+      ctx.drawImage(loadedExpeditionAssets.fishing_dock, dx, dy, dw, dh);
+
+      // Sign / Title Badge
+      ctx.save();
+      ctx.fillStyle = 'rgba(10, 20, 35, 0.85)';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.roundRect(40, dy - 22, 160, 26, 13);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#e0f2fe';
+      ctx.font = 'bold 12px "Fredoka", "Nunito", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🎣 Balıkçı İskelesi', 120, dy - 9);
+      ctx.restore();
+    }
+
+    // 2. Mining Cave (Right)
+    if (loadedExpeditionAssets.mining_cave) {
+      const cw = 360;
+      const ch = 310;
+      const cx = 1570;
+      const cy = config.groundY - 265;
+
+      // Subtle glowing crystal pulse
+      const pulse = (Math.sin(Date.now() / 600) + 1) * 0.5;
+      ctx.save();
+      ctx.shadowColor = '#c084fc';
+      ctx.shadowBlur = 10 + pulse * 15;
+      ctx.drawImage(loadedExpeditionAssets.mining_cave, cx, cy, cw, ch);
+      ctx.restore();
+
+      // Sign / Title Badge
+      ctx.save();
+      ctx.fillStyle = 'rgba(25, 12, 35, 0.85)';
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.roundRect(1670, cy - 22, 170, 26, 13);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#f3e8ff';
+      ctx.font = 'bold 12px "Fredoka", "Nunito", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('⛏️ Kristal Mağarası', 1755, cy - 9);
+      ctx.restore();
+    }
+  }
 
   function rand(min, max) {
     return Math.random() * (max - min) + min;
@@ -1151,6 +1265,11 @@
       this.dizzyTimer = 0;
       this.reactionIcon = null;
       this.reactionTimer = 0;
+
+      // Expedition State
+      this.expedition = null;
+      this.expeditionSlot = null;
+      this.expeditionActionTimer = 0;
     }
 
     pickAvatar(username) {
@@ -1314,6 +1433,12 @@
         }
       }
 
+      if (this.expedition) {
+        this.lastActiveTime = Date.now();
+        this.isDespawning = false;
+        this.despawnAlpha = 1.0;
+      }
+
       const idleSeconds = (Date.now() - this.lastActiveTime) / 1000;
       if (config.despawnTimeout > 0 && idleSeconds > config.despawnTimeout) {
         this.isDespawning = true;
@@ -1435,11 +1560,11 @@
       }
 
       // Autonomous Proximity Social Check
-      if (config.enableInteractions !== false && !this.targetChatter && !this.isDancing && !this.isDizzy && !this.isDespawning && this.state !== 'jump') {
+      if (config.enableInteractions !== false && !this.targetChatter && !this.isDancing && !this.isDizzy && !this.isDespawning && this.state !== 'jump' && !this.expedition) {
         this.socialCooldown -= dt;
         if (this.socialCooldown <= 0) {
           for (const other of allChatters) {
-            if (other === this || other.targetChatter || other.isDespawning || other.state === 'jump') continue;
+            if (other === this || other.targetChatter || other.isDespawning || other.state === 'jump' || other.expedition) continue;
             const dX = other.x - this.x;
             const dY = other.groundY - this.groundY;
             const dist = Math.sqrt(dX * dX + dY * dY);
@@ -1483,67 +1608,126 @@
       this.animTimer += dt;
 
       if (this.stateTimer <= 0 && this.z === 0) {
-        const r = Math.random();
-        if (r < 0.35) {
-          this.setState('idle', rand(2.0, 5.0));
-        } else if (r < 0.65) {
-          this.setState('walk', rand(2.5, 6.0));
-        } else if (r < 0.8) {
-          this.setState('run', rand(1.5, 3.5));
-        } else if (r < 0.9) {
-          this.triggerJump(rand(240, 360));
-        } else if (r < 0.95) {
-          this.triggerEmote(rand(2.0, 4.0));
+        if (!this.expedition) {
+          const r = Math.random();
+          if (r < 0.35) {
+            this.setState('idle', rand(2.0, 5.0));
+          } else if (r < 0.65) {
+            this.setState('walk', rand(2.5, 6.0));
+          } else if (r < 0.8) {
+            this.setState('run', rand(1.5, 3.5));
+          } else if (r < 0.9) {
+            this.triggerJump(rand(240, 360));
+          } else if (r < 0.95) {
+            this.triggerEmote(rand(2.0, 4.0));
+          } else {
+            this.setState('sit_sleep', rand(4.0, 8.0));
+          }
         } else {
-          this.setState('sit_sleep', rand(4.0, 8.0));
+          this.setState('idle', rand(3.0, 6.0));
         }
       }
 
-      const speedMult = config.moveSpeed;
-      if (this.state === 'walk') {
-        const baseSpeed = 42 * speedMult;
-        const dx = this.targetX - this.x;
-        const dy = this.targetY - this.groundY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist > 5) {
-          this.vx = (dx / dist) * baseSpeed;
-          this.x += this.vx * dt;
-          this.groundY += (dy / dist) * baseSpeed * 0.4 * dt;
-          this.facing = dx >= 0 ? 1 : -1;
-        } else {
-          this.setState('idle', rand(1.5, 4.0));
+      if (this.expedition) {
+        if (this.expeditionSlot) {
+          const dx = this.expeditionSlot.x - this.x;
+          const dy = this.expeditionSlot.y - this.groundY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist > 6) {
+            const speed = 75 * config.moveSpeed;
+            this.vx = (dx / dist) * speed;
+            this.x += this.vx * dt;
+            this.groundY += (dy / dist) * speed * dt;
+            this.facing = dx >= 0 ? 1 : -1;
+            this.state = 'walk';
+          } else {
+            this.x = this.expeditionSlot.x;
+            this.groundY = this.expeditionSlot.y;
+            this.vx = 0;
+            this.facing = this.expedition.type === 'fishing' ? -1 : 1;
+            if (this.state === 'walk' || this.state === 'run') {
+              this.state = 'idle';
+            }
+          }
         }
-      } else if (this.state === 'run') {
-        const baseSpeed = 95 * speedMult;
-        const dx = this.targetX - this.x;
-        const dy = this.targetY - this.groundY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist > 8) {
-          this.vx = (dx / dist) * baseSpeed;
-          this.x += this.vx * dt;
-          this.groundY += (dy / dist) * baseSpeed * 0.4 * dt;
-          this.facing = dx >= 0 ? 1 : -1;
-        } else {
-          this.setState('idle', rand(1.0, 3.0));
+        // Ambient working effects while on expedition
+        this.expeditionActionTimer += dt;
+        if (this.expeditionActionTimer >= 3.2) {
+          this.expeditionActionTimer = 0;
+          if (this.expedition.type === 'fishing') {
+            spawnBurst(this.x - 22, this.groundY + 6, 'dust', 3, {
+              color: '#38bdf8',
+              size: 3,
+              gravity: -10,
+              life: 0.8
+            });
+            if (Math.random() < 0.35) {
+              this.reactionIcon = randChoice(['🎣', '🐟', '✨', '🌊']);
+              this.reactionTimer = 2.0;
+            }
+          } else if (this.expedition.type === 'mining') {
+            spawnBurst(this.x + 20, this.groundY - 12, 'spark', 4, {
+              color: randChoice(['#c084fc', '#38bdf8', '#facc15', '#e879f9']),
+              size: 3,
+              gravity: 50,
+              life: 0.7
+            });
+            if (Math.random() < 0.35) {
+              this.reactionIcon = randChoice(['⛏️', '💎', '✨', '🪙']);
+              this.reactionTimer = 2.0;
+            }
+          }
         }
       } else {
-        this.vx = 0;
+        const speedMult = config.moveSpeed;
+        if (this.state === 'walk') {
+          const baseSpeed = 42 * speedMult;
+          const dx = this.targetX - this.x;
+          const dy = this.targetY - this.groundY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist > 5) {
+            this.vx = (dx / dist) * baseSpeed;
+            this.x += this.vx * dt;
+            this.groundY += (dy / dist) * baseSpeed * 0.4 * dt;
+            this.facing = dx >= 0 ? 1 : -1;
+          } else {
+            this.setState('idle', rand(1.5, 4.0));
+          }
+        } else if (this.state === 'run') {
+          const baseSpeed = 95 * speedMult;
+          const dx = this.targetX - this.x;
+          const dy = this.targetY - this.groundY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist > 8) {
+            this.vx = (dx / dist) * baseSpeed;
+            this.x += this.vx * dt;
+            this.groundY += (dy / dist) * baseSpeed * 0.4 * dt;
+            this.facing = dx >= 0 ? 1 : -1;
+          } else {
+            this.setState('idle', rand(1.0, 3.0));
+          }
+        } else {
+          this.vx = 0;
+        }
       }
 
-      // Soft Avoidance
-      const avoidDist = 32 * config.scale;
-      for (const other of allChatters) {
-        if (other === this) continue;
-        const dX = this.x - other.x;
-        const dY = this.groundY - other.groundY;
-        const distSq = dX * dX + dY * dY;
-        if (distSq < avoidDist * avoidDist && distSq > 0.1) {
-          const dist = Math.sqrt(distSq);
-          const push = ((avoidDist - dist) / avoidDist) * 18 * dt;
-          this.x += (dX / dist) * push;
-          this.groundY += (dY / dist) * push * 0.3;
+      // Soft Avoidance (only when not working on an expedition)
+      if (!this.expedition) {
+        const avoidDist = 32 * config.scale;
+        for (const other of allChatters) {
+          if (other === this) continue;
+          const dX = this.x - other.x;
+          const dY = this.groundY - other.groundY;
+          const distSq = dX * dX + dY * dY;
+          if (distSq < avoidDist * avoidDist && distSq > 0.1) {
+            const dist = Math.sqrt(distSq);
+            const push = ((avoidDist - dist) / avoidDist) * 18 * dt;
+            this.x += (dX / dist) * push;
+            this.groundY += (dY / dist) * push * 0.3;
+          }
         }
       }
 
@@ -1595,6 +1779,15 @@
     }
 
     getCurrentSprite() {
+      if (this.expedition) {
+        if (this.expedition.type === 'fishing' && loadedExpeditionAssets.cat_fisherman) {
+          return loadedExpeditionAssets.cat_fisherman;
+        }
+        if (this.expedition.type === 'mining' && loadedExpeditionAssets.cat_miner) {
+          return loadedExpeditionAssets.cat_miner;
+        }
+      }
+
       const folder = this.avatarId;
       let fn = 'idle_0.png';
 
@@ -1621,9 +1814,20 @@
       const sprite = this.getCurrentSprite();
       if (!sprite) return;
 
+      const isExpeditionSprite = Boolean(this.expedition && (
+        sprite === loadedExpeditionAssets.cat_fisherman ||
+        sprite === loadedExpeditionAssets.cat_miner
+      ));
+
       const scale = config.scale * this.spawnScale;
-      const w = sprite.width * scale;
-      const h = sprite.height * scale;
+      let w, h;
+      if (isExpeditionSprite) {
+        h = 32 * scale;
+        w = h * (sprite.width / sprite.height);
+      } else {
+        w = sprite.width * scale;
+        h = sprite.height * scale;
+      }
 
       ctx.save();
       ctx.globalAlpha = this.despawnAlpha;
@@ -1654,8 +1858,15 @@
         ctx.rotate(Math.sin(this.animTimer * 14.0) * 0.2);
       }
 
-      if (this.facing < 0 && (this.state === 'run' || this.state === 'jump' || this.state === 'idle')) {
-        ctx.scale(-1, 1);
+      if (isExpeditionSprite) {
+        // Original expedition cat sprites face left; flip horizontally when facing right
+        if (this.facing > 0) {
+          ctx.scale(-1, 1);
+        }
+      } else {
+        if (this.facing < 0 && (this.state === 'run' || this.state === 'jump' || this.state === 'idle')) {
+          ctx.scale(-1, 1);
+        }
       }
 
       let bounceY = 0;
@@ -1678,6 +1889,59 @@
       let nameplateTop = null;
       if (config.showNameplates) {
         nameplateTop = this.renderNameplate(ctx, h, hasCrownNow);
+      }
+
+      // 5b. Expedition Working Status Badge
+      if (this.expedition) {
+        const now = Date.now();
+        const isDone = now >= this.expedition.endsAt;
+        const badgeIcon = this.expedition.type === 'fishing' ? '🎣' : '⛏️';
+        let badgeText = '';
+        let badgeBg = '';
+        let badgeBorder = '';
+
+        if (isDone) {
+          badgeText = `✨ ${badgeIcon} Hazır! (!topla)`;
+          badgeBg = 'rgba(202, 138, 4, 0.94)';
+          badgeBorder = '#fef08a';
+        } else {
+          const remMin = Math.max(1, Math.ceil((this.expedition.endsAt - now) / 60000));
+          const typeLabel = this.expedition.type === 'fishing' ? 'Balıkta' : 'Madende';
+          badgeText = `${badgeIcon} ${typeLabel} (~${remMin}dk)`;
+          badgeBg = this.expedition.type === 'fishing' ? 'rgba(14, 116, 144, 0.92)' : 'rgba(109, 40, 217, 0.92)';
+          badgeBorder = this.expedition.type === 'fishing' ? '#38bdf8' : '#c084fc';
+        }
+
+        ctx.save();
+        ctx.font = 'bold 11px "Fredoka", "Nunito", sans-serif';
+        const tm = ctx.measureText(badgeText);
+        const bw = tm.width + 16;
+        const bh = 20;
+        const bx = this.x - bw / 2;
+        const by = (nameplateTop !== null ? nameplateTop : (this.y - h - 10)) - bh - 4;
+
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = badgeBg;
+        ctx.beginPath();
+        ctx.roundRect(bx, by, bw, bh, 10);
+        ctx.fill();
+
+        ctx.strokeStyle = badgeBorder;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.roundRect(bx, by, bw, bh, 10);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowBlur = 0;
+        ctx.fillText(badgeText, this.x, by + bh / 2 + 0.5);
+        ctx.restore();
+
+        // Update nameplateTop so reaction icons and speech bubbles render above the badge
+        nameplateTop = by;
       }
 
       // 6. Mini Reaction Bubble
@@ -2003,6 +2267,66 @@
                 if (activeBoss.state === 'TACTICAL') activeBoss.tacticalActive = true;
               }
             }
+            if (Array.isArray(msg.expeditions)) {
+              for (const exp of msg.expeditions) {
+                if (!exp.user) continue;
+                let ch = chatters.get(exp.user.toLowerCase());
+                if (!ch) {
+                  ch = new Chatter(exp.user);
+                  chatters.set(exp.user.toLowerCase(), ch);
+                }
+                ch.expedition = {
+                  type: exp.type || 'fishing',
+                  startTime: exp.startTime || Date.now(),
+                  durationMs: exp.durationMs || (20 * 60 * 1000),
+                  endsAt: exp.endsAt || (Date.now() + 20 * 60 * 1000)
+                };
+                const slotIdx = getUserSlotIndex(exp.user);
+                ch.expeditionSlot = getExpeditionSlot(ch.expedition.type, slotIdx);
+                ch.x = ch.expeditionSlot.x;
+                ch.groundY = ch.expeditionSlot.y;
+                ch.targetX = ch.expeditionSlot.x;
+                ch.targetY = ch.expeditionSlot.y;
+                ch.facing = ch.expedition.type === 'fishing' ? -1 : 1;
+                ch.setState('idle');
+              }
+            }
+          } else if (msg.type === 'EXPEDITION_STARTED') {
+            const username = msg.user;
+            if (username) {
+              let ch = chatters.get(username.toLowerCase());
+              if (!ch) {
+                ch = new Chatter(username);
+                chatters.set(username.toLowerCase(), ch);
+              }
+              const expType = msg.expeditionType || msg.type || 'fishing';
+              ch.expedition = {
+                type: expType,
+                startTime: msg.startTime || Date.now(),
+                durationMs: msg.durationMs || (20 * 60 * 1000),
+                endsAt: msg.endsAt || (Date.now() + 20 * 60 * 1000)
+              };
+              const slotIdx = getUserSlotIndex(username);
+              ch.expeditionSlot = getExpeditionSlot(expType, slotIdx);
+              ch.targetX = ch.expeditionSlot.x;
+              ch.targetY = ch.expeditionSlot.y;
+              ch.setState('walk');
+              ch.say(expType === 'fishing' ? '🎣 Balık tutmaya gidiyorum!' : '⛏️ Madene iniyorum!');
+              ch.reactionIcon = expType === 'fishing' ? '🎣' : '⛏️';
+              ch.reactionTimer = 3.0;
+            }
+          } else if (msg.type === 'EXPEDITION_COMPLETED') {
+            const username = msg.user;
+            if (username) {
+              let ch = chatters.get(username.toLowerCase());
+              if (ch) {
+                ch.expedition = null;
+                ch.expeditionSlot = null;
+                ch.triggerCelebration('donation');
+                ch.say(`🐾 Ganimetim geldi! ${msg.reward?.emoji || '🎁'} ${msg.reward?.item || ''} (+${msg.reward?.primogems || 0} 💎)`);
+                ch.setState('idle', 3.0);
+              }
+            }
           } else if (msg.type === 'BOSS_STATE') {
             if (msg.state) {
               if (msg.state.state === 'IDLE') {
@@ -2169,6 +2493,9 @@
       screenShake = Math.max(0, screenShake - dt * 32);
     }
 
+    // 0. Render Expedition Zones (Fishing Dock & Mining Cave)
+    renderExpeditionZones(ctx);
+
     // 1. Update and render active boss (floating above chatters)
     if (activeBoss && config.enableBossOverlay !== false) {
       activeBoss.update(dt);
@@ -2211,7 +2538,7 @@
   }
 
   async function init() {
-    await loadAvatars();
+    await Promise.all([loadAvatars(), loadExpeditionAssets()]);
     connectWebSocket();
 
     // Starter demo if empty

@@ -203,6 +203,8 @@ const { CommandService } = require('./commandService');
 const commandService = new CommandService({ kickBot, db });
 const { BossEngine } = require('./bossEngine');
 const bossEngine = new BossEngine({ gachaEngine, kickBot, db });
+const { ExpeditionEngine } = require('./expeditionEngine');
+const expeditionEngine = new ExpeditionEngine({ gachaEngine, kickBot });
 
 // Initialize persistent database (PostgreSQL or local fallback)
 db.init(process.env.DATABASE_URL || config.databaseUrl).then(async () => {
@@ -377,6 +379,26 @@ kickClient.on('message', async (chatMsg) => {
           const match = textLower.match(/^!(?:duello|düello|duel|fight)\s+@?([a-zA-Z0-9_\u00C0-\u017F]+)/);
           if (match && match[1]) {
             broadcast({ type: 'CHATTER_ACTION', action: 'duel', fromUser: rawUser, toUser: match[1] });
+          }
+        } else if (textLower === '!balik' || textLower === '!balık' || textLower === '!fish' || textLower === '!balikci' || textLower === '!balıkçı') {
+          const expRes = expeditionEngine.startExpedition(rawUser, 'fishing');
+          if (kickBot && kickBot.enabled && expRes.message) {
+            kickBot.sendMessage(expRes.message);
+          }
+        } else if (textLower === '!maden' || textLower === '!mine' || textLower === '!madenci') {
+          const expRes = expeditionEngine.startExpedition(rawUser, 'mining');
+          if (kickBot && kickBot.enabled && expRes.message) {
+            kickBot.sendMessage(expRes.message);
+          }
+        } else if (textLower === '!sefer' || textLower === '!gorev' || textLower === '!görev' || textLower === '!expedition') {
+          const st = expeditionEngine.getStatus(rawUser);
+          if (kickBot && kickBot.enabled && st.message) {
+            kickBot.sendMessage(st.message);
+          }
+        } else if (textLower === '!topla' || textLower === '!claim') {
+          const cl = expeditionEngine.claimExpedition(rawUser);
+          if (kickBot && kickBot.enabled && cl.message) {
+            kickBot.sendMessage(cl.message);
           }
         }
       }
@@ -639,6 +661,16 @@ bossEngine.on('tick', (tickData) => {
   broadcast({ type: 'BOSS_TICK', ...tickData });
 });
 
+// Expedition Engine Events
+expeditionEngine.on('expedition_started', (data) => {
+  broadcast({ ...data, type: 'EXPEDITION_STARTED', expeditionType: data.type });
+});
+
+expeditionEngine.on('expedition_completed', (data) => {
+  broadcast({ ...data, type: 'EXPEDITION_COMPLETED', expeditionType: data.type });
+  broadcast({ type: 'CHATTER_PRIMO_RAIN', count: data.reward?.isJackpot ? 35 : 15 });
+});
+
 // WebSocket Connection Handler
 wss.on('connection', (ws) => {
   // Send initial full state immediately upon connect
@@ -656,7 +688,8 @@ wss.on('connection', (ws) => {
     config: gameEngine.config,
     chatterConfig: config.chatterConfig || {},
     commands: commandService ? commandService.getCommands() : [],
-    bossState: bossEngine ? bossEngine.getState() : null
+    bossState: bossEngine ? bossEngine.getState() : null,
+    expeditions: expeditionEngine ? expeditionEngine.getActiveList() : []
   }));
 
   ws.send(JSON.stringify({
@@ -698,6 +731,23 @@ wss.on('connection', (ws) => {
 // Pixel Chatter REST Endpoints
 app.get('/api/chatter/config', (req, res) => {
   res.json(config.chatterConfig || {});
+});
+
+// Expedition REST Endpoints
+app.get('/api/expeditions', (req, res) => {
+  res.json(expeditionEngine ? expeditionEngine.getActiveList() : []);
+});
+
+app.post('/api/expeditions/start', express.json(), (req, res) => {
+  const { user, type } = req.body || {};
+  const result = expeditionEngine ? expeditionEngine.startExpedition(user || 'Viewer', type || 'fishing') : { success: false };
+  res.json(result);
+});
+
+app.post('/api/expeditions/claim', express.json(), (req, res) => {
+  const { user } = req.body || {};
+  const result = expeditionEngine ? expeditionEngine.claimExpedition(user || 'Viewer') : { success: false };
+  res.json(result);
 });
 
 app.post('/api/chatter/config', express.json(), (req, res) => {
