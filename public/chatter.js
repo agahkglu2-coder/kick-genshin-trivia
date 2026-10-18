@@ -42,23 +42,23 @@
   let screenShake = 0;
 
   const DOCK_SLOTS = [
-    { x: 105, y: 920 },
-    { x: 150, y: 915 },
-    { x: 195, y: 920 },
-    { x: 240, y: 915 },
-    { x: 125, y: 895 },
-    { x: 170, y: 890 },
-    { x: 215, y: 895 }
+    { x: 140, y: 905 },
+    { x: 185, y: 905 },
+    { x: 230, y: 905 },
+    { x: 275, y: 905 },
+    { x: 160, y: 890 },
+    { x: 205, y: 890 },
+    { x: 250, y: 890 }
   ];
 
   const MINE_SLOTS = [
-    { x: 1740, y: 920 },
-    { x: 1690, y: 915 },
-    { x: 1775, y: 920 },
-    { x: 1645, y: 915 },
-    { x: 1720, y: 895 },
-    { x: 1670, y: 890 },
-    { x: 1620, y: 895 }
+    { x: 1710, y: 905 },
+    { x: 1665, y: 905 },
+    { x: 1750, y: 905 },
+    { x: 1620, y: 905 },
+    { x: 1690, y: 890 },
+    { x: 1645, y: 890 },
+    { x: 1730, y: 890 }
   ];
 
   function getExpeditionSlot(type, index) {
@@ -95,235 +95,390 @@
     const gy = config.groundY;
 
     // ==========================================
-    // 1. ZARİF BALIKÇILIK İSKELESİ & SU (SOL TARAF)
+    // 1. BALIKÇI İSKELESİ & GÖL (SOL TARAF, x: 0 - 340)
     // ==========================================
     ctx.save();
 
-    // A) Su Dalgaları & Şeffaf Göl Kenarı (x: 0 - 80)
-    const waveSin = Math.sin(time * 3.0);
-    const waterGrad = ctx.createLinearGradient(0, gy - 20, 90, gy + 30);
-    waterGrad.addColorStop(0, 'rgba(14, 116, 144, 0.35)');
-    waterGrad.addColorStop(1, 'rgba(3, 105, 161, 0.15)');
-    ctx.fillStyle = waterGrad;
-    ctx.beginPath();
-    ctx.ellipse(35, gy + 10, 55, 22, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // A) Mavi Göl Suyu (x: 0 - 110, y: gy - 20 .. gy + 75)
+    ctx.fillStyle = '#0284c7';
+    ctx.fillRect(0, gy - 20, 110, 95);
 
-    // Ritmik Su Halka Dalgaları (Ripples)
-    const ripPhase = (time * 1.5) % 1;
-    const ripR1 = 12 + ripPhase * 28;
-    ctx.strokeStyle = `rgba(56, 189, 248, ${0.45 * (1 - ripPhase)})`;
-    ctx.lineWidth = 1.5;
+    // Su Üst Yüzeyi (Açık Camgöbeği)
+    ctx.fillStyle = '#06b6d4';
+    ctx.fillRect(0, gy - 20, 110, 12);
+
+    // Su Tabanı Koyu Gölge
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, gy + 55, 110, 20);
+
+    // Dış Piksel Kenarlık
+    ctx.strokeStyle = '#020617';
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.ellipse(35, gy + 8, ripR1, ripR1 * 0.45, 0, 0, Math.PI * 2);
+    ctx.moveTo(110, gy - 20);
+    ctx.lineTo(110, gy + 75);
+    ctx.lineTo(0, gy + 75);
     ctx.stroke();
 
-    // Sevimli Kırmızı-Beyaz Balıkçı Şamandırası (Bobber)
-    const bobY = gy + 4 + waveSin * 3;
-    const bobX = 35;
+    // Canlı Piksel Köpük Dalgaları (Animasyonlu)
+    const wavePhase = (time * 1.5) % 1;
     ctx.fillStyle = '#ffffff';
+    // Dalga 1
+    const w1x = wavePhase * 50;
+    ctx.fillRect(10 + w1x, gy - 16, 28, 3);
+    ctx.fillRect(14 + w1x, gy - 13, 20, 2);
+    // Dalga 2
+    ctx.fillRect(60 - wavePhase * 30, gy - 10, 24, 3);
+    // Dalga 3
+    ctx.fillRect(20 + ((time * 25) % 65), gy + 12, 18, 2);
+
+    // Dinamik Halka Dalgacıkları
+    const ripRad = 8 + ((time * 20) % 25);
+    const ripAlpha = Math.max(0, 1 - ripRad / 25);
+    ctx.strokeStyle = `rgba(255, 255, 255, ${ripAlpha * 0.8})`;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.arc(bobX, bobY + 2, 4, 0, Math.PI);
-    ctx.fill();
-    ctx.fillStyle = '#ef4444';
+    ctx.ellipse(55, gy - 6, ripRad, ripRad * 0.4, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Yüzen Kırmızı-Beyaz Balıkçı Şamandırası (Bobber)
+    const bobY = gy - 6 + Math.sin(time * 3.5) * 4;
+    const bobX = 55;
+    ctx.save();
+    // Şamandıra gölgesi
+    ctx.fillStyle = 'rgba(2, 6, 23, 0.4)';
     ctx.beginPath();
-    ctx.arc(bobX, bobY + 2, 4, Math.PI, Math.PI * 2);
+    ctx.ellipse(bobX, gy - 1, 6, 2.5, 0, 0, Math.PI * 2);
     ctx.fill();
+    // Alt Yarım (Beyaz)
+    ctx.fillStyle = '#f8fafc';
     ctx.strokeStyle = '#0f172a';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(bobX, bobY - 4);
-    ctx.lineTo(bobX, bobY + 5);
+    ctx.arc(bobX, bobY, 6, 0, Math.PI);
+    ctx.fill();
+    ctx.stroke();
+    // Üst Yarım (Parlak Kırmızı)
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(bobX, bobY, 6, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Anten Çubuğu
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(bobX, bobY - 6);
+    ctx.lineTo(bobX, bobY - 12);
+    ctx.stroke();
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillRect(bobX - 1.5, bobY - 14, 3, 3);
+    ctx.restore();
+
+    // B) İskele Destek Ayakları (Pillars)
+    const pillars = [125, 195, 265];
+    for (const px of pillars) {
+      ctx.fillStyle = '#451a03';
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2;
+      ctx.fillRect(px, gy - 12, 14, 87);
+      ctx.strokeRect(px, gy - 12, 14, 87);
+      ctx.fillStyle = '#290e02';
+      ctx.fillRect(px + 4, gy - 10, 3, 80);
+    }
+    // Çapraz Destek Kirişi
+    ctx.strokeStyle = '#451a03';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(125, gy + 35);
+    ctx.lineTo(275, gy + 15);
     ctx.stroke();
 
-    // B) Zarif Ahşap İskele Tahtaları (x: 65 - 280)
-    // Destek Kazıkları (Pillars)
-    ctx.fillStyle = '#451a03';
-    ctx.fillRect(80, gy - 8, 10, 40);
-    ctx.fillRect(170, gy - 8, 10, 40);
-    ctx.fillRect(250, gy - 8, 10, 40);
-
-    // Ana İskele Güvertesi Tahtaları
-    ctx.fillStyle = '#78350f';
-    ctx.beginPath();
-    ctx.roundRect(70, gy + 4, 210, 14, 4);
-    ctx.fill();
-
-    // Tahta Üst Yüzeyi (Vurgu)
+    // C) İskele Güvertesi Tahtaları (Deck Planks: x: 100 - 335, y: gy - 20 .. gy + 12)
     ctx.fillStyle = '#92400e';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.roundRect(70, gy, 210, 6, 3);
+    ctx.roundRect(100, gy - 20, 235, 30, 4);
     ctx.fill();
+    ctx.stroke();
 
-    // Tahta Aralık Çizgileri
-    ctx.strokeStyle = '#451a03';
-    ctx.lineWidth = 1;
-    for (let px = 95; px < 275; px += 26) {
-      ctx.beginPath();
-      ctx.moveTo(px, gy - 1);
-      ctx.lineTo(px, gy + 17);
-      ctx.stroke();
+    // Tahta Üst Yüzey Işık Vurgusu
+    ctx.fillStyle = '#b45309';
+    ctx.fillRect(102, gy - 18, 231, 10);
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(102, gy - 18, 231, 3);
+
+    // Tahta Aralık Çizgileri ve Çiviler
+    for (let px = 126; px < 330; px += 26) {
+      ctx.fillStyle = '#451a03';
+      ctx.fillRect(px, gy - 19, 2.5, 28);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(px - 6, gy - 14, 2, 2);
+      ctx.fillRect(px - 6, gy + 4, 2, 2);
     }
 
     // Mini Balık Kovası
+    ctx.fillStyle = '#475569';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(108, gy - 36, 16, 18);
+    ctx.strokeRect(108, gy - 36, 16, 18);
     ctx.fillStyle = '#64748b';
-    ctx.fillRect(74, gy - 16, 14, 16);
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillRect(72, gy - 18, 18, 4);
-    ctx.font = '10px serif';
-    ctx.fillText('🐟', 73, gy - 18);
+    ctx.fillRect(106, gy - 38, 20, 4);
+    ctx.font = '12px serif';
+    ctx.fillText('🐟', 106, gy - 36);
 
-    // Zarif Mini Alan Başlığı
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.70)';
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
-    ctx.lineWidth = 1;
+    // D) Fener Direği & Asılı Sıcak Gaz Lambası (Lantern Post)
+    const poleX = 318;
+    ctx.fillStyle = '#78350f';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2.5;
+    ctx.fillRect(poleX, gy - 150, 10, 134);
+    ctx.strokeRect(poleX, gy - 150, 10, 134);
+    ctx.fillRect(poleX - 30, gy - 146, 35, 8);
+    ctx.strokeRect(poleX - 30, gy - 146, 35, 8);
     ctx.beginPath();
-    ctx.roundRect(110, gy - 32, 115, 20, 10);
+    ctx.moveTo(poleX - 22, gy - 138);
+    ctx.lineTo(poleX, gy - 116);
+    ctx.strokeStyle = '#451a03';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Asılı Fener
+    const lanternSway = Math.sin(time * 2.2) * 2;
+    const lX = poleX - 25 + lanternSway;
+    const lY = gy - 132;
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(poleX - 25, gy - 138);
+    ctx.lineTo(lX, lY);
+    ctx.stroke();
+
+    // Fener Işığı Halesi
+    const lanternGlow = ctx.createRadialGradient(lX, lY + 12, 4, lX, lY + 12, 55);
+    lanternGlow.addColorStop(0, 'rgba(251, 191, 36, 0.45)');
+    lanternGlow.addColorStop(0.7, 'rgba(245, 158, 11, 0.15)');
+    lanternGlow.addColorStop(1, 'rgba(251, 191, 36, 0)');
+    ctx.fillStyle = lanternGlow;
+    ctx.beginPath();
+    ctx.arc(lX, lY + 12, 55, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Fener Gövdesi
+    ctx.fillStyle = '#fbbf24';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.fillRect(lX - 7, lY, 14, 18);
+    ctx.strokeRect(lX - 7, lY, 14, 18);
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(lX - 9, lY - 4, 18, 5);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(lX - 3, lY + 4, 6, 8);
+
+    // E) Ahşap Oyma Alan Başlığı
+    ctx.fillStyle = '#1e1b4b';
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(150, gy - 55, 145, 25, 6);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#e0f2fe';
-    ctx.font = 'bold 11px "Fredoka", "Nunito", sans-serif';
+    ctx.font = 'bold 12px "Fredoka", "Nunito", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🎣 Balıkçı İskelesi', 167, gy - 22);
+    ctx.fillText('🎣 BALIKÇI İSKELESİ', 222, gy - 42);
 
     ctx.restore();
 
     // ==========================================
-    // 2. ZARİF PARILDAYAN KRİSTAL KÜMESİ (SAĞ TARAF)
+    // 2. KRİSTAL MADENİ & MAĞARA (SAĞ TARAF, x: 1620 - 1920)
     // ==========================================
     ctx.save();
     const pulse = (Math.sin(time * 2.5) + 1) * 0.5;
 
-    // A) Kristallerin Çevresinde Yumuşak Mor/Camgöbeği Büyü Işıltısı
-    const glowGrad = ctx.createRadialGradient(1835, gy - 25, 10, 1835, gy - 25, 80);
-    glowGrad.addColorStop(0, `rgba(192, 132, 252, ${0.30 + pulse * 0.15})`);
-    glowGrad.addColorStop(0.6, `rgba(56, 189, 248, ${0.12 + pulse * 0.08})`);
-    glowGrad.addColorStop(1, 'rgba(192, 132, 252, 0)');
-    ctx.fillStyle = glowGrad;
-    ctx.beginPath();
-    ctx.arc(1835, gy - 25, 80, 0, Math.PI * 2);
-    ctx.fill();
-
-    // B) Kaya Kaidesi
+    // A) Taş Mağara Girişi & Kayalık (Cliff & Cavern)
     ctx.fillStyle = '#334155';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.ellipse(1835, gy + 4, 60, 16, 0, 0, Math.PI * 2);
+    ctx.moveTo(1720, gy + 75);
+    ctx.lineTo(1690, gy + 10);
+    ctx.lineTo(1715, gy - 65);
+    ctx.lineTo(1760, gy - 130);
+    ctx.lineTo(1830, gy - 148);
+    ctx.lineTo(1920, gy - 130);
+    ctx.lineTo(1920, gy + 75);
+    ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = '#1e293b';
+    ctx.stroke();
+
+    // Kaya Gölge ve Işık Katmanları
+    ctx.fillStyle = '#475569';
     ctx.beginPath();
-    ctx.ellipse(1835, gy + 8, 62, 10, 0, 0, Math.PI * 2);
+    ctx.moveTo(1760, gy - 130);
+    ctx.lineTo(1830, gy - 148);
+    ctx.lineTo(1850, gy - 120);
+    ctx.lineTo(1790, gy - 90);
+    ctx.closePath();
     ctx.fill();
 
-    // C) Kristal 1: Büyük Mor Ametist (Orta, x: 1835)
+    // Karanlık Mağara Boşluğu (Cavern Depth)
+    ctx.fillStyle = '#09090b';
+    ctx.strokeStyle = '#020617';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(1770, gy + 50);
+    ctx.lineTo(1750, gy - 25);
+    ctx.lineTo(1785, gy - 95);
+    ctx.lineTo(1860, gy - 85);
+    ctx.lineTo(1885, gy + 50);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Ahşap Maden Destek Kirişleri (Mine Timbers)
+    ctx.fillStyle = '#78350f';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2.5;
+    ctx.fillRect(1744, gy - 100, 12, 120);
+    ctx.strokeRect(1744, gy - 100, 12, 120);
+    ctx.fillRect(1740, gy - 105, 130, 12);
+    ctx.strokeRect(1740, gy - 105, 130, 12);
+    ctx.fillRect(1860, gy - 100, 12, 120);
+    ctx.strokeRect(1860, gy - 100, 12, 120);
+
+    // B) Parıldayan Büyülü Kristal Haleleri (Ambient Glow)
+    const crysGlow = ctx.createRadialGradient(1820, gy - 40, 15, 1820, gy - 40, 95);
+    crysGlow.addColorStop(0, `rgba(192, 132, 252, ${0.40 + pulse * 0.20})`);
+    crysGlow.addColorStop(0.5, `rgba(56, 189, 248, ${0.20 + pulse * 0.10})`);
+    crysGlow.addColorStop(1, 'rgba(192, 132, 252, 0)');
+    ctx.fillStyle = crysGlow;
+    ctx.beginPath();
+    ctx.arc(1820, gy - 40, 95, 0, Math.PI * 2);
+    ctx.fill();
+
+    // C) DEV KRİSTALLER (Towering 65px - 105px Tall!)
+    // 1. Kristal: Dev Mor Ametist (Orta, Yükseklik 105px)
     ctx.save();
     ctx.shadowColor = '#c084fc';
-    ctx.shadowBlur = 12 + pulse * 10;
-    // Sol Faset (Koyu Mor)
+    ctx.shadowBlur = 18 + pulse * 14;
     ctx.fillStyle = '#7e22ce';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(1835, gy - 58);
-    ctx.lineTo(1820, gy - 20);
-    ctx.lineTo(1824, gy);
-    ctx.lineTo(1835, gy + 2);
+    ctx.moveTo(1822, gy - 105);
+    ctx.lineTo(1805, gy - 25);
+    ctx.lineTo(1812, gy + 15);
+    ctx.lineTo(1822, gy + 18);
     ctx.closePath();
     ctx.fill();
-    // Sağ Faset (Açık Parlak Mor)
+    ctx.stroke();
     ctx.fillStyle = '#c084fc';
     ctx.beginPath();
-    ctx.moveTo(1835, gy - 58);
-    ctx.lineTo(1835, gy + 2);
-    ctx.lineTo(1846, gy);
-    ctx.lineTo(1848, gy - 22);
+    ctx.moveTo(1822, gy - 105);
+    ctx.lineTo(1822, gy + 18);
+    ctx.lineTo(1838, gy + 15);
+    ctx.lineTo(1842, gy - 30);
     ctx.closePath();
     ctx.fill();
-    // Merkez Kenar Parıltısı
-    ctx.strokeStyle = '#f3e8ff';
-    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(1835, gy - 58);
-    ctx.lineTo(1835, gy + 2);
+    ctx.moveTo(1822, gy - 105);
+    ctx.lineTo(1822, gy + 18);
     ctx.stroke();
     ctx.restore();
 
-    // D) Kristal 2: Camgöbeği Kristal (Sol, x: 1805)
+    // 2. Kristal: Büyük Camgöbeği Mana Kristali (Sol, Yükseklik 75px)
     ctx.save();
     ctx.shadowColor = '#38bdf8';
-    ctx.shadowBlur = 8 + pulse * 6;
+    ctx.shadowBlur = 12 + pulse * 10;
     ctx.fillStyle = '#0284c7';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(1808, gy - 40);
-    ctx.lineTo(1796, gy - 14);
-    ctx.lineTo(1800, gy + 2);
-    ctx.lineTo(1808, gy + 4);
+    ctx.moveTo(1785, gy - 75);
+    ctx.lineTo(1770, gy - 20);
+    ctx.lineTo(1778, gy + 8);
+    ctx.lineTo(1786, gy + 12);
     ctx.closePath();
     ctx.fill();
+    ctx.stroke();
     ctx.fillStyle = '#38bdf8';
     ctx.beginPath();
-    ctx.moveTo(1808, gy - 40);
-    ctx.lineTo(1808, gy + 4);
-    ctx.lineTo(1818, gy + 2);
-    ctx.lineTo(1819, gy - 16);
+    ctx.moveTo(1785, gy - 75);
+    ctx.lineTo(1786, gy + 12);
+    ctx.lineTo(1800, gy + 6);
+    ctx.lineTo(1802, gy - 22);
     ctx.closePath();
     ctx.fill();
+    ctx.stroke();
     ctx.restore();
 
-    // E) Kristal 3: Altın Işıltılı Küçük Kristal (Sağ, x: 1862)
+    // 3. Kristal: Parlak Altın Kehribar Kristali (Sağ, Yükseklik 62px)
     ctx.save();
     ctx.shadowColor = '#facc15';
-    ctx.shadowBlur = 6 + pulse * 6;
+    ctx.shadowBlur = 10 + pulse * 8;
     ctx.fillStyle = '#ca8a04';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(1862, gy - 34);
-    ctx.lineTo(1853, gy - 12);
-    ctx.lineTo(1856, gy + 3);
-    ctx.lineTo(1862, gy + 4);
+    ctx.moveTo(1858, gy - 62);
+    ctx.lineTo(1846, gy - 15);
+    ctx.lineTo(1852, gy + 8);
+    ctx.lineTo(1860, gy + 10);
     ctx.closePath();
     ctx.fill();
+    ctx.stroke();
     ctx.fillStyle = '#fde047';
     ctx.beginPath();
-    ctx.moveTo(1862, gy - 34);
-    ctx.lineTo(1862, gy + 4);
-    ctx.lineTo(1870, gy + 2);
-    ctx.lineTo(1871, gy - 14);
+    ctx.moveTo(1858, gy - 62);
+    ctx.lineTo(1860, gy + 10);
+    ctx.lineTo(1872, gy + 6);
+    ctx.lineTo(1874, gy - 18);
     ctx.closePath();
     ctx.fill();
+    ctx.stroke();
     ctx.restore();
 
-    // Uç Parıltı Yıldızı (Glint Star on tip)
-    const glint = (Math.sin(time * 5.0) + 1) * 0.5;
-    if (glint > 0.4) {
+    // Kristal Uçlarındaki Pırıltı Yıldızları (Glint Stars)
+    const glintCycle = (Math.sin(time * 4.0) + 1) * 0.5;
+    if (glintCycle > 0.3) {
       ctx.save();
-      ctx.translate(1835, gy - 58);
+      ctx.translate(1822, gy - 105);
       ctx.fillStyle = '#ffffff';
       ctx.shadowColor = '#ffffff';
-      ctx.shadowBlur = 8;
-      const gSize = 2.5 + glint * 2.5;
+      ctx.shadowBlur = 10;
+      const gs = 3.5 + glintCycle * 3.5;
       ctx.beginPath();
-      ctx.moveTo(0, -gSize);
-      ctx.lineTo(gSize * 0.3, 0);
-      ctx.lineTo(0, gSize);
-      ctx.lineTo(-gSize * 0.3, 0);
+      ctx.moveTo(0, -gs);
+      ctx.lineTo(gs * 0.3, 0);
+      ctx.lineTo(0, gs);
+      ctx.lineTo(-gs * 0.3, 0);
       ctx.closePath();
       ctx.fill();
       ctx.restore();
     }
 
-    // Zarif Mini Alan Başlığı
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.70)';
-    ctx.strokeStyle = 'rgba(192, 132, 252, 0.5)';
-    ctx.lineWidth = 1;
+    // D) Taş/Ahşap Oyma Alan Başlığı
+    ctx.fillStyle = '#1e1b4b';
+    ctx.strokeStyle = '#c084fc';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(1765, gy - 32, 120, 20, 10);
+    ctx.roundRect(1650, gy - 55, 145, 25, 6);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#f3e8ff';
-    ctx.font = 'bold 11px "Fredoka", "Nunito", sans-serif';
+    ctx.font = 'bold 12px "Fredoka", "Nunito", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('⛏️ Kristal Madeni', 1825, gy - 22);
+    ctx.fillText('⛏️ KRİSTAL MADENİ', 1722, gy - 42);
 
     ctx.restore();
   }
