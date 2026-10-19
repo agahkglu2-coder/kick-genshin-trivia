@@ -78,10 +78,17 @@
     bossEntity.classList.add(`frame-${frameType}`);
   }
 
-  // Sound Effects Generator (Web Audio API Synthesizer)
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  // Sound Effects Generator (Muted by default)
+  let soundEnabled = false;
+  let audioCtx = null;
   function playSound(type) {
+    if (!soundEnabled) return;
     try {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+      }
+      if (!audioCtx) return;
       if (audioCtx.state === 'suspended') audioCtx.resume();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
@@ -158,8 +165,17 @@
   function handleWSMessage(msg) {
     switch (msg.type) {
       case 'INIT_STATE':
+        if (msg.config && msg.config.soundEnabled !== undefined) {
+          soundEnabled = !!msg.config.soundEnabled;
+        }
         if (msg.bossState) {
           applyBossState(msg.bossState);
+        }
+        break;
+
+      case 'CONFIG_UPDATED':
+        if (msg.config && msg.config.soundEnabled !== undefined) {
+          soundEnabled = !!msg.config.soundEnabled;
         }
         break;
 

@@ -34,62 +34,6 @@
   let celebrationTimer = null;
   let socket = null;
 
-  // Sound configuration
-  const urlParams = new URLSearchParams(window.location.search);
-  const soundEnabled = urlParams.get('sound') !== '0';
-
-  // ========================================================
-  // WEB AUDIO API SYNTHESIZER
-  // ========================================================
-  let audioCtx = null;
-  function getAudioContext() {
-    if (!audioCtx) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (AudioContext) audioCtx = new AudioContext();
-    }
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-    return audioCtx;
-  }
-
-  function playChime(freq, duration = 0.2, gainLevel = 0.15) {
-    if (!soundEnabled) return;
-    try {
-      const ctx = getAudioContext();
-      if (!ctx) return;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const now = ctx.currentTime;
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now);
-
-      gain.gain.setValueAtTime(gainLevel, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(now);
-      osc.stop(now + duration);
-    } catch (e) {}
-  }
-
-  function playCelebrationFanfare() {
-    if (!soundEnabled) return;
-    const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C5, E5, G5, C6, E6
-    notes.forEach((freq, idx) => {
-      setTimeout(() => playChime(freq, 0.45, 0.25), idx * 110);
-    });
-  }
-
-  function playTaxChime() {
-    if (!soundEnabled) return;
-    playChime(1174.66, 0.18, 0.08); // D6 soft crystal chime
-    setTimeout(() => playChime(1760.00, 0.25, 0.06), 70); // A6
-  }
-
   // ========================================================
   // PARTICLE SYSTEM (CONFETTI & SPARKS)
   // ========================================================
@@ -207,8 +151,6 @@
       }, 4000);
     }
 
-    playTaxChime();
-
     setTimeout(() => {
       if (tag.parentNode) tag.parentNode.removeChild(tag);
     }, 1800);
@@ -230,7 +172,6 @@
 
     const cardRect = celebrationOverlay.getBoundingClientRect();
     createBurst(cardRect.left + cardRect.width / 2, cardRect.top + cardRect.height / 2, 120, ['#ffd700', '#f59e0b', '#ec4899', '#38bdf8', '#ffffff']);
-    playCelebrationFanfare();
 
     celebrationTimer = setTimeout(() => {
       celebrationOverlay.classList.add('hidden');
@@ -250,7 +191,6 @@
 
     const cardRect = celebrationOverlay.getBoundingClientRect();
     createBurst(cardRect.left + cardRect.width / 2, cardRect.top + cardRect.height / 2, 100, ['#38bdf8', '#60a5fa', '#ffd700', '#ffffff']);
-    playCelebrationFanfare();
 
     celebrationTimer = setTimeout(() => {
       celebrationOverlay.classList.add('hidden');
