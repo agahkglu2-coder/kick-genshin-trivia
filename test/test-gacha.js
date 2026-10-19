@@ -167,6 +167,34 @@ engine.handleChatMessage({ content: '!wish standart', sender: { username: 'TestG
 assert.strictEqual(testUser.standardPity5, beforeStdPity + 1);
 console.log('✅ Yeni chat komutları (!banner, !wish standart, !pity) başarıyla doğrulandı!');
 
+console.log('--- TEST 16: Genişletilmiş 5★ Karakter ve Banner Çeşitliliği ---');
+const fiveStars = engine.characters.filter(c => c.rarity === 5);
+assert(fiveStars.length >= 50, `5★ karakter sayısı en az 50 olmalı, bulunan: ${fiveStars.length}`);
+assert(engine.banners.length >= 40, `Banner sayısı en az 40 olmalı, bulunan: ${engine.banners.length}`);
+console.log(`✅ ${fiveStars.length} adet 5★ Karakter ve ${engine.banners.length} adet Banner başarıyla doğrulandı!`);
+
+console.log('--- TEST 17: Karakter Adıyla Doğrudan Dilek Çekme (!wish ayaka, !wish neuvi, !wish10 hutao) ---');
+testUser.primogems = 10000;
+testUser.isGuaranteed = true; // Kesin garanti ile test ediyoruz
+
+// 1. Ayaka için doğrudan dilek
+const ayakaRes = engine.handleChatMessage({ content: '!wish ayaka', sender: { username: 'TestGezgin' } });
+assert(ayakaRes && ayakaRes.success, 'Ayaka için özel dilek başarılı olmalı');
+assert.strictEqual(ayakaRes.banner.featured5, 'Kamisato Ayaka', 'Banner featured5 Ayaka olmalı');
+
+// 2. Takma ad ile dilek (neuvi -> Neuvillette)
+testUser.isGuaranteed = true;
+testUser.pity5 = 74; // Garantili 5★ tetiklemesi
+const neuviPull = engine.pull('TestGezgin', 1, 'event', engine.resolveBannerForQuery('neuvi'));
+assert.strictEqual(neuviPull.success, true);
+assert.strictEqual(neuviPull.pulls[0].name, 'Neuvillette', 'Takma ad ile Neuvillette çekilmeli');
+console.log('✅ Takma ad ve doğrudan karakter dilek mekaniği başarıyla doğrulandı!');
+
+// 3. !bannerlar komutu kontrolü
+engine.handleChatMessage({ content: '!bannerlar', sender: { username: 'TestGezgin' } });
+assert(chatResp && chatResp.message.includes('5★ DİLEK HAVUZU'));
+console.log('✅ !bannerlar komutu ve rehberi başarıyla doğrulandı!');
+
 console.log('========================================================');
 console.log('🎉 TÜM GACHA, BANNER & 50/50 MEKANİK TESTLERİ BAŞARIYLA GEÇTİ!');
 console.log('========================================================');

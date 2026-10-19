@@ -1939,13 +1939,53 @@
       currentActiveBanner = data.activeBanner || null;
 
       if (selectBannerPreset && cachedBanners.length > 0) {
-        selectBannerPreset.innerHTML = cachedBanners.map(b => {
-          const typeBadge = b.type === 'standard' ? '[Standart]' : `[v${b.version || '1.0'}]`;
-          const feat = b.featured5 ? `5★ ${b.featured5}` : 'Standart Dilek';
-          return `<option value="${escapeHtml(b.id)}" ${currentActiveBanner && currentActiveBanner.id === b.id ? 'selected' : ''}>
-            ${typeBadge} ${escapeHtml(b.nameTr || b.name)} (${feat})
-          </option>`;
-        }).join('');
+        const groups = {
+          '👑 Popüler & Arkonlar': ['raiden_shogun', 'furina', 'zhongli', 'nahida', 'mavuika', 'venti', 'neuvillette', 'arlecchino', 'kazuha', 'hu_tao'],
+          '🔥 Natlan': ['mavuika', 'mualani', 'kinich', 'xilonen', 'chasca', 'citlali'],
+          '🌊 Fontaine': ['furina', 'neuvillette', 'arlecchino', 'navia', 'clorinde', 'wriothesley', 'lyney', 'sigewinne', 'emilie'],
+          '⚡ Inazuma': ['raiden_shogun', 'ayaka', 'kazuha', 'yae_miko', 'yoimiya', 'kokomi', 'ayato', 'itto', 'chiori'],
+          '🔶 Liyue': ['zhongli', 'hu_tao', 'yelan', 'xiao', 'ganyu', 'xianyun', 'shenhe', 'baizhu', 'keqing', 'qiqi'],
+          '🌿 Sumeru': ['nahida', 'alhaitham', 'wanderer', 'cyno', 'nilou', 'tighnari', 'dehya'],
+          '🌪️ Mondstadt': ['venti', 'eula', 'klee', 'albedo', 'diluc', 'jean', 'mona'],
+          '❄️ Snezhnaya & Efsaneler': ['tartaglia', 'capitano', 'columbina'],
+          '📜 Standart & Bölgesel Dilek': ['standard', 'chronicled', 'diluc', 'jean', 'mona', 'keqing', 'qiqi', 'tighnari', 'dehya']
+        };
+
+        const assignedIds = new Set();
+        let optionsHtml = '';
+
+        for (const [groupName, bannerIds] of Object.entries(groups)) {
+          const matchedBanners = cachedBanners.filter(b => bannerIds.includes(b.id));
+          if (matchedBanners.length > 0) {
+            optionsHtml += `<optgroup label="${groupName}">`;
+            optionsHtml += matchedBanners.map(b => {
+              const typeBadge = b.type === 'standard' ? '[Standart]' : `[v${b.version || '1.0'}]`;
+              const feat = b.featured5 ? `5★ ${b.featured5}` : 'Standart Dilek';
+              const isSelected = currentActiveBanner && currentActiveBanner.id === b.id;
+              return `<option value="${escapeHtml(b.id)}" ${isSelected ? 'selected' : ''}>
+                ${typeBadge} ${escapeHtml(b.nameTr || b.name)} (${feat})
+              </option>`;
+            }).join('');
+            optionsHtml += `</optgroup>`;
+            matchedBanners.forEach(b => assignedIds.add(b.id));
+          }
+        }
+
+        const remaining = cachedBanners.filter(b => !assignedIds.has(b.id));
+        if (remaining.length > 0) {
+          optionsHtml += `<optgroup label="✨ Diğer Bannerlar">`;
+          optionsHtml += remaining.map(b => {
+            const typeBadge = b.type === 'standard' ? '[Standart]' : `[v${b.version || '1.0'}]`;
+            const feat = b.featured5 ? `5★ ${b.featured5}` : 'Standart Dilek';
+            const isSelected = currentActiveBanner && currentActiveBanner.id === b.id;
+            return `<option value="${escapeHtml(b.id)}" ${isSelected ? 'selected' : ''}>
+              ${typeBadge} ${escapeHtml(b.nameTr || b.name)} (${feat})
+            </option>`;
+          }).join('');
+          optionsHtml += `</optgroup>`;
+        }
+
+        selectBannerPreset.innerHTML = optionsHtml;
       }
 
       if (customBannerChar5 && customBannerChar5.children.length === 0) {
@@ -1955,7 +1995,7 @@
             const allChars = await charsRes.json();
             const fiveStars = allChars.filter(c => c.rarity === 5);
             customBannerChar5.innerHTML = fiveStars.map(c => 
-              `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)} (${c.element})</option>`
+              `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)} (${c.element} - ${c.region || 'Teyvat'})</option>`
             ).join('');
           }
         } catch (e) {}

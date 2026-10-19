@@ -986,6 +986,18 @@ app.get('/api/gacha/banners', (req, res) => {
   });
 });
 
+app.get(['/data/characters.json', '/api/gacha/characters', '/api/characters'], (req, res) => {
+  res.json(gachaEngine.characters);
+});
+
+app.get(['/data/banners.json', '/api/gacha/banners-list'], (req, res) => {
+  res.json(gachaEngine.banners);
+});
+
+app.get(['/data/weapons.json', '/api/gacha/weapons', '/api/weapons'], (req, res) => {
+  res.json(gachaEngine.weapons);
+});
+
 app.post('/api/gacha/banner/set', (req, res) => {
   const { bannerId } = req.body || {};
   if (!bannerId) return res.status(400).json({ error: 'Banner ID gerekli.' });

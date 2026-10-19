@@ -1055,3 +1055,18 @@ body {
   text-shadow: 0 0 6px rgba(96, 165, 250, 0.8);
 }
 
+.wish-5050-badge.badge-capturing-radiance {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.5), rgba(244, 63, 94, 0.45), rgba(168, 85, 247, 0.5));
+  border: 2px solid #fef08a;
+  color: #ffffff;
+  box-shadow: 0 0 30px rgba(254, 240, 138, 0.8), inset 0 0 15px rgba(244, 63, 94, 0.5);
+  text-shadow: 0 0 12px rgba(255, 255, 255, 1);
+  animation: badgePop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275), radianceGlow 2s infinite alternate;
+}
+
+@keyframes radianceGlow {
+  0% { box-shadow: 0 0 25px rgba(234, 179, 8, 0.8), inset 0 0 10px rgba(254, 240, 138, 0.4); }
+  100% { box-shadow: 0 0 45px rgba(236, 72, 153, 0.9), inset 0 0 18px rgba(168, 85, 247, 0.6); }
+}
+
+

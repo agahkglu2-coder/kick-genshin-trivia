@@ -159,6 +159,144 @@ class GachaEngine extends EventEmitter {
     return { success: true, banner: newBanner };
   }
 
+  findCharacterByNameOrAlias(query) {
+    if (!query) return null;
+    const clean = query.trim().toLowerCase().replace(/['\s_-]+/g, '');
+
+    const aliases = {
+      'raiden': 'Raiden Shogun',
+      'shogun': 'Raiden Shogun',
+      'ei': 'Raiden Shogun',
+      'hutao': 'Hu Tao',
+      'hu': 'Hu Tao',
+      'kazuha': 'Kaedehara Kazuha',
+      'ayaka': 'Kamisato Ayaka',
+      'ayato': 'Kamisato Ayato',
+      'neuvi': 'Neuvillette',
+      'neuv': 'Neuvillette',
+      'neuvillette': 'Neuvillette',
+      'furina': 'Furina',
+      'nahida': 'Nahida',
+      'kusanali': 'Nahida',
+      'zhongli': 'Zhongli',
+      'morax': 'Zhongli',
+      'geodaddy': 'Zhongli',
+      'venti': 'Venti',
+      'barbatos': 'Venti',
+      'mavuika': 'Mavuika',
+      'arle': 'Arlecchino',
+      'arlecchino': 'Arlecchino',
+      'father': 'Arlecchino',
+      'baba': 'Arlecchino',
+      'scara': 'Wanderer',
+      'scaramouche': 'Wanderer',
+      'wanderer': 'Wanderer',
+      'childe': 'Tartaglia',
+      'tartaglia': 'Tartaglia',
+      'ajax': 'Tartaglia',
+      'kokomi': 'Sangonomiya Kokomi',
+      'itto': 'Arataki Itto',
+      'yae': 'Yae Miko',
+      'miko': 'Yae Miko',
+      'yelan': 'Yelan',
+      'xiao': 'Xiao',
+      'ganyu': 'Ganyu',
+      'alhaitham': 'Alhaitham',
+      'haitham': 'Alhaitham',
+      'navia': 'Navia',
+      'clorinde': 'Clorinde',
+      'kinich': 'Kinich',
+      'mualani': 'Mualani',
+      'xilonen': 'Xilonen',
+      'chasca': 'Chasca',
+      'citlali': 'Citlali',
+      'wrio': 'Wriothesley',
+      'wriothesley': 'Wriothesley',
+      'xianyun': 'Xianyun',
+      'bulut': 'Xianyun',
+      'cloudretainer': 'Xianyun',
+      'lyney': 'Lyney',
+      'baizhu': 'Baizhu',
+      'cyno': 'Cyno',
+      'nilou': 'Nilou',
+      'eula': 'Eula',
+      'klee': 'Klee',
+      'albedo': 'Albedo',
+      'shenhe': 'Shenhe',
+      'yoimiya': 'Yoimiya',
+      'diluc': 'Diluc',
+      'jean': 'Jean',
+      'mona': 'Mona',
+      'keqing': 'Keqing',
+      'qiqi': 'Qiqi',
+      'tighnari': 'Tighnari',
+      'dehya': 'Dehya',
+      'chiori': 'Chiori',
+      'emilie': 'Emilie',
+      'sigewinne': 'Sigewinne',
+      'capitano': 'Capitano',
+      'columbina': 'Columbina',
+      'dainsleif': 'Dainsleif',
+      'skirk': 'Skirk',
+      'aloy': 'Aloy'
+    };
+
+    if (aliases[clean]) {
+      const match = this.characters.find(c => c.name.toLowerCase() === aliases[clean].toLowerCase());
+      if (match) return match;
+    }
+
+    const exact = this.characters.find(c => 
+      c.name.toLowerCase().replace(/['\s_-]+/g, '') === clean
+    );
+    if (exact) return exact;
+
+    const fiveStarMatch = this.characters.find(c => 
+      c.rarity === 5 && c.name.toLowerCase().replace(/['\s_-]+/g, '').includes(clean)
+    );
+    if (fiveStarMatch) return fiveStarMatch;
+
+    return this.characters.find(c => 
+      c.name.toLowerCase().replace(/['\s_-]+/g, '').includes(clean)
+    ) || null;
+  }
+
+  resolveBannerForQuery(query) {
+    if (!query) return null;
+    const clean = query.trim().toLowerCase();
+
+    // Direct banner ID or banner name match
+    const bannerMatch = this.banners.find(b => 
+      b.id.toLowerCase() === clean || 
+      (b.nameTr && b.nameTr.toLowerCase() === clean) ||
+      (b.name && b.name.toLowerCase() === clean)
+    );
+    if (bannerMatch) return bannerMatch;
+
+    // Character match
+    const char = this.findCharacterByNameOrAlias(query);
+    if (!char) return null;
+
+    // Existing preset banner with this character
+    const existing = this.banners.find(b => 
+      b.featured5 && b.featured5.toLowerCase() === char.name.toLowerCase()
+    );
+    if (existing) return existing;
+
+    // Dynamically created event banner for this character
+    return {
+      id: `custom_${char.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
+      name: `${char.name} Event Wish`,
+      nameTr: `${char.name} Özel Dileği`,
+      version: 'Özel',
+      type: 'character_event',
+      element: char.element,
+      featured5: char.name,
+      featured4: ['Bennett', 'Xingqiu', 'Xiangling'],
+      description: `${char.name} için sınırlı süreli etkinlik dileği.`
+    };
+  }
+
   getOrCreateUser(username) {
     if (!username) return null;
     const key = username.toLowerCase();
@@ -254,8 +392,8 @@ class GachaEngine extends EventEmitter {
     }, this.config.passiveTickMinutes * 60 * 1000);
   }
 
-  // 4. Gacha Pull Simulation (Event or Standard Banner)
-  pull(username, count = 1, bannerType = 'event') {
+  // 4. Gacha Pull Simulation (Event or Standard Banner, with optional targetBanner)
+  pull(username, count = 1, bannerType = 'event', targetBanner = null) {
     const user = this.getOrCreateUser(username);
     if (!user) return { success: false, reason: 'user_not_found' };
 
@@ -273,9 +411,9 @@ class GachaEngine extends EventEmitter {
     user.primogems -= totalCost;
     const pulls = [];
 
-    const activeBanner = bannerType === 'standard' 
+    const activeBanner = targetBanner || (bannerType === 'standard' 
       ? (this.banners.find(b => b.type === 'standard') || { id: 'standard', nameTr: 'Yolculuk Çağrısı', name: 'Wanderlust Invocation', type: 'standard' })
-      : this.getActiveBanner();
+      : this.getActiveBanner());
 
     for (let i = 0; i < count; i++) {
       const pullResult = this.executeSinglePull(user, bannerType, activeBanner);
@@ -296,6 +434,7 @@ class GachaEngine extends EventEmitter {
         element: p.element,
         won5050: p.won5050,
         isGuaranteedPull: p.isGuaranteedPull,
+        isCapturingRadiance: p.isCapturingRadiance || false,
         bannerName: activeBanner ? (activeBanner.nameTr || activeBanner.name) : 'Etkinlik Dileği',
         timestamp: Date.now()
       });
@@ -415,10 +554,20 @@ class GachaEngine extends EventEmitter {
           isGuaranteedPull = true;
           user.isGuaranteed = false; // Guarantee consumed
         } else {
-          // 50/50 Roll
-          const winFiftyFifty = Math.random() < 0.5;
+          // 50/50 Roll with Genshin 5.0 Capturing Radiance (Işıltı Yakalama)
+          let winFiftyFifty = Math.random() < 0.5;
+          let capturingRadiance = false;
+
+          if (!winFiftyFifty) {
+            // Capturing Radiance: 10% chance to turn 50/50 loss into an automatic win (~55% win rate)
+            if (Math.random() < 0.10) {
+              winFiftyFifty = true;
+              capturingRadiance = true;
+            }
+          }
+
           if (winFiftyFifty) {
-            item = featuredChar;
+            item = capturingRadiance ? { ...featuredChar, isCapturingRadiance: true } : featuredChar;
             itemType = 'character';
             won5050 = true;
             isGuaranteedPull = false;
@@ -441,7 +590,13 @@ class GachaEngine extends EventEmitter {
       user.fiveStarsCount = (user.fiveStarsCount || 0) + 1;
 
       // Announce in chat
-      if (won5050 === true && isGuaranteedPull) {
+      if (item && item.isCapturingRadiance) {
+        console.log(`[GachaEngine] ✨✨✨✨✨ IŞILTI YAKALAMA (CAPTURING RADIANCE)! ${user.username} -> ${item.name}!`);
+        this.emit('chat_response', {
+          username: user.username,
+          message: `✨✨✨✨✨ IŞILTI YAKALAMA! @${user.username} kader çarkını çevirerek 5★ [${item.name}] kazandı! (50/50 Işıltı Zaferi!)`
+        });
+      } else if (won5050 === true && isGuaranteedPull) {
         console.log(`[GachaEngine] 🌟🌟🌟🌟🌟 GARANTİLİ 5★ KAZANILDI! ${user.username} -> ${item.name} (${activeBanner.nameTr})!`);
         this.emit('chat_response', {
           username: user.username,
@@ -553,6 +708,7 @@ class GachaEngine extends EventEmitter {
       portrait: item.portrait || null,
       internalName: item.internalName || null,
       slug: item.slug || null,
+      isCapturingRadiance: item.isCapturingRadiance || false,
       pulledAt: new Date().toISOString()
     };
 
@@ -566,6 +722,7 @@ class GachaEngine extends EventEmitter {
       bannerType: isStandard ? 'standard' : 'event',
       won5050,
       isGuaranteedPull,
+      isCapturingRadiance: item.isCapturingRadiance || false,
       isStandardPool,
       pity5AtPull: currentPity5,
       isRefund,
@@ -590,67 +747,110 @@ class GachaEngine extends EventEmitter {
       .replace(/ö/g, 'o')
       .replace(/ç/g, 'c');
 
-    // Banner Info Check (!banner, !afis, !etkinlik)
-    if (text === '!banner' || text === '!afis' || text === '!etkinlik' || text === '!havuz') {
-      const activeBanner = this.getActiveBanner();
-      const user = this.getOrCreateUser(username);
-      if (!activeBanner) return null;
-
-      const feat4Str = (activeBanner.featured4 || []).join(', ');
-      const guaranteeStatus = user.isGuaranteed 
-        ? '🌟 KESİN GARANTİ (Sonraki 5★ %100 Banner Karakteri!)' 
-        : '🎲 50/50 Şansı';
-
+    // Banner Catalog (!bannerlar, !banners, !havuz, !karakterler5, !liste)
+    if (text === '!bannerlar' || text === '!banners' || text === '!havuz' || text === '!karakterler5' || text === '!liste') {
+      const popular = ['Raiden', 'Furina', 'Hu Tao', 'Zhongli', 'Nahida', 'Neuvillette', 'Mavuika', 'Arlecchino', 'Kazuha', 'Ayaka', 'Yelan', 'Xiao', 'Ganyu', 'Alhaitham', 'Navia', 'Clorinde', 'Citlali', 'Capitano'];
       this.emit('chat_response', {
         username,
-        message: `🎪 Aktif Banner: [${activeBanner.nameTr || activeBanner.name}] | 5★ ${activeBanner.featured5} | 4★ ${feat4Str} | @${username} Pity: ${user.pity5}/${this.config.pity5Threshold} | Durum: ${guaranteeStatus}`
+        message: `🎪 5★ DİLEK HAVUZU: İstediğin karaktere doğrudan dilek çekebilirsin! Örn: !wish ${popular.slice(0, 8).join(', !wish ')}... ve 50+ karakter! (10'lu çekiş için: !wish10 <karakter>)`
       });
-      return { type: 'banner_info', banner: activeBanner, user };
+      return { type: 'banner_catalog' };
     }
 
-    // Standard Wish (!wish standart, !dilek standart, !standart)
-    if (text === '!wish standart' || text === '!wish standard' || text === '!dilek standart' || text === '!standart') {
-      const res = this.pull(username, 1, 'standard');
-      if (!res.success && res.reason === 'insufficient_primogems') {
-        this.emit('chat_response', {
-          username,
-          message: `@${username} Yetersiz Primogem! (Mevcut: ${res.current}, Gereken: ${res.needed}).`
-        });
+    // Banner Info Check (!banner [karakter], !afis [karakter], !etkinlik)
+    const bannerMatch = text.match(/^!(?:banner|afis|etkinlik)(?:\s+(.+))?$/);
+    if (bannerMatch) {
+      const charQuery = bannerMatch[1]?.trim();
+      let targetBanner = null;
+
+      if (charQuery) {
+        targetBanner = this.resolveBannerForQuery(charQuery);
+        if (!targetBanner) {
+          this.emit('chat_response', {
+            username,
+            message: `@${username} '${charQuery}' için banner bulunamadı. Popüler 5★ listesi için: !bannerlar`
+          });
+          return null;
+        }
+      } else {
+        targetBanner = this.getActiveBanner();
       }
-      return res;
+
+      const user = this.getOrCreateUser(username);
+      if (!targetBanner) return null;
+
+      const feat4Str = (targetBanner.featured4 || []).join(', ');
+      const guaranteeStatus = user.isGuaranteed 
+        ? '🌟 KESİN GARANTİ (%100 Banner Karakteri!)' 
+        : '🎲 50/50 Şansı (+%10 Işıltı Yakalama)';
+
+      const bannerLabel = charQuery ? 'Banner' : 'Aktif Banner';
+      this.emit('chat_response', {
+        username,
+        message: `🎪 ${bannerLabel}: [${targetBanner.nameTr || targetBanner.name}] | 5★ ${targetBanner.featured5 || 'Standart'} | 4★ ${feat4Str} | @${username} Pity: ${user.pity5}/${this.config.pity5Threshold} (${guaranteeStatus}) | İstediğin 5★ için: !wish <karakter>`
+      });
+      return { type: 'banner_info', banner: targetBanner, user };
     }
 
-    // 10x Standard Wish (!wish10 standart, !10standart)
-    if (text === '!wish10 standart' || text === '!wish10 standard' || text === '!dilek10 standart' || text === '!10standart') {
-      const res = this.pull(username, 10, 'standard');
-      if (!res.success && res.reason === 'insufficient_primogems') {
-        this.emit('chat_response', {
-          username,
-          message: `@${username} 10'lu standart dilek için 1600 Primogem gerekir! (Mevcut: ${res.current}).`
-        });
+    // 10x Wish (!wish10 [karakter/standart], !dilek10 [karakter/standart], !10cek, !10standart)
+    const wish10Match = text.match(/^!(?:wish10|dilek10|10cek|10standart)(?:\s+(.+))?$/);
+    if (wish10Match) {
+      let targetQuery = wish10Match[1]?.trim();
+      if (text.startsWith('!10standart')) targetQuery = 'standart';
+      let res;
+
+      if (targetQuery === 'standart' || targetQuery === 'standard') {
+        res = this.pull(username, 10, 'standard');
+      } else if (targetQuery) {
+        const resolvedBanner = this.resolveBannerForQuery(targetQuery);
+        if (!resolvedBanner) {
+          this.emit('chat_response', {
+            username,
+            message: `@${username} '${targetQuery}' adında bir karakter veya banner bulunamadı! Popüler 5★ karakterler: Raiden, Furina, Hu Tao, Ayaka, Neuvillette, Mavuika, Zhongli, Kazuha... (!bannerlar)`
+          });
+          return null;
+        }
+        res = this.pull(username, 10, 'event', resolvedBanner);
+      } else {
+        res = this.pull(username, 10, 'event');
       }
-      return res;
-    }
 
-    // Single Wish (!wish)
-    if (text === '!wish' || text === '!dilek' || text === '!cek') {
-      const res = this.pull(username, 1, 'event');
-      if (!res.success && res.reason === 'insufficient_primogems') {
-        this.emit('chat_response', {
-          username,
-          message: `@${username} Yetersiz Primogem! (Mevcut: ${res.current}, Gereken: ${res.needed}). Chate yazarak ve yayını izleyerek kazanabilirsin!`
-        });
-      }
-      return res;
-    }
-
-    // 10x Wish (!wish10)
-    if (text === '!wish10' || text === '!dilek10' || text === '!10cek') {
-      const res = this.pull(username, 10, 'event');
       if (!res.success && res.reason === 'insufficient_primogems') {
         this.emit('chat_response', {
           username,
           message: `@${username} 10'lu dilek için 1600 Primogem gerekir! (Mevcut: ${res.current}).`
+        });
+      }
+      return res;
+    }
+
+    // Single Wish (!wish [karakter/standart], !dilek [karakter/standart], !cek [karakter/standart], !standart)
+    const wishMatch = text.match(/^!(?:wish|dilek|cek|standart)(?:\s+(.+))?$/);
+    if (wishMatch) {
+      let targetQuery = wishMatch[1]?.trim();
+      if (text.startsWith('!standart')) targetQuery = 'standart';
+      let res;
+
+      if (targetQuery === 'standart' || targetQuery === 'standard') {
+        res = this.pull(username, 1, 'standard');
+      } else if (targetQuery) {
+        const resolvedBanner = this.resolveBannerForQuery(targetQuery);
+        if (!resolvedBanner) {
+          this.emit('chat_response', {
+            username,
+            message: `@${username} '${targetQuery}' adında bir karakter veya banner bulunamadı! Popüler 5★ karakterler: Raiden, Furina, Hu Tao, Ayaka, Neuvillette, Mavuika, Zhongli, Kazuha... (!bannerlar)`
+          });
+          return null;
+        }
+        res = this.pull(username, 1, 'event', resolvedBanner);
+      } else {
+        res = this.pull(username, 1, 'event');
+      }
+
+      if (!res.success && res.reason === 'insufficient_primogems') {
+        this.emit('chat_response', {
+          username,
+          message: `@${username} Yetersiz Primogem! (Mevcut: ${res.current}, Gereken: ${res.needed}). Chate yazarak ve yayını izleyerek kazanabilirsin!`
         });
       }
       return res;
@@ -732,7 +932,7 @@ class GachaEngine extends EventEmitter {
     if (text === '!komutlar' || text === '!yardim' || text === '!help' || text === '!commands' || text === '!komut') {
       this.emit('chat_response', {
         username,
-        message: `📜 MilkaBot Komutları: !wish (Banner Dileği / 160 Primo) | !wish10 (10'lu Dilek) | !wish standart (Standart Dilek) | !banner (Aktif Banner ve 50/50 Durumu) | !pity (Pity ve Garanti) | !bakiye (Primon) | !donustur (5 Mavi Silah = 160 Primo) | !envanter | 💡 Trivia sorularını ilk bilen +60 Primo kazanır!`
+        message: `📜 MilkaBot Komutları: !wish (Dilek / 160 Primo) | !wish <karakter> (Örn: !wish ayaka, !wish furina) | !wish10 (10'lu) | !wish standart | !bannerlar (5★ Listesi) | !banner | !pity | !bakiye | !donustur | !envanter | 💡 Trivia sorularını ilk bilen +60 Primo kazanır!`
       });
       return { type: 'help' };
     }

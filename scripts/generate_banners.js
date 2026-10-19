@@ -1,0 +1,609 @@
+const fs = require('fs');
+const path = require('path');
+
+const banners = [
+  // --- INAZUMA ---
+  {
+    id: "raiden_shogun",
+    name: "Reign of Serenity",
+    nameTr: "Sükûnetin Hükmü",
+    version: "4.3",
+    type: "character_event",
+    element: "Electro",
+    featured5: "Raiden Shogun",
+    featured4: ["Kujou Sara", "Bennett", "Chevreuse"],
+    description: "Ebediyet arayışındaki Narukami Ogosho, Şimşek Şogunu."
+  },
+  {
+    id: "ayaka",
+    name: "The Heron's Court",
+    nameTr: "Turna Sarayı Esintisi",
+    version: "4.3",
+    type: "character_event",
+    element: "Cryo",
+    featured5: "Kamisato Ayaka",
+    featured4: ["Rosaria", "Sayu", "Sucrose"],
+    description: "Kamisato Klanının zarif Beyaz Turnası, buz gibi asil bir kılıç ustası."
+  },
+  {
+    id: "kazuha",
+    name: "Leaves in the Wind",
+    nameTr: "Rüzgardaki Yapraklar",
+    version: "4.5",
+    type: "character_event",
+    element: "Anemo",
+    featured5: "Kaedehara Kazuha",
+    featured4: ["Shikanoin Heizou", "Rosaria", "Bennett"],
+    description: "Rüzgarın ezgisini dinleyen gezgin samuray."
+  },
+  {
+    id: "yae_miko",
+    name: "Everbloom Violet",
+    nameTr: "Solmayan Menekşe",
+    version: "4.4",
+    type: "character_event",
+    element: "Electro",
+    featured5: "Yae Miko",
+    featured4: ["Kuki Shinobu", "Kujou Sara", "Kirara"],
+    description: "Büyük Narukami Tapınağı'nın Baş Rahibesi ve Yae Yayınevi'nin kurnaz sahibesi."
+  },
+  {
+    id: "yoimiya",
+    name: "Tapestry of Golden Flames",
+    nameTr: "Altın Alevlerin Dokusu",
+    version: "4.3",
+    type: "character_event",
+    element: "Pyro",
+    featured5: "Yoimiya",
+    featured4: ["Yun Jin", "Thoma", "Bennett"],
+    description: "Naganohara Havai Fişeklerinin kraliçesi, yaz gecelerinin neşesi."
+  },
+  {
+    id: "kokomi",
+    name: "Drifting Luminescence",
+    nameTr: "Parıldayan İnci",
+    version: "3.8",
+    type: "character_event",
+    element: "Hydro",
+    featured5: "Sangonomiya Kokomi",
+    featured4: ["Kujou Sara", "Beidou", "Xingqiu"],
+    description: "Watatsumi Adası'nın İlahi Rahibesi ve dahi askeri stratejisti."
+  },
+  {
+    id: "ayato",
+    name: "Azure Excursion",
+    nameTr: "Mavi Gezintinin Hükmü",
+    version: "4.2",
+    type: "character_event",
+    element: "Hydro",
+    featured5: "Kamisato Ayato",
+    featured4: ["Yun Jin", "Kuki Shinobu", "Xiangling"],
+    description: "Yashiro Komisyonu Lideri ve Kamisato Klanı Başkanı."
+  },
+  {
+    id: "itto",
+    name: "Oni's Royale",
+    nameTr: "Hanamizaka Kahramanı",
+    version: "4.5",
+    type: "character_event",
+    element: "Geo",
+    featured5: "Arataki Itto",
+    featured4: ["Gorou", "Kuki Shinobu", "Yun Jin"],
+    description: "Arataki Çetesi'nin ilk ve muhteşem lideri, mert ve gürültülü Oni."
+  },
+  {
+    id: "chiori",
+    name: "Thousand Threads",
+    nameTr: "Binlerce İpeğin Zarafeti",
+    version: "4.5",
+    type: "character_event",
+    element: "Geo",
+    featured5: "Chiori",
+    featured4: ["Gorou", "Yun Jin", "Dori"],
+    description: "Chioriya Butiği'nin sivri dilli ve usta tasarımcısı."
+  },
+
+  // --- FONTAINE ---
+  {
+    id: "furina",
+    name: "Chanson of Many Waters",
+    nameTr: "Suların Şarkısı",
+    version: "4.7",
+    type: "character_event",
+    element: "Hydro",
+    featured5: "Furina",
+    featured4: ["Charlotte", "Collei", "Beidou"],
+    description: "Adalet Diyarı Fontaine'in yıldız solisti ve eski Su Arkonu."
+  },
+  {
+    id: "neuvillette",
+    name: "Decree of the Deeps",
+    nameTr: "Derinlerin Hükmü",
+    version: "4.5",
+    type: "character_event",
+    element: "Hydro",
+    featured5: "Neuvillette",
+    featured4: ["Fischl", "Xingqiu", "Sucrose"],
+    description: "Fontaine Başyargıcı, Kadim Su Ejderi Hükümdarı."
+  },
+  {
+    id: "arlecchino",
+    name: "The Hearth's Ashen Shadow",
+    nameTr: "Ocağın Kül Gölgesi",
+    version: "4.6",
+    type: "character_event",
+    element: "Pyro",
+    featured5: "Arlecchino",
+    featured4: ["Lynette", "Freminet", "Xiangling"],
+    description: "Fatui Öncülerinin Dördüncüsü, 'Baba' lakaplı Kül Hizmetkarı."
+  },
+  {
+    id: "navia",
+    name: "In the Name of the Rosula",
+    nameTr: "Gülün Adına",
+    version: "4.8",
+    type: "character_event",
+    element: "Geo",
+    featured5: "Navia",
+    featured4: ["Sucrose", "Rosaria", "Candace"],
+    description: "Spina di Rosula'nın cesur başkanı, altın sarısı saçlı güneş gibi bir lider."
+  },
+  {
+    id: "clorinde",
+    name: "Illuminating Lightning",
+    nameTr: "Işık Saçan Şimşek",
+    version: "4.7",
+    type: "character_event",
+    element: "Electro",
+    featured5: "Clorinde",
+    featured4: ["Sethos", "Bennett", "Thoma"],
+    description: "Fontaine'in en yenilmez Şampiyon Düellocusu, adalet ve hız timsali."
+  },
+  {
+    id: "wriothesley",
+    name: "Dissonant Silence",
+    nameTr: "Yalnızlığın Yargıcı",
+    version: "4.1",
+    type: "character_event",
+    element: "Cryo",
+    featured5: "Wriothesley",
+    featured4: ["Chongyun", "Thoma", "Dori"],
+    description: "Meropide Kalesi Dükü, sualtı hapishanesinin karizmatik koruyucusu."
+  },
+  {
+    id: "lyney",
+    name: "Conjuring Chiaroscuro",
+    nameTr: "Işık ve Gölge İllüzyonu",
+    version: "4.6",
+    type: "character_event",
+    element: "Pyro",
+    featured5: "Lyney",
+    featured4: ["Lynette", "Bennett", "Freminet"],
+    description: "Fontaine'in efsanevi sihirbazı, sahnedeki büyü ve gizemin ustası."
+  },
+  {
+    id: "sigewinne",
+    name: "Romaritime Splendor",
+    nameTr: "Deniz Mucizesi",
+    version: "4.7",
+    type: "character_event",
+    element: "Hydro",
+    featured5: "Sigewinne",
+    featured4: ["Gaming", "Rosaria", "Noelle"],
+    description: "Meropide Kalesi Başhemşiresi, sevimli Melusine şifacısı."
+  },
+  {
+    id: "emilie",
+    name: "Ambrosial Ripple",
+    nameTr: "Misk Kokulu İzler",
+    version: "4.8",
+    type: "character_event",
+    element: "Dendro",
+    featured5: "Emilie",
+    featured4: ["Xiangling", "Yanfei", "Razor"],
+    description: "Fontaine'in ünlü parfüm tasarımcısı ve adli tıp uzmanı."
+  },
+
+  // --- NATLAN ---
+  {
+    id: "mavuika",
+    name: "Ancient Flame Unbound",
+    nameTr: "Serbest Kalan Kadim Alev",
+    version: "5.3",
+    type: "character_event",
+    element: "Pyro",
+    featured5: "Mavuika",
+    featured4: ["Kachina", "Bennett", "Xiangling"],
+    description: "Natlan'ın Ateş Arkonu, küllerinden doğan alevli motosikletli savaşçı."
+  },
+  {
+    id: "mualani",
+    name: "Sharktastic Splash",
+    nameTr: "Dalgaların Şampiyonu",
+    version: "5.0",
+    type: "character_event",
+    element: "Hydro",
+    featured5: "Mualani",
+    featured4: ["Kachina", "Xingqiu", "Bennett"],
+    description: "Meyva Pınarı Kabilesinin sörf ustası ve rehberi."
+  },
+  {
+    id: "kinich",
+    name: "Saurian Hunter",
+    nameTr: "Alev Avcısı",
+    version: "5.0",
+    type: "character_event",
+    element: "Dendro",
+    featured5: "Kinich",
+    featured4: ["Chevreuse", "Sara", "Thoma"],
+    description: "Huitztlan Kabilesi Kertenkele Avcısı ve Ajaw'ın ortağı."
+  },
+  {
+    id: "xilonen",
+    name: "Forged in Flame",
+    nameTr: "Ateşin Ritmi",
+    version: "5.1",
+    type: "character_event",
+    element: "Geo",
+    featured5: "Xilonen",
+    featured4: ["Dori", "Candace", "Collei"],
+    description: "Yankı Çocukları Kabilesinin isim dokuyucusu ve efsanevi demircisi."
+  },
+  {
+    id: "chasca",
+    name: "Wings of Feathers",
+    nameTr: "Göğün Kanatları",
+    version: "5.2",
+    type: "character_event",
+    element: "Anemo",
+    featured5: "Chasca",
+    featured4: ["Ororon", "Sucrose", "Barbara"],
+    description: "Tflower-Feather Klanının göklerde uçan keskin nişancısı."
+  },
+  {
+    id: "citlali",
+    name: "Night-Wind Diviner",
+    nameTr: "Gece Rüzgarının Kehaneti",
+    version: "5.3",
+    type: "character_event",
+    element: "Cryo",
+    featured5: "Citlali",
+    featured4: ["Ororon", "Rosaria", "Layla"],
+    description: "Gece Rüzgarı Efendileri Kabilesinin güçlü büyücüsü ve büyükanne kehanetçisi."
+  },
+
+  // --- LIYUE ---
+  {
+    id: "zhongli",
+    name: "Gentry of Hermits",
+    nameTr: "İnzivadaki Soylu",
+    version: "4.0",
+    type: "character_event",
+    element: "Geo",
+    featured5: "Zhongli",
+    featured4: ["Yanfei", "Noelle", "Ningguang"],
+    description: "Toprağın ve Sözleşmelerin Arkonu, sarsılmaz kalkan Rex Lapis."
+  },
+  {
+    id: "hu_tao",
+    name: "Moment of Bloom",
+    nameTr: "Açan Çiçek Anı",
+    version: "4.1",
+    type: "character_event",
+    element: "Pyro",
+    featured5: "Hu Tao",
+    featured4: ["Xingqiu", "Thoma", "Diona"],
+    description: "Wangsheng Cenaze Evi'nin 77. Müdürü, neşeli ve gizemli kelebek."
+  },
+  {
+    id: "yelan",
+    name: "Discerner of Enigmas",
+    nameTr: "Gizemlerin Çözümü",
+    version: "4.8",
+    type: "character_event",
+    element: "Hydro",
+    featured5: "Yelan",
+    featured4: ["Xiangling", "Yanfei", "Razor"],
+    description: "Sivil İşler Bakanlığı'na çalışan, gölgelerde hareket eden gizemli istihbaratçı."
+  },
+  {
+    id: "xiao",
+    name: "Invitation to Mundane Life",
+    nameTr: "Dünyevi Hayata Davet",
+    version: "4.4",
+    type: "character_event",
+    element: "Anemo",
+    featured5: "Xiao",
+    featured4: ["Yaoyao", "Xinyan", "Faruzan"],
+    description: "Liyue'yi iblislerden koruyan son nöbetçi Yaksha, Alatus."
+  },
+  {
+    id: "ganyu",
+    name: "Adrift in the Harbor",
+    nameTr: "Limanın Ay Işığı",
+    version: "3.6",
+    type: "character_event",
+    element: "Cryo",
+    featured5: "Ganyu",
+    featured4: ["Kaveh", "Candace", "Fischl"],
+    description: "Liyue Qixing Genel Sekreteri, zarif yarı qilin Adeptus."
+  },
+  {
+    id: "xianyun",
+    name: "Passerine Herald",
+    nameTr: "Turna Habercisi",
+    version: "4.4",
+    type: "character_event",
+    element: "Anemo",
+    featured5: "Xianyun",
+    featured4: ["Gaming", "Faruzan", "Noelle"],
+    description: "Jueyun Karst'ın efsanevi Bulut Koruyucusu (Cloud Retainer)."
+  },
+  {
+    id: "shenhe",
+    name: "The Transcendent One Returns",
+    nameTr: "Aşkın Varlığın Dönüşü",
+    version: "3.5",
+    type: "character_event",
+    element: "Cryo",
+    featured5: "Shenhe",
+    featured4: ["Mika", "Diona", "Sucrose"],
+    description: "Adeptuslar tarafından eğitilmiş, dünyevi bağlardan kopmuş karlı saçlı mızrak ustası."
+  },
+  {
+    id: "baizhu",
+    name: "Immaculate Pulse",
+    nameTr: "Şifa ve Ölümsüzlük",
+    version: "4.2",
+    type: "character_event",
+    element: "Dendro",
+    featured5: "Baizhu",
+    featured4: ["Kaveh", "Fischl", "Candace"],
+    description: "Bubu Eczanesi'nin sahibi, boynunda Changsheng ile gezen dahi hekim."
+  },
+
+  // --- SUMERU ---
+  {
+    id: "nahida",
+    name: "The Moongrass' Enlightenment",
+    nameTr: "Hilal Otu Aydınlanması",
+    version: "4.4",
+    type: "character_event",
+    element: "Dendro",
+    featured5: "Nahida",
+    featured4: ["Kuki Shinobu", "Dori", "Layla"],
+    description: "Bilgelik Arkonu Küçük Lord Kusanali, Teyvat'ın en saf zihni."
+  },
+  {
+    id: "alhaitham",
+    name: "Caution in Confidence",
+    nameTr: "Akıl ve Tedbir",
+    version: "4.7",
+    type: "character_event",
+    element: "Dendro",
+    featured5: "Alhaitham",
+    featured4: ["Sethos", "Bennett", "Thoma"],
+    description: "Sumeru Akademisi'nin Baş Katibi, mantık ve kılıcın kusursuz dengesi."
+  },
+  {
+    id: "wanderer",
+    name: "From Ashes Reborn",
+    nameTr: "Küllerin Yeniden Doğuşu",
+    version: "4.6",
+    type: "character_event",
+    element: "Anemo",
+    featured5: "Wanderer",
+    featured4: ["Faruzan", "Layla", "Beidou"],
+    description: "Geçmişin yükünü göklere savuran rüzgar gezgini (Scaramouche)."
+  },
+  {
+    id: "cyno",
+    name: "Twilight Arbiter",
+    nameTr: "Yargıcın Adaleti",
+    version: "4.2",
+    type: "character_event",
+    element: "Electro",
+    featured5: "Cyno",
+    featured4: ["Kirara", "Kuki Shinobu", "Collei"],
+    description: "Sumeru Baş Mahamatrası, kurallara uymayanların korkulu rüyası."
+  },
+  {
+    id: "nilou",
+    name: "Twirling Lotus",
+    nameTr: "Nilüfer Dansı",
+    version: "4.8",
+    type: "character_event",
+    element: "Hydro",
+    featured5: "Nilou",
+    featured4: ["Kirara", "Kaveh", "Ningguang"],
+    description: "Zubayr Tiyatrosu'nun parlayan yıldızı, su gibi akıcı dansçı."
+  },
+
+  // --- MONDSTADT ---
+  {
+    id: "venti",
+    name: "Ballad in Goblets",
+    nameTr: "Kadehteki Balad",
+    version: "4.1",
+    type: "character_event",
+    element: "Anemo",
+    featured5: "Venti",
+    featured4: ["Chongyun", "Diona", "Thoma"],
+    description: "Özgürlüğün ve Rüzgarın Arkonu Barbatos, şarap düşkünü ozan."
+  },
+  {
+    id: "eula",
+    name: "Born of Ocean Swell",
+    nameTr: "Okyanus Dalgası Dansı",
+    version: "3.8",
+    type: "character_event",
+    element: "Cryo",
+    featured5: "Eula",
+    featured4: ["Mika", "Razor", "Thoma"],
+    description: "Favonius Şövalyeleri Keşif Bölüğü Kaptanı, Dalgaların Şövalyesi."
+  },
+  {
+    id: "klee",
+    name: "Sparkling Steps",
+    nameTr: "Kıvılcım Adımları",
+    version: "3.8",
+    type: "character_event",
+    element: "Pyro",
+    featured5: "Klee",
+    featured4: ["Mika", "Razor", "Thoma"],
+    description: "Favonius Şövalyeleri'nin patlayıcı uzmanı ve en sevimli kıvılcımı."
+  },
+  {
+    id: "albedo",
+    name: "Secretum Secretorum",
+    nameTr: "Gizemlerin Gizemi",
+    version: "3.5",
+    type: "character_event",
+    element: "Geo",
+    featured5: "Albedo",
+    featured4: ["Bennett", "Fischl", "Sucrose"],
+    description: "Favonius Şövalyeleri Baş Simyacısı, Tebeşir Prensi."
+  },
+
+  // --- SNEZHNAYA & EFSANELER ---
+  {
+    id: "tartaglia",
+    name: "Farewell of Snezhnaya",
+    nameTr: "Snezhnaya'ya Veda",
+    version: "4.0",
+    type: "character_event",
+    element: "Hydro",
+    featured5: "Tartaglia",
+    featured4: ["Freminet", "Sayu", "Noelle"],
+    description: "Fatui Öncülerinin On Birincisi 'Childe', savaş meydanlarının doyumsuz dövüşçüsü."
+  },
+  {
+    id: "capitano",
+    name: "The Indomitable Captain",
+    nameTr: "Yıkılmaz Yüzbaşı",
+    version: "5.4",
+    type: "character_event",
+    element: "Cryo",
+    featured5: "Capitano",
+    featured4: ["Ororon", "Chevreuse", "Kachina"],
+    description: "Fatui Öncülerinin Birincisi 'Il Capitano', Teyvat'ın en kudretli ve onurlu savaşçısı."
+  },
+  {
+    id: "columbina",
+    name: "The Weeping Columbina",
+    nameTr: "Hüzünlü Güvercin",
+    version: "5.5",
+    type: "character_event",
+    element: "Anemo",
+    featured5: "Columbina",
+    featured4: ["Charlotte", "Faruzan", "Lynette"],
+    description: "Fatui Öncülerinin Üçüncüsü 'Damselette', gizemli ve melankolik bir melodi."
+  },
+
+  // --- STANDART 5★ BANNERLARI (Tek Tıkla İsteyenler İçin) ---
+  {
+    id: "diluc",
+    name: "Dawn of the Darknight",
+    nameTr: "Karanlık Şafak",
+    version: "Standart",
+    type: "character_event",
+    element: "Pyro",
+    featured5: "Diluc",
+    featured4: ["Bennett", "Xiangling", "Fischl"],
+    description: "Şafak Şaraphanesi'nin sahibi, Mondstadt'ın koruyucu gece kahramanı."
+  },
+  {
+    id: "jean",
+    name: "Ballad of the Dandelion",
+    nameTr: "Karahindiba Şövalyesi",
+    version: "Standart",
+    type: "character_event",
+    element: "Anemo",
+    featured5: "Jean",
+    featured4: ["Lisa", "Amber", "Kaeya"],
+    description: "Favonius Şövalyeleri Vekil Büyük Ustası, sarsılmaz görev bilinci."
+  },
+  {
+    id: "mona",
+    name: "Mirror of the Stars",
+    nameTr: "Yıldızların Aynası",
+    version: "Standart",
+    type: "character_event",
+    element: "Hydro",
+    featured5: "Mona",
+    featured4: ["Xingqiu", "Barbara", "Sucrose"],
+    description: "Gizemli astrolog Mona Megistus, kaderi yıldızlarda okuyan dahi."
+  },
+  {
+    id: "keqing",
+    name: "Dance of Lanterns",
+    nameTr: "Süratli Şimşek",
+    version: "Standart",
+    type: "character_event",
+    element: "Electro",
+    featured5: "Keqing",
+    featured4: ["Bennett", "Ningguang", "Barbara"],
+    description: "Liyue Qixing Yuheng'i, insanlığın kaderini kendi elleriyle çizen lider."
+  },
+  {
+    id: "qiqi",
+    name: "Icy Resurrection",
+    nameTr: "Buzdan Diriliş",
+    version: "Standart",
+    type: "character_event",
+    element: "Cryo",
+    featured5: "Qiqi",
+    featured4: ["Chongyun", "Diona", "Xingqiu"],
+    description: "Bubu Eczanesi'nin zombi çırağı, masum ve şifacı Adeptus sırrı."
+  },
+  {
+    id: "tighnari",
+    name: "Verdant Strider",
+    nameTr: "Ormanın Koruyucusu",
+    version: "Standart",
+    type: "character_event",
+    element: "Dendro",
+    featured5: "Tighnari",
+    featured4: ["Collei", "Dori", "Kuki Shinobu"],
+    description: "Avidya Ormanı Baş Korucusu, doğanın ve botanik biliminin üstadı."
+  },
+  {
+    id: "dehya",
+    name: "Auric Blaze",
+    nameTr: "Ateş Yelesi",
+    version: "Standart",
+    type: "character_event",
+    element: "Pyro",
+    featured5: "Dehya",
+    featured4: ["Bennett", "Candace", "Collei"],
+    description: "Çölün Cesur Paralı Askeri, 'Ateş Yelesi' lakaplı altın yürekli savaşçı."
+  },
+
+  // --- ÖZEL TOPLU BANNERLAR ---
+  {
+    id: "chronicled",
+    name: "Ode to the Dawn Breeze (Chronicled)",
+    nameTr: "Şafak Meltemine Övgü (Bölgesel Dilek)",
+    version: "4.5",
+    type: "chronicled",
+    element: "All",
+    featured5: "Eula",
+    featured4: ["Mika", "Rosaria", "Razor", "Sucrose"],
+    description: "Mondstadt ve Liyue'nin klasik 5★ kahramanlarının nostaljik ortak havuzu."
+  },
+  {
+    id: "standard",
+    name: "Wanderlust Invocation",
+    nameTr: "Yolculuk Çağrısı",
+    version: "Kalıcı",
+    type: "standard",
+    element: "All",
+    featured5: null,
+    featured4: [],
+    description: "Standart 5★ Karakterler ve 5★ Silahların kalıcı Teyvat dilek havuzu."
+  }
+];
+
+const targetPath = path.join(__dirname, '..', 'src', 'data', 'banners.json');
+fs.writeFileSync(targetPath, JSON.stringify(banners, null, 2), 'utf8');
+console.log(`Generated ${banners.length} banners in ${targetPath}`);

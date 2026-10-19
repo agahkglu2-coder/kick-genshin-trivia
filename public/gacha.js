@@ -696,7 +696,16 @@
         wishBannerTag.textContent = '✨ 5★ EFSANEVİ DİLEK ✨';
       }
 
-      if (pull.bannerType === 'standard' || (pull.isStandardPool && pull.won5050 === null)) {
+      if (pull.isCapturingRadiance) {
+        wishPaimonImg.src = 'assets/paimon_cheer.png';
+        wishSpeech.textContent = 'Kader Çarkı Döndü! IŞILTI YAKALAMA ile 5★ Banner Karakteri! ✨🌟';
+        if (wish5050Badge) {
+          wish5050Badge.textContent = '✨ IŞILTI YAKALAMA (CAPTURING RADIANCE)!';
+          wish5050Badge.className = 'wish-5050-badge badge-capturing-radiance';
+          wish5050Badge.style.display = 'inline-flex';
+          wish5050Badge.classList.remove('hidden');
+        }
+      } else if (pull.bannerType === 'standard' || (pull.isStandardPool && pull.won5050 === null)) {
         wishPaimonImg.src = 'assets/paimon_happy.png';
         wishSpeech.textContent = 'Standart Havuzdan 5 Yıldız Geldi! ✨';
         if (wish5050Badge) {

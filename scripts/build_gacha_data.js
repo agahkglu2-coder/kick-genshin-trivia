@@ -50,7 +50,13 @@ const fiveStarChars = [
   { name: "Mona", element: "Hydro", weapon: "Catalyst", region: "Mondstadt", title: "Astral Reflection" },
   { name: "Keqing", element: "Electro", weapon: "Sword", region: "Liyue", title: "Driving Thunder" },
   { name: "Qiqi", element: "Cryo", weapon: "Sword", region: "Liyue", title: "Icy Resurrection" },
-  { name: "Dehya", element: "Pyro", weapon: "Claymore", region: "Sumeru", title: "Flame-Mane" }
+  { name: "Dehya", element: "Pyro", weapon: "Claymore", region: "Sumeru", title: "Flame-Mane" },
+  { name: "Citlali", element: "Cryo", weapon: "Catalyst", region: "Natlan", title: "Itztli of the Night-Wind" },
+  { name: "Aloy", element: "Cryo", weapon: "Bow", region: "Other", title: "Savior From Another World" },
+  { name: "Capitano", element: "Cryo", weapon: "Sword", region: "Snezhnaya", title: "The Indomitable Captain" },
+  { name: "Columbina", element: "Anemo", weapon: "Catalyst", region: "Snezhnaya", title: "The Weeping Columbina" },
+  { name: "Dainsleif", element: "Cosmic", weapon: "Sword", region: "Khaenri'ah", title: "Bough Keeper" },
+  { name: "Skirk", element: "Cryo", weapon: "Sword", region: "Abyss", title: "Abyssal Swordswoman" }
 ];
 
 // 4-Star Characters
