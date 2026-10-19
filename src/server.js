@@ -91,6 +91,11 @@ app.get(['/chatter.html', '/chatter', '/chatter-overlay.html', '/chatter-overlay
   res.sendFile(path.join(__dirname, '..', 'public', 'chatter.html'));
 });
 
+// Route Dedicated Community Jackpot / Pool OBS Overlay
+app.get(['/jackpot.html', '/jackpot', '/pool.html', '/pool', '/kumbara.html', '/kumbara'], (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'jackpot.html'));
+});
+
 // Local Asset Cache Proxy for high-res Genshin Splash Art and Icons
 const ASSET_CACHE_DIR = path.join(__dirname, '..', 'public', 'assets', 'genshin_cache');
 if (!fs.existsSync(ASSET_CACHE_DIR)) {
@@ -598,6 +603,22 @@ gachaEngine.on('banners_updated', (data) => {
   broadcast({ type: 'GACHA_BANNERS_UPDATED', ...data });
 });
 
+// Community Jackpot Events
+gachaEngine.on('jackpot_updated', (data) => {
+  broadcast({ type: 'JACKPOT_UPDATED', ...data });
+});
+
+gachaEngine.on('jackpot_won', (data) => {
+  broadcast({ type: 'JACKPOT_WON', ...data });
+  broadcast({ type: 'CHATTER_CROWN', winner: data.winner });
+  broadcast({ type: 'CHATTER_PRIMO_RAIN', count: 40 });
+});
+
+gachaEngine.on('jackpot_distributed', (data) => {
+  broadcast({ type: 'JACKPOT_DISTRIBUTED', ...data });
+  broadcast({ type: 'CHATTER_PRIMO_RAIN', count: 35 });
+});
+
 // KickBot Events
 kickBot.on('bot_message', (botMsg) => {
   // Add to live chat preview as a verified bot message
@@ -698,7 +719,8 @@ wss.on('connection', (ws) => {
     chatterConfig: config.chatterConfig || {},
     commands: commandService ? commandService.getCommands() : [],
     bossState: bossEngine ? bossEngine.getState() : null,
-    expeditions: expeditionEngine ? expeditionEngine.getActiveList() : []
+    expeditions: expeditionEngine ? expeditionEngine.getActiveList() : [],
+    jackpot: gachaEngine ? gachaEngine.getJackpotState() : null
   }));
 
   ws.send(JSON.stringify({
@@ -1041,6 +1063,62 @@ app.post('/api/gacha/test-wish-10', (req, res) => {
   const { won5050 } = req.body || {};
   const result = gachaEngine.triggerTestWish10(won5050 !== false);
   res.json({ success: true, wish: result });
+});
+
+// Community Jackpot (Kumbara) REST Endpoints
+app.get('/api/jackpot', (req, res) => {
+  res.json(gachaEngine.getJackpotState());
+});
+
+app.post('/api/jackpot/raffle', (req, res) => {
+  const { winner } = req.body || {};
+  const result = gachaEngine.raffleJackpot(winner || null);
+  if (!result.success) return res.status(400).json(result);
+  res.json(result);
+});
+
+app.post('/api/jackpot/distribute', (req, res) => {
+  const { amount } = req.body || {};
+  const result = gachaEngine.distributeJackpot(parseInt(amount, 10) || null);
+  if (!result.success) return res.status(400).json(result);
+  res.json(result);
+});
+
+app.post('/api/jackpot/adjust', (req, res) => {
+  const { amount, mode } = req.body || {};
+  const result = gachaEngine.adjustJackpotPool(amount, mode || 'add');
+  res.json(result);
+});
+
+app.post('/api/jackpot/test-win', (req, res) => {
+  const { type, winner, amount } = req.body || {};
+  const testAmount = parseInt(amount, 10) || 1200;
+  if (type === 'distribute') {
+    broadcast({
+      type: 'JACKPOT_DISTRIBUTED',
+      userCount: 8,
+      perUser: 150,
+      totalAmount: testAmount,
+      remainingPool: gachaEngine.jackpotPool,
+      displayRemaining: Math.floor(gachaEngine.jackpotPool),
+      isTest: true
+    });
+    broadcast({ type: 'CHATTER_PRIMO_RAIN', count: 35 });
+  } else {
+    const testWinner = winner || 'PaimonGezgini';
+    broadcast({
+      type: 'JACKPOT_WON',
+      winner: testWinner,
+      amount: testAmount,
+      remainingPool: gachaEngine.jackpotPool,
+      displayRemaining: Math.floor(gachaEngine.jackpotPool),
+      type: 'RAFFLE',
+      isTest: true
+    });
+    broadcast({ type: 'CHATTER_CROWN', winner: testWinner });
+    broadcast({ type: 'CHATTER_PRIMO_RAIN', count: 40 });
+  }
+  res.json({ success: true, message: 'Test animasyonu gönderildi!' });
 });
 
 const crypto = require('crypto');

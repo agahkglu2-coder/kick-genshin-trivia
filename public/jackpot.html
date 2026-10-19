@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Genshin Topluluk Primogem Havuzu (Jackpot)</title>
+  <link rel="stylesheet" href="jackpot.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Particle & Confetti Canvas -->
+  <canvas id="fx-canvas"></canvas>
+
+  <div id="jackpot-container" class="jackpot-container">
+    <!-- Compact Widget Card -->
+    <div id="jackpot-card" class="jackpot-card">
+      <div class="card-glow-bg"></div>
+
+      <!-- Primogem 3D Icon Area -->
+      <div class="primogem-gem-box">
+        <div class="gem-aurora"></div>
+        <img src="assets/primogem.png" alt="Primogem" class="gem-icon" id="gem-icon" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><polygon points=\'50,5 95,50 50,95 5,50\' fill=\'%2338bdf8\' stroke=\'%23ffd700\' stroke-width=\'4\'/><polygon points=\'50,20 80,50 50,80 20,50\' fill=\'%23f472b6\'/></svg>'">
+        <div class="sparkle-orbit"></div>
+      </div>
+
+      <!-- Information & Numeric Counter -->
+      <div class="jackpot-info">
+        <div class="jackpot-header">
+          <span class="jackpot-title">TOPLULUK HAVUZU</span>
+          <span class="jackpot-badge">%1.5 KUMBARA</span>
+        </div>
+
+        <div class="jackpot-counter-box">
+          <span class="counter-num" id="jackpot-counter">0</span>
+          <span class="counter-currency">💎</span>
+        </div>
+
+        <div class="jackpot-ticker-box">
+          <span class="ticker-text" id="jackpot-ticker">Kazanılan her primodan %1.5 havuza eklenir</span>
+        </div>
+      </div>
+
+      <!-- Dynamic Floater for incoming Primogem additions -->
+      <div id="floating-tax-container" class="floating-tax-container"></div>
+    </div>
+
+    <!-- Celebration Popup Modal (Raffle Win & Rain Distribution) -->
+    <div id="celebration-overlay" class="celebration-overlay hidden">
+      <div class="celebration-box" id="celebration-box">
+        <div class="celeb-stars" id="celeb-stars">⭐⭐⭐⭐⭐</div>
+        <div class="celeb-icon" id="celeb-icon">👑</div>
+        <div class="celeb-title" id="celeb-title">ÇEKİLİŞ KAZANANI!</div>
+        <div class="celeb-winner" id="celeb-winner">@Gezgin</div>
+        <div class="celeb-amount-box">
+          <span class="celeb-plus">+</span>
+          <span class="celeb-amount" id="celeb-amount">0</span>
+          <span class="celeb-primo-icon">💎</span>
+        </div>
+        <div class="celeb-subtitle" id="celeb-subtitle">Topluluk Havuzundaki tüm Primogemler teslim edildi!</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="jackpot.js"></script>
+</body>
+</html>

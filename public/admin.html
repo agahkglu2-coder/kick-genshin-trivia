@@ -703,6 +703,59 @@
             <div id="gift-feedback" class="field-hint" style="margin-top: 4px; font-weight: 600;"></div>
           </div>
 
+          <!-- Community Jackpot / Primogem Pool Card -->
+          <div class="panel-card jackpot-admin-card" style="margin-top: 16px; border: 1.5px solid rgba(254, 240, 138, 0.4); background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 27, 75, 0.7) 100%); border-radius: 12px; padding: 14px;">
+            <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-weight: 800; color: #fef08a;">💎 Topluluk Primogem Havuzu (Kumbara)</span>
+              <span class="badge-mini" style="background: rgba(234, 179, 8, 0.25); color: #fef08a; border: 1px solid #facc15;">%1.5 Canlı Katkı</span>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); border-radius: 10px; padding: 12px 16px; margin: 10px 0;">
+              <div>
+                <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">HAVUZDA BİRİKEN TOPLAM</div>
+                <div style="display: flex; align-items: baseline; gap: 6px;">
+                  <span id="admin-jackpot-pool" style="font-size: 2rem; font-weight: 900; font-family: 'Cinzel', serif; color: #fef08a; text-shadow: 0 0 12px rgba(250, 204, 21, 0.6);">0</span>
+                  <span style="font-size: 1.2rem;">💎</span>
+                  <span id="admin-jackpot-exact" style="font-size: 0.8rem; color: #64748b; font-weight: 600;">(0.00)</span>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 0.72rem; color: #94a3b8;">Aktif İzleyici: <strong id="admin-jackpot-active-count" style="color: #38bdf8;">0</strong></div>
+                <div style="font-size: 0.72rem; color: #94a3b8;">Toplam Biriken: <strong id="admin-jackpot-total" style="color: #fef08a;">0 💎</strong></div>
+                <div style="font-size: 0.72rem; color: #94a3b8;">Pay Oranı: <strong style="color: #4ade80;">%1.5</strong></div>
+              </div>
+            </div>
+
+            <!-- Action buttons for Streamer -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+              <button type="button" id="btn-jackpot-raffle" class="btn btn-warning btn-glow" style="display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 700; padding: 10px;">
+                <span>🎁</span>
+                <span>1 Kişiye Çekiliş Yap</span>
+              </button>
+              <button type="button" id="btn-jackpot-distribute" class="btn btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 700; padding: 10px; background: linear-gradient(135deg, #0284c7, #6366f1); border: none;">
+                <span>🌧️</span>
+                <span>Chattekilere Eşit Dağıt</span>
+              </button>
+            </div>
+
+            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
+              <input type="number" id="jackpot-adjust-amount" placeholder="Miktar (Örn: 500)" style="flex: 1; padding: 6px 10px; border-radius: 6px; background: rgba(0,0,0,0.3); border: 1px solid #334155; color: #fff;">
+              <button type="button" id="btn-jackpot-add" class="btn btn-xs btn-outline" style="border-color: #4ade80; color: #4ade80;">+ Havuz Ekle</button>
+              <button type="button" id="btn-jackpot-reset" class="btn btn-xs btn-outline" style="border-color: #ef4444; color: #ef4444;">Sıfırla</button>
+              <button type="button" id="btn-jackpot-test-win" class="btn btn-xs btn-outline" style="border-color: #fbbf24; color: #fbbf24;">🧪 Test Animasyonu</button>
+            </div>
+
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 8px 12px; font-size: 0.78rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #94a3b8;">📺 OBS Tarayıcı Kaynağı URL (Önerilen: <strong>340 × 88</strong>):</span>
+                <button type="button" id="btn-copy-jackpot-url" class="btn btn-xs btn-outline">📋 Kopyala</button>
+              </div>
+              <input type="text" id="obs-jackpot-url-input" readonly value="http://localhost:3000/jackpot.html" style="width: 100%; margin-top: 5px; padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; background: rgba(0,0,0,0.4); border: 1px solid #334155; color: #38bdf8;">
+            </div>
+
+            <div id="jackpot-feedback" class="field-hint" style="margin-top: 6px; font-weight: 600; min-height: 18px;"></div>
+          </div>
+
           <!-- Viewers Primogem Balance & Inventory Table -->
           <div class="gacha-users-header">
             <h4>👥 Kayıtlı Gezginler & Bakiyeler (<span id="gacha-users-count">0</span>)</h4>
@@ -1092,6 +1145,19 @@
               <input type="text" id="obs-boss-url" readonly value="http://localhost:3000/boss.html">
               <button id="btn-copy-boss-url" class="btn btn-sm btn-outline">Kopyala</button>
               <a href="boss.html" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
+            </div>
+          </div>
+
+          <!-- Source 6: Community Jackpot Pool (Kumbara) -->
+          <div class="obs-source-box" style="margin-top: 14px; border-color: rgba(250, 204, 21, 0.45);">
+            <div class="source-box-title">
+              <span class="source-badge" style="background: rgba(250, 204, 21, 0.2); color: #fef08a; border: 1px solid rgba(250, 204, 21, 0.5);">KAYNAK 6: TOPLULUK HAVUZU / KUMBARA (%1.5 Primogem Kasası)</span>
+              <span class="source-rec">Önerilen Boyut: 360x100 (Köşe veya Zemin / Şeffaf)</span>
+            </div>
+            <div class="copy-url-group">
+              <input type="text" id="obs-jackpot-source-url" readonly value="http://localhost:3000/jackpot.html">
+              <button id="btn-copy-jackpot-source-url" class="btn btn-sm btn-outline">Kopyala</button>
+              <a href="jackpot.html" target="_blank" class="btn btn-sm btn-secondary">Aç</a>
             </div>
           </div>
 

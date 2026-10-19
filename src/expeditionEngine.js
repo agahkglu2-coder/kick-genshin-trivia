@@ -214,17 +214,19 @@ class ExpeditionEngine extends EventEmitter {
 
     let newTotal = 0;
     if (this.gachaEngine) {
-      const userObj = this.gachaEngine.getOrCreateUser(cleanUser);
-      if (userObj) {
-        userObj.primogems += exp.reward.primogems;
-        newTotal = userObj.primogems;
-        this.gachaEngine.saveUsers();
-        this.gachaEngine.emit('primo_awarded', {
-          username: cleanUser,
-          amount: exp.reward.primogems,
-          total: newTotal,
-          reason: exp.type === 'fishing' ? 'FISHING_EXPEDITION' : 'MINING_EXPEDITION'
-        });
+      if (typeof this.gachaEngine.awardEarnedPrimogems === 'function') {
+        const res = this.gachaEngine.awardEarnedPrimogems(
+          cleanUser,
+          exp.reward.primogems,
+          exp.type === 'fishing' ? 'FISHING_EXPEDITION' : 'MINING_EXPEDITION'
+        );
+        newTotal = res && res.user ? res.user.primogems : 0;
+      } else if (typeof this.gachaEngine.getOrCreateUser === 'function') {
+        const u = this.gachaEngine.getOrCreateUser(cleanUser);
+        if (u) {
+          u.primogems = (u.primogems || 0) + exp.reward.primogems;
+          newTotal = u.primogems;
+        }
       }
     }
 

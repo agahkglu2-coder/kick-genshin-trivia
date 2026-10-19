@@ -195,7 +195,55 @@ engine.handleChatMessage({ content: '!bannerlar', sender: { username: 'TestGezgi
 assert(chatResp && chatResp.message.includes('5★ DİLEK HAVUZU'));
 console.log('✅ !bannerlar komutu ve rehberi başarıyla doğrulandı!');
 
+console.log('--- TEST 18: Topluluk Primogem Havuzu (Kumbara) %1.5 Vergi Kesintisi ---');
+// Reset pool for clean test
+engine.adjustJackpotPool(0, 'set');
+assert.strictEqual(engine.jackpotPool, 0, 'Havuz sıfırlanabilmeli');
+
+// 1. awardEarnedPrimogems with 1000 Primogems -> %1.5 is 15.00
+const earnedRes = engine.awardEarnedPrimogems('TestGezgin', 1000, 'test_earn');
+assert.strictEqual(earnedRes.gross, 1000);
+assert.strictEqual(earnedRes.tax, 15);
+assert.strictEqual(engine.jackpotPool, 15);
+assert.strictEqual(engine.jackpotTotalAccumulated >= 15, true);
+
+// 2. Chat üzerinden !havuz komutu
+engine.handleChatMessage({ content: '!havuz', sender: { username: 'TestGezgin' } });
+assert(chatResp && chatResp.message.includes('Topluluk Primogem Havuzu'));
+assert(chatResp.message.includes('15 Primogem'));
+console.log('✅ Topluluk Havuzu %1.5 pay birikimi ve !havuz komutu başarıyla doğrulandı!');
+
+console.log('--- TEST 19: Topluluk Havuzu Çekiliş (!havuzcekilis) ve Dağıtım (!havuzdagit) ---');
+// Aktif chat kullanıcısı ekleyelim
+const g1 = engine.getOrCreateUser('Gezgin1');
+g1.lastActiveTime = Date.now();
+const g2 = engine.getOrCreateUser('Gezgin2');
+g2.lastActiveTime = Date.now();
+
+// Havuzda şu an 15 Primogem var, 50 daha ekleyelim -> 65
+engine.adjustJackpotPool(50, 'add');
+assert.strictEqual(engine.jackpotPool, 65);
+
+// 1. Çekiliş Testi (Raffle to Gezgin1)
+const user1Before = engine.getOrCreateUser('Gezgin1').primogems;
+const raffleRes = engine.raffleJackpot('Gezgin1');
+assert.strictEqual(raffleRes.success, true);
+assert.strictEqual(raffleRes.winner, 'Gezgin1');
+assert.strictEqual(raffleRes.amount, 65);
+assert.strictEqual(engine.getOrCreateUser('Gezgin1').primogems, user1Before + 65);
+assert.strictEqual(engine.jackpotPool, 0);
+
+// 2. Dağıtım Testi (Distribute)
+engine.adjustJackpotPool(100, 'set');
+const u1BeforeDist = engine.getOrCreateUser('Gezgin1').primogems;
+const u2BeforeDist = engine.getOrCreateUser('Gezgin2').primogems;
+const distRes = engine.distributeJackpot();
+assert.strictEqual(distRes.success, true);
+assert.strictEqual(distRes.recipients.length >= 2, true);
+assert(distRes.perUser > 0);
+console.log(`✅ Havuz Çekiliş (${raffleRes.amount} 💎) ve Eşit Dağıtım (${distRes.perUser} 💎/kişi) başarıyla doğrulandı!`);
+
 console.log('========================================================');
-console.log('🎉 TÜM GACHA, BANNER & 50/50 MEKANİK TESTLERİ BAŞARIYLA GEÇTİ!');
+console.log('🎉 TÜM GACHA, BANNER, 50/50 & TOPLULUK HAVUZU TESTLERİ GEÇTİ!');
 console.log('========================================================');
 process.exit(0);

@@ -148,12 +148,31 @@
   const btnExportDb = document.getElementById('btn-export-db');
   const inputImportDb = document.getElementById('input-import-db');
 
+  // Community Jackpot (Kumbara) DOM Elements
+  const adminJackpotPool = document.getElementById('admin-jackpot-pool');
+  const adminJackpotExact = document.getElementById('admin-jackpot-exact');
+  const adminJackpotTotal = document.getElementById('admin-jackpot-total');
+  const adminJackpotActiveCount = document.getElementById('admin-jackpot-active-count');
+  const btnJackpotRaffle = document.getElementById('btn-jackpot-raffle');
+  const btnJackpotDistribute = document.getElementById('btn-jackpot-distribute');
+  const jackpotAdjustAmount = document.getElementById('jackpot-adjust-amount');
+  const btnJackpotAdd = document.getElementById('btn-jackpot-add');
+  const btnJackpotReset = document.getElementById('btn-jackpot-reset');
+  const btnJackpotTestWin = document.getElementById('btn-jackpot-test-win');
+  const btnCopyJackpotUrl = document.getElementById('btn-copy-jackpot-url');
+  const obsJackpotUrlInput = document.getElementById('obs-jackpot-url-input');
+  const jackpotFeedback = document.getElementById('jackpot-feedback');
+  const obsJackpotSourceUrl = document.getElementById('obs-jackpot-source-url');
+  const btnCopyJackpotSourceUrl = document.getElementById('btn-copy-jackpot-source-url');
+
   // Set OBS URLs correctly based on current origin (works seamlessly on Render HTTPS & localhost)
   const currentOrigin = window.location.origin || `http://${window.location.host || 'localhost:3000'}`;
   if (obsTriviaUrl) obsTriviaUrl.value = `${currentOrigin}/trivia.html`;
   if (obsGachaUrl) obsGachaUrl.value = `${currentOrigin}/gacha.html`;
   if (obsChatterUrl) obsChatterUrl.value = `${currentOrigin}/chatter`;
   if (obsBossUrl) obsBossUrl.value = `${currentOrigin}/boss.html`;
+  if (obsJackpotUrlInput) obsJackpotUrlInput.value = `${currentOrigin}/jackpot.html`;
+  if (obsJackpotSourceUrl) obsJackpotSourceUrl.value = `${currentOrigin}/jackpot.html`;
   const defaultRedirectUri = `${currentOrigin}/auth/kick/callback`;
   if (displayRedirectUri) displayRedirectUri.value = defaultRedirectUri;
   if (cfgBotRedirectUri) cfgBotRedirectUri.value = defaultRedirectUri;
@@ -656,6 +675,24 @@
       navigator.clipboard.writeText(obsBossUrl.value);
       btnCopyBossUrl.textContent = 'Kopyalandı! ✅';
       setTimeout(() => { btnCopyBossUrl.textContent = 'Kopyala'; }, 2000);
+    });
+  }
+
+  if (btnCopyJackpotUrl && obsJackpotUrlInput) {
+    btnCopyJackpotUrl.addEventListener('click', () => {
+      obsJackpotUrlInput.select();
+      navigator.clipboard.writeText(obsJackpotUrlInput.value);
+      btnCopyJackpotUrl.textContent = 'Kopyalandı! ✅';
+      setTimeout(() => { btnCopyJackpotUrl.textContent = '📋 Kopyala'; }, 2000);
+    });
+  }
+
+  if (btnCopyJackpotSourceUrl && obsJackpotSourceUrl) {
+    btnCopyJackpotSourceUrl.addEventListener('click', () => {
+      obsJackpotSourceUrl.select();
+      navigator.clipboard.writeText(obsJackpotSourceUrl.value);
+      btnCopyJackpotSourceUrl.textContent = 'Kopyalandı! ✅';
+      setTimeout(() => { btnCopyJackpotSourceUrl.textContent = 'Kopyala'; }, 2000);
     });
   }
 
@@ -1810,6 +1847,7 @@
         if (msg.botStatus) updateBotStatus(msg.botStatus);
         if (msg.commands) renderCommands(msg.commands);
         if (msg.bossState) updateBossUI(msg.bossState);
+        if (msg.jackpot) updateJackpotUI(msg.jackpot);
         break;
 
       case 'BOT_STATUS':
@@ -1920,6 +1958,29 @@
       case 'BOSS_VICTORY':
       case 'BOSS_DEFEAT':
         fetchBossState();
+        break;
+
+      case 'JACKPOT_UPDATED':
+        updateJackpotUI(msg);
+        break;
+
+      case 'JACKPOT_WON':
+        updateJackpotUI({ pool: msg.pool, exactPool: Number(msg.pool).toFixed(2) });
+        if (jackpotFeedback) {
+          jackpotFeedback.style.color = '#facc15';
+          jackpotFeedback.textContent = `🎉 Çekiliş Kazananı: @${msg.winner} (+${msg.amount} 💎)`;
+        }
+        loadGachaUsers();
+        break;
+
+      case 'JACKPOT_DISTRIBUTED':
+        updateJackpotUI({ pool: msg.pool, exactPool: Number(msg.pool).toFixed(2) });
+        if (jackpotFeedback) {
+          const count = msg.recipients ? msg.recipients.length : 0;
+          jackpotFeedback.style.color = '#38bdf8';
+          jackpotFeedback.textContent = `🌧️ Dağıtıldı: ${count} kişiye kişi başı +${msg.perUser} 💎 (Toplam: ${msg.amount} 💎)`;
+        }
+        loadGachaUsers();
         break;
 
       default:
@@ -2308,6 +2369,183 @@
 
   if (btnRefreshGachaUsers) {
     btnRefreshGachaUsers.addEventListener('click', loadGachaUsers);
+  }
+
+  // ==========================================
+  // Community Primogem Jackpot (Kumbara) Logic
+  // ==========================================
+  function updateJackpotUI(data) {
+    if (!data) return;
+    const pool = data.pool !== undefined ? data.pool : (data.jackpotPool !== undefined ? Math.floor(data.jackpotPool) : 0);
+    const exact = data.exactPool !== undefined ? data.exactPool : (data.jackpotPool !== undefined ? Number(data.jackpotPool).toFixed(2) : '0.00');
+    const total = data.totalAccumulated !== undefined ? Math.floor(data.totalAccumulated) : (data.jackpotTotalAccumulated !== undefined ? Math.floor(data.jackpotTotalAccumulated) : 0);
+    const activeCount = data.activeCount !== undefined ? data.activeCount : (data.activeChattersCount !== undefined ? data.activeChattersCount : 0);
+
+    if (adminJackpotPool) adminJackpotPool.textContent = Number(pool).toLocaleString('tr-TR');
+    if (adminJackpotExact) adminJackpotExact.textContent = `(${exact})`;
+    if (adminJackpotTotal) adminJackpotTotal.textContent = `${Number(total).toLocaleString('tr-TR')} 💎`;
+    if (adminJackpotActiveCount) adminJackpotActiveCount.textContent = activeCount;
+  }
+
+  async function loadJackpotStatus() {
+    try {
+      const res = await fetch('/api/jackpot');
+      const data = await res.json();
+      if (data && data.success) {
+        updateJackpotUI(data);
+      }
+    } catch (e) {
+      console.warn('[Jackpot] Durum alma hatası:', e);
+    }
+  }
+
+  if (btnJackpotRaffle) {
+    btnJackpotRaffle.addEventListener('click', async () => {
+      const currentVal = adminJackpotPool ? adminJackpotPool.textContent : '0';
+      if (!confirm(`🎁 Topluluk Havuzundaki Primogemler (${currentVal} 💎) chatteki aktif izleyiciler arasından 1 kişiye çekilişle hediye edilsin mi?`)) return;
+      try {
+        if (jackpotFeedback) {
+          jackpotFeedback.style.color = '#38bdf8';
+          jackpotFeedback.textContent = '⏳ Çekiliş yapılıyor...';
+        }
+        const res = await fetch('/api/jackpot/raffle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (jackpotFeedback) {
+            jackpotFeedback.style.color = '#facc15';
+            jackpotFeedback.textContent = `🎉 @${data.winner} kazandı! (+${data.amount} 💎)`;
+          }
+          updateJackpotUI({
+            pool: data.remainingPool,
+            exactPool: Number(data.remainingPool).toFixed(2)
+          });
+          loadGachaUsers();
+        } else {
+          if (jackpotFeedback) {
+            jackpotFeedback.style.color = '#ef4444';
+            jackpotFeedback.textContent = `Hata: ${data.error || 'Çekiliş yapılamadı'}`;
+          }
+        }
+      } catch (err) {
+        if (jackpotFeedback) {
+          jackpotFeedback.style.color = '#ef4444';
+          jackpotFeedback.textContent = 'İstek hatası: ' + err.message;
+        }
+      }
+    });
+  }
+
+  if (btnJackpotDistribute) {
+    btnJackpotDistribute.addEventListener('click', async () => {
+      const currentVal = adminJackpotPool ? adminJackpotPool.textContent : '0';
+      if (!confirm(`🌧️ Topluluk Havuzundaki Primogemler (${currentVal} 💎) chatteki tüm aktif izleyicilere eşit olarak paylaştırılsın mı?`)) return;
+      try {
+        if (jackpotFeedback) {
+          jackpotFeedback.style.color = '#38bdf8';
+          jackpotFeedback.textContent = '⏳ Primogemler dağıtılıyor...';
+        }
+        const res = await fetch('/api/jackpot/distribute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (jackpotFeedback) {
+            jackpotFeedback.style.color = '#38bdf8';
+            jackpotFeedback.textContent = `🌧️ ${data.recipients.length} kişiye kişi başı +${data.perUser} 💎 paylaştırıldı! (Toplam: ${data.amount} 💎)`;
+          }
+          updateJackpotUI({
+            pool: data.remainingPool,
+            exactPool: Number(data.remainingPool).toFixed(2)
+          });
+          loadGachaUsers();
+        } else {
+          if (jackpotFeedback) {
+            jackpotFeedback.style.color = '#ef4444';
+            jackpotFeedback.textContent = `Hata: ${data.error || 'Dağıtım yapılamadı'}`;
+          }
+        }
+      } catch (err) {
+        if (jackpotFeedback) {
+          jackpotFeedback.style.color = '#ef4444';
+          jackpotFeedback.textContent = 'İstek hatası: ' + err.message;
+        }
+      }
+    });
+  }
+
+  if (btnJackpotAdd) {
+    btnJackpotAdd.addEventListener('click', async () => {
+      const val = parseFloat(jackpotAdjustAmount.value);
+      if (isNaN(val) || val <= 0) {
+        alert('Lütfen eklenecek geçerli bir Primogem miktarı girin.');
+        return;
+      }
+      try {
+        const res = await fetch('/api/jackpot/adjust', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: val, mode: 'add' })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (jackpotFeedback) {
+            jackpotFeedback.style.color = '#4ade80';
+            jackpotFeedback.textContent = `✅ Havuz güncellendi: ${data.pool} 💎`;
+          }
+          jackpotAdjustAmount.value = '';
+          updateJackpotUI(data);
+        }
+      } catch (err) {
+        alert('Hata: ' + err.message);
+      }
+    });
+  }
+
+  if (btnJackpotReset) {
+    btnJackpotReset.addEventListener('click', async () => {
+      if (!confirm('⚠️ Topluluk Havuzunu 0 Primogeme sıfırlamak istediğinize emin misiniz?')) return;
+      try {
+        const res = await fetch('/api/jackpot/adjust', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: 'reset' })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (jackpotFeedback) {
+            jackpotFeedback.style.color = '#ef4444';
+            jackpotFeedback.textContent = 'Havuz sıfırlandı.';
+          }
+          updateJackpotUI(data);
+        }
+      } catch (err) {
+        alert('Hata: ' + err.message);
+      }
+    });
+  }
+
+  if (btnJackpotTestWin) {
+    btnJackpotTestWin.addEventListener('click', async () => {
+      try {
+        await fetch('/api/jackpot/test-win', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ winner: 'Gezgin', amount: 500, mode: 'raffle' })
+        });
+        if (jackpotFeedback) {
+          jackpotFeedback.style.color = '#fbbf24';
+          jackpotFeedback.textContent = '🧪 Test kutlama animasyonu tetiklendi (OBS ekranında görünecektir)';
+        }
+      } catch (err) {
+        alert('Hata: ' + err.message);
+      }
+    });
   }
 
   // Database Management Logic
@@ -3285,6 +3523,7 @@
   loadCommands();
   initChatterAdmin();
   initBossAdmin();
+  loadJackpotStatus();
 
   // Keep-Alive Heartbeat (Pings Render every 2 minutes while Admin panel is open to prevent sleep)
   setInterval(() => {

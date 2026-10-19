@@ -26,6 +26,7 @@ class GachaEngine extends EventEmitter {
       passivePrimoAmount: 20,
       triviaRewardPrimo: 60,
       welcomePrimo: 160, // Free 1 wish for new chatters!
+      jackpotTaxRate: 0.015, // 1.5% community pool tax
       ...options
     };
 
@@ -35,6 +36,9 @@ class GachaEngine extends EventEmitter {
     this.banners = [];
     this.activeBannerId = 'raiden_shogun';
     this.recentFiveStars = [];
+    this.jackpotPool = 0;
+    this.jackpotTotalAccumulated = 0;
+    this.recentJackpotWinners = [];
 
     this.loadData();
     this.startPassiveInterval();
@@ -95,7 +99,21 @@ class GachaEngine extends EventEmitter {
       this.users = {};
     }
 
-    console.log(`[GachaEngine] ${this.characters.length} karakter, ${this.weapons.length} silah, ${this.banners.length} banner ve ${Object.keys(this.users).length} kayıtlı kullanıcı yüklendi.`);
+    // Load Community Jackpot Pool from DatabaseManager
+    try {
+      const savedPool = db.getSetting('jackpot_pool');
+      this.jackpotPool = (savedPool !== undefined && savedPool !== null) ? (+savedPool || 0) : 0;
+      const savedTotal = db.getSetting('jackpot_total_accumulated');
+      this.jackpotTotalAccumulated = (savedTotal !== undefined && savedTotal !== null) ? (+savedTotal || 0) : 0;
+      const savedWinners = db.getSetting('jackpot_recent_winners');
+      this.recentJackpotWinners = Array.isArray(savedWinners) ? savedWinners : [];
+    } catch (e) {
+      this.jackpotPool = 0;
+      this.jackpotTotalAccumulated = 0;
+      this.recentJackpotWinners = [];
+    }
+
+    console.log(`[GachaEngine] ${this.characters.length} karakter, ${this.weapons.length} silah, ${this.banners.length} banner ve ${Object.keys(this.users).length} kayıtlı kullanıcı yüklendi. (Topluluk Havuzu: ${this.jackpotPool} 💎)`);
   }
 
   saveUsers() {
@@ -337,6 +355,51 @@ class GachaEngine extends EventEmitter {
     return this.users[key];
   }
 
+  // Centralized Primogem Award & 1.5% Community Pool Contribution
+  awardEarnedPrimogems(username, grossAmount, reason = 'REWARD', meta = {}) {
+    if (!username || grossAmount <= 0) return { gross: 0, net: 0, tax: 0, pool: this.jackpotPool };
+    const user = this.getOrCreateUser(username);
+    if (!user) return { gross: 0, net: 0, tax: 0, pool: this.jackpotPool };
+
+    // 1.5% Community Jackpot Tax
+    const taxRate = typeof this.config.jackpotTaxRate === 'number' ? this.config.jackpotTaxRate : 0.015;
+    const tax = +(grossAmount * taxRate).toFixed(2);
+
+    user.primogems += grossAmount;
+    this.jackpotPool = +(this.jackpotPool + tax).toFixed(2);
+    this.jackpotTotalAccumulated = +(this.jackpotTotalAccumulated + tax).toFixed(2);
+
+    this.saveUsers();
+    db.setSetting('jackpot_pool', this.jackpotPool);
+    db.setSetting('jackpot_total_accumulated', this.jackpotTotalAccumulated);
+
+    this.emit('jackpot_updated', {
+      pool: this.jackpotPool,
+      added: tax,
+      grossAmount,
+      username,
+      reason,
+      meta,
+      timestamp: Date.now()
+    });
+
+    this.emit('primo_awarded', {
+      username,
+      amount: grossAmount,
+      tax,
+      total: user.primogems,
+      reason
+    });
+
+    return {
+      gross: grossAmount,
+      net: grossAmount,
+      tax,
+      pool: this.jackpotPool,
+      user
+    };
+  }
+
   // 1. Chat Message Reward
   handleChatActivity(username) {
     const user = this.getOrCreateUser(username);
@@ -346,9 +409,8 @@ class GachaEngine extends EventEmitter {
     const cooldownMs = this.config.chatCooldownSeconds * 1000;
 
     if (now - (user.lastChatAwardTime || 0) >= cooldownMs) {
-      user.primogems += this.config.primoPerChat;
       user.lastChatAwardTime = now;
-      this.saveUsers();
+      this.awardEarnedPrimogems(username, this.config.primoPerChat, 'CHAT_ACTIVITY');
     }
   }
 
@@ -358,16 +420,8 @@ class GachaEngine extends EventEmitter {
     if (!user) return;
 
     const award = amount || this.config.triviaRewardPrimo;
-    user.primogems += award;
-    this.saveUsers();
-    console.log(`[GachaEngine] 💎 Trivia Ödülü: ${username} +${award} Primogem kazandı! (Toplam: ${user.primogems})`);
-
-    this.emit('primo_awarded', {
-      username,
-      amount: award,
-      total: user.primogems,
-      reason: 'TRIVIA_WIN'
-    });
+    const res = this.awardEarnedPrimogems(username, award, 'TRIVIA_WIN');
+    console.log(`[GachaEngine] 💎 Trivia Ödülü: ${username} +${award} Primogem kazandı! (+${res.tax} 💎 Havuz, Toplam Havuz: ${res.pool})`);
   }
 
   // 3. Passive Time Ticks
@@ -380,13 +434,12 @@ class GachaEngine extends EventEmitter {
       for (const key in this.users) {
         const u = this.users[key];
         if (now - (u.lastActiveTime || 0) <= activeThreshold) {
-          u.primogems += this.config.passivePrimoAmount;
+          this.awardEarnedPrimogems(u.username, this.config.passivePrimoAmount, 'PASSIVE_WATCH');
           awardedCount++;
         }
       }
 
       if (awardedCount > 0) {
-        this.saveUsers();
         console.log(`[GachaEngine] ⏳ Yayını izleyen ${awardedCount} aktif izleyiciye +${this.config.passivePrimoAmount} Primogem dağıtıldı.`);
       }
     }, this.config.passiveTickMinutes * 60 * 1000);
@@ -687,7 +740,7 @@ class GachaEngine extends EventEmitter {
       if (Math.random() < 0.15) {
         isRefund = true;
         refundAmount = Math.floor(Math.random() * 41) + 40; // 40 - 80 primogems
-        user.primogems += refundAmount;
+        this.awardEarnedPrimogems(user.username, refundAmount, 'WISH_REFUND');
       }
     }
 
@@ -747,8 +800,8 @@ class GachaEngine extends EventEmitter {
       .replace(/ö/g, 'o')
       .replace(/ç/g, 'c');
 
-    // Banner Catalog (!bannerlar, !banners, !havuz, !karakterler5, !liste)
-    if (text === '!bannerlar' || text === '!banners' || text === '!havuz' || text === '!karakterler5' || text === '!liste') {
+    // Banner Catalog (!bannerlar, !banners, !katalog, !karakterler5, !liste)
+    if (text === '!bannerlar' || text === '!banners' || text === '!katalog' || text === '!karakterler5' || text === '!liste') {
       const popular = ['Raiden', 'Furina', 'Hu Tao', 'Zhongli', 'Nahida', 'Neuvillette', 'Mavuika', 'Arlecchino', 'Kazuha', 'Ayaka', 'Yelan', 'Xiao', 'Ganyu', 'Alhaitham', 'Navia', 'Clorinde', 'Citlali', 'Capitano'];
       this.emit('chat_response', {
         username,
@@ -868,6 +921,26 @@ class GachaEngine extends EventEmitter {
       return { type: 'balance', user };
     }
 
+    // Community Jackpot / Pool Check (!havuz, !kumbara, !jackpot, !kasa)
+    if (text === '!havuz' || text === '!kumbara' || text === '!jackpot' || text === '!kasa') {
+      const poolInt = Math.floor(this.jackpotPool);
+      this.emit('chat_response', {
+        username,
+        message: `💎 Topluluk Primogem Havuzu (Kumbara): ${poolInt} Primogem! (Kazanılan her primonun %1.5'i bu havuza eklenir. Yayıncı isterse çekilişle verebilir veya herkese dağıtabilir!)`
+      });
+      return { type: 'jackpot_info', pool: this.jackpotPool, displayPool: poolInt, totalAccumulated: this.jackpotTotalAccumulated };
+    }
+
+    // Community Jackpot Raffle (!havuzcekilis, !kumbaraver, !jackpotcekilis)
+    if (text === '!havuzcekilis' || text === '!kumbaraver' || text === '!jackpotcekilis') {
+      return this.raffleJackpot();
+    }
+
+    // Community Jackpot Distribution (!havuzdagit, !kumbaradagit, !jackpotdagit)
+    if (text === '!havuzdagit' || text === '!kumbaradagit' || text === '!jackpotdagit') {
+      return this.distributeJackpot();
+    }
+
     // Recycle 3-Star Weapons (!donustur, !erit, !hurda, !demirci, !recycle)
     if (text === '!donustur' || text === '!erit' || text === '!hurda' || text === '!demirci' || text === '!recycle' || text === '!craft') {
       const res = this.recycleThreeStars(username);
@@ -965,7 +1038,7 @@ class GachaEngine extends EventEmitter {
     const gainedPrimo = packages * 160;
 
     user.threeStarsCount -= weaponsToRecycle;
-    user.primogems += gainedPrimo;
+    this.awardEarnedPrimogems(username, gainedPrimo, 'BLACKSMITH_RECYCLE');
 
     if (Array.isArray(user.inventory)) {
       let removed = 0;
@@ -991,12 +1064,208 @@ class GachaEngine extends EventEmitter {
   }
 
   // 7. Admin Panel Helpers
-  addPrimogems(username, amount) {
+  addPrimogems(username, amount, reason = 'MANUAL') {
     const user = this.getOrCreateUser(username);
     if (!user) return null;
+    if (amount > 0 && reason !== 'JACKPOT_CLAIM' && reason !== 'ADMIN_OVERRIDE') {
+      return this.awardEarnedPrimogems(username, amount, reason).user;
+    }
     user.primogems = Math.max(0, user.primogems + amount);
     this.saveUsers();
     return user;
+  }
+
+  // ==========================================
+  // COMMUNITY JACKPOT (KUMBARA) METHODS
+  // ==========================================
+  getJackpotPool() {
+    return this.jackpotPool || 0;
+  }
+
+  getJackpotState() {
+    const activeChatters = this.getActiveChatters(30 * 60 * 1000);
+    return {
+      pool: this.jackpotPool,
+      displayPool: Math.floor(this.jackpotPool),
+      totalAccumulated: this.jackpotTotalAccumulated,
+      taxRate: this.config.jackpotTaxRate || 0.015,
+      activeChattersCount: activeChatters.length,
+      recentWinners: this.recentJackpotWinners || []
+    };
+  }
+
+  getActiveChatters(windowMs = 30 * 60 * 1000) {
+    const now = Date.now();
+    let active = Object.values(this.users).filter(u => u && u.username && (now - (u.lastActiveTime || 0)) <= windowMs);
+    if (active.length === 0) {
+      active = Object.values(this.users).filter(u => u && u.username && (u.lastActiveTime || 0) > 0);
+    }
+    if (active.length === 0) {
+      active = Object.values(this.users).filter(u => u && u.username);
+    }
+    return active;
+  }
+
+  raffleJackpot(targetWinner = null) {
+    const amount = Math.floor(this.jackpotPool);
+    if (amount <= 0) {
+      return { success: false, reason: 'pool_empty', message: 'Topluluk havuzunda henüz Primogem birikmedi!' };
+    }
+
+    let winnerObj = null;
+    if (targetWinner) {
+      winnerObj = this.getOrCreateUser(targetWinner);
+    } else {
+      const eligible = this.getActiveChatters(30 * 60 * 1000);
+      if (eligible.length === 0) {
+        return { success: false, reason: 'no_eligible_users', message: 'Çekiliş için uygun aktif izleyici bulunamadı!' };
+      }
+      winnerObj = eligible[Math.floor(Math.random() * eligible.length)];
+    }
+
+    if (!winnerObj) {
+      return { success: false, reason: 'winner_not_found', message: 'Kazanan belirlenemedi!' };
+    }
+
+    // Award winner
+    winnerObj.primogems += amount;
+    this.jackpotPool = +(this.jackpotPool - amount).toFixed(2);
+
+    const winnerRecord = {
+      username: winnerObj.username,
+      amount,
+      type: 'RAFFLE',
+      timestamp: Date.now()
+    };
+    this.recentJackpotWinners.unshift(winnerRecord);
+    if (this.recentJackpotWinners.length > 10) {
+      this.recentJackpotWinners = this.recentJackpotWinners.slice(0, 10);
+    }
+
+    this.saveUsers();
+    db.setSetting('jackpot_pool', this.jackpotPool);
+    db.setSetting('jackpot_recent_winners', this.recentJackpotWinners);
+
+    console.log(`[GachaEngine] 🎁 Topluluk Havuzu Çekilişi: ${winnerObj.username} -> ${amount} 💎 kazandı! Kalan Havuz: ${this.jackpotPool}`);
+
+    this.emit('jackpot_won', {
+      winner: winnerObj.username,
+      amount,
+      remainingPool: this.jackpotPool,
+      displayRemaining: Math.floor(this.jackpotPool),
+      type: 'RAFFLE'
+    });
+
+    this.emit('chat_response', {
+      username: winnerObj.username,
+      message: `👑👑👑 TOPLULUK HAVUZU ÇEKİLİŞİ KAZANANI: @${winnerObj.username}! Havuzdaki tam ${amount} Primogem @${winnerObj.username} hesabına aktarıldı! Tebrikler Gezgin! 💎🎉`
+    });
+
+    return {
+      success: true,
+      winner: winnerObj.username,
+      amount,
+      remainingPool: this.jackpotPool,
+      displayRemaining: Math.floor(this.jackpotPool)
+    };
+  }
+
+  distributeJackpot(customAmount = null) {
+    const totalToDistribute = customAmount ? Math.min(customAmount, Math.floor(this.jackpotPool)) : Math.floor(this.jackpotPool);
+    if (totalToDistribute <= 0) {
+      return { success: false, reason: 'pool_empty', message: 'Dağıtılacak Primogem havuzu boş!' };
+    }
+
+    const eligible = this.getActiveChatters(30 * 60 * 1000);
+    if (eligible.length === 0) {
+      return { success: false, reason: 'no_active_chatters', message: 'Şu an aktif izleyici bulunamadı!' };
+    }
+
+    const perUser = Math.floor(totalToDistribute / eligible.length);
+    if (perUser <= 0) {
+      return { success: false, reason: 'pool_too_small', message: `Havuz (${totalToDistribute} 💎) ${eligible.length} aktif izleyiciye paylaştırmak için çok küçük (Kişi başı en az 1 💎 düşmeli)!` };
+    }
+
+    const actualTotal = perUser * eligible.length;
+    for (const u of eligible) {
+      u.primogems += perUser;
+    }
+    this.jackpotPool = +(this.jackpotPool - actualTotal).toFixed(2);
+
+    const record = {
+      username: `Tüm Chat (${eligible.length} Kişi)`,
+      amount: actualTotal,
+      perUser,
+      type: 'DISTRIBUTION',
+      timestamp: Date.now()
+    };
+    this.recentJackpotWinners.unshift(record);
+    if (this.recentJackpotWinners.length > 10) {
+      this.recentJackpotWinners = this.recentJackpotWinners.slice(0, 10);
+    }
+
+    this.saveUsers();
+    db.setSetting('jackpot_pool', this.jackpotPool);
+    db.setSetting('jackpot_recent_winners', this.recentJackpotWinners);
+
+    console.log(`[GachaEngine] 🌧️ Topluluk Havuzu Dağıtımı: ${eligible.length} izleyiciye kişi başı +${perUser} 💎 (Toplam: ${actualTotal} 💎) dağıtıldı! Kalan Havuz: ${this.jackpotPool}`);
+
+    const recipientNames = eligible.map(u => u.username);
+    this.emit('jackpot_distributed', {
+      userCount: eligible.length,
+      recipients: recipientNames,
+      perUser,
+      totalAmount: actualTotal,
+      remainingPool: this.jackpotPool,
+      displayRemaining: Math.floor(this.jackpotPool),
+      type: 'DISTRIBUTION'
+    });
+
+    this.emit('chat_response', {
+      username: 'Paimon',
+      message: `🌧️💎 TOPLULUK HAVUZU DAĞITILDI! Havuzdaki ${actualTotal} Primogem yayındaki ${eligible.length} aktif Gezgine kişi başı +${perUser} 💎 olarak dağıtıldı! (Kalan Havuz: ${Math.floor(this.jackpotPool)} 💎)`
+    });
+
+    return {
+      success: true,
+      userCount: eligible.length,
+      recipients: recipientNames,
+      perUser,
+      totalAmount: actualTotal,
+      remainingPool: this.jackpotPool,
+      displayRemaining: Math.floor(this.jackpotPool)
+    };
+  }
+
+  adjustJackpotPool(amount, mode = 'add') {
+    const val = +amount || 0;
+    if (mode === 'set') {
+      this.jackpotPool = Math.max(0, val);
+    } else if (mode === 'reset') {
+      this.jackpotPool = 0;
+    } else {
+      this.jackpotPool = Math.max(0, +(this.jackpotPool + val).toFixed(2));
+      if (val > 0) {
+        this.jackpotTotalAccumulated = +(this.jackpotTotalAccumulated + val).toFixed(2);
+      }
+    }
+
+    db.setSetting('jackpot_pool', this.jackpotPool);
+    db.setSetting('jackpot_total_accumulated', this.jackpotTotalAccumulated);
+
+    this.emit('jackpot_updated', {
+      pool: this.jackpotPool,
+      added: mode === 'add' ? val : 0,
+      reason: 'ADMIN_ADJUST',
+      timestamp: Date.now()
+    });
+
+    return {
+      success: true,
+      pool: this.jackpotPool,
+      displayPool: Math.floor(this.jackpotPool),
+      totalAccumulated: this.jackpotTotalAccumulated
+    };
   }
 
   triggerRain(amount = 160) {
