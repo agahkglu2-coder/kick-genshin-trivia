@@ -28,7 +28,7 @@ function loadConfig() {
       gameMode: 'first_correct',
       triviaMode: 'genshin',
       port: 3000,
-      soundEnabled: false,
+      soundEnabled: true,
       botEnabled: true,
       botToken: ''
     };

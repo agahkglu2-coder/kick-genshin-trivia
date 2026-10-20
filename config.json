@@ -5,9 +5,9 @@
   "leaderboardCooldownSeconds": 60,
   "gameMode": "first_correct",
   "triviaMode": "genshin",
-  "soundEnabled": false,
+  "soundEnabled": true,
   "jackpotPool": 500,
-  "jackpotTotalAccumulated": 232.15,
+  "jackpotTotalAccumulated": 308.1,
   "channel": "milka_e",
   "botTargetChannel": "milka_e",
   "port": 3000,
@@ -111,6 +111,19 @@
     }
   ],
   "jackpotRecentWinners": [
+    {
+      "username": "Tüm Chat (3 Kişi)",
+      "amount": 99,
+      "perUser": 33,
+      "type": "DISTRIBUTION",
+      "timestamp": 1792523898502
+    },
+    {
+      "username": "Gezgin1",
+      "amount": 65,
+      "type": "RAFFLE",
+      "timestamp": 1792523898475
+    },
     {
       "username": "Tüm Chat (3 Kişi)",
       "amount": 99,

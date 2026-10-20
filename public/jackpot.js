@@ -34,6 +34,56 @@
   let celebrationTimer = null;
   let socket = null;
 
+  // Sound configuration (Celebrations only; Pool accumulation / tax is 100% silent)
+  const urlParams = new URLSearchParams(window.location.search);
+  let soundEnabled = urlParams.get('sound') !== '0';
+
+  // ========================================================
+  // WEB AUDIO API SYNTHESIZER FOR CELEBRATIONS ONLY
+  // ========================================================
+  let audioCtx = null;
+  function getAudioContext() {
+    if (!audioCtx) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext) audioCtx = new AudioContext();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    return audioCtx;
+  }
+
+  function playChime(freq, duration = 0.2, gainLevel = 0.15) {
+    if (!soundEnabled) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const now = ctx.currentTime;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+
+      gain.gain.setValueAtTime(gainLevel, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch (e) {}
+  }
+
+  function playCelebrationFanfare() {
+    if (!soundEnabled) return;
+    const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C5, E5, G5, C6, E6
+    notes.forEach((freq, idx) => {
+      setTimeout(() => playChime(freq, 0.45, 0.25), idx * 110);
+    });
+  }
+
   // ========================================================
   // PARTICLE SYSTEM (CONFETTI & SPARKS)
   // ========================================================
@@ -172,6 +222,7 @@
 
     const cardRect = celebrationOverlay.getBoundingClientRect();
     createBurst(cardRect.left + cardRect.width / 2, cardRect.top + cardRect.height / 2, 120, ['#ffd700', '#f59e0b', '#ec4899', '#38bdf8', '#ffffff']);
+    playCelebrationFanfare();
 
     celebrationTimer = setTimeout(() => {
       celebrationOverlay.classList.add('hidden');
@@ -191,6 +242,7 @@
 
     const cardRect = celebrationOverlay.getBoundingClientRect();
     createBurst(cardRect.left + cardRect.width / 2, cardRect.top + cardRect.height / 2, 100, ['#38bdf8', '#60a5fa', '#ffd700', '#ffffff']);
+    playCelebrationFanfare();
 
     celebrationTimer = setTimeout(() => {
       celebrationOverlay.classList.add('hidden');
@@ -212,11 +264,20 @@
         const data = JSON.parse(event.data);
 
         // 1. Initial State
-        if (data.type === 'INIT_STATE' && data.jackpot) {
-          setCounter(data.jackpot.pool, false);
-          if (data.jackpot.pool > 0) {
-            try { localStorage.setItem('milka_jackpot_pool', String(data.jackpot.pool)); } catch (e) {}
+        if (data.type === 'INIT_STATE') {
+          if (data.config && data.config.soundEnabled !== undefined) {
+            soundEnabled = !!data.config.soundEnabled;
           }
+          if (data.jackpot) {
+            setCounter(data.jackpot.pool, false);
+            if (data.jackpot.pool > 0) {
+              try { localStorage.setItem('milka_jackpot_pool', String(data.jackpot.pool)); } catch (e) {}
+            }
+          }
+        }
+
+        if (data.type === 'CONFIG_UPDATED' && data.config && data.config.soundEnabled !== undefined) {
+          soundEnabled = !!data.config.soundEnabled;
         }
 
         // 2. Real-time tax added to pool

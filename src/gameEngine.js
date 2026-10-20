@@ -31,7 +31,7 @@ class GameEngine extends EventEmitter {
       winnerDisplaySeconds: 12,
       leaderboardCooldownSeconds: 60,
       gameMode: 'first_correct', // 'first_correct' or 'draw_from_all'
-      soundEnabled: false,
+      soundEnabled: true,
       triviaMode: 'genshin', // 'genshin', 'general', or 'mixed'
       ...config
     };

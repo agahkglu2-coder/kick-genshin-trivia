@@ -78,8 +78,8 @@
     bossEntity.classList.add(`frame-${frameType}`);
   }
 
-  // Sound Effects Generator (Muted by default)
-  let soundEnabled = false;
+  // Sound Effects Generator (Active by default, syncs with server config)
+  let soundEnabled = true;
   let audioCtx = null;
   function playSound(type) {
     if (!soundEnabled) return;

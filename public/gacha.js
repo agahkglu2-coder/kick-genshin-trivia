@@ -86,6 +86,16 @@
     return audioCtx;
   }
 
+  // Pre-unlock audio on user interaction for browser previews
+  ['click', 'touchstart', 'keydown'].forEach(evt => {
+    window.addEventListener(evt, () => {
+      try {
+        const ctx = getAudioContext();
+        if (ctx && ctx.state === 'suspended') ctx.resume();
+      } catch (e) {}
+    }, { passive: true });
+  });
+
   function playTone(freq, type, duration, startTime, gainLevel = 0.2) {
     if (!soundEnabled) return;
     try {

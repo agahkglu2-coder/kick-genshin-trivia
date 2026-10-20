@@ -52,7 +52,7 @@ class BossEngine extends EventEmitter {
     this.config = {
       autoIntervalMinutes: 0,
       rewardParticipationMultiplier: 1.0,
-      soundEnabled: false
+      soundEnabled: true
     };
   }
 
