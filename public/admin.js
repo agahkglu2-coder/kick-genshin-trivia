@@ -2385,13 +2385,55 @@
     if (adminJackpotExact) adminJackpotExact.textContent = `(${exact})`;
     if (adminJackpotTotal) adminJackpotTotal.textContent = `${Number(total).toLocaleString('tr-TR')} 💎`;
     if (adminJackpotActiveCount) adminJackpotActiveCount.textContent = activeCount;
+
+    // Cache to browser localStorage so Render container reboots/deployments never lose the pool!
+    try {
+      if (Number(pool) > 0 || Number(total) > 0) {
+        localStorage.setItem('milka_jackpot_pool', String(pool));
+        localStorage.setItem('milka_jackpot_exact', String(exact));
+        localStorage.setItem('milka_jackpot_total', String(total));
+        localStorage.setItem('milka_jackpot_time', String(Date.now()));
+      }
+    } catch (e) {}
   }
 
   async function loadJackpotStatus() {
     try {
       const res = await fetch('/api/jackpot');
       const data = await res.json();
-      if (data && data.success) {
+      const serverPool = data && data.pool !== undefined ? Number(data.pool) : 0;
+      const serverTotal = data && data.totalAccumulated !== undefined ? Number(data.totalAccumulated) : 0;
+
+      // Check browser localStorage backup (prevents reset when Render restarts or redeploys)
+      const cachedPool = parseFloat(localStorage.getItem('milka_jackpot_pool') || '0');
+      const cachedTotal = parseFloat(localStorage.getItem('milka_jackpot_total') || '0');
+
+      if (serverPool === 0 && cachedPool > 0) {
+        console.log(`[Admin] 🛡️ Render deploy sonrası sıfırlanma tespit edildi! Tarayıcı hafızasındaki ${cachedPool} 💎 sunucuya geri yükleniyor...`);
+        try {
+          const syncRes = await fetch('/api/jackpot/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              pool: cachedPool,
+              totalAccumulated: Math.max(cachedTotal, cachedPool)
+            })
+          });
+          const syncData = await syncRes.json();
+          if (syncData.success) {
+            updateJackpotUI(syncData);
+            if (jackpotFeedback) {
+              jackpotFeedback.style.color = '#38bdf8';
+              jackpotFeedback.textContent = `🛡️ Havuz tarayıcı hafızasından kurtarıldı ve geri yüklendi: ${syncData.pool} 💎`;
+            }
+            return;
+          }
+        } catch (syncErr) {
+          console.warn('[Admin] Jackpot sync hatası:', syncErr);
+        }
+      }
+
+      if (data && data.success !== false) {
         updateJackpotUI(data);
       }
     } catch (e) {
@@ -2518,6 +2560,11 @@
         });
         const data = await res.json();
         if (data.success) {
+          try {
+            localStorage.removeItem('milka_jackpot_pool');
+            localStorage.removeItem('milka_jackpot_exact');
+            localStorage.removeItem('milka_jackpot_total');
+          } catch (e) {}
           if (jackpotFeedback) {
             jackpotFeedback.style.color = '#ef4444';
             jackpotFeedback.textContent = 'Havuz sıfırlandı.';
@@ -2526,6 +2573,40 @@
         }
       } catch (err) {
         alert('Hata: ' + err.message);
+      }
+    });
+  }
+
+  const btnJackpotBackup = document.getElementById('btn-jackpot-backup');
+  if (btnJackpotBackup) {
+    btnJackpotBackup.addEventListener('click', async () => {
+      try {
+        const currentPool = adminJackpotPool ? parseFloat(adminJackpotPool.textContent.replace(/\./g, '')) : 0;
+        const currentTotal = adminJackpotTotal ? parseFloat(adminJackpotTotal.textContent.replace(/[^\d]/g, '')) : 0;
+        if (currentPool > 0) {
+          try {
+            localStorage.setItem('milka_jackpot_pool', String(currentPool));
+            localStorage.setItem('milka_jackpot_total', String(currentTotal));
+          } catch (e) {}
+        }
+        if (jackpotFeedback) {
+          jackpotFeedback.style.color = '#38bdf8';
+          jackpotFeedback.textContent = '⏳ Havuz hafızaya kaydediliyor...';
+        }
+        const res = await fetch('/api/jackpot/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pool: currentPool, totalAccumulated: currentTotal, force: true })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (jackpotFeedback) {
+            jackpotFeedback.style.color = '#10b981';
+            jackpotFeedback.textContent = `🛡️ Havuz veritabanına ve tarayıcı hafızasına güvenle sabitlendi (${data.pool} 💎).`;
+          }
+        }
+      } catch (e) {
+        alert('Yedekleme hatası: ' + e.message);
       }
     });
   }

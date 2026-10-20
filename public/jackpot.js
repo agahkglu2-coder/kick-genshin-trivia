@@ -214,6 +214,9 @@
         // 1. Initial State
         if (data.type === 'INIT_STATE' && data.jackpot) {
           setCounter(data.jackpot.pool, false);
+          if (data.jackpot.pool > 0) {
+            try { localStorage.setItem('milka_jackpot_pool', String(data.jackpot.pool)); } catch (e) {}
+          }
         }
 
         // 2. Real-time tax added to pool
@@ -222,18 +225,23 @@
             showFloatingTax(data.added, data.username);
           }
           setCounter(data.pool, true);
+          if (data.pool > 0) {
+            try { localStorage.setItem('milka_jackpot_pool', String(data.pool)); } catch (e) {}
+          }
         }
 
         // 3. Raffle Won
         if (data.type === 'JACKPOT_WON') {
           triggerRaffleCelebration(data.winner, data.amount);
           setCounter(data.remainingPool, true);
+          try { localStorage.setItem('milka_jackpot_pool', String(data.remainingPool || 0)); } catch (e) {}
         }
 
         // 4. Community Distribution
         if (data.type === 'JACKPOT_DISTRIBUTED') {
           triggerDistributeCelebration(data.userCount, data.perUser, data.totalAmount);
           setCounter(data.remainingPool, true);
+          try { localStorage.setItem('milka_jackpot_pool', String(data.remainingPool || 0)); } catch (e) {}
         }
 
       } catch (err) {
@@ -251,13 +259,59 @@
     };
   }
 
-  // Initial Fetch Fallback
+  // Auto-connect database if saved in browser localStorage (resilient across Render reboots)
+  async function checkDbRestore() {
+    try {
+      const savedDbUrl = localStorage.getItem('milka_database_url');
+      if (savedDbUrl && (savedDbUrl.startsWith('postgres://') || savedDbUrl.startsWith('postgresql://'))) {
+        const stRes = await fetch('/api/db/status');
+        const stData = await stRes.json();
+        if (stData && stData.status && stData.status.type !== 'postgres') {
+          console.log('[Jackpot OBS] ⚡ Render uykudan uyandı: Kayıtlı veritabanı adresi otomatik bağlanıyor...');
+          await fetch('/api/db/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ databaseUrl: savedDbUrl })
+          });
+        }
+      }
+    } catch (e) {}
+  }
+
+  // Initial Fetch Fallback & Deploy Auto-Recovery
   async function fetchInitialState() {
     try {
+      await checkDbRestore();
       const res = await fetch('/api/jackpot');
       if (res.ok) {
         const data = await res.json();
-        setCounter(data.pool, false);
+        const serverPool = data && data.pool !== undefined ? Number(data.pool) : 0;
+        const cachedPool = parseFloat(localStorage.getItem('milka_jackpot_pool') || '0');
+        const cachedTotal = parseFloat(localStorage.getItem('milka_jackpot_total') || '0');
+
+        // If server pool is 0 right after Render deploy/reboot, but client has cached pool:
+        if (serverPool === 0 && cachedPool > 0) {
+          console.log(`[Jackpot OBS] 🛡️ Render deploy sıfırlaması tespit edildi! Tarayıcı hafızasından ${cachedPool} 💎 geri yükleniyor...`);
+          try {
+            const syncRes = await fetch('/api/jackpot/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ pool: cachedPool, totalAccumulated: cachedTotal })
+            });
+            const syncData = await syncRes.json();
+            if (syncData.success) {
+              setCounter(syncData.pool, false);
+              return;
+            }
+          } catch (syncErr) {
+            console.warn('[Jackpot OBS] Sync hatası:', syncErr);
+          }
+        }
+
+        setCounter(serverPool, false);
+        if (serverPool > 0) {
+          try { localStorage.setItem('milka_jackpot_pool', String(serverPool)); } catch (e) {}
+        }
       }
     } catch (e) {}
   }

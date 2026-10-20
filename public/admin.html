@@ -707,7 +707,10 @@
           <div class="panel-card jackpot-admin-card" style="margin-top: 16px; border: 1.5px solid rgba(254, 240, 138, 0.4); background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 27, 75, 0.7) 100%); border-radius: 12px; padding: 14px;">
             <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <span style="font-weight: 800; color: #fef08a;">💎 Topluluk Primogem Havuzu (Kumbara)</span>
-              <span class="badge-mini" style="background: rgba(234, 179, 8, 0.25); color: #fef08a; border: 1px solid #facc15;">%1.5 Canlı Katkı</span>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <span id="jackpot-persistence-badge" class="badge-mini" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981;">🛡️ Kalıcı Hafıza</span>
+                <span class="badge-mini" style="background: rgba(234, 179, 8, 0.25); color: #fef08a; border: 1px solid #facc15;">%1.5 Canlı Katkı</span>
+              </div>
             </div>
 
             <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); border-radius: 10px; padding: 12px 16px; margin: 10px 0;">
@@ -738,9 +741,10 @@
               </button>
             </div>
 
-            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
-              <input type="number" id="jackpot-adjust-amount" placeholder="Miktar (Örn: 500)" style="flex: 1; padding: 6px 10px; border-radius: 6px; background: rgba(0,0,0,0.3); border: 1px solid #334155; color: #fff;">
+            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap;">
+              <input type="number" id="jackpot-adjust-amount" placeholder="Miktar (Örn: 500)" style="flex: 1; min-width: 120px; padding: 6px 10px; border-radius: 6px; background: rgba(0,0,0,0.3); border: 1px solid #334155; color: #fff;">
               <button type="button" id="btn-jackpot-add" class="btn btn-xs btn-outline" style="border-color: #4ade80; color: #4ade80;">+ Havuz Ekle</button>
+              <button type="button" id="btn-jackpot-backup" class="btn btn-xs btn-outline" style="border-color: #38bdf8; color: #38bdf8;" title="Mevcut havuzu kalıcı veritabanına ve tarayıcı hafızasına güvenle sabitle">💾 Hafızaya Sabitle</button>
               <button type="button" id="btn-jackpot-reset" class="btn btn-xs btn-outline" style="border-color: #ef4444; color: #ef4444;">Sıfırla</button>
               <button type="button" id="btn-jackpot-test-win" class="btn btn-xs btn-outline" style="border-color: #fbbf24; color: #fbbf24;">🧪 Test Animasyonu</button>
             </div>

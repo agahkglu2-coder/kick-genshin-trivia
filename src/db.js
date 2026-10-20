@@ -337,8 +337,8 @@ class DatabaseManager {
     this.inMemorySettings.set(key, val);
     this.saveLocalSettings();
 
-    // Mirror bot settings and custom commands into config.json so restarts never wipe them
-    const criticalKeys = ['botToken', 'botUsername', 'botEnabled', 'botClientId', 'botClientSecret', 'botTargetChannel', 'channel', 'custom_commands', 'customCommands', 'timed_messages'];
+    // Mirror bot settings, custom commands and jackpot into config.json so restarts never wipe them
+    const criticalKeys = ['botToken', 'botUsername', 'botEnabled', 'botClientId', 'botClientSecret', 'botTargetChannel', 'channel', 'custom_commands', 'customCommands', 'timed_messages', 'jackpot_pool', 'jackpot_total_accumulated', 'jackpot_recent_winners'];
     if (criticalKeys.includes(key)) {
       try {
         const cfgPath = path.join(__dirname, '..', 'config.json');
@@ -346,6 +346,12 @@ class DatabaseManager {
           const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
           if (key === 'custom_commands') {
             cfg.customCommands = val;
+          } else if (key === 'jackpot_pool') {
+            cfg.jackpotPool = val;
+          } else if (key === 'jackpot_total_accumulated') {
+            cfg.jackpotTotalAccumulated = val;
+          } else if (key === 'jackpot_recent_winners') {
+            cfg.jackpotRecentWinners = val;
           } else {
             cfg[key] = val;
           }

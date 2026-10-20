@@ -306,6 +306,13 @@ db.init(process.env.DATABASE_URL || config.databaseUrl).then(async () => {
 
   if (gachaEngine) {
     gachaEngine.loadData();
+    gachaEngine.emit('jackpot_updated', {
+      pool: gachaEngine.jackpotPool,
+      exactPool: Number(gachaEngine.jackpotPool).toFixed(2),
+      totalAccumulated: gachaEngine.jackpotTotalAccumulated,
+      reason: 'DB_INIT',
+      timestamp: Date.now()
+    });
   }
 }).catch(console.error);
 
@@ -1070,6 +1077,64 @@ app.get('/api/jackpot', (req, res) => {
   res.json(gachaEngine.getJackpotState());
 });
 
+app.post('/api/jackpot/sync', async (req, res) => {
+  try {
+    const { pool, totalAccumulated, recentWinners, force } = req.body || {};
+    const clientPool = parseFloat(pool);
+    const clientTotal = parseFloat(totalAccumulated);
+
+    if (isNaN(clientPool) || clientPool < 0) {
+      return res.status(400).json({ success: false, error: 'Geçersiz pool değeri.' });
+    }
+
+    const currentServerPool = gachaEngine.jackpotPool || 0;
+    // Restore if client pool is greater than server pool (server wiped/reset after deploy), or force === true
+    if (force || clientPool > currentServerPool || (currentServerPool === 0 && clientPool > 0)) {
+      gachaEngine.jackpotPool = +clientPool.toFixed(2);
+      if (!isNaN(clientTotal) && clientTotal >= gachaEngine.jackpotTotalAccumulated) {
+        gachaEngine.jackpotTotalAccumulated = +clientTotal.toFixed(2);
+      }
+      if (Array.isArray(recentWinners) && recentWinners.length > 0 && (!gachaEngine.recentJackpotWinners || gachaEngine.recentJackpotWinners.length === 0)) {
+        gachaEngine.recentJackpotWinners = recentWinners;
+      }
+
+      await db.setSetting('jackpot_pool', gachaEngine.jackpotPool);
+      await db.setSetting('jackpot_total_accumulated', gachaEngine.jackpotTotalAccumulated);
+      if (gachaEngine.recentJackpotWinners && gachaEngine.recentJackpotWinners.length > 0) {
+        await db.setSetting('jackpot_recent_winners', gachaEngine.recentJackpotWinners);
+      }
+
+      console.log(`[Jackpot] 🛡️ Topluluk Havuzu tarayıcı yedek hafızasından geri yüklendi: ${gachaEngine.jackpotPool} 💎 (Toplam: ${gachaEngine.jackpotTotalAccumulated})`);
+
+      gachaEngine.emit('jackpot_updated', {
+        pool: gachaEngine.jackpotPool,
+        exactPool: Number(gachaEngine.jackpotPool).toFixed(2),
+        totalAccumulated: gachaEngine.jackpotTotalAccumulated,
+        reason: 'CLIENT_SYNC',
+        timestamp: Date.now()
+      });
+
+      return res.json({
+        success: true,
+        restored: true,
+        pool: gachaEngine.jackpotPool,
+        totalAccumulated: gachaEngine.jackpotTotalAccumulated,
+        message: `Havuz ${gachaEngine.jackpotPool} Primogem olarak geri yüklendi!`
+      });
+    }
+
+    res.json({
+      success: true,
+      restored: false,
+      pool: gachaEngine.jackpotPool,
+      totalAccumulated: gachaEngine.jackpotTotalAccumulated,
+      message: 'Sunucudaki havuz zaten güncel.'
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.post('/api/jackpot/raffle', (req, res) => {
   const { winner } = req.body || {};
   const result = gachaEngine.raffleJackpot(winner || null);
@@ -1745,6 +1810,13 @@ app.post('/api/db/config', async (req, res) => {
       saveConfig(config);
       if (gachaEngine) {
         gachaEngine.loadData();
+        gachaEngine.emit('jackpot_updated', {
+          pool: gachaEngine.jackpotPool,
+          exactPool: Number(gachaEngine.jackpotPool).toFixed(2),
+          totalAccumulated: gachaEngine.jackpotTotalAccumulated,
+          reason: 'DB_CONFIG_SWITCH',
+          timestamp: Date.now()
+        });
       }
       res.json({ success: true, status: db.getStatus() });
     } catch (err) {
@@ -1760,6 +1832,7 @@ app.get('/api/db/export', (req, res) => {
     exportedAt: new Date().toISOString(),
     users: db.getAllUsers(),
     settings: Object.fromEntries(db.inMemorySettings.entries()),
+    jackpot: gachaEngine ? gachaEngine.getJackpotState() : null,
     config: {
       channel: config.channel,
       botTargetChannel: config.botTargetChannel,
@@ -1782,18 +1855,31 @@ app.post('/api/db/import', async (req, res) => {
     if (importData.users && typeof importData.users === 'object') {
       await db.saveAllUsers(importData.users);
       restoredUsers = Object.keys(importData.users).length;
-      if (gachaEngine) {
-        gachaEngine.loadData();
-      }
     }
     if (importData.settings && typeof importData.settings === 'object') {
       for (const [k, v] of Object.entries(importData.settings)) {
         await db.setSetting(k, v);
       }
     }
+    if (importData.jackpot && typeof importData.jackpot === 'object') {
+      const jp = importData.jackpot;
+      if (jp.pool !== undefined) await db.setSetting('jackpot_pool', jp.pool);
+      if (jp.totalAccumulated !== undefined) await db.setSetting('jackpot_total_accumulated', jp.totalAccumulated);
+      if (Array.isArray(jp.recentWinners)) await db.setSetting('jackpot_recent_winners', jp.recentWinners);
+    }
+    if (gachaEngine) {
+      gachaEngine.loadData();
+      gachaEngine.emit('jackpot_updated', {
+        pool: gachaEngine.jackpotPool,
+        exactPool: Number(gachaEngine.jackpotPool).toFixed(2),
+        totalAccumulated: gachaEngine.jackpotTotalAccumulated,
+        reason: 'DB_IMPORT',
+        timestamp: Date.now()
+      });
+    }
     res.json({
       success: true,
-      message: `${restoredUsers} Gezgin ve sistem ayarları başarıyla geri yüklendi!`,
+      message: `${restoredUsers} Gezgin, Topluluk Havuzu ve sistem ayarları başarıyla geri yüklendi!`,
       status: db.getStatus()
     });
   } catch (err) {

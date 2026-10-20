@@ -6,6 +6,8 @@
   "gameMode": "first_correct",
   "triviaMode": "genshin",
   "soundEnabled": false,
+  "jackpotPool": 500,
+  "jackpotTotalAccumulated": 232.15,
   "channel": "milka_e",
   "botTargetChannel": "milka_e",
   "port": 3000,
@@ -106,6 +108,47 @@
       "permission": "everyone",
       "useCount": 0,
       "description": "Yayın ve sohbet kuralları."
+    }
+  ],
+  "jackpotRecentWinners": [
+    {
+      "username": "Tüm Chat (3 Kişi)",
+      "amount": 99,
+      "perUser": 33,
+      "type": "DISTRIBUTION",
+      "timestamp": 1792523510789
+    },
+    {
+      "username": "Gezgin1",
+      "amount": 65,
+      "type": "RAFFLE",
+      "timestamp": 1792523510770
+    },
+    {
+      "username": "Tüm Chat (3 Kişi)",
+      "amount": 99,
+      "perUser": 33,
+      "type": "DISTRIBUTION",
+      "timestamp": 1792523458890
+    },
+    {
+      "username": "Gezgin1",
+      "amount": 65,
+      "type": "RAFFLE",
+      "timestamp": 1792523458869
+    },
+    {
+      "username": "Tüm Chat (3 Kişi)",
+      "amount": 99,
+      "perUser": 33,
+      "type": "DISTRIBUTION",
+      "timestamp": 1792523438387
+    },
+    {
+      "username": "Gezgin1",
+      "amount": 65,
+      "type": "RAFFLE",
+      "timestamp": 1792523438367
     }
   ]
 }

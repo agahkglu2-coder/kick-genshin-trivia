@@ -99,13 +99,39 @@ class GachaEngine extends EventEmitter {
       this.users = {};
     }
 
-    // Load Community Jackpot Pool from DatabaseManager
+    // Load Community Jackpot Pool from DatabaseManager (with multi-tier fallback)
     try {
-      const savedPool = db.getSetting('jackpot_pool');
+      let savedPool = db.getSetting('jackpot_pool');
+      let savedTotal = db.getSetting('jackpot_total_accumulated');
+      let savedWinners = db.getSetting('jackpot_recent_winners');
+
+      // Fallback to config.json if not yet in db in-memory
+      if (savedPool === undefined || savedPool === null) {
+        try {
+          const cfgPath = path.join(__dirname, '..', 'config.json');
+          if (fs.existsSync(cfgPath)) {
+            const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
+            if (cfg.jackpotPool !== undefined && cfg.jackpotPool !== null) savedPool = cfg.jackpotPool;
+            if (cfg.jackpotTotalAccumulated !== undefined && cfg.jackpotTotalAccumulated !== null) savedTotal = cfg.jackpotTotalAccumulated;
+            if (Array.isArray(cfg.jackpotRecentWinners)) savedWinners = cfg.jackpotRecentWinners;
+          }
+        } catch (e) {}
+      }
+
+      // Fallback to settings.json directly if needed
+      if (savedPool === undefined || savedPool === null) {
+        try {
+          const sPath = path.join(__dirname, '..', 'data', 'settings.json');
+          if (fs.existsSync(sPath)) {
+            const sJson = JSON.parse(fs.readFileSync(sPath, 'utf-8'));
+            if (sJson.jackpot_pool !== undefined) savedPool = sJson.jackpot_pool;
+            if (sJson.jackpot_total_accumulated !== undefined) savedTotal = sJson.jackpot_total_accumulated;
+          }
+        } catch (e) {}
+      }
+
       this.jackpotPool = (savedPool !== undefined && savedPool !== null) ? (+savedPool || 0) : 0;
-      const savedTotal = db.getSetting('jackpot_total_accumulated');
       this.jackpotTotalAccumulated = (savedTotal !== undefined && savedTotal !== null) ? (+savedTotal || 0) : 0;
-      const savedWinners = db.getSetting('jackpot_recent_winners');
       this.recentJackpotWinners = Array.isArray(savedWinners) ? savedWinners : [];
     } catch (e) {
       this.jackpotPool = 0;
@@ -114,6 +140,14 @@ class GachaEngine extends EventEmitter {
     }
 
     console.log(`[GachaEngine] ${this.characters.length} karakter, ${this.weapons.length} silah, ${this.banners.length} banner ve ${Object.keys(this.users).length} kayıtlı kullanıcı yüklendi. (Topluluk Havuzu: ${this.jackpotPool} 💎)`);
+  }
+
+  saveUser(user) {
+    try {
+      if (user && db) db.saveUser(user);
+    } catch (e) {
+      console.error('[GachaEngine] Kullanıcı kaydedilemedi:', e);
+    }
   }
 
   saveUsers() {
@@ -369,7 +403,7 @@ class GachaEngine extends EventEmitter {
     this.jackpotPool = +(this.jackpotPool + tax).toFixed(2);
     this.jackpotTotalAccumulated = +(this.jackpotTotalAccumulated + tax).toFixed(2);
 
-    this.saveUsers();
+    this.saveUser(user);
     db.setSetting('jackpot_pool', this.jackpotPool);
     db.setSetting('jackpot_total_accumulated', this.jackpotTotalAccumulated);
 
@@ -1142,7 +1176,7 @@ class GachaEngine extends EventEmitter {
       this.recentJackpotWinners = this.recentJackpotWinners.slice(0, 10);
     }
 
-    this.saveUsers();
+    this.saveUser(winnerObj);
     db.setSetting('jackpot_pool', this.jackpotPool);
     db.setSetting('jackpot_recent_winners', this.recentJackpotWinners);
 

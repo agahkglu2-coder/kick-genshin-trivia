@@ -243,6 +243,16 @@ assert.strictEqual(distRes.recipients.length >= 2, true);
 assert(distRes.perUser > 0);
 console.log(`✅ Havuz Çekiliş (${raffleRes.amount} 💎) ve Eşit Dağıtım (${distRes.perUser} 💎/kişi) başarıyla doğrulandı!`);
 
+console.log('--- TEST 20: Topluluk Havuzu Kalıcı Hafıza & Mirroring Doğrulaması ---');
+engine.adjustJackpotPool(500, 'set');
+assert.strictEqual(engine.jackpotPool, 500);
+
+// Test loadData restores pool properly
+engine.jackpotPool = 0;
+engine.loadData();
+assert.strictEqual(engine.jackpotPool, 500, 'loadData havuz bakiyesini kalıcı hafızadan eksiksiz yüklemeli');
+console.log('✅ Topluluk Havuzu kalıcı hafıza ve loadData kurtarma testi başarılı!');
+
 console.log('========================================================');
 console.log('🎉 TÜM GACHA, BANNER, 50/50 & TOPLULUK HAVUZU TESTLERİ GEÇTİ!');
 console.log('========================================================');
