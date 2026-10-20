@@ -195,23 +195,23 @@ engine.handleChatMessage({ content: '!bannerlar', sender: { username: 'TestGezgi
 assert(chatResp && chatResp.message.includes('5★ DİLEK HAVUZU'));
 console.log('✅ !bannerlar komutu ve rehberi başarıyla doğrulandı!');
 
-console.log('--- TEST 18: Topluluk Primogem Havuzu (Kumbara) %1.5 Vergi Kesintisi ---');
+console.log('--- TEST 18: Topluluk Primogem Havuzu (Kumbara) %15 Vergi Kesintisi ---');
 // Reset pool for clean test
 engine.adjustJackpotPool(0, 'set');
 assert.strictEqual(engine.jackpotPool, 0, 'Havuz sıfırlanabilmeli');
 
-// 1. awardEarnedPrimogems with 1000 Primogems -> %1.5 is 15.00
+// 1. awardEarnedPrimogems with 1000 Primogems -> %15 is 150.00
 const earnedRes = engine.awardEarnedPrimogems('TestGezgin', 1000, 'test_earn');
 assert.strictEqual(earnedRes.gross, 1000);
-assert.strictEqual(earnedRes.tax, 15);
-assert.strictEqual(engine.jackpotPool, 15);
-assert.strictEqual(engine.jackpotTotalAccumulated >= 15, true);
+assert.strictEqual(earnedRes.tax, 150);
+assert.strictEqual(engine.jackpotPool, 150);
+assert.strictEqual(engine.jackpotTotalAccumulated >= 150, true);
 
 // 2. Chat üzerinden !havuz komutu
 engine.handleChatMessage({ content: '!havuz', sender: { username: 'TestGezgin' } });
 assert(chatResp && chatResp.message.includes('Topluluk Primogem Havuzu'));
-assert(chatResp.message.includes('15 Primogem'));
-console.log('✅ Topluluk Havuzu %1.5 pay birikimi ve !havuz komutu başarıyla doğrulandı!');
+assert(chatResp.message.includes('150 Primogem'));
+console.log('✅ Topluluk Havuzu %15 pay birikimi ve !havuz komutu başarıyla doğrulandı!');
 
 console.log('--- TEST 19: Topluluk Havuzu Çekiliş (!havuzcekilis) ve Dağıtım (!havuzdagit) ---');
 // Aktif chat kullanıcısı ekleyelim
@@ -220,8 +220,8 @@ g1.lastActiveTime = Date.now();
 const g2 = engine.getOrCreateUser('Gezgin2');
 g2.lastActiveTime = Date.now();
 
-// Havuzda şu an 15 Primogem var, 50 daha ekleyelim -> 65
-engine.adjustJackpotPool(50, 'add');
+// Havuzda çekiliş için 65 Primogem ayarlayalım
+engine.adjustJackpotPool(65, 'set');
 assert.strictEqual(engine.jackpotPool, 65);
 
 // 1. Çekiliş Testi (Raffle to Gezgin1)

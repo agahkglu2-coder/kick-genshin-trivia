@@ -26,7 +26,7 @@ class GachaEngine extends EventEmitter {
       passivePrimoAmount: 20,
       triviaRewardPrimo: 60,
       welcomePrimo: 160, // Free 1 wish for new chatters!
-      jackpotTaxRate: 0.015, // 1.5% community pool tax
+      jackpotTaxRate: 0.15, // 15% community pool tax
       ...options
     };
 
@@ -389,14 +389,14 @@ class GachaEngine extends EventEmitter {
     return this.users[key];
   }
 
-  // Centralized Primogem Award & 1.5% Community Pool Contribution
+  // Centralized Primogem Award & 15% Community Pool Contribution
   awardEarnedPrimogems(username, grossAmount, reason = 'REWARD', meta = {}) {
     if (!username || grossAmount <= 0) return { gross: 0, net: 0, tax: 0, pool: this.jackpotPool };
     const user = this.getOrCreateUser(username);
     if (!user) return { gross: 0, net: 0, tax: 0, pool: this.jackpotPool };
 
-    // 1.5% Community Jackpot Tax
-    const taxRate = typeof this.config.jackpotTaxRate === 'number' ? this.config.jackpotTaxRate : 0.015;
+    // 15% Community Jackpot Tax
+    const taxRate = typeof this.config.jackpotTaxRate === 'number' ? this.config.jackpotTaxRate : 0.15;
     const tax = +(grossAmount * taxRate).toFixed(2);
 
     user.primogems += grossAmount;
@@ -960,7 +960,7 @@ class GachaEngine extends EventEmitter {
       const poolInt = Math.floor(this.jackpotPool);
       this.emit('chat_response', {
         username,
-        message: `💎 Topluluk Primogem Havuzu (Kumbara): ${poolInt} Primogem! (Kazanılan her primonun %1.5'i bu havuza eklenir. Yayıncı isterse çekilişle verebilir veya herkese dağıtabilir!)`
+        message: `💎 Topluluk Primogem Havuzu (Kumbara): ${poolInt} Primogem! (Kazanılan her primonun %15'i bu havuza eklenir. Yayıncı isterse çekilişle verebilir veya herkese dağıtabilir!)`
       });
       return { type: 'jackpot_info', pool: this.jackpotPool, displayPool: poolInt, totalAccumulated: this.jackpotTotalAccumulated };
     }
@@ -1122,7 +1122,7 @@ class GachaEngine extends EventEmitter {
       pool: this.jackpotPool,
       displayPool: Math.floor(this.jackpotPool),
       totalAccumulated: this.jackpotTotalAccumulated,
-      taxRate: this.config.jackpotTaxRate || 0.015,
+      taxRate: this.config.jackpotTaxRate || 0.15,
       activeChattersCount: activeChatters.length,
       recentWinners: this.recentJackpotWinners || []
     };
