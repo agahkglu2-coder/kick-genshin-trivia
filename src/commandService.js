@@ -409,7 +409,7 @@ class CommandService extends EventEmitter {
 
     // Variable substitutions
     const username = (chatMsg.sender?.username || 'Gezgin').trim();
-    const channel = (context.channel || 'milka_e').trim();
+    const channel = (context.channel || 'mylune').trim();
     
     // Target user (e.g. !dc @Ahmet -> @Ahmet)
     let targetUser = `@${username}`;

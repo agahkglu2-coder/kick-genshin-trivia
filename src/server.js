@@ -19,8 +19,8 @@ function loadConfig() {
   } catch (e) {
     console.warn('[Server] config.json okunamadı, varsayılanlar kullanılıyor.');
     return {
-      channel: 'milka_e',
-      botTargetChannel: 'milka_e',
+      channel: 'mylune',
+      botTargetChannel: 'mylune',
       intervalMinutes: 10,
       questionDurationSeconds: 45,
       winnerDisplaySeconds: 12,
@@ -189,7 +189,7 @@ try {
   const KNOWN_CHANNELS_PATH = path.join(__dirname, '..', 'data', 'known_channels.json');
   if (fs.existsSync(KNOWN_CHANNELS_PATH)) {
     knownChannels = JSON.parse(fs.readFileSync(KNOWN_CHANNELS_PATH, 'utf-8'));
-    const curChan = (config.channel || 'milka_e').toLowerCase();
+    const curChan = (config.channel || 'mylune').toLowerCase();
     if (knownChannels[curChan]) {
       if (knownChannels[curChan].chatroomId) kickBot.setChatroomId(knownChannels[curChan].chatroomId);
       if (knownChannels[curChan].broadcasterUserId) kickBot.setBroadcasterUserId(knownChannels[curChan].broadcasterUserId);
@@ -283,21 +283,21 @@ db.init(process.env.DATABASE_URL || config.databaseUrl).then(async () => {
   }
 
 
-  if (savedTargetChan) {
+  if (savedTargetChan && savedTargetChan !== 'milka_e') {
     config.botTargetChannel = savedTargetChan;
-  } else if (!config.botTargetChannel) {
-    config.botTargetChannel = 'milka_e';
+  } else {
+    config.botTargetChannel = 'mylune';
   }
 
-  if (savedChan) {
+  if (savedChan && savedChan !== 'milka_e') {
     config.channel = savedChan;
     gameEngine.updateConfig({ channel: savedChan });
-  } else if (!config.channel) {
-    config.channel = 'milka_e';
-    gameEngine.updateConfig({ channel: 'milka_e' });
+  } else {
+    config.channel = 'mylune';
+    gameEngine.updateConfig({ channel: 'mylune' });
   }
 
-  const activeChan = (config.botTargetChannel || config.channel || 'milka_e').toLowerCase();
+  const activeChan = (config.botTargetChannel || config.channel || 'mylune').toLowerCase();
   if (knownChannels[activeChan]) {
     if (knownChannels[activeChan].chatroomId) kickBot.setChatroomId(knownChannels[activeChan].chatroomId);
     if (knownChannels[activeChan].broadcasterUserId) kickBot.setBroadcasterUserId(knownChannels[activeChan].broadcasterUserId);
@@ -437,8 +437,8 @@ kickClient.on('message', async (chatMsg) => {
         const val = ((b && (b.type || b.badge_type || b.text)) || '').toLowerCase();
         return val.includes('broadcaster') || val.includes('yayinci') || val.includes('owner');
       }) ||
-      senderUser.toLowerCase() === (config.channel || 'milka_e').toLowerCase() ||
-      senderSlug.toLowerCase() === (config.channel || 'milka_e').toLowerCase() ||
+      senderUser.toLowerCase() === (config.channel || 'mylune').toLowerCase() ||
+      senderSlug.toLowerCase() === (config.channel || 'mylune').toLowerCase() ||
       senderUser.toLowerCase() === (config.botTargetChannel || '').toLowerCase()
     );
     const isModerator = badges.some(b => {
@@ -497,7 +497,7 @@ kickClient.on('message', async (chatMsg) => {
 
     // 3. Handle Custom Configurable Chat Commands (!bot, !dc, !instagram, etc.)
     const cmdReply = commandService.processMessage(chatMsg, {
-      channel: config.channel || 'milka_e',
+      channel: config.channel || 'mylune',
       isAuthorized
     });
     if (cmdReply) {
@@ -1256,7 +1256,7 @@ app.post('/api/bot/config', async (req, res) => {
   if (targetChannel !== undefined) {
     config.botTargetChannel = targetChannel.trim();
     await db.setSetting('botTargetChannel', config.botTargetChannel);
-    const activeTarget = config.botTargetChannel || config.channel || 'milka_e';
+    const activeTarget = config.botTargetChannel || config.channel || 'mylune';
     try {
       const info = await kickClient.getChatroomId(activeTarget);
       if (info) {
@@ -1322,7 +1322,7 @@ app.post('/api/bot/target-channel', async (req, res) => {
   saveConfig(config);
   await db.setSetting('botTargetChannel', target);
 
-  const activeChannel = target || config.channel || 'milka_e';
+  const activeChannel = target || config.channel || 'mylune';
   try {
     const info = await kickClient.getChatroomId(activeChannel);
     if (info) {
@@ -1728,8 +1728,8 @@ app.post('/api/commands/:id/test', async (req, res) => {
     .replace(/\{user\}/gi, 'Yayıncı')
     .replace(/\{hedef\}/gi, '@Yayıncı')
     .replace(/\{target\}/gi, '@Yayıncı')
-    .replace(/\{kanal\}/gi, config.channel || 'milka_e')
-    .replace(/\{channel\}/gi, config.channel || 'milka_e')
+    .replace(/\{kanal\}/gi, config.channel || 'mylune')
+    .replace(/\{channel\}/gi, config.channel || 'mylune')
     .replace(/\{saat\}/gi, nowObj.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }))
     .replace(/\{tarih\}/gi, nowObj.toLocaleDateString('tr-TR'))
     .replace(/\{komutlar\}/gi, commandService.getCommands().filter(c => c.enabled).map(c => c.name).join(', '));

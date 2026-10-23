@@ -349,7 +349,10 @@
     "difficulty": "Kolay",
     "question": "Genshin'de 1 adet Fates (Kader Parçası) almak için kaç Primogem gerekir?",
     "answers": [
-      "160"
+      "160",
+      "160 Primo",
+      "160 Primogem",
+      "Yüz altmış"
     ],
     "hint": "Yüz altmış."
   },
@@ -359,7 +362,9 @@
     "difficulty": "Orta",
     "question": "Karakter afişinde (Character Event Wish) garantili 5 yıldız için hard pity sayısı kaçtır?",
     "answers": [
-      "90"
+      "90",
+      "Doksan",
+      "90."
     ],
     "hint": "Doksan."
   },

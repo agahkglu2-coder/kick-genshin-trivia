@@ -15,7 +15,7 @@ console.log('--- TEST 2: !bot ve !dc Tetikleme & Değişken Doldurma ---');
 const replyBot = cmdService.processMessage({
   content: '!bot',
   sender: { username: 'ZerkTester' }
-}, { channel: 'milka_e' });
+}, { channel: 'mylune' });
 
 assert(replyBot !== null, '!bot yanıtı dönmeli');
 assert(replyBot.includes('ZerkTester'), 'Yanıt kullanıcı adını (@ZerkTester) içermeli');

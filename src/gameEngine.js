@@ -5,22 +5,94 @@ const path = require('path');
 const QUESTIONS_GENSHIN_FILE = path.join(__dirname, 'questions.json');
 const QUESTIONS_GENERAL_FILE = path.join(__dirname, 'questions_general.json');
 
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
 function normalizeText(str) {
   if (!str) return '';
-  return str
-    .toLowerCase()
+  return String(str)
     .replace(/İ/g, 'i')
     .replace(/I/g, 'i')
     .replace(/ı/g, 'i')
+    .replace(/Ğ/g, 'g')
     .replace(/ğ/g, 'g')
+    .replace(/Ü/g, 'u')
     .replace(/ü/g, 'u')
+    .replace(/Ş/g, 's')
     .replace(/ş/g, 's')
+    .replace(/Ö/g, 'o')
     .replace(/ö/g, 'o')
+    .replace(/Ç/g, 'c')
     .replace(/ç/g, 'c')
+    .replace(/[âÂ]/g, 'a')
+    .replace(/[îÎ]/g, 'i')
+    .replace(/[ûÛ]/g, 'u')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9\s]/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
+
+const NUMBER_MAP = {
+  '0': ['sifir'],
+  '1': ['bir'],
+  '2': ['iki'],
+  '3': ['uc'],
+  '4': ['dort', 'dorduncu'],
+  '5': ['bes', 'besinci'],
+  '6': ['alti', 'altinci'],
+  '7': ['yedi', 'yedinci'],
+  '8': ['sekiz', 'sekizinci'],
+  '9': ['dokuz', 'dokuzuncu'],
+  '10': ['on', 'onuncu'],
+  '11': ['on bir', 'onbir', 'on birinci'],
+  '12': ['on iki', 'oniki', 'on ikinci'],
+  '24': ['yirmi dort', 'yirmidort'],
+  '25': ['yirmi bes', 'yirmibes'],
+  '52': ['elli iki', 'elliiki'],
+  '88': ['seksen sekiz', 'seksensekiz'],
+  '90': ['doksan', 'doksaninci'],
+  '100': ['yuz', 'yuzuncu'],
+  '160': ['yuz altmis', 'yuzaltmis'],
+  '500': ['bes yuz', 'besyuz'],
+  '1453': ['bin dort yuz elli uc', 'bindortyuzelliuc'],
+  '1923': ['bin dokuz yuz yirmi uc', 'bindokuzyuzyirmiuc']
+};
+
+const NUMBER_MAP_REVERSE = {};
+for (const [digit, words] of Object.entries(NUMBER_MAP)) {
+  for (const w of words) {
+    NUMBER_MAP_REVERSE[w] = digit;
+    NUMBER_MAP_REVERSE[w.replace(/\s+/g, '')] = digit;
+  }
+}
+
+// Turkish suffix matcher (normalized forms: dir, de, ye, nin...)
+const TURKISH_SUFFIX_REGEX = /^(?:dir|dur|tir|tur|de|da|te|ta|ye|ya|e|a|nin|nun|in|un|yi|yu|i|u|den|dan|ten|tan|ler|lar|inci|nci|uncu|ncu|teydi|daydi)$/;
+// Common attached units in stream trivia answers
+const UNIT_SUFFIX_REGEX = /^(?:primo|primogem|p|pity|kisi|oyuncu|kat|metre|m|cm|saat|gun|yil|yili|yilinda|hafta|oda|odacik|derece)$/;
 
 class GameEngine extends EventEmitter {
   constructor(config = {}) {
@@ -265,22 +337,83 @@ class GameEngine extends EventEmitter {
   }
 
   isAnswerCorrect(userMsg, acceptableAnswers) {
+    if (!userMsg || !Array.isArray(acceptableAnswers) || acceptableAnswers.length === 0) return false;
     const normMsg = normalizeText(userMsg);
     if (!normMsg) return false;
+    const cleanMsgNoSpaces = normMsg.replace(/\s+/g, '');
+    const wordsInMsg = normMsg.split(' ').filter(Boolean);
 
-    for (const ans of acceptableAnswers) {
-      const normAns = normalizeText(ans);
-      if (!normAns) continue;
-
-      // 1. Tam eşleşme
-      if (normMsg === normAns) return true;
-
-      // 2. Mesaj kelimeler içeriyorsa ve cevap 3 karakterden uzunsa kelime sınırında arama
-      if (normAns.length >= 3) {
-        const regex = new RegExp(`(^|\\s)${normAns}($|\\s)`, 'i');
-        if (regex.test(normMsg)) return true;
+    // Expand acceptable answers with number equivalents
+    const expandedAnswers = [];
+    for (const a of acceptableAnswers) {
+      if (!a) continue;
+      expandedAnswers.push(a);
+      const normA = normalizeText(a);
+      if (NUMBER_MAP[normA]) {
+        expandedAnswers.push(...NUMBER_MAP[normA]);
+      }
+      if (NUMBER_MAP_REVERSE[normA]) {
+        expandedAnswers.push(NUMBER_MAP_REVERSE[normA]);
+      }
+      const cleanANoSpaces = normA.replace(/\s+/g, '');
+      if (NUMBER_MAP_REVERSE[cleanANoSpaces]) {
+        expandedAnswers.push(NUMBER_MAP_REVERSE[cleanANoSpaces]);
       }
     }
+
+    for (const ans of expandedAnswers) {
+      const normAns = normalizeText(ans);
+      if (!normAns) continue;
+      const cleanAnsNoSpaces = normAns.replace(/\s+/g, '');
+
+      // 1. Exact match
+      if (normMsg === normAns) return true;
+
+      // 2. Space-agnostic exact match (e.g. 'hutao' === 'hu tao', 'davinci' === 'da vinci')
+      if (cleanMsgNoSpaces === cleanAnsNoSpaces) return true;
+
+      const isSingleWordAns = !normAns.includes(' ');
+
+      if (isSingleWordAns) {
+        for (const w of wordsInMsg) {
+          // Direct token match (even if 1-2 chars, e.g. '4', 'ei', 'oz')
+          if (w === normAns) return true;
+
+          // Turkish suffix or attached unit check (e.g. 'ventidir', '1923te', 'diluctur', '160primo')
+          if (w.startsWith(normAns)) {
+            const suffix = w.slice(normAns.length);
+            if (TURKISH_SUFFIX_REGEX.test(suffix) || UNIT_SUFFIX_REGEX.test(suffix)) {
+              return true;
+            }
+          }
+
+          // Fuzzy match: 1-character typo tolerance for words with length >= 5
+          if (normAns.length >= 5 && Math.abs(w.length - normAns.length) <= 1) {
+            if (levenshtein(w, normAns) <= 1) return true;
+          }
+        }
+      } else {
+        // Multi-word answer in sentence (e.g. 'bence hu tao kesin')
+        const escaped = normAns.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(^|\\s)${escaped}(?=$|\\s)`, 'i');
+        if (regex.test(normMsg)) return true;
+
+        // Space-stripped multi-word match in sentence (e.g. 'bence hutao bence')
+        for (const w of wordsInMsg) {
+          if (w === cleanAnsNoSpaces) return true;
+          if (w.startsWith(cleanAnsNoSpaces)) {
+            const suffix = w.slice(cleanAnsNoSpaces.length);
+            if (TURKISH_SUFFIX_REGEX.test(suffix)) return true;
+          }
+        }
+
+        // Fuzzy multi-word match when comparing full space-stripped strings
+        if (cleanAnsNoSpaces.length >= 6 && cleanMsgNoSpaces.length >= 5) {
+          if (levenshtein(cleanMsgNoSpaces, cleanAnsNoSpaces) <= 1) return true;
+        }
+      }
+    }
+
     return false;
   }
 

@@ -21,6 +21,19 @@ assert.strictEqual(engine.isAnswerCorrect('yanlis_cevap', ['Venti', 'Barbatos'])
 assert.strictEqual(engine.isAnswerCorrect('rex lapis', ['Zhongli', 'Rex Lapis', 'Morax']), true);
 assert.strictEqual(engine.isAnswerCorrect('acil durum yemegi', ['Acil durum yemeği']), true);
 
+// Turkish character edge cases (İ / ı / suffixes / space-stripping)
+assert.strictEqual(engine.isAnswerCorrect('İnazuma', ['Inazuma']), true, 'Turkish capital İ matching failed');
+assert.strictEqual(engine.isAnswerCorrect('inazuma', ['İnazuma']), true, 'Turkish lowercase matching failed');
+assert.strictEqual(engine.isAnswerCorrect('ventidir', ['Venti']), true, 'Turkish copula suffix matching failed');
+assert.strictEqual(engine.isAnswerCorrect('bence ventidir', ['Venti']), true, 'Sentence with suffix matching failed');
+assert.strictEqual(engine.isAnswerCorrect('bence ei', ['Ei']), true, 'Short 2-letter answer in sentence failed');
+assert.strictEqual(engine.isAnswerCorrect('hutao', ['Hu Tao']), true, 'Space-agnostic matching failed');
+assert.strictEqual(engine.isAnswerCorrect('davinci', ['Da Vinci']), true, 'Space-agnostic matching failed');
+assert.strictEqual(engine.isAnswerCorrect('1923te', ['1923']), true, 'Numeric suffix matching failed');
+assert.strictEqual(engine.isAnswerCorrect('doksan', ['90']), true, 'Number word equivalence matching failed');
+assert.strictEqual(engine.isAnswerCorrect('neuvillete', ['Neuvillette']), true, 'Typo tolerance matching failed');
+assert.strictEqual(engine.isAnswerCorrect('11 kisi', ['11']), true, 'Number with unit matching failed');
+
 console.log('✅ Metin normalizasyonu ve cevap eşleştirme testleri başarıyla geçti!');
 
 console.log('--- TEST 2: Soru Havuzu Doğrulama ---');

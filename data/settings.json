@@ -1,8 +1,21 @@
 {
   "jackpot_pool": 500,
-  "jackpot_total_accumulated": 567.6,
+  "jackpot_total_accumulated": 833.7,
   "active_banner_id": "furina",
   "jackpot_recent_winners": [
+    {
+      "username": "Tüm Chat (3 Kişi)",
+      "amount": 99,
+      "perUser": 33,
+      "type": "DISTRIBUTION",
+      "timestamp": 1792786953530
+    },
+    {
+      "username": "Gezgin1",
+      "amount": 65,
+      "type": "RAFFLE",
+      "timestamp": 1792786953505
+    },
     {
       "username": "Tüm Chat (3 Kişi)",
       "amount": 99,
@@ -54,19 +67,6 @@
       "amount": 65,
       "type": "RAFFLE",
       "timestamp": 1792523458869
-    },
-    {
-      "username": "Tüm Chat (3 Kişi)",
-      "amount": 99,
-      "perUser": 33,
-      "type": "DISTRIBUTION",
-      "timestamp": 1792523438387
-    },
-    {
-      "username": "Gezgin1",
-      "amount": 65,
-      "type": "RAFFLE",
-      "timestamp": 1792523438367
     }
   ]
 }
