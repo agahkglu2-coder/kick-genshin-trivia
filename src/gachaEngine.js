@@ -825,14 +825,33 @@ class GachaEngine extends EventEmitter {
     const username = sender.username;
     this.handleChatActivity(username);
 
-    const text = (content || '').trim().toLowerCase()
-      .replace(/ı/g, 'i')
+    // Clean Kick emotes, mentions, HTML entities and Turkish casing
+    let raw = String(content || '').trim();
+    raw = raw.replace(/\[emote:\d+:[^\]]+\]/gi, ' ');
+    raw = raw.replace(/\[emoji:[^\]]+\]/gi, ' ');
+    raw = raw.replace(/\[mention:\d+:([^\]]+)\]/gi, ' ');
+    raw = raw.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+    raw = raw.replace(/^@[a-zA-Z0-9_\u00C0-\u017F]+\s+/g, '');
+    raw = raw
       .replace(/İ/g, 'i')
+      .replace(/I/g, 'i')
+      .replace(/ı/g, 'i')
+      .replace(/Ğ/g, 'g')
       .replace(/ğ/g, 'g')
+      .replace(/Ü/g, 'u')
       .replace(/ü/g, 'u')
+      .replace(/Ş/g, 's')
       .replace(/ş/g, 's')
+      .replace(/Ö/g, 'o')
       .replace(/ö/g, 'o')
-      .replace(/ç/g, 'c');
+      .replace(/Ç/g, 'c')
+      .replace(/ç/g, 'c')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    // Strip trailing punctuation from command line (!, ., ?, etc.)
+    const text = raw.replace(/[!.,?:;]+$/g, '').replace(/\s+/g, ' ').trim();
 
     // Banner Catalog (!bannerlar, !banners, !katalog, !karakterler5, !liste)
     if (text === '!bannerlar' || text === '!banners' || text === '!katalog' || text === '!karakterler5' || text === '!liste') {
@@ -847,7 +866,8 @@ class GachaEngine extends EventEmitter {
     // Banner Info Check (!banner [karakter], !afis [karakter], !etkinlik)
     const bannerMatch = text.match(/^!(?:banner|afis|etkinlik)(?:\s+(.+))?$/);
     if (bannerMatch) {
-      const charQuery = bannerMatch[1]?.trim();
+      let charQuery = bannerMatch[1]?.trim();
+      if (charQuery) charQuery = charQuery.replace(/[!.,?:;]+$/g, '').trim();
       let targetBanner = null;
 
       if (charQuery) {
@@ -879,11 +899,14 @@ class GachaEngine extends EventEmitter {
       return { type: 'banner_info', banner: targetBanner, user };
     }
 
-    // 10x Wish (!wish10 [karakter/standart], !dilek10 [karakter/standart], !10cek, !10standart)
-    const wish10Match = text.match(/^!(?:wish10|dilek10|10cek|10standart)(?:\s+(.+))?$/);
+    // 10x Wish (!wish10, !dilek10, !10cek, !10dilek, !10wish, !wish 10, !dilek 10, !cek 10, !wish x10, !wish 10x, !10standart)
+    const wish10Regex = /^!(?:wish10|dilek10|10cek|10dilek|10wish|10standart|wish\s+10|dilek\s+10|cek\s+10|wish\s+x10|wish\s+10x)(?:\s+(.+))?$/;
+    const wish10Match = text.match(wish10Regex);
     if (wish10Match) {
       let targetQuery = wish10Match[1]?.trim();
-      if (text.startsWith('!10standart')) targetQuery = 'standart';
+      if (targetQuery) targetQuery = targetQuery.replace(/[!.,?:;]+$/g, '').trim();
+      if (text.includes('standart')) targetQuery = 'standart';
+      if (targetQuery === '10' || targetQuery === 'x10' || targetQuery === '10x') targetQuery = null;
       let res;
 
       if (targetQuery === 'standart' || targetQuery === 'standard') {
@@ -911,11 +934,20 @@ class GachaEngine extends EventEmitter {
       return res;
     }
 
-    // Single Wish (!wish [karakter/standart], !dilek [karakter/standart], !cek [karakter/standart], !standart)
-    const wishMatch = text.match(/^!(?:wish|dilek|cek|standart)(?:\s+(.+))?$/);
+    // Single Wish (!wish [karakter/standart], !dilek [karakter/standart], !cek [karakter/standart], !standart, !tekcek)
+    const wishRegex = /^!(?:wish|dilek|cek|standart|tekcek)(?:\s+(.+))?$/;
+    const wishMatch = text.match(wishRegex);
     if (wishMatch) {
       let targetQuery = wishMatch[1]?.trim();
+      if (targetQuery) targetQuery = targetQuery.replace(/[!.,?:;]+$/g, '').trim();
       if (text.startsWith('!standart')) targetQuery = 'standart';
+      if (targetQuery === '1' || targetQuery === 'x1' || targetQuery === '1x') targetQuery = null;
+      
+      // If user typed !wish 10, redirect to 10-pull
+      if (targetQuery === '10' || targetQuery === 'x10' || targetQuery === '10x') {
+        return this.pull(username, 10, 'event');
+      }
+
       let res;
 
       if (targetQuery === 'standart' || targetQuery === 'standard') {

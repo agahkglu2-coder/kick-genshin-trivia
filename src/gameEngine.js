@@ -31,6 +31,15 @@ function levenshtein(a, b) {
 function normalizeText(str) {
   if (!str) return '';
   return String(str)
+    .replace(/\[emote:\d+:[^\]]+\]/gi, ' ')
+    .replace(/\[emoji:[^\]]+\]/gi, ' ')
+    .replace(/\[mention:\d+:([^\]]+)\]/gi, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/@[a-zA-Z0-9_\u00C0-\u017F]+/g, ' ')
     .replace(/İ/g, 'i')
     .replace(/I/g, 'i')
     .replace(/ı/g, 'i')

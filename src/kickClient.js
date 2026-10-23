@@ -465,30 +465,63 @@ class KickClient extends EventEmitter {
           });
         }
 
-        // 3. Chat Message Event from push.pub
-        if (msg.push && msg.push.pub && msg.push.pub.data) {
-          const pubData = msg.push.pub.data;
-          if (pubData.event === 'App\\Events\\ChatMessageEvent') {
-            const chatData = typeof pubData.data === 'string' ? JSON.parse(pubData.data) : pubData.data;
-            if (!chatData) continue;
-
-            const parsed = {
-              id: chatData.id,
-              chatroomId: chatData.chatroom_id,
-              content: chatData.content,
-              type: chatData.type,
-              createdAt: chatData.created_at,
-              sender: {
-                id: chatData.sender?.id,
-                username: chatData.sender?.username,
-                slug: chatData.sender?.slug,
-                profilePic: chatData.sender?.profile_pic,
-                badges: chatData.sender?.identity?.badges || []
-              }
-            };
-
-            this.emit('message', parsed);
+        // 3. Chat Message Events (handles single publication or batched pubs array)
+        const publications = [];
+        if (msg.push) {
+          if (Array.isArray(msg.push.pubs)) {
+            publications.push(...msg.push.pubs);
+          } else if (msg.push.pub) {
+            publications.push(msg.push.pub);
           }
+        }
+        if (Array.isArray(msg.pubs)) {
+          publications.push(...msg.pubs);
+        } else if (msg.pub) {
+          publications.push(msg.pub);
+        }
+
+        for (const pub of publications) {
+          if (!pub || !pub.data) continue;
+          const pubData = pub.data;
+
+          // Check for chat event (App\Events\ChatMessageEvent, ChatMessageEvent, or raw chat payload)
+          const isChatEvent = !pubData.event ||
+            pubData.event.includes('ChatMessageEvent') ||
+            pubData.event.includes('MessageEvent') ||
+            (pubData.content !== undefined);
+
+          if (!isChatEvent) continue;
+
+          let chatData = null;
+          if (typeof pubData.data === 'string') {
+            try { chatData = JSON.parse(pubData.data); } catch (e) {}
+          } else if (pubData.data && typeof pubData.data === 'object') {
+            chatData = pubData.data;
+          } else if (pubData.content !== undefined) {
+            chatData = pubData;
+          }
+
+          if (!chatData || !chatData.content) continue;
+
+          const senderObj = chatData.sender || chatData.user || {};
+          const senderUsername = (senderObj.username || senderObj.slug || senderObj.identity?.username || chatData.username || '').trim();
+
+          const parsed = {
+            id: chatData.id,
+            chatroomId: chatData.chatroom_id || this.chatroomId,
+            content: chatData.content,
+            type: chatData.type || 'message',
+            createdAt: chatData.created_at || new Date().toISOString(),
+            sender: {
+              id: senderObj.id,
+              username: senderUsername || 'Gezgin',
+              slug: senderObj.slug || senderUsername.toLowerCase(),
+              profilePic: senderObj.profile_pic || senderObj.profilePic || null,
+              badges: senderObj.identity?.badges || senderObj.badges || []
+            }
+          };
+
+          this.emit('message', parsed);
         }
       }
     } catch (e) {

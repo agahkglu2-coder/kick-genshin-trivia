@@ -193,6 +193,21 @@ console.log('✅ Takma ad ve doğrudan karakter dilek mekaniği başarıyla doğ
 // 3. !bannerlar komutu kontrolü
 engine.handleChatMessage({ content: '!bannerlar', sender: { username: 'TestGezgin' } });
 assert(chatResp && chatResp.message.includes('5★ DİLEK HAVUZU'));
+
+// 4. Farklı yazım ve emote/noktalama toleransları (!wish!, !wish 10, @mylune !wish)
+testUser.primogems = 50000;
+const w1 = engine.handleChatMessage({ content: '!wish!', sender: { username: 'TestGezgin' } });
+assert(w1 && w1.success, '!wish! çalışmalı');
+const w2 = engine.handleChatMessage({ content: '!wish ', sender: { username: 'TestGezgin' } });
+assert(w2 && w2.success, '!wish (boşluklu) çalışmalı');
+const w3 = engine.handleChatMessage({ content: '@mylune !wish', sender: { username: 'TestGezgin' } });
+assert(w3 && w3.success, '@mylune !wish çalışmalı');
+const w4 = engine.handleChatMessage({ content: '!wish [emote:123:cat]', sender: { username: 'TestGezgin' } });
+assert(w4 && w4.success, '!wish emote ile çalışmalı');
+const w5 = engine.handleChatMessage({ content: '!wish 10', sender: { username: 'TestGezgin' } });
+assert(w5 && w5.success && w5.pulls.length === 10, '!wish 10 (10lu çekiş) çalışmalı');
+const w6 = engine.handleChatMessage({ content: '!wish ayaka!', sender: { username: 'TestGezgin' } });
+assert(w6 && w6.success, '!wish ayaka! çalışmalı');
 console.log('✅ !bannerlar komutu ve rehberi başarıyla doğrulandı!');
 
 console.log('--- TEST 18: Topluluk Primogem Havuzu (Kumbara) %15 Vergi Kesintisi ---');
