@@ -348,13 +348,25 @@ kickClient.on('status', (status) => {
 
 kickClient.on('message', async (chatMsg) => {
   // Feed to GameEngine for answer checking
-  gameEngine.handleChatMessage(chatMsg);
+  try {
+    gameEngine.handleChatMessage(chatMsg);
+  } catch (err) {
+    console.error('[Server] GameEngine handleChatMessage hatası:', err);
+  }
 
   // Feed to GachaEngine for Primogem rewards & commands (!wish, !bakiye, !envanter, etc.)
-  gachaEngine.handleChatMessage(chatMsg);
+  try {
+    gachaEngine.handleChatMessage(chatMsg);
+  } catch (err) {
+    console.error('[Server] GachaEngine handleChatMessage hatası:', err);
+  }
 
   // Feed to BossEngine for World Boss Raid (!katil, !kalkan, !ulti, etc.)
-  bossEngine.handleChatMessage(chatMsg);
+  try {
+    bossEngine.handleChatMessage(chatMsg);
+  } catch (err) {
+    console.error('[Server] BossEngine handleChatMessage hatası:', err);
+  }
 
   // Broadcast to admin dashboard chat preview
   broadcast({
@@ -582,6 +594,39 @@ gachaEngine.on('wish_result', (wishData) => {
       duration: 900 // 15 mins golden starlight aura!
     });
   }
+
+  // Announce wish result in Kick Chat for real-time chatter feedback
+  try {
+    if (kickBot) {
+      const user = wishData.username;
+      const remaining = wishData.stats?.primogems !== undefined ? ` (Kalan: ${wishData.stats.primogems} 💎)` : '';
+
+      if (wishData.is10Pull && Array.isArray(wishData.pulls)) {
+        const topPull = wishData.featuredPull || wishData.pulls.find(p => p.rarity === 5) || wishData.pulls.find(p => p.rarity === 4) || wishData.pulls[0];
+        const has5 = wishData.pulls.some(p => p.rarity === 5);
+        if (has5) {
+          kickBot.sendMessage(`🌟🌟🌟🌟🌟 @${user} 10'LU DİLEKTE 5★ ${topPull.name.toUpperCase()} ÇIKARDI! TEBRİKLER! 🎉${remaining}`);
+        } else if (topPull && topPull.rarity === 4) {
+          kickBot.sendMessage(`⭐ @${user} 10'lu dilek çekti! En iyi: [4★] ${topPull.name}! ✨${remaining}`);
+        } else {
+          kickBot.sendMessage(`🎁 @${user} 10'lu dilek çekti!${remaining} (Mavi silahları eritmek için: !donustur)`);
+        }
+      } else {
+        const pull = wishData.pulls?.[0] || wishData.item;
+        if (pull) {
+          if (pull.rarity === 5) {
+            kickBot.sendMessage(`🌟🌟🌟🌟🌟 TEBRİKLER @${user}! 5★ ${pull.name.toUpperCase()} ÇIKTI! 🎉${remaining}`);
+          } else if (pull.rarity === 4) {
+            kickBot.sendMessage(`⭐ @${user} 4★ [${pull.name}] kazandı! ✨${remaining}`);
+          } else {
+            kickBot.sendMessage(`🗡️ @${user} 3★ [${pull.name}] çekti.${remaining} (Demirci için: !donustur)`);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[Server] Dilek chat duyurusu hatası:', e.message);
+  }
 });
 
 gachaEngine.on('primo_rain', (rainData) => {
@@ -595,8 +640,9 @@ gachaEngine.on('primo_awarded', (awardData) => {
 });
 
 gachaEngine.on('chat_response', (resp) => {
-  // Feed to KickBot with anti-spam cooldown check
-  if (resp.username === 'Paimon' || kickBot.checkCooldown(resp.username)) {
+  // Feed to KickBot with anti-spam cooldown check (exempt system warnings)
+  const isWarning = Boolean(resp.message && resp.message.startsWith('⚠️'));
+  if (resp.username === 'Paimon' || isWarning || kickBot.checkCooldown(resp.username)) {
     kickBot.sendMessage(resp.message);
   }
   broadcast({ type: 'GACHA_CHAT_RESPONSE', ...resp });

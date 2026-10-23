@@ -825,13 +825,29 @@ class GachaEngine extends EventEmitter {
     const username = sender.username;
     this.handleChatActivity(username);
 
-    // Clean Kick emotes, mentions, HTML entities and Turkish casing
-    let raw = String(content || '').trim();
+    // 1. Remove invisible / zero-width unicode characters & non-breaking spaces
+    let raw = String(content || '').replace(/[\u200B-\u200D\uFEFF\u00A0]/g, ' ').trim();
+
+    // 2. Remove Kick emotes [emote:ID:NAME], emojis [emoji:NAME], and mentions [mention:ID:NAME]
     raw = raw.replace(/\[emote:\d+:[^\]]+\]/gi, ' ');
     raw = raw.replace(/\[emoji:[^\]]+\]/gi, ' ');
-    raw = raw.replace(/\[mention:\d+:([^\]]+)\]/gi, ' ');
-    raw = raw.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-    raw = raw.replace(/^@[a-zA-Z0-9_\u00C0-\u017F]+\s+/g, '');
+    raw = raw.replace(/\[mention:\d+:[^\]]+\]/gi, ' ');
+
+    // 3. Decode HTML entities
+    raw = raw
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>');
+
+    // 4. Remove any @username mentions anywhere in the string
+    raw = raw.replace(/@[a-zA-Z0-9_\u00C0-\u017F]+/g, ' ').trim();
+
+    // 5. Remove space right after leading exclamation: "! wish" -> "!wish", "!  wish" -> "!wish"
+    raw = raw.replace(/^!\s+/g, '!');
+
+    // 6. Turkish casing & diacritic conversion
     raw = raw
       .replace(/İ/g, 'i')
       .replace(/I/g, 'i')
@@ -850,8 +866,24 @@ class GachaEngine extends EventEmitter {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
 
-    // Strip trailing punctuation from command line (!, ., ?, etc.)
-    const text = raw.replace(/[!.,?:;]+$/g, '').replace(/\s+/g, ' ').trim();
+    // 7. Strip trailing punctuation: "!wish!", "!wish.", "!wish!?" -> "!wish"
+    let text = raw.replace(/[!.,?:;]+$/g, '').replace(/\s+/g, ' ').trim();
+
+    // 8. If chatter omitted '!' but typed a known command keyword, auto-add '!'
+    if (!text.startsWith('!') && /^(?:wish|dilek|cek|tekcek|standart|bakiye|puan|primo|primogem|pity|garanti|envanter|donustur|erit|banner|bannerlar|banners|katalog|havuz|kumbara|10wish|10cek|10dilek|wish10|dilek10|cek10)(?:\s|$|\d)/i.test(text)) {
+      text = '!' + text;
+    }
+
+    // Streamer / Broadcaster Auto-Refill: Ensure channel owner is never blocked by 0 Primogems during stream
+    const isStreamer = ['mylune', 'milka_e', 'milka'].includes(username.toLowerCase()) || 
+      (this.config.channel && username.toLowerCase() === this.config.channel.toLowerCase());
+    if (isStreamer) {
+      const streamerUser = this.getOrCreateUser(username);
+      if (streamerUser && streamerUser.primogems < 1600) {
+        streamerUser.primogems = 50000;
+        this.saveUser(streamerUser);
+      }
+    }
 
     // Banner Catalog (!bannerlar, !banners, !katalog, !karakterler5, !liste)
     if (text === '!bannerlar' || text === '!banners' || text === '!katalog' || text === '!karakterler5' || text === '!liste') {
@@ -900,9 +932,10 @@ class GachaEngine extends EventEmitter {
     }
 
     // 10x Wish (!wish10, !dilek10, !10cek, !10dilek, !10wish, !wish 10, !dilek 10, !cek 10, !wish x10, !wish 10x, !10standart)
-    const wish10Regex = /^!(?:wish10|dilek10|10cek|10dilek|10wish|10standart|wish\s+10|dilek\s+10|cek\s+10|wish\s+x10|wish\s+10x)(?:\s+(.+))?$/;
+    const wish10Regex = /^!(?:wish10|dilek10|10cek|10dilek|10wish|10standart|wish\s*10|dilek\s*10|cek\s*10|wish\s*x10|wish\s*10x)(?:\s+(.+))?$/;
     const wish10Match = text.match(wish10Regex);
     if (wish10Match) {
+      console.log(`[GachaEngine] 🎯 10'lu Dilek algılandı: @${username} -> "${content}"`);
       let targetQuery = wish10Match[1]?.trim();
       if (targetQuery) targetQuery = targetQuery.replace(/[!.,?:;]+$/g, '').trim();
       if (text.includes('standart')) targetQuery = 'standart';
@@ -928,7 +961,7 @@ class GachaEngine extends EventEmitter {
       if (!res.success && res.reason === 'insufficient_primogems') {
         this.emit('chat_response', {
           username,
-          message: `@${username} 10'lu dilek için 1600 Primogem gerekir! (Mevcut: ${res.current}).`
+          message: `⚠️ @${username} 10'lu dilek için 1600 Primogem gerekir! (Mevcut: ${res.current} 💎). Tekli dilek için: !wish (160 💎)`
         });
       }
       return res;
@@ -938,6 +971,7 @@ class GachaEngine extends EventEmitter {
     const wishRegex = /^!(?:wish|dilek|cek|standart|tekcek)(?:\s+(.+))?$/;
     const wishMatch = text.match(wishRegex);
     if (wishMatch) {
+      console.log(`[GachaEngine] 🎯 Tekli Dilek algılandı: @${username} -> "${content}"`);
       let targetQuery = wishMatch[1]?.trim();
       if (targetQuery) targetQuery = targetQuery.replace(/[!.,?:;]+$/g, '').trim();
       if (text.startsWith('!standart')) targetQuery = 'standart';
@@ -945,7 +979,14 @@ class GachaEngine extends EventEmitter {
       
       // If user typed !wish 10, redirect to 10-pull
       if (targetQuery === '10' || targetQuery === 'x10' || targetQuery === '10x') {
-        return this.pull(username, 10, 'event');
+        const res10 = this.pull(username, 10, 'event');
+        if (!res10.success && res10.reason === 'insufficient_primogems') {
+          this.emit('chat_response', {
+            username,
+            message: `⚠️ @${username} 10'lu dilek için 1600 Primogem gerekir! (Mevcut: ${res10.current} 💎). Tekli dilek için: !wish (160 💎)`
+          });
+        }
+        return res10;
       }
 
       let res;
@@ -969,7 +1010,7 @@ class GachaEngine extends EventEmitter {
       if (!res.success && res.reason === 'insufficient_primogems') {
         this.emit('chat_response', {
           username,
-          message: `@${username} Yetersiz Primogem! (Mevcut: ${res.current}, Gereken: ${res.needed}). Chate yazarak ve yayını izleyerek kazanabilirsin!`
+          message: `⚠️ @${username} Yetersiz Primogem! 1 Dilek için 160 Primogem gerekir. (Mevcut: ${res.current} 💎). Chate yazarak veya yayın sorularını bilerek kazanabilirsin!`
         });
       }
       return res;
@@ -1031,7 +1072,7 @@ class GachaEngine extends EventEmitter {
       const status5050 = user.isGuaranteed ? '🌟 KESİN BANNER GARANTİSİ' : '🎲 50/50 ŞANSI';
       this.emit('chat_response', {
         username,
-        message: `🎯 @${username} Etkinlik Pity: ${user.pity5}/${this.config.pity5Threshold} (${remaining === 0 ? 'Sıradaki kesin 5★!' : remaining + ' çekiş sonra 5★'}) | Durum: ${status5050} | Standart Pity: ${user.standardPity5 || 0}/${this.config.pity5Threshold}`
+        message: `🎯 @${username} Etkinlik Pity: ${user.pity5}/${this.config.pity5Threshold} (${remaining === 0 ? 'Sıradaki kesin 5★ Garantisi!' : remaining + ' çekiş sonra 5★ Garantisi'}) | Durum: ${status5050} | Standart Pity: ${user.standardPity5 || 0}/${this.config.pity5Threshold}`
       });
       return { type: 'pity', user };
     }
