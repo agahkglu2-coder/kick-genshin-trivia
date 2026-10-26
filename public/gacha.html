@@ -6,7 +6,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>Genshin Gacha & Primogem OBS Source - Wish Edition</title>
-  <link rel="stylesheet" href="gacha.css?v=3.6">
+  <link rel="stylesheet" href="gacha.css?v=4.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
   <!-- Transient Version Confirmation Badge for Streamer (Fades out in 4s) -->
   <div id="version-badge" class="version-badge">
     <img src="assets/paimon_cheer.png" alt="" class="badge-paimon-icon">
-    <span>Genshin Wish Showcase Aktif (v3.6)</span>
+    <span>Genshin Wish Showcase Aktif (v4.0 Cinematic Flow)</span>
   </div>
 
   <!-- Sleek Golden Announcement Ticker for 5★ and 4★ Drops -->
@@ -26,12 +26,27 @@
     </div>
   </div>
 
-  <!-- Canvas for Shooting Star Meteors, Sparkles & Primogem Rain -->
+  <!-- Canvas for 100% Transparent Celestial Meteors, Shockwaves & Stardust Particles -->
   <canvas id="effects-canvas"></canvas>
+
+  <!-- Authentic Official Genshin Impact Audio SFX -->
+  <audio id="wish-audio-5star" preload="auto">
+    <source src="assets/sounds/reveal-5star.ogg" type="audio/ogg">
+    <source src="assets/sounds/genshin_5star_reveal.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="wish-audio-4star" preload="auto">
+    <source src="assets/sounds/reveal-4star.ogg" type="audio/ogg">
+  </audio>
+  <audio id="wish-audio-meteor" preload="auto">
+    <source src="assets/sounds/wish_5star_official_soundtrack.m4a" type="audio/mp4">
+  </audio>
 
   <!-- Dramatic Celestial Sky & Meteor Animation Stage -->
   <div id="wish-meteor-stage" class="wish-meteor-stage hidden" style="display: none;">
+    <!-- Genuine Alpha-Transparent Flow Video Animation for 5-Star Drops -->
+    <video id="wish-transparent-video" class="wish-transparent-video hidden" src="assets/videos/gacha_5star_flow_transparent.webm" playsinline muted preload="auto"></video>
     <div class="meteor-sky-glow" id="meteor-sky-glow"></div>
+    <div class="meteor-shockwave" id="meteor-shockwave"></div>
     <div class="meteor-comet" id="meteor-comet">
       <div class="comet-head"></div>
       <div class="comet-tail"></div>
@@ -131,6 +146,6 @@
     </div>
   </div>
 
-  <script src="gacha.js?v=3.6"></script>
+  <script src="gacha.js?v=4.0"></script>
 </body>
 </html>

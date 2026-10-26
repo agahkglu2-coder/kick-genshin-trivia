@@ -233,6 +233,48 @@
     ],
     "lastChatAwardTime": 1790099790287,
     "lastActiveTime": 1790099799284,
-    "createdAt": "2026-09-22T17:16:56.235Z"
+    "createdAt": "2026-09-22T17:16:56.235Z",
+    "isGuaranteed": false,
+    "isGuaranteed4": false,
+    "standardPity5": 0,
+    "standardPity4": 0
+  },
+  "gamer": {
+    "username": "Gamer",
+    "primogems": 1540,
+    "pity4": 1,
+    "pity5": 0,
+    "isGuaranteed": false,
+    "isGuaranteed4": false,
+    "standardPity5": 0,
+    "standardPity4": 0,
+    "totalWishes": 1,
+    "fiveStarsCount": 1,
+    "fourStarsCount": 0,
+    "threeStarsCount": 0,
+    "inventory": [
+      {
+        "name": "Capitano",
+        "rarity": 5,
+        "type": "character",
+        "element": "Cryo",
+        "weaponType": "Sword",
+        "region": "Snezhnaya",
+        "title": "The Indomitable Captain",
+        "icon": "/assets/characters/capitano.png",
+        "remoteIcon": "/assets/characters/capitano.png",
+        "remoteIconDev": "/assets/characters/capitano.png",
+        "splashArt": "/assets/characters/capitano.png",
+        "splashArtDev": "/assets/characters/capitano_splash.png",
+        "portrait": "/assets/characters/capitano.png",
+        "internalName": "Capitano",
+        "slug": "capitano",
+        "isCapturingRadiance": false,
+        "pulledAt": "2026-10-26T20:08:52.017Z"
+      }
+    ],
+    "lastChatAwardTime": 0,
+    "lastActiveTime": 1793046832036,
+    "createdAt": "2026-10-26T20:08:52.015Z"
   }
 }

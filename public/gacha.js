@@ -15,6 +15,11 @@
   const meteorSkyGlow = document.getElementById('meteor-sky-glow');
   const meteorComet = document.getElementById('meteor-comet');
   const meteorImpactFlash = document.getElementById('meteor-impact-flash');
+  const meteorShockwave = document.getElementById('meteor-shockwave');
+  const wishTransparentVideo = document.getElementById('wish-transparent-video');
+  const wishAudio5Star = document.getElementById('wish-audio-5star');
+  const wishAudio4Star = document.getElementById('wish-audio-4star');
+  const wishAudioMeteor = document.getElementById('wish-audio-meteor');
 
   const wishSunburst = document.getElementById('wish-sunburst');
   const wishCard = document.getElementById('wish-card');
@@ -120,6 +125,18 @@
 
   function playMeteorSound(rarity) {
     if (!soundEnabled) return;
+    if (rarity === 5 && wishAudioMeteor) {
+      try {
+        wishAudioMeteor.currentTime = 0;
+        const p = wishAudioMeteor.play();
+        if (p) p.catch(() => playSynthesizedMeteorSound(rarity));
+        return;
+      } catch (e) {}
+    }
+    playSynthesizedMeteorSound(rarity);
+  }
+
+  function playSynthesizedMeteorSound(rarity) {
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
@@ -147,28 +164,71 @@
     } catch (e) {}
   }
 
+  // Authentic 5-Star Character Reveal Moment Audio
+  function play5StarAudio() {
+    if (!soundEnabled) return;
+    if (wishAudio5Star) {
+      try {
+        wishAudio5Star.currentTime = 0;
+        const playPromise = wishAudio5Star.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            playSynthesizedFanfare5();
+          });
+        }
+      } catch (e) {
+        playSynthesizedFanfare5();
+      }
+    } else {
+      playSynthesizedFanfare5();
+    }
+  }
+
+  function playSynthesizedFanfare5() {
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      playTone(85, 'sine', 0.8, now, 0.4);
+      playTone(130, 'triangle', 0.6, now, 0.3);
+
+      const notes = [261.63, 392.00, 523.25, 659.25, 783.99, 987.77, 1046.50, 1318.51];
+      notes.forEach((freq, idx) => {
+        playTone(freq, idx > 4 ? 'sine' : 'triangle', 1.8, now + 0.08 * idx, 0.28);
+      });
+
+      for (let i = 0; i < 8; i++) {
+        playTone(1200 + Math.random() * 800, 'sine', 0.6, now + 0.4 + i * 0.12, 0.12);
+      }
+    } catch (e) {}
+  }
+
   function playRevealFanfare(rarity) {
     if (!soundEnabled) return;
+    if (rarity === 5) {
+      play5StarAudio(); // Authentic Genshin 5★ Character Drop Sound!
+      return;
+    }
+    if (rarity === 4 && wishAudio4Star) {
+      try {
+        wishAudio4Star.currentTime = 0;
+        const p = wishAudio4Star.play();
+        if (p) {
+          p.catch(() => playSynthesizedFanfare4());
+          return;
+        }
+      } catch (e) {}
+    }
+    playSynthesizedFanfare4(rarity);
+  }
+
+  function playSynthesizedFanfare4(rarity = 4) {
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
       const now = ctx.currentTime;
 
-      if (rarity === 5) {
-        // Deep Impact + Royal Orchestral Jingle
-        playTone(85, 'sine', 0.8, now, 0.4);
-        playTone(130, 'triangle', 0.6, now, 0.3);
-
-        const notes = [261.63, 392.00, 523.25, 659.25, 783.99, 987.77, 1046.50, 1318.51];
-        notes.forEach((freq, idx) => {
-          playTone(freq, idx > 4 ? 'sine' : 'triangle', 1.8, now + 0.08 * idx, 0.28);
-        });
-
-        // Golden shimmer bells
-        for (let i = 0; i < 8; i++) {
-          playTone(1200 + Math.random() * 800, 'sine', 0.6, now + 0.4 + i * 0.12, 0.12);
-        }
-      } else if (rarity === 4) {
+      if (rarity === 4) {
         // Violet Starlight Chime
         playTone(110, 'sine', 0.5, now, 0.25);
         const notes4 = [349.23, 440.00, 523.25, 698.46, 880.00, 1046.50];
@@ -506,20 +566,75 @@
   }
 
   // ========================================================
-  // METEOR STAGE TRIGGER
+  // METEOR STAGE TRIGGER (Cinematic 5★ Flow & Standard 4★/3★)
+  // ========================================================
+  // METEOR STAGE TRIGGER (Cinematic 5★ Flow & Standard 4★/3★)
   // ========================================================
   function triggerMeteorStage(rarity, onImpact) {
     if (!wishMeteorStage) {
-      playRevealFanfare(rarity);
       if (onImpact) onImpact();
       return;
     }
 
+    // Play meteor flight sound
     playMeteorSound(rarity);
-    launchMeteor(rarity, null);
 
     wishMeteorStage.classList.remove('hidden');
     wishMeteorStage.style.display = 'block';
+
+    // Cinematic 5★ Flow Transparent Video Animation
+    if (rarity === 5 && wishTransparentVideo) {
+      if (meteorComet) meteorComet.style.display = 'none';
+      if (meteorSkyGlow) meteorSkyGlow.style.display = 'none';
+
+      wishTransparentVideo.classList.remove('hidden');
+      wishTransparentVideo.style.display = 'block';
+      wishTransparentVideo.style.opacity = '1';
+      wishTransparentVideo.currentTime = 0;
+      const playPromise = wishTransparentVideo.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {});
+      }
+
+      // Explosion supernova timing in the Flow anime video (at ~3.35s)
+      const impactDelay = 3350;
+
+      setTimeout(() => {
+        if (meteorImpactFlash) {
+          meteorImpactFlash.classList.add('flash-active');
+        }
+        if (meteorShockwave) {
+          meteorShockwave.classList.remove('shockwave-active');
+          void meteorShockwave.offsetWidth;
+          meteorShockwave.classList.add('shockwave-active');
+        }
+        triggerScreenShake();
+        createConfettiBurst(canvas.width * 0.5, canvas.height * 0.45, 200, ['#ffd700', '#fbbf24', '#ffffff', '#fef08a', '#eab308']);
+
+        if (onImpact) onImpact();
+
+        // Let the video settle its stardust for another 1.2s then fade out gracefully
+        setTimeout(() => {
+          wishTransparentVideo.style.opacity = '0';
+          setTimeout(() => {
+            wishTransparentVideo.pause();
+            wishTransparentVideo.classList.add('hidden');
+            wishTransparentVideo.style.display = 'none';
+            wishMeteorStage.classList.add('hidden');
+            wishMeteorStage.style.display = 'none';
+            if (meteorImpactFlash) meteorImpactFlash.classList.remove('flash-active');
+            if (meteorShockwave) meteorShockwave.classList.remove('shockwave-active');
+          }, 400);
+        }, 1200);
+      }, impactDelay);
+
+      return;
+    }
+
+    // Standard 4★ and 3★ CSS Animation Fallback
+    if (meteorComet) meteorComet.style.display = 'block';
+    if (meteorSkyGlow) meteorSkyGlow.style.display = 'block';
+    launchMeteor(rarity, null);
 
     if (meteorSkyGlow) {
       meteorSkyGlow.className = `meteor-sky-glow glow-${rarity}`;
@@ -536,24 +651,21 @@
       meteorComet.classList.add('comet-streak');
     }
 
+    const impactDelay = 850;
+
     setTimeout(() => {
       if (meteorImpactFlash) {
         meteorImpactFlash.classList.add('flash-active');
       }
 
-      if (rarity === 5) {
-        triggerScreenShake();
-      }
-
-      playRevealFanfare(rarity);
-
       setTimeout(() => {
         wishMeteorStage.classList.add('hidden');
         wishMeteorStage.style.display = 'none';
         if (meteorImpactFlash) meteorImpactFlash.classList.remove('flash-active');
+        if (meteorShockwave) meteorShockwave.classList.remove('shockwave-active');
         if (onImpact) onImpact();
-      }, 350);
-    }, 900);
+      }, 300);
+    }, impactDelay);
   }
 
   // Primogem Rain Effect
@@ -808,7 +920,20 @@
     const region = pull.region ? ` • ${pull.region}` : '';
     wishItemSub.textContent = `${weaponType}${region}`;
 
-    wishStars.textContent = '★'.repeat(rarity);
+    if (rarity === 5) {
+      wishStars.innerHTML = Array.from({ length: 5 }).map((_, idx) => 
+        `<span class="star-item" style="animation-delay: ${0.2 + idx * 0.12}s">★</span>`
+      ).join('');
+      // 5 yıldızın ardışık parlama ve çan sesleri
+      for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+          playGridCardPop(i + 3, 5);
+        }, 200 + i * 120);
+      }
+      createConfettiBurst(canvas.width * 0.5, canvas.height * 0.45, 120, ['#ffd700', '#fbbf24', '#ffffff', '#fef08a']);
+    } else {
+      wishStars.textContent = '★'.repeat(rarity);
+    }
     wishStars.className = `wish-stars stars-${rarity}`;
 
     if (rarity === 5 && pull.pity5AtPull >= 75) {
@@ -834,6 +959,8 @@
       wishCard.style.display = 'block';
       wishCard.classList.remove('hidden');
       wishCard.classList.remove('slide-out');
+      // Authentic Genshin reveal fanfare played exactly as the card bursts onto screen!
+      playRevealFanfare(rarity);
     });
 
     let displayDuration = 4500;
