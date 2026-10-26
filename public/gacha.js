@@ -21,6 +21,15 @@
   const wishAudio4Star = document.getElementById('wish-audio-4star');
   const wishAudioMeteor = document.getElementById('wish-audio-meteor');
 
+  // Calibrated volumes for streaming & OBS overlay (moderated volume)
+  const SFX_VOLUME_5STAR = 0.40;
+  const SFX_VOLUME_4STAR = 0.45;
+  const SFX_VOLUME_METEOR = 0.38;
+
+  if (wishAudio5Star) wishAudio5Star.volume = SFX_VOLUME_5STAR;
+  if (wishAudio4Star) wishAudio4Star.volume = SFX_VOLUME_4STAR;
+  if (wishAudioMeteor) wishAudioMeteor.volume = SFX_VOLUME_METEOR;
+
   const wishSunburst = document.getElementById('wish-sunburst');
   const wishCard = document.getElementById('wish-card');
   const wishCardGlow = document.getElementById('wish-card-glow');
@@ -127,6 +136,7 @@
     if (!soundEnabled) return;
     if (rarity === 5 && wishAudioMeteor) {
       try {
+        wishAudioMeteor.volume = SFX_VOLUME_METEOR;
         wishAudioMeteor.currentTime = 0;
         const p = wishAudioMeteor.play();
         if (p) p.catch(() => playSynthesizedMeteorSound(rarity));
@@ -169,6 +179,7 @@
     if (!soundEnabled) return;
     if (wishAudio5Star) {
       try {
+        wishAudio5Star.volume = SFX_VOLUME_5STAR;
         wishAudio5Star.currentTime = 0;
         const playPromise = wishAudio5Star.play();
         if (playPromise !== undefined) {
@@ -211,6 +222,7 @@
     }
     if (rarity === 4 && wishAudio4Star) {
       try {
+        wishAudio4Star.volume = SFX_VOLUME_4STAR;
         wishAudio4Star.currentTime = 0;
         const p = wishAudio4Star.play();
         if (p) {
