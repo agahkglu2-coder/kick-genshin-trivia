@@ -77,7 +77,13 @@ class GachaEngine extends EventEmitter {
 
     // Restore active banner from db or default
     try {
-      const savedBanner = db.getSetting('active_banner_id');
+      let savedBanner = db.getSetting('active_banner_id');
+      if (!savedBanner && fs.existsSync(path.join(__dirname, '..', 'data', 'settings.json'))) {
+        try {
+          const s = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'settings.json'), 'utf8'));
+          if (s && s.active_banner_id) savedBanner = s.active_banner_id;
+        } catch (e) {}
+      }
       if (savedBanner && this.banners.some(b => b.id === savedBanner)) {
         this.activeBannerId = savedBanner;
       } else if (this.banners.length > 0) {
@@ -287,6 +293,8 @@ class GachaEngine extends EventEmitter {
       'emilie': 'Emilie',
       'sigewinne': 'Sigewinne',
       'capitano': 'Capitano',
+      'ilcapitano': 'Capitano',
+      'kaptan': 'Capitano',
       'columbina': 'Columbina',
       'dainsleif': 'Dainsleif',
       'skirk': 'Skirk',

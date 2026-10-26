@@ -2001,7 +2001,7 @@
 
       if (selectBannerPreset && cachedBanners.length > 0) {
         const groups = {
-          '👑 Popüler & Arkonlar': ['raiden_shogun', 'furina', 'zhongli', 'nahida', 'mavuika', 'venti', 'neuvillette', 'arlecchino', 'kazuha', 'hu_tao'],
+          '👑 Popüler & Arkonlar': ['capitano', 'raiden_shogun', 'furina', 'zhongli', 'nahida', 'mavuika', 'venti', 'neuvillette', 'arlecchino', 'kazuha', 'hu_tao'],
           '🔥 Natlan': ['mavuika', 'mualani', 'kinich', 'xilonen', 'chasca', 'citlali'],
           '🌊 Fontaine': ['furina', 'neuvillette', 'arlecchino', 'navia', 'clorinde', 'wriothesley', 'lyney', 'sigewinne', 'emilie'],
           '⚡ Inazuma': ['raiden_shogun', 'ayaka', 'kazuha', 'yae_miko', 'yoimiya', 'kokomi', 'ayato', 'itto', 'chiori'],
@@ -2071,6 +2071,19 @@
   function updateActiveBannerUI(banner) {
     if (!banner) return;
     currentActiveBanner = banner;
+
+    const bannerBox = document.querySelector('.banner-active-box');
+    if (bannerBox) {
+      const img = banner.image || banner.bannerImage;
+      if (img) {
+        bannerBox.style.backgroundImage = `linear-gradient(90deg, rgba(15, 23, 42, 0.94) 0%, rgba(15, 23, 42, 0.8) 55%, rgba(15, 23, 42, 0.4) 100%), url('${img}')`;
+        bannerBox.style.backgroundSize = 'cover';
+        bannerBox.style.backgroundPosition = 'center';
+      } else {
+        bannerBox.style.backgroundImage = 'none';
+        bannerBox.style.backgroundColor = 'rgba(0,0,0,0.4)';
+      }
+    }
 
     if (activeBannerTitle) {
       activeBannerTitle.textContent = `✨ ${banner.nameTr || banner.name} (${banner.featured5 || 'Standart'})`;

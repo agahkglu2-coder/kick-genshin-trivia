@@ -859,12 +859,12 @@
     "title": "The Indomitable Captain",
     "internalName": "Capitano",
     "slug": "capitano",
-    "splashArt": "https://enka.network/ui/UI_Gacha_AvatarImg_Capitano.png",
-    "splashArtDev": "https://genshin.jmp.blue/characters/capitano/gacha-splash",
-    "portrait": "https://genshin.jmp.blue/characters/capitano/portrait",
-    "remoteIcon": "https://enka.network/ui/UI_AvatarIcon_Capitano.png",
-    "remoteIconDev": "https://genshin.jmp.blue/characters/capitano/icon",
-    "icon": "assets/characters/capitano.png"
+    "splashArt": "/assets/characters/capitano.png",
+    "splashArtDev": "/assets/characters/capitano_splash.png",
+    "portrait": "/assets/characters/capitano.png",
+    "remoteIcon": "/assets/characters/capitano.png",
+    "remoteIconDev": "/assets/characters/capitano.png",
+    "icon": "/assets/characters/capitano.png"
   },
   {
     "id": "char_5star_52",

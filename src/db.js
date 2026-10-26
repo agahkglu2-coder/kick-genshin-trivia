@@ -17,6 +17,8 @@ class DatabaseManager {
     this.activeUrl = null;
     this.keepAliveTimer = null;
     this.isReconnecting = false;
+    this.loadLocalUsers();
+    this.loadLocalSettings();
   }
 
   async init(databaseUrl = null) {

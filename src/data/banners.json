@@ -642,7 +642,9 @@
       "Chevreuse",
       "Kachina"
     ],
-    "description": "Fatui Öncülerinin Birincisi 'Il Capitano', Teyvat'ın en kudretli ve onurlu savaşçısı."
+    "description": "Fatui Öncülerinin Birincisi 'Il Capitano', Teyvat'ın en kudretli ve onurlu savaşçısı.",
+    "image": "/assets/banners/capitano_banner.png",
+    "bannerImage": "/assets/banners/capitano_banner.png"
   },
   {
     "id": "columbina",
