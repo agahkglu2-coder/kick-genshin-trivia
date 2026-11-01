@@ -20,7 +20,7 @@ const DEFAULT_COMMANDS = [
   {
     id: 'cmd_dc',
     name: '!dc',
-    response: '👾 Discord topluluğumuza katılmayı unutmayın! Sohbet, etkinlikler ve duyurular burada: https://discord.gg/milka',
+    response: '👾 Discord topluluğumuza katılmayı unutmayın! Sohbet, etkinlikler ve duyurular burada: https://discord.gg/tBbnTreVRE',
     cooldown: 5,
     enabled: true,
     aliases: ['!discord', '!sunucu'],
@@ -42,10 +42,10 @@ const DEFAULT_COMMANDS = [
   {
     id: 'cmd_instagram',
     name: '!instagram',
-    response: '📸 Instagram hesabımız: https://instagram.com/milka_e Takip etmeyi unutmayın!',
+    response: '📸 Instagram hesabımız: https://instagram.com/myluneverse Takip etmeyi unutmayın!',
     cooldown: 5,
     enabled: true,
-    aliases: ['!ig'],
+    aliases: ['!ig', '!insta'],
     permission: 'everyone',
     useCount: 0,
     description: 'Instagram profil linki.'
@@ -168,6 +168,33 @@ class CommandService extends EventEmitter {
       this.commands = JSON.parse(JSON.stringify(DEFAULT_COMMANDS));
       console.log(`[CommandService] Varsayılan ${this.commands.length} komut yüklendi (!bot, !dc, !komutlar vb.).`);
       this.save();
+    } else {
+      // Auto-update legacy default discord/instagram links if unchanged from old defaults
+      let updatedAny = false;
+      for (const cmd of this.commands) {
+        if (cmd.id === 'cmd_dc' || (Array.isArray(cmd.aliases) && cmd.aliases.includes('!dc')) || cmd.name === '!dc') {
+          if (cmd.response && (cmd.response.includes('discord.gg/milka') || cmd.response.includes('discord.gg/default'))) {
+            cmd.response = cmd.response.replace(/https?:\/\/discord\.gg\/milka/g, 'https://discord.gg/tBbnTreVRE')
+                                       .replace(/discord\.gg\/milka/g, 'https://discord.gg/tBbnTreVRE');
+            updatedAny = true;
+          }
+        }
+        if (cmd.id === 'cmd_instagram' || (Array.isArray(cmd.aliases) && cmd.aliases.includes('!instagram')) || cmd.name === '!instagram') {
+          if (cmd.response && cmd.response.includes('milka_e')) {
+            cmd.response = cmd.response.replace(/https?:\/\/instagram\.com\/milka_e/g, 'https://instagram.com/myluneverse')
+                                       .replace(/instagram\.com\/milka_e/g, 'https://instagram.com/myluneverse');
+            updatedAny = true;
+          }
+          if (Array.isArray(cmd.aliases) && !cmd.aliases.includes('!insta')) {
+            cmd.aliases.push('!insta');
+            updatedAny = true;
+          }
+        }
+      }
+      if (updatedAny) {
+        console.log('[CommandService] 🔄 Eski varsayılan discord/instagram bağlantıları güncel adreslere taşındı.');
+        this.save();
+      }
     }
 
     return this.commands;

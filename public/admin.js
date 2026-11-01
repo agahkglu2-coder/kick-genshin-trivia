@@ -1510,6 +1510,24 @@
         try {
           const localCmds = JSON.parse(cachedLocal);
           if (Array.isArray(localCmds) && localCmds.length > 0) {
+            // Migrate legacy links in local cache if present
+            let localUpdated = false;
+            localCmds.forEach(c => {
+              if (c.response && c.response.includes('discord.gg/milka')) {
+                c.response = c.response.replace(/https?:\/\/discord\.gg\/milka/g, 'https://discord.gg/tBbnTreVRE')
+                                       .replace(/discord\.gg\/milka/g, 'https://discord.gg/tBbnTreVRE');
+                localUpdated = true;
+              }
+              if (c.response && c.response.includes('instagram.com/milka_e')) {
+                c.response = c.response.replace(/https?:\/\/instagram\.com\/milka_e/g, 'https://instagram.com/myluneverse')
+                                       .replace(/instagram\.com\/milka_e/g, 'https://instagram.com/myluneverse');
+                localUpdated = true;
+              }
+            });
+            if (localUpdated) {
+              localStorage.setItem('milka_custom_commands', JSON.stringify(localCmds));
+            }
+
             // Check if server is currently holding stale defaults while local storage has user edits
             const localDc = localCmds.find(c => c.id === 'cmd_dc' || c.name === '!dc');
             const serverDc = serverCommands.find(c => c.id === 'cmd_dc' || c.name === '!dc');

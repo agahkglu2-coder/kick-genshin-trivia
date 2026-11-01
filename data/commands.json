@@ -17,7 +17,7 @@
   {
     "id": "cmd_dc",
     "name": "!dc",
-    "response": "👾 Discord topluluğumuza katılmayı unutmayın! Sohbet, etkinlikler ve duyurular burada: https://discord.gg/milka",
+    "response": "👾 Discord topluluğumuza katılmayı unutmayın! Sohbet, etkinlikler ve duyurular burada: https://discord.gg/tBbnTreVRE",
     "cooldown": 5,
     "enabled": true,
     "aliases": [
@@ -47,11 +47,12 @@
   {
     "id": "cmd_instagram",
     "name": "!instagram",
-    "response": "📸 Instagram hesabımız: https://instagram.com/milka_e Takip etmeyi unutmayın!",
+    "response": "📸 Instagram hesabımız: https://instagram.com/myluneverse Takip etmeyi unutmayın!",
     "cooldown": 5,
     "enabled": true,
     "aliases": [
-      "!ig"
+      "!ig",
+      "!insta"
     ],
     "permission": "everyone",
     "useCount": 0,
