@@ -355,6 +355,59 @@
     </div>
   </div>
 
+  <!-- 9. Combat HUD (Visible in Battle Zone) -->
+  <div id="combat-hud" class="combat-hud hidden">
+    <!-- Player Combat Status -->
+    <div class="combat-player-card">
+      <div class="combat-hp-bar-outer">
+        <div class="combat-hp-bar-fill" id="combat-hp-fill" style="width: 100%;"></div>
+        <span class="combat-hp-text" id="combat-hp-text">HP 500 / 500</span>
+      </div>
+      <div class="combat-energy-bar-outer">
+        <div class="combat-energy-bar-fill" id="combat-energy-fill" style="width: 0%;"></div>
+        <span class="combat-energy-text" id="combat-energy-text">ULTİ: %0</span>
+      </div>
+    </div>
+
+    <!-- Bottom Center Skill Bar -->
+    <div class="combat-skill-bar">
+      <div class="skill-slot active" id="slot-attack" title="Normal Kılıç Saldırısı [Sol Tık / F]">
+        <span class="skill-key">F / TIK</span>
+        <span class="skill-icon">⚔️</span>
+        <span class="skill-name">Kılıç</span>
+      </div>
+      <div class="skill-slot" id="slot-dash" title="Hızlı Kaçış / Takla [Shift]">
+        <span class="skill-key">SHIFT</span>
+        <span class="skill-icon">⚡</span>
+        <span class="skill-name">Takla</span>
+        <div class="skill-cd-overlay" id="cd-dash"></div>
+      </div>
+      <div class="skill-slot" id="slot-vortex" title="Rüzgar Girdabı [E]">
+        <span class="skill-key">E</span>
+        <span class="skill-icon">🌀</span>
+        <span class="skill-name">Girdap</span>
+        <div class="skill-cd-overlay" id="cd-vortex"></div>
+      </div>
+      <div class="skill-slot" id="slot-burst" title="Kader Yıldızı [Q]">
+        <span class="skill-key">Q</span>
+        <span class="skill-icon">☄️</span>
+        <span class="skill-name">Ulti</span>
+        <div class="skill-cd-overlay" id="cd-burst"></div>
+      </div>
+    </div>
+
+    <!-- Mobile Combat Controls -->
+    <div class="combat-mobile-controls" id="combat-mobile-controls">
+      <button type="button" class="btn-combat-action btn-combat-dash" id="btn-combat-dash">⚡ Takla</button>
+      <button type="button" class="btn-combat-action btn-combat-skill" id="btn-combat-skill">🌀 Girdap</button>
+      <button type="button" class="btn-combat-action btn-combat-burst" id="btn-combat-burst">☄️ Ulti</button>
+      <button type="button" class="btn-combat-action btn-combat-atk" id="btn-combat-atk">⚔️ Saldır</button>
+    </div>
+  </div>
+
+  <!-- 10. Floating Damage Numbers Layer -->
+  <div id="damage-numbers-layer" class="damage-numbers-layer"></div>
+
   <!-- Scripts -->
   <script src="/world.js"></script>
 </body>

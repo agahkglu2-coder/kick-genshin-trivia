@@ -1,1 +1,53 @@
-{}
+{
+  "burak1206": {
+    "username": "Burak1206",
+    "type": "mining",
+    "startTime": 1794257473429,
+    "durationMs": 1200000,
+    "endsAt": 1794258673429,
+    "claimed": true,
+    "reward": {
+      "item": "Demir & Beyaz Demir",
+      "primogems": 30,
+      "weight": 50,
+      "isJackpot": false,
+      "emoji": "⛏️",
+      "desc": "Sağlam demir cevherleri çıkarıldı."
+    },
+    "claimedAt": 1794258677414
+  },
+  "birlocan": {
+    "username": "Birlocan",
+    "type": "mining",
+    "startTime": 1794257343306,
+    "durationMs": 1200000,
+    "endsAt": 1794258543306,
+    "claimed": true,
+    "reward": {
+      "item": "Demir & Beyaz Demir",
+      "primogems": 30,
+      "weight": 50,
+      "isJackpot": false,
+      "emoji": "⛏️",
+      "desc": "Sağlam demir cevherleri çıkarıldı."
+    },
+    "claimedAt": 1794258547206
+  },
+  "verzagtheit": {
+    "username": "verzagtheit",
+    "type": "fishing",
+    "startTime": 1794257443325,
+    "durationMs": 1200000,
+    "endsAt": 1794258643325,
+    "claimed": true,
+    "reward": {
+      "item": "Altın Koi",
+      "primogems": 60,
+      "weight": 25,
+      "isJackpot": false,
+      "emoji": "🐠",
+      "desc": "Nadir pulları ışıldayan bir Altın Koi tutuldu!"
+    },
+    "claimedAt": 1794258647353
+  }
+}

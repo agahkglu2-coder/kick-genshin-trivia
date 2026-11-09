@@ -52,6 +52,14 @@ class WorldEngine extends EventEmitter {
             radius: 3.8,
             targetMap: 'guild',
             spawnPos: { x: 0, z: 6 }
+          },
+          {
+            id: 'door_battle',
+            name: '⚔️ Vahşi Savaş Arenası',
+            pos: { x: 0, z: 32 },
+            radius: 4.2,
+            targetMap: 'battle_zone',
+            spawnPos: { x: 0, z: -28 }
           }
         ]
       },
@@ -78,6 +86,12 @@ class WorldEngine extends EventEmitter {
         name: 'Maceracılar Loncası',
         bounds: { minX: -16, maxX: 16, minZ: -12, maxZ: 12 },
         exitDoor: { pos: { x: 0, z: 9.5 }, radius: 2.8, targetMap: 'town', spawnPos: { x: -24, z: 6.5 } }
+      },
+      battle_zone: {
+        id: 'battle_zone',
+        name: 'Vahşi Canavar Zindanı (Savaş Arenası)',
+        bounds: { minX: -42, maxX: 42, minZ: -42, maxZ: 42 },
+        exitDoor: { pos: { x: 0, z: -32 }, radius: 3.5, targetMap: 'town', spawnPos: { x: 0, z: 28 } }
       }
     };
 

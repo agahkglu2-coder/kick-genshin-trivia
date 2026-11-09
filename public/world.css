@@ -1622,6 +1622,247 @@ html, body {
   }
 }
 
+/* ==========================================================
+   BATTLE ZONE COMBAT HUD & DAMAGE NUMBERS
+   ========================================================== */
+.combat-hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 950;
+  animation: fadeIn 0.25s ease;
+}
+
+.combat-player-card {
+  position: fixed;
+  top: 76px;
+  left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.combat-hp-bar-outer {
+  width: 210px;
+  height: 18px;
+  background: #09090b;
+  border: 1px solid #3f3f46;
+  border-radius: 9px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.combat-hp-bar-fill {
+  height: 100%;
+  background: #22c55e;
+  border-radius: 9px;
+  transition: width 0.12s ease;
+}
+
+.combat-hp-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 1px 2px #000;
+  letter-spacing: 0.5px;
+}
+
+.combat-energy-bar-outer {
+  width: 175px;
+  height: 12px;
+  background: #09090b;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.combat-energy-bar-fill {
+  height: 100%;
+  background: #0284c7;
+  border-radius: 6px;
+  transition: width 0.12s ease;
+}
+
+.combat-energy-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 1px 2px #000;
+}
+
+.combat-skill-bar {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.skill-slot {
+  width: 58px;
+  height: 58px;
+  background: #18181b;
+  border: 1.5px solid #3f3f46;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.skill-slot:hover {
+  border-color: #60a5fa;
+  background: #27272a;
+}
+
+.skill-slot.ready-burst {
+  border-color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+  animation: burstReadyPulse 0.8s infinite alternate ease-in-out;
+}
+
+@keyframes burstReadyPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.06); }
+}
+
+.skill-key {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.skill-icon {
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.skill-name {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  margin-top: 2px;
+}
+
+.skill-cd-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
+  height: 0%;
+  background: rgba(0, 0, 0, 0.65);
+  border-radius: 10px;
+  transition: height 0.1s linear;
+  pointer-events: none;
+}
+
+/* Mobile Combat Controls */
+.combat-mobile-controls {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  pointer-events: auto;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.btn-combat-action {
+  background: #18181b;
+  border: 1.5px solid #3f3f46;
+  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  touch-action: none;
+}
+
+.btn-combat-action.btn-combat-atk {
+  width: 68px;
+  height: 68px;
+  background: #dc2626;
+  border-color: #f87171;
+  font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+  .combat-skill-bar {
+    display: none;
+  }
+  .combat-mobile-controls {
+    display: flex;
+  }
+}
+
+/* Floating Damage & Popup Numbers */
+.damage-numbers-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 960;
+  overflow: hidden;
+}
+
+.damage-num {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-weight: 900;
+  font-size: 1.35rem;
+  color: #f8fafc;
+  text-shadow: 0 2px 4px #000, 0 0 2px #000;
+  pointer-events: none;
+  animation: damageFloat 0.85s ease-out forwards;
+}
+
+.damage-num.crit {
+  color: #facc15;
+  font-size: 1.7rem;
+}
+
+.damage-num.primo {
+  color: #38bdf8;
+  font-size: 1.4rem;
+}
+
+.damage-num.player-hit {
+  color: #ef4444;
+  font-size: 1.4rem;
+}
+
+@keyframes damageFloat {
+  0% { transform: translate(-50%, 0) scale(1.2); opacity: 1; }
+  40% { transform: translate(-50%, -22px) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -46px) scale(0.85); opacity: 0; }
+}
+
 .hidden {
   display: none !important;
 }

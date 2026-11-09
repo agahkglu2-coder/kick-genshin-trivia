@@ -914,6 +914,22 @@ wss.on('connection', (ws) => {
           });
           worldEngine.addChatBubble(socketId, `🎣 ${data.fish.emoji || '🐟'} ${data.fish.name}! (+${rewardPrimo}💎)`);
         }
+      } else if (data.type === 'WORLD_MOB_DEFEAT') {
+        const me = worldEngine.getPlayer(socketId);
+        if (me && data.mob) {
+          const rewardPrimo = parseInt(data.mob.primo, 10) || 0;
+          const newTotal = worldEngine.awardPrimogems(socketId, rewardPrimo);
+          ws.send(JSON.stringify({ type: 'WORLD_PRIMO_UPDATE', primogems: newTotal }));
+          if (data.mob.isBoss) {
+            broadcast({
+              type: 'WORLD_BOSS_ANNOUNCE',
+              username: me.username,
+              mobName: data.mob.name,
+              primo: rewardPrimo
+            });
+            worldEngine.addChatBubble(socketId, `⚔️ 👑 ${data.mob.name} yenildi! (+${rewardPrimo}💎)`);
+          }
+        }
       }
       // --- MMO P2P Trade Messages ---
       else if (data.type === 'TRADE_REQUEST') {

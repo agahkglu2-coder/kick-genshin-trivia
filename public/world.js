@@ -71,6 +71,34 @@
   let isReeling = false;
   let minigameAudioTick = 0;
 
+  // --- Combat & Battle Zone State ---
+  let playerHP = 500;
+  let playerMaxHP = 500;
+  let playerEnergy = 0; // 0 to 100%
+  let isAttacking = false;
+  let attackComboIndex = 0;
+  let lastAttackTime = 0;
+  let isDashing = false;
+  let dashEndTime = 0;
+  let dashCooldownEndTime = 0;
+  let vortexCooldownEndTime = 0;
+  let hitStopEndTime = 0;
+  let screenShakeTimer = 0;
+  let screenShakeMagnitude = 0;
+  let activeCombatMobs = [];
+  let activeDropGems = [];
+  let activeSlashTrails = [];
+  let activeProjectiles = [];
+  let mobSpawnTimer = 0;
+  let combatWeaponMesh = null;
+  let isVortexActive = false;
+  let vortexPosition = { x: 0, z: 0 };
+  let vortexEndTime = 0;
+  let vortexMesh = null;
+  let playerInvulnerableUntil = 0;
+  let bossRespawnTimer = 0;
+  let vortexTickTimer = 0;
+
   // Active Trade State
   let activeTrade = null;
   let myInventory = [];
@@ -81,12 +109,28 @@
   let joystickVector = { x: 0, y: 0 };
   let lastMoveSent = 0;
 
+  // Shared AudioContext to prevent thread stalls and GC freezes
+  let sharedAudioCtx = null;
+  function getAudioCtx() {
+    try {
+      if (!sharedAudioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) sharedAudioCtx = new AudioCtx();
+      }
+      if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
+        sharedAudioCtx.resume();
+      }
+      return sharedAudioCtx;
+    } catch (e) {
+      return null;
+    }
+  }
+
   // Sound Synth Helper
   function playBeep(freq = 440, type = 'sine', duration = 0.12) {
     try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
+      const ctx = getAudioCtx();
+      if (!ctx) return;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = type;
@@ -3479,6 +3523,9 @@
     });
     worldObjects.add(bridgeGroup);
 
+    // Battle Zone Ancient Portal Gate at South Bridge Landing (0, 32)
+    worldObjects.add(createBattlePortalGate(0, 32));
+
     // 5. Four Key 3D Stylized Architectural Buildings (Spaced Generously Apart!)
     // A) Takas Pazarı (Trade Mart) - North-West Quarter (-24, -14)
     const tradeHouse = createTradeMartBuilding();
@@ -3802,6 +3849,8 @@
       if (msg.username !== myPlayer.username) {
         addChatMessage('🎣 Nehir', `@${msg.username} nehirde ${msg.fish.emoji || '🐟'} ${msg.fish.name} yakaladı ve +${msg.fish.primo} Primogem kazandı!`);
       }
+    } else if (msg.type === 'WORLD_BOSS_ANNOUNCE') {
+      addChatMessage('⚔️ BOSS YENİLDİ', `👑 @${msg.username} antik zindandaki ${msg.mobName} canavarını alt etti ve +${msg.primo} Primogem kazandı!`);
     }
     // Trade Messages
     else if (msg.type === 'TRADE_INVITE') {
@@ -3931,17 +3980,23 @@
       const normX = moveX / len;
       const normZ = moveZ / len;
 
-      const speed = CONFIG.moveSpeed * delta;
+      let currentSpeed = CONFIG.moveSpeed;
+      if (isDashing) currentSpeed *= 3.2;
+      const speed = currentSpeed * delta;
       myPlayer.x += normX * speed;
       myPlayer.z += normZ * speed;
       myPlayer.rot = Math.atan2(normX, normZ);
-      myPlayer.anim = 'walk';
+      myPlayer.anim = isDashing ? 'dash' : 'walk';
     } else {
       myPlayer.anim = 'idle';
     }
 
     // Map bounds clamping
-    const bounds = currentMap === 'town' ? { minX: -44, maxX: 44, minZ: -44, maxZ: 44 } : { minX: -15, maxX: 15, minZ: -11, maxZ: 11 };
+    const bounds = currentMap === 'town'
+      ? { minX: -44, maxX: 44, minZ: -44, maxZ: 44 }
+      : (currentMap === 'battle_zone'
+          ? { minX: -38, maxX: 38, minZ: -38, maxZ: 38 }
+          : { minX: -15, maxX: 15, minZ: -11, maxZ: 11 });
     myPlayer.x = Math.max(bounds.minX, Math.min(bounds.maxX, myPlayer.x));
     myPlayer.z = Math.max(bounds.minZ, Math.min(bounds.maxZ, myPlayer.z));
 
@@ -4023,7 +4078,8 @@
         { id: 'door_trade', name: 'Pazar & Takas Binası', pos: { x: -24, z: -10.0 } },
         { id: 'door_tavern', name: "Cat's Tail Taverna", pos: { x: 24, z: -10.0 } },
         { id: 'door_shrine', name: 'Dilek Tapınağı', pos: { x: 0, z: -26.0 } },
-        { id: 'door_guild', name: 'Maceracılar Loncası', pos: { x: -24, z: 10.0 } }
+        { id: 'door_guild', name: 'Maceracılar Loncası', pos: { x: -24, z: 10.0 } },
+        { id: 'door_battle', name: '⚔️ Vahşi Savaş Arenası', pos: { x: 0, z: 32.0 } }
       ];
 
       for (const d of doors) {
@@ -4058,6 +4114,15 @@
       if (distToRiver < 4.4 && !isFishing) {
         nearbyInteractable = { type: 'river_fishing' };
         promptText.textContent = `[E] 🎣 Oltayı Nehre At (Balık Tut & Primogem Kazan)`;
+        prompt.classList.remove('hidden');
+        return;
+      }
+    } else if (currentMap === 'battle_zone') {
+      // Check Exit Portal Gate back to Town at (0, -32)
+      const dist = Math.hypot(myPlayer.x - 0, myPlayer.z - (-32.0));
+      if (dist < 4.2) {
+        nearbyInteractable = { type: 'door', data: { name: 'Kasaba Meydanı' } };
+        promptText.textContent = `[E] Kasabaya Geri Dön`;
         prompt.classList.remove('hidden');
         return;
       }
@@ -4625,14 +4690,23 @@
     wipe.classList.add('active');
 
     setTimeout(() => {
+      currentMap = targetMap;
       if (targetMap === 'town') {
         buildTownMap();
         myPlayer.x = 0;
-        myPlayer.z = 4;
+        myPlayer.z = 26;
+        document.getElementById('combat-hud')?.classList.add('hidden');
+        detachCombatWeapon();
+      } else if (targetMap === 'battle_zone') {
+        buildBattleZoneMap();
+        myPlayer.x = 0;
+        myPlayer.z = -28;
       } else {
         buildInteriorMap(targetMap);
         myPlayer.x = 0;
         myPlayer.z = 6;
+        document.getElementById('combat-hud')?.classList.add('hidden');
+        detachCombatWeapon();
       }
       updateMyMesh();
       setTimeout(() => wipe.classList.remove('active'), 150);
@@ -5204,6 +5278,40 @@
       ctx.fillRect(cx + (-24 - myPlayer.x) * scale - 6, cy + (14 - myPlayer.z) * scale - 6, 12, 12); // Guild
       ctx.fillStyle = '#059669';
       ctx.fillRect(cx + (24 - myPlayer.x) * scale - 5, cy + (14 - myPlayer.z) * scale - 5, 10, 10); // Gazebo
+    } else if (currentMap === 'battle_zone') {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, w, h);
+
+      // Arena boundary ring
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx - myPlayer.x * scale, cy - myPlayer.z * scale, 40 * scale, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // North Boss Dais
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.arc(cx + (0 - myPlayer.x) * scale, cy + (14 - myPlayer.z) * scale, 9.5 * scale, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Return Portal Gate Dot (Purple)
+      ctx.fillStyle = '#a855f7';
+      ctx.beginPath();
+      ctx.arc(cx + (0 - myPlayer.x) * scale, cy + (-32 - myPlayer.z) * scale, 3.5 * scale, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Mobs (Red for normal, Gold for Boss)
+      for (let i = 0; i < activeCombatMobs.length; i++) {
+        const mob = activeCombatMobs[i];
+        if (mob.isDead) continue;
+        const mx = cx + (mob.x - myPlayer.x) * scale;
+        const my = cy + (mob.z - myPlayer.z) * scale;
+        ctx.fillStyle = mob.isBoss ? '#f59e0b' : '#ef4444';
+        ctx.beginPath();
+        ctx.arc(mx, my, mob.isBoss ? 4.5 : 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     // Draw Radar Circles
@@ -5497,6 +5605,1343 @@
     });
   }
 
+  // =========================================================================
+  // --- 12. Battle Zone & Punchy ARPG Combat System ---
+  // =========================================================================
+
+  function createBattlePortalGate(x, z, labelText = '⚔️ Savaş Arenası') {
+    const gateGroup = new THREE.Group();
+    gateGroup.position.set(x, 0, z);
+
+    const stoneMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+    const runeMat = new THREE.MeshBasicMaterial({ color: 0xa855f7 });
+    const portalGlowMat = new THREE.MeshBasicMaterial({
+      color: 0xc084fc,
+      transparent: true,
+      opacity: 0.75,
+      side: THREE.DoubleSide
+    });
+
+    // Base stone platform
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(3.6, 4.0, 0.45, 16), stoneMat);
+    base.position.y = 0.22;
+    base.receiveShadow = true;
+    gateGroup.add(base);
+
+    // Outer arcane ring
+    const runeRing = new THREE.Mesh(new THREE.RingGeometry(2.4, 3.4, 16), runeMat);
+    runeRing.rotation.x = -Math.PI / 2;
+    runeRing.position.y = 0.46;
+    gateGroup.add(runeRing);
+
+    // Twin ancient obsidian pillars
+    [-2.2, 2.2].forEach(px => {
+      const col = new THREE.Mesh(new THREE.BoxGeometry(0.85, 5.2, 0.85), stoneMat);
+      col.position.set(px, 2.7, 0);
+      col.castShadow = true;
+      gateGroup.add(col);
+
+      const runeBand = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.35, 0.9), runeMat);
+      runeBand.position.set(px, 3.2, 0);
+      gateGroup.add(runeBand);
+
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 1.2), stoneMat);
+      cap.position.set(px, 5.4, 0);
+      gateGroup.add(cap);
+    });
+
+    // Top lintel / arch
+    const lintel = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.85, 1.0), stoneMat);
+    lintel.position.set(0, 5.4, 0);
+    lintel.castShadow = true;
+    gateGroup.add(lintel);
+
+    // Arcane crest octahedron
+    const crest = new THREE.Mesh(new THREE.OctahedronGeometry(0.55), runeMat);
+    crest.position.set(0, 6.3, 0);
+    gateGroup.add(crest);
+
+    // Glowing portal membrane
+    const membrane = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 4.4), portalGlowMat);
+    membrane.position.set(0, 2.8, 0);
+    membrane.name = 'portalMembrane';
+    gateGroup.add(membrane);
+
+    // PointLight aura
+    const pLight = new THREE.PointLight(0xa855f7, 1.3, 10, 1.8);
+    pLight.position.set(0, 2.8, 0);
+    gateGroup.add(pLight);
+
+    return gateGroup;
+  }
+
+  function attachCombatWeapon() {
+    if (combatWeaponMesh || !myMesh) return;
+    const swordGroup = new THREE.Group();
+    swordGroup.name = 'combatSword';
+
+    // Blade
+    const bladeMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.55,
+      metalness: 0.85,
+      roughness: 0.2
+    });
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.25, 0.05), bladeMat);
+    blade.position.y = 0.65;
+    blade.castShadow = true;
+    swordGroup.add(blade);
+
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.25, 4), bladeMat);
+    tip.position.y = 1.35;
+    tip.rotation.y = Math.PI / 4;
+    swordGroup.add(tip);
+
+    // Crossguard
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.9, roughness: 0.3 });
+    const guard = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.08, 0.12), goldMat);
+    guard.position.y = 0.03;
+    swordGroup.add(guard);
+
+    // Handle
+    const hilt = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.32, 6), new THREE.MeshLambertMaterial({ color: 0x78350f }));
+    hilt.position.y = -0.16;
+    swordGroup.add(hilt);
+
+    // Pommel
+    const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 6), goldMat);
+    pommel.position.y = -0.34;
+    swordGroup.add(pommel);
+
+    // Position at right hand area
+    swordGroup.position.set(0.65, 0.7, 0.25);
+    swordGroup.rotation.set(-0.35, 0, -0.45);
+
+    myMesh.add(swordGroup);
+    combatWeaponMesh = swordGroup;
+  }
+
+  function detachCombatWeapon() {
+    if (combatWeaponMesh && myMesh) {
+      myMesh.remove(combatWeaponMesh);
+      combatWeaponMesh = null;
+    }
+  }
+
+  // --- 3D Mob Meshes ---
+  function createSlimeMesh(type) {
+    const group = new THREE.Group();
+    const isPyro = type === 'slime_pyro';
+    const mainColor = isPyro ? 0xef4444 : 0x22c55e;
+    const coreColor = isPyro ? 0xf59e0b : 0x86efac;
+
+    // Translucent Jelly Dome
+    const bodyGeo = new THREE.SphereGeometry(0.75, 14, 12);
+    bodyGeo.scale(1.15, 0.85, 1.15);
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: mainColor,
+      transparent: true,
+      opacity: 0.82,
+      roughness: 0.15,
+      metalness: 0.1
+    });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 0.65;
+    body.castShadow = true;
+    group.add(body);
+
+    // Inner Glowing Core
+    const core = new THREE.Mesh(
+      new THREE.SphereGeometry(0.35, 8, 8),
+      new THREE.MeshBasicMaterial({ color: coreColor })
+    );
+    core.position.y = 0.65;
+    group.add(core);
+
+    // Cute Eyes
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+    const eyeHighlight = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    [-0.22, 0.22].forEach(ex => {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.09, 6, 6), eyeMat);
+      eye.position.set(ex, 0.72, 0.72);
+      group.add(eye);
+
+      const hl = new THREE.Mesh(new THREE.SphereGeometry(0.035, 4, 4), eyeHighlight);
+      hl.position.set(ex + 0.02, 0.75, 0.79);
+      group.add(hl);
+    });
+
+    if (isPyro) {
+      // Little flame horns on top
+      const flame = new THREE.Mesh(
+        new THREE.ConeGeometry(0.18, 0.45, 6),
+        new THREE.MeshBasicMaterial({ color: 0xf59e0b })
+      );
+      flame.position.set(0, 1.35, 0);
+      group.add(flame);
+    }
+
+    return group;
+  }
+
+  function createHilichurlMesh() {
+    const group = new THREE.Group();
+    const furMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+    const maskMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+    const hornMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+    const redMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+
+    // Torso
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.0, 0.6), furMat);
+    torso.position.y = 1.0;
+    torso.castShadow = true;
+    group.add(torso);
+
+    // Head
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), furMat);
+    head.position.y = 1.7;
+    head.castShadow = true;
+    group.add(head);
+
+    // Tribal Mask
+    const mask = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.65, 0.12), maskMat);
+    mask.position.set(0, 1.7, 0.36);
+    group.add(mask);
+
+    // Red markings on mask
+    const mark = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.12, 0.05), redMat);
+    mark.position.set(0, 1.82, 0.43);
+    group.add(mark);
+
+    // Curved Horns
+    [-0.35, 0.35].forEach((hx, idx) => {
+      const horn = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.45, 5), hornMat);
+      horn.position.set(hx, 2.15, 0.1);
+      horn.rotation.z = idx === 0 ? 0.35 : -0.35;
+      group.add(horn);
+    });
+
+    // Arms
+    const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.8, 0.28), furMat);
+    lArm.position.set(-0.62, 0.95, 0);
+    group.add(lArm);
+
+    const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.8, 0.28), furMat);
+    rArm.position.set(0.62, 0.95, 0.15);
+    rArm.rotation.x = -0.4;
+    group.add(rArm);
+
+    // Spiked Wooden Club in Right Hand
+    const clubWoodMat = new THREE.MeshLambertMaterial({ color: 0x78350f });
+    const club = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.08, 1.3, 6), clubWoodMat);
+    club.position.set(0.72, 1.1, 0.45);
+    club.rotation.x = 0.5;
+    club.castShadow = true;
+    group.add(club);
+
+    // Metal studs on club
+    const studMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8 });
+    for (let s = 0; s < 4; s++) {
+      const stud = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.15, 4), studMat);
+      stud.position.set(0.72, 1.25 + s * 0.12, 0.55);
+      stud.rotation.x = Math.PI / 2;
+      group.add(stud);
+    }
+
+    // Legs
+    [-0.24, 0.24].forEach(lx => {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.55, 0.3), furMat);
+      leg.position.set(lx, 0.28, 0);
+      group.add(leg);
+    });
+
+    return group;
+  }
+
+  function createPyromancerMesh() {
+    const group = new THREE.Group();
+    const robeMat = new THREE.MeshLambertMaterial({ color: 0x881337 });
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.8, roughness: 0.3 });
+    const fireMat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
+
+    // Floating Robe Body
+    const robe = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.9, 1.4, 8), robeMat);
+    robe.position.y = 1.1;
+    robe.castShadow = true;
+    group.add(robe);
+
+    // Gold hem trim
+    const trim = new THREE.Mesh(new THREE.TorusGeometry(0.85, 0.06, 6, 12), goldMat);
+    trim.rotation.x = Math.PI / 2;
+    trim.position.y = 0.42;
+    group.add(trim);
+
+    // Deep Hood
+    const hood = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 8), robeMat);
+    hood.position.y = 1.9;
+    group.add(hood);
+
+    // Glowing Eyes in shadowy hood
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+    [-0.15, 0.15].forEach(ex => {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 4), eyeMat);
+      eye.position.set(ex, 1.9, 0.45);
+      group.add(eye);
+    });
+
+    // Floating Staff
+    const staff = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.05, 0.05, 1.8, 6),
+      new THREE.MeshLambertMaterial({ color: 0x1e293b })
+    );
+    staff.position.set(0.7, 1.3, 0.2);
+    group.add(staff);
+
+    // Fiery Crystal on top of staff
+    const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.22), fireMat);
+    crystal.position.set(0.7, 2.25, 0.2);
+    group.add(crystal);
+
+    const cLight = new THREE.PointLight(0xf97316, 0.9, 8, 2);
+    cLight.position.set(0.7, 2.25, 0.2);
+    group.add(cLight);
+
+    return group;
+  }
+
+  function createRuinGolemMesh() {
+    const group = new THREE.Group();
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8, metalness: 0.3 });
+    const brassMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.4, metalness: 0.8 });
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+
+    // Mini-Boss Scale
+    group.scale.set(1.9, 1.9, 1.9);
+
+    // Main Torso (Heavy Stone Block)
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 1.2), stoneMat);
+    torso.position.y = 1.6;
+    torso.castShadow = true;
+    group.add(torso);
+
+    // Brass armor plates
+    const chestPlate = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.8, 0.15), brassMat);
+    chestPlate.position.set(0, 1.7, 0.62);
+    group.add(chestPlate);
+
+    // Glowing Cyclops Eye Core
+    const eye = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.2, 12), eyeMat);
+    eye.rotation.x = Math.PI / 2;
+    eye.position.set(0, 1.7, 0.68);
+    group.add(eye);
+
+    const eyeLight = new THREE.PointLight(0xf59e0b, 1.5, 9, 2);
+    eyeLight.position.set(0, 1.7, 0.8);
+    group.add(eyeLight);
+
+    // Massive Stone Shoulders
+    [-1.05, 1.05].forEach(sx => {
+      const shoulder = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), brassMat);
+      shoulder.position.set(sx, 2.1, 0);
+      group.add(shoulder);
+
+      // Heavy Forearms & Fists
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.3, 0.55), stoneMat);
+      arm.position.set(sx, 1.2, 0.15);
+      arm.castShadow = true;
+      group.add(arm);
+    });
+
+    // Heavy Pillar Legs
+    [-0.5, 0.5].forEach(lx => {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.9, 0.7), stoneMat);
+      leg.position.set(lx, 0.45, 0);
+      group.add(leg);
+    });
+
+    return group;
+  }
+
+  function createPrimogemCrystalMesh() {
+    const gemGroup = new THREE.Group();
+
+    // Outer Faceted Diamond Octahedron (Emissive glow without heavy PointLight overhead)
+    const geo = new THREE.OctahedronGeometry(0.32, 0);
+    geo.scale(0.85, 1.35, 0.5);
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.85,
+      roughness: 0.15,
+      metalness: 0.8
+    });
+    const outer = new THREE.Mesh(geo, mat);
+    gemGroup.add(outer);
+
+    // Inner Amethyst Cross Star
+    const innerGeo = new THREE.OctahedronGeometry(0.22, 0);
+    innerGeo.scale(1.25, 0.65, 0.4);
+    const innerMat = new THREE.MeshBasicMaterial({ color: 0xc084fc });
+    const inner = new THREE.Mesh(innerGeo, innerMat);
+    inner.rotation.z = Math.PI / 4;
+    gemGroup.add(inner);
+
+    return gemGroup;
+  }
+
+  // Pre-allocated geometries and materials for slash arcs (Zero GC stutter!)
+  const SLASH_GEOS = {
+    1: new THREE.RingGeometry(1.2, 2.8, 14, 1, -Math.PI * 0.38, Math.PI * 0.76),
+    2: new THREE.RingGeometry(1.2, 2.8, 14, 1, -Math.PI * 0.38, Math.PI * 0.76),
+    3: new THREE.RingGeometry(1.5, 4.2, 20, 1, -Math.PI * 0.92, Math.PI * 1.84)
+  };
+  const SLASH_MATS = {
+    1: new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.85 }),
+    2: new THREE.MeshBasicMaterial({ color: 0x67e8f9, side: THREE.DoubleSide, transparent: true, opacity: 0.85 }),
+    3: new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide, transparent: true, opacity: 0.9 })
+  };
+
+  function createSlashArcMesh(px, pz, rot, step) {
+    // Keep max 2 active trails at once
+    while (activeSlashTrails.length >= 2) {
+      const old = activeSlashTrails.shift();
+      worldObjects.remove(old.mesh);
+    }
+
+    const geo = SLASH_GEOS[step] || SLASH_GEOS[1];
+    const baseMat = SLASH_MATS[step] || SLASH_MATS[1];
+    const mat = baseMat.clone();
+    const arcMesh = new THREE.Mesh(geo, mat);
+    arcMesh.rotation.x = -Math.PI / 2;
+    arcMesh.position.set(px, 0.95, pz);
+    arcMesh.rotation.z = -rot + Math.PI / 2;
+
+    worldObjects.add(arcMesh);
+    activeSlashTrails.push({
+      mesh: arcMesh,
+      mat: mat,
+      birthTime: performance.now(),
+      life: 130
+    });
+  }
+
+  function createAfterimageGhost(x, z, rot) {
+    const geo = new THREE.BoxGeometry(0.8, 1.4, 0.5);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.55
+    });
+    const ghost = new THREE.Mesh(geo, mat);
+    ghost.position.set(x, 0.8, z);
+    ghost.rotation.y = rot;
+    worldObjects.add(ghost);
+
+    const fadeStart = performance.now();
+    const interval = setInterval(() => {
+      const elapsed = performance.now() - fadeStart;
+      if (elapsed > 200) {
+        clearInterval(interval);
+        worldObjects.remove(ghost);
+      } else {
+        mat.opacity = 0.55 * (1 - elapsed / 200);
+      }
+    }, 25);
+  }
+
+  function createVortexMesh(x, y, z) {
+    if (vortexMesh) worldObjects.remove(vortexMesh);
+
+    const vGroup = new THREE.Group();
+    vGroup.position.set(x, 0.1, z);
+
+    // Concentric swirling emerald rings
+    for (let r = 0; r < 3; r++) {
+      const ringGeo = new THREE.RingGeometry(1.2 + r * 1.5, 1.6 + r * 1.5, 24);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0x10b981,
+        transparent: true,
+        opacity: 0.65 - r * 0.15,
+        side: THREE.DoubleSide
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.1 + r * 0.3;
+      vGroup.add(ring);
+    }
+
+    const vLight = new THREE.PointLight(0x10b981, 1.2, 10, 2);
+    vLight.position.y = 1.0;
+    vGroup.add(vLight);
+
+    worldObjects.add(vGroup);
+    vortexMesh = vGroup;
+  }
+
+  function createMeteorImpact(x, z) {
+    // Expanding Golden Shockwave Ring
+    const ringGeo = new THREE.RingGeometry(0.5, 2.0, 32);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0xfacc15,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.95
+    });
+    const shockwave = new THREE.Mesh(ringGeo, ringMat);
+    shockwave.rotation.x = -Math.PI / 2;
+    shockwave.position.set(x, 0.08, z);
+    worldObjects.add(shockwave);
+
+    const startTime = performance.now();
+    const anim = () => {
+      const elapsed = performance.now() - startTime;
+      if (elapsed > 450) {
+        worldObjects.remove(shockwave);
+      } else {
+        const p = elapsed / 450;
+        const scale = 1.0 + p * 10.0;
+        shockwave.scale.set(scale, scale, 1);
+        ringMat.opacity = 0.95 * (1 - p);
+        requestAnimationFrame(anim);
+      }
+    };
+    requestAnimationFrame(anim);
+  }
+
+  function createMobHPBar(mob) {
+    const barGroup = new THREE.Group();
+    const width = mob.isBoss ? 2.8 : 1.5;
+    const height = mob.isBoss ? 0.28 : 0.16;
+
+    // Background
+    const bg = new THREE.Mesh(
+      new THREE.PlaneGeometry(width, height),
+      new THREE.MeshBasicMaterial({ color: 0x090d16, side: THREE.DoubleSide })
+    );
+    barGroup.add(bg);
+
+    // Fill
+    const fillMat = new THREE.MeshBasicMaterial({
+      color: mob.isBoss ? 0xf59e0b : (mob.type === 'slime_pyro' ? 0xf97316 : 0xef4444),
+      side: THREE.DoubleSide
+    });
+    const fill = new THREE.Mesh(
+      new THREE.PlaneGeometry(width * 0.95, height * 0.78),
+      fillMat
+    );
+    fill.position.z = 0.01;
+    barGroup.add(fill);
+
+    barGroup.position.y = mob.height + 0.35;
+    mob.mesh.add(barGroup);
+    mob.hpBarGroup = barGroup;
+    mob.hpFillMesh = fill;
+    mob.hpFillBaseWidth = width * 0.95;
+  }
+
+  // Mob Templates
+  const MOB_TEMPLATES = {
+    slime_green: { name: 'Yeşil Balçık', hp: 80, speed: 2.3, dmg: 8, dropPrimo: 6, height: 1.1, aggroRange: 16, attackRange: 1.4 },
+    slime_pyro: { name: 'Ateş Balçığı', hp: 120, speed: 2.5, dmg: 14, dropPrimo: 10, height: 1.2, aggroRange: 16, attackRange: 1.4 },
+    hilichurl: { name: 'Kabile Savaşçısı', hp: 180, speed: 2.8, dmg: 20, dropPrimo: 18, height: 1.8, aggroRange: 18, attackRange: 2.0 },
+    pyromancer: { name: 'Uçurum Büyücüsü', hp: 250, speed: 1.8, dmg: 28, dropPrimo: 35, height: 2.0, aggroRange: 22, attackRange: 7.5, isRanged: true },
+    ruin_golem: { name: 'Antik Yıkım Muhafızı (BOSS)', hp: 850, speed: 1.4, dmg: 45, dropPrimo: 120, height: 3.2, aggroRange: 26, attackRange: 3.2, isBoss: true }
+  };
+
+  function spawnCombatMob(type, x, z) {
+    const cfg = MOB_TEMPLATES[type] || MOB_TEMPLATES.slime_green;
+    let mesh;
+    if (type === 'slime_green' || type === 'slime_pyro') {
+      mesh = createSlimeMesh(type);
+    } else if (type === 'hilichurl') {
+      mesh = createHilichurlMesh();
+    } else if (type === 'pyromancer') {
+      mesh = createPyromancerMesh();
+    } else if (type === 'ruin_golem') {
+      mesh = createRuinGolemMesh();
+    }
+
+    mesh.position.set(x, 0, z);
+    worldObjects.add(mesh);
+
+    const mob = {
+      id: 'mob_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      type: type,
+      name: cfg.name,
+      hp: cfg.hp,
+      maxHP: cfg.hp,
+      speed: cfg.speed,
+      dmg: cfg.dmg,
+      dropPrimo: cfg.dropPrimo,
+      height: cfg.height,
+      aggroRange: cfg.aggroRange,
+      attackRange: cfg.attackRange,
+      isRanged: !!cfg.isRanged,
+      isBoss: !!cfg.isBoss,
+      x: x,
+      y: 0,
+      z: z,
+      rot: 0,
+      mesh: mesh,
+      flashTimer: 0,
+      knockbackVx: 0,
+      knockbackVz: 0,
+      attackCooldown: 1.0 + Math.random(),
+      animTime: Math.random() * 10,
+      isDead: false
+    };
+
+    createMobHPBar(mob);
+    activeCombatMobs.push(mob);
+    return mob;
+  }
+
+  function spawnInitialMobs() {
+    activeCombatMobs = [];
+
+    // Slimes
+    spawnCombatMob('slime_green', -9, 4);
+    spawnCombatMob('slime_green', 9, 6);
+    spawnCombatMob('slime_green', -4, 12);
+
+    spawnCombatMob('slime_pyro', -12, 14);
+    spawnCombatMob('slime_pyro', 11, 15);
+
+    // Hilichurl Club Fighters
+    spawnCombatMob('hilichurl', -14, -4);
+    spawnCombatMob('hilichurl', 14, -2);
+    spawnCombatMob('hilichurl', 0, 6);
+
+    // Abyss Pyromancer
+    spawnCombatMob('pyromancer', 12, 18);
+
+    // Boss on North Dais
+    spawnCombatMob('ruin_golem', 0, 14);
+  }
+
+  // Floating Damage Numbers (Capped DOM pool to prevent layout reflow freezes)
+  function showDamageNumber(worldPos, text, type = 'normal') {
+    const layer = document.getElementById('damage-numbers-layer');
+    if (!layer || !camera) return;
+
+    // Keep DOM clean: max 12 elements
+    if (layer.children.length > 12) {
+      layer.removeChild(layer.children[0]);
+    }
+
+    const wp = new THREE.Vector3(worldPos.x, worldPos.y || 1.2, worldPos.z);
+    wp.project(camera);
+
+    if (wp.z > 1.0) return; // Behind camera
+
+    const screenX = (wp.x * 0.5 + 0.5) * window.innerWidth;
+    const screenY = (-(wp.y * 0.5) + 0.5) * window.innerHeight;
+
+    const el = document.createElement('div');
+    el.className = `damage-num ${type}`;
+    el.textContent = text;
+    el.style.left = `${screenX + (Math.random() - 0.5) * 16}px`;
+    el.style.top = `${screenY + (Math.random() - 0.5) * 12}px`;
+
+    layer.appendChild(el);
+    setTimeout(() => {
+      el.remove();
+    }, 700);
+  }
+
+  // Combat Web Audio SFX (Reuses shared audio context)
+  function playSlashSound(step) {
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = step === 3 ? 'sawtooth' : 'triangle';
+      const startFreq = step === 3 ? 900 : (step === 2 ? 750 : 600);
+      osc.frequency.setValueAtTime(startFreq, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.06, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.13);
+    } catch (e) {}
+  }
+
+  function playPunchyHitSound(isCrit = false) {
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(isCrit ? 150 : 120, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(isCrit ? 0.18 : 0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.11);
+    } catch (e) {}
+  }
+
+  function playDashSound() {
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(650, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.11);
+    } catch (e) {}
+  }
+
+  function playVortexSound() {
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(260, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(500, ctx.currentTime + 0.25);
+      gain.gain.setValueAtTime(0.06, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.36);
+    } catch (e) {}
+  }
+
+  function playBurstExplosion() {
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(110, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(25, ctx.currentTime + 0.45);
+      gain.gain.setValueAtTime(0.22, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.46);
+    } catch (e) {}
+  }
+
+  function playPrimoChime() {
+    const notes = [659.25, 880.00, 1046.50];
+    notes.forEach((freq, idx) => {
+      setTimeout(() => {
+        playBeep(freq, 'sine', 0.12);
+      }, idx * 60);
+    });
+  }
+
+  // --- Combat Actions ---
+  function performAttack() {
+    if (currentMap !== 'battle_zone') return;
+    const now = performance.now();
+
+    // Prevent attack spamming / key-repeat lockups (min 220ms between swings)
+    if (now - lastAttackTime < 220) return;
+
+    if (now - lastAttackTime > 900) {
+      attackComboIndex = 0;
+    }
+    attackComboIndex = (attackComboIndex % 3) + 1;
+    lastAttackTime = now;
+    isAttacking = true;
+    setTimeout(() => { isAttacking = false; }, 200);
+
+    const step = attackComboIndex;
+    playSlashSound(step);
+
+    // Sword animation swing
+    if (combatWeaponMesh) {
+      const swingRot = step === 1 ? -1.2 : (step === 2 ? 1.2 : -2.8);
+      combatWeaponMesh.rotation.x = swingRot;
+      setTimeout(() => {
+        if (combatWeaponMesh) combatWeaponMesh.rotation.set(-0.35, 0, -0.45);
+      }, 160);
+    }
+
+    // Slash Arc Visual
+    createSlashArcMesh(myPlayer.x, myPlayer.z, myPlayer.rot, step);
+
+    // Hit Detection
+    const baseDmg = step === 1 ? 45 : (step === 2 ? 65 : 115);
+    const hitRadius = step === 3 ? 4.8 : 3.6;
+    let hitCount = 0;
+
+    for (let i = 0; i < activeCombatMobs.length; i++) {
+      const mob = activeCombatMobs[i];
+      if (mob.isDead) continue;
+      const dx = mob.x - myPlayer.x;
+      const dz = mob.z - myPlayer.z;
+      const dist = Math.hypot(dx, dz);
+
+      if (dist <= hitRadius) {
+        if (step < 3) {
+          const mobAngle = Math.atan2(dx, dz);
+          let diff = Math.abs(mobAngle - myPlayer.rot);
+          while (diff > Math.PI) diff = Math.abs(diff - Math.PI * 2);
+          if (diff > 1.5) continue;
+        }
+
+        hitCount++;
+        const isCrit = Math.random() < 0.25;
+        let finalDmg = isCrit ? Math.round(baseDmg * 1.85) : baseDmg;
+        mob.hp = Math.max(0, mob.hp - finalDmg);
+
+        if (mob.hpFillMesh) {
+          const ratio = Math.max(0.001, mob.hp / mob.maxHP);
+          mob.hpFillMesh.scale.x = ratio;
+          mob.hpFillMesh.position.x = -((1 - ratio) * mob.hpFillBaseWidth) / 2;
+        }
+
+        const kbForce = (step === 3 ? 7.5 : 4.0) / (mob.isBoss ? 2.5 : 1.0);
+        const normX = dx / (dist || 1);
+        const normZ = dz / (dist || 1);
+        mob.knockbackVx = normX * kbForce;
+        mob.knockbackVz = normZ * kbForce;
+        mob.flashTimer = 0.14;
+
+        showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, (isCrit ? '💥 CRIT! ' : '') + finalDmg, isCrit ? 'crit' : 'normal');
+
+        if (mob.hp <= 0) {
+          defeatMob(mob);
+        }
+      }
+    }
+
+    if (hitCount > 0) {
+      const isAnyCrit = Math.random() < 0.25;
+      playPunchyHitSound(isAnyCrit);
+      screenShakeTimer = step === 3 ? 0.14 : 0.07;
+      screenShakeMagnitude = step === 3 ? 0.28 : 0.14;
+
+      const energyGain = step === 1 ? 8 : (step === 2 ? 12 : 20);
+      playerEnergy = Math.min(100, playerEnergy + energyGain);
+      updateCombatHUD();
+    }
+  }
+
+  function performDash() {
+    if (currentMap !== 'battle_zone') return;
+    const now = performance.now();
+    if (now < dashCooldownEndTime) return;
+
+    dashCooldownEndTime = now + 1200;
+    isDashing = true;
+    playerInvulnerableUntil = now + 320;
+    playDashSound();
+
+    if (myMesh) {
+      createAfterimageGhost(myPlayer.x, myPlayer.z, myPlayer.rot);
+    }
+
+    setTimeout(() => {
+      isDashing = false;
+    }, 240);
+  }
+
+  function performVortexSkill() {
+    if (currentMap !== 'battle_zone') return;
+    const now = performance.now();
+    if (now < vortexCooldownEndTime) return;
+
+    vortexCooldownEndTime = now + 6000;
+    isVortexActive = true;
+    vortexEndTime = now + 3600;
+
+    vortexPosition = {
+      x: myPlayer.x + Math.sin(myPlayer.rot) * 4.0,
+      z: myPlayer.z + Math.cos(myPlayer.rot) * 4.0
+    };
+
+    createVortexMesh(vortexPosition.x, 0, vortexPosition.z);
+    playVortexSound();
+  }
+
+  function performBurstSkill() {
+    if (currentMap !== 'battle_zone') return;
+    if (playerEnergy < 100) {
+      playBeep(220, 'sawtooth', 0.15);
+      showDamageNumber({ x: myPlayer.x, y: 2.2, z: myPlayer.z }, '⚡ ENERJİ YETERSİZ!', 'normal');
+      return;
+    }
+
+    playerEnergy = 0;
+    updateCombatHUD();
+    playBurstExplosion();
+
+    screenShakeTimer = 0.55;
+    screenShakeMagnitude = 0.65;
+
+    createMeteorImpact(myPlayer.x, myPlayer.z);
+
+    for (let i = 0; i < activeCombatMobs.length; i++) {
+      const mob = activeCombatMobs[i];
+      if (mob.isDead) continue;
+      const dist = Math.hypot(mob.x - myPlayer.x, mob.z - myPlayer.z);
+      if (dist <= 12.0) {
+        const burstDmg = Math.round(380 + Math.random() * 120);
+        mob.hp = Math.max(0, mob.hp - burstDmg);
+        if (mob.hpFillMesh) {
+          const ratio = Math.max(0.001, mob.hp / mob.maxHP);
+          mob.hpFillMesh.scale.x = ratio;
+        }
+        mob.flashTimer = 0.25;
+        mob.knockbackVx = ((mob.x - myPlayer.x) / (dist || 1)) * 9.0;
+        mob.knockbackVz = ((mob.z - myPlayer.z) / (dist || 1)) * 9.0;
+        showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `☄️ BURST! ${burstDmg}`, 'crit');
+        if (mob.hp <= 0) defeatMob(mob);
+      }
+    }
+  }
+
+  function defeatMob(mob) {
+    mob.isDead = true;
+    if (mob.mesh) {
+      worldObjects.remove(mob.mesh);
+    }
+
+    const count = mob.isBoss ? 8 : (mob.dropPrimo > 15 ? 4 : 2);
+    const primoPerGem = Math.max(1, Math.round(mob.dropPrimo / count));
+
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2 + Math.random() * 0.5;
+      const rad = 0.8 + Math.random() * 1.2;
+      const gx = mob.x + Math.cos(angle) * rad;
+      const gz = mob.z + Math.sin(angle) * rad;
+      const gemMesh = createPrimogemCrystalMesh();
+      gemMesh.position.set(gx, 0.8, gz);
+      worldObjects.add(gemMesh);
+
+      activeDropGems.push({
+        mesh: gemMesh,
+        value: primoPerGem,
+        x: gx,
+        y: 0.8,
+        z: gz,
+        spawnTime: performance.now(),
+        vacuumDelay: 350 + i * 80
+      });
+    }
+
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({
+        type: 'WORLD_MOB_DEFEAT',
+        mob: {
+          name: mob.name,
+          primo: mob.dropPrimo,
+          isBoss: mob.isBoss
+        }
+      }));
+    }
+
+    if (mob.isBoss) {
+      playVictoryJingle();
+      addChatMessage('⚔️ BOSS YENİLDİ', `👑 Antik Yıkım Muhafızı yere serildi! +${mob.dropPrimo} Primogem kazandın!`);
+      bossRespawnTimer = performance.now() + 25000;
+    }
+  }
+
+  function updateCombatHUD() {
+    const hpFill = document.getElementById('combat-hp-fill');
+    const hpText = document.getElementById('combat-hp-text');
+    const energyFill = document.getElementById('combat-energy-fill');
+    const energyText = document.getElementById('combat-energy-text');
+    const slotBurst = document.getElementById('slot-burst');
+
+    if (hpFill) {
+      const hpPct = Math.max(0, Math.min(100, (playerHP / playerMaxHP) * 100));
+      hpFill.style.width = `${hpPct}%`;
+    }
+    if (hpText) {
+      hpText.textContent = `HP ${playerHP} / ${playerMaxHP}`;
+    }
+    if (energyFill) {
+      energyFill.style.width = `${Math.min(100, playerEnergy)}%`;
+    }
+    if (energyText) {
+      energyText.textContent = `ULTİ: %${Math.round(playerEnergy)}`;
+    }
+    if (slotBurst) {
+      if (playerEnergy >= 100) {
+        slotBurst.classList.add('burst-ready');
+      } else {
+        slotBurst.classList.remove('burst-ready');
+      }
+    }
+
+    const now = performance.now();
+    const cdDash = document.getElementById('cd-dash');
+    if (cdDash) {
+      if (now < dashCooldownEndTime) {
+        const remaining = ((dashCooldownEndTime - now) / 1200) * 100;
+        cdDash.style.height = `${remaining}%`;
+      } else {
+        cdDash.style.height = '0%';
+      }
+    }
+
+    const cdVortex = document.getElementById('cd-vortex');
+    if (cdVortex) {
+      if (now < vortexCooldownEndTime) {
+        const remaining = ((vortexCooldownEndTime - now) / 6000) * 100;
+        cdVortex.style.height = `${remaining}%`;
+      } else {
+        cdVortex.style.height = '0%';
+      }
+    }
+  }
+
+  function updateCombatEngine(delta, now) {
+    if (currentMap !== 'battle_zone') return;
+
+    // 1. Update Slash Trails
+    for (let i = activeSlashTrails.length - 1; i >= 0; i--) {
+      const t = activeSlashTrails[i];
+      const elapsed = now - t.birthTime;
+      if (elapsed >= t.life) {
+        worldObjects.remove(t.mesh);
+        activeSlashTrails.splice(i, 1);
+      } else {
+        if (t.mat) t.mat.opacity = 0.85 * (1 - elapsed / t.life);
+      }
+    }
+
+    // 2. Update Vortex Suction & Damage
+    if (isVortexActive) {
+      if (vortexMesh) {
+        vortexMesh.rotation.y += 0.12;
+      }
+      if (now > vortexEndTime) {
+        isVortexActive = false;
+        if (vortexMesh) {
+          worldObjects.remove(vortexMesh);
+          vortexMesh = null;
+        }
+      } else {
+        vortexTickTimer += delta;
+        const doTick = vortexTickTimer >= 0.45;
+        if (doTick) vortexTickTimer = 0;
+
+        for (let i = 0; i < activeCombatMobs.length; i++) {
+          const mob = activeCombatMobs[i];
+          if (mob.isDead) continue;
+          const vdx = vortexPosition.x - mob.x;
+          const vdz = vortexPosition.z - mob.z;
+          const vdist = Math.hypot(vdx, vdz);
+          if (vdist < 8.0 && vdist > 0.1) {
+            const pullSpeed = 4.5 * delta;
+            mob.x += (vdx / vdist) * pullSpeed;
+            mob.z += (vdz / vdist) * pullSpeed;
+            mob.mesh.position.x = mob.x;
+            mob.mesh.position.z = mob.z;
+
+            if (doTick) {
+              const tickDmg = 16;
+              mob.hp = Math.max(0, mob.hp - tickDmg);
+              if (mob.hpFillMesh) {
+                mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
+              }
+              mob.flashTimer = 0.08;
+              showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `${tickDmg}`, 'normal');
+              playerEnergy = Math.min(100, playerEnergy + 2);
+              if (mob.hp <= 0) defeatMob(mob);
+            }
+          }
+        }
+      }
+    }
+
+    // 3. Update Mobs AI & Behavior
+    for (let i = 0; i < activeCombatMobs.length; i++) {
+      const mob = activeCombatMobs[i];
+      if (mob.isDead) continue;
+
+      // Knockback decay
+      if (Math.abs(mob.knockbackVx) > 0.01 || Math.abs(mob.knockbackVz) > 0.01) {
+        mob.x += mob.knockbackVx * delta;
+        mob.z += mob.knockbackVz * delta;
+        mob.knockbackVx *= 0.88;
+        mob.knockbackVz *= 0.88;
+      }
+
+      // Hit flash decay
+      if (mob.flashTimer > 0) {
+        mob.flashTimer -= delta;
+        mob.mesh.traverse(child => {
+          if (child.isMesh && child.material && child.material.emissive) {
+            child.material.emissive.setHex(mob.flashTimer > 0 ? 0xffffff : 0x000000);
+          }
+        });
+      }
+
+      // Billboard Mob HP Bar to Camera
+      if (mob.hpBarGroup && camera) {
+        mob.hpBarGroup.quaternion.copy(camera.quaternion);
+      }
+
+      // AI State Machine
+      const dx = myPlayer.x - mob.x;
+      const dz = myPlayer.z - mob.z;
+      const dist = Math.hypot(dx, dz);
+
+      if (dist < mob.aggroRange) {
+        mob.rot = Math.atan2(dx, dz);
+        mob.mesh.rotation.y = mob.rot;
+
+        if (dist > mob.attackRange) {
+          // Chase Player
+          const speed = mob.speed * delta;
+          mob.x += (dx / dist) * speed;
+          mob.z += (dz / dist) * speed;
+
+          // Slime Hop Animation
+          if (mob.type === 'slime_green' || mob.type === 'slime_pyro') {
+            mob.mesh.position.y = Math.abs(Math.sin(now * 0.007 + mob.animTime)) * 0.55;
+          }
+        } else {
+          // Attack cooldown & trigger
+          mob.attackCooldown -= delta;
+          if (mob.attackCooldown <= 0) {
+            mob.attackCooldown = 1.4 + Math.random() * 0.6;
+
+            // Check if player took damage
+            if (now > playerInvulnerableUntil) {
+              playerHP = Math.max(0, playerHP - mob.dmg);
+              showDamageNumber({ x: myPlayer.x, y: 1.8, z: myPlayer.z }, `-${mob.dmg}`, 'player-hit');
+              screenShakeTimer = 0.12;
+              screenShakeMagnitude = 0.22;
+              playPunchyHitSound(false);
+              updateCombatHUD();
+
+              if (playerHP <= 0) {
+                // Defeat / safe respawn
+                addChatMessage('Sistem', '💀 Savaş alanında yenildin! Kasaba çeşmesine ışınlandın.');
+                triggerDoorWipe('town');
+                return;
+              }
+            } else {
+              showDamageNumber({ x: myPlayer.x, y: 2.0, z: myPlayer.z }, '⚡ DODGE!', 'normal');
+            }
+          }
+        }
+      }
+
+      mob.mesh.position.x = mob.x;
+      mob.mesh.position.z = mob.z;
+    }
+
+    // 4. Update Drop Primogem Crystals Vacuum Flight
+    for (let i = activeDropGems.length - 1; i >= 0; i--) {
+      const gem = activeDropGems[i];
+      gem.mesh.rotation.y += 0.06;
+      gem.mesh.rotation.x += 0.03;
+
+      const elapsed = now - gem.spawnTime;
+      if (elapsed > gem.vacuumDelay) {
+        const pdx = myPlayer.x - gem.x;
+        const pdz = myPlayer.z - gem.z;
+        const pdy = 0.9 - gem.y;
+        const pdist = Math.hypot(pdx, pdz);
+
+        if (pdist < 0.65) {
+          // Reached player!
+          worldObjects.remove(gem.mesh);
+          activeDropGems.splice(i, 1);
+          myPlayer.primogems += gem.value;
+          updateUIProfile();
+          playPrimoChime();
+          showDamageNumber({ x: myPlayer.x, y: 1.8, z: myPlayer.z }, `+${gem.value} 💎`, 'primo');
+        } else {
+          // Vacuum flight towards player
+          const vacSpeed = Math.min(18.0, 7.0 + (elapsed - gem.vacuumDelay) * 0.012) * delta;
+          gem.x += (pdx / (pdist || 1)) * vacSpeed;
+          gem.z += (pdz / (pdist || 1)) * vacSpeed;
+          gem.y += (pdy / (pdist || 1)) * vacSpeed;
+          gem.mesh.position.set(gem.x, gem.y, gem.z);
+        }
+      }
+    }
+
+    // 5. Respawn Check (Keep Arena Populated)
+    const aliveCount = activeCombatMobs.filter(m => !m.isDead).length;
+    if (aliveCount < 4) {
+      mobSpawnTimer += delta;
+      if (mobSpawnTimer >= 5.0) {
+        mobSpawnTimer = 0;
+        const types = ['slime_green', 'slime_pyro', 'hilichurl'];
+        const chosen = types[Math.floor(Math.random() * types.length)];
+        const angle = Math.random() * Math.PI * 2;
+        const rx = Math.cos(angle) * 22;
+        const rz = Math.sin(angle) * 22;
+        spawnCombatMob(chosen, rx, rz);
+      }
+    }
+
+    // Boss Respawn Check
+    if (bossRespawnTimer > 0 && now >= bossRespawnTimer) {
+      bossRespawnTimer = 0;
+      spawnCombatMob('ruin_golem', 0, 14);
+      addChatMessage('⚔️ BOSS DOĞDU', '⚠️ Antik Yıkım Muhafızı kuzey sunağında yeniden belirdi!');
+      screenShakeTimer = 0.35;
+      screenShakeMagnitude = 0.45;
+    }
+
+    // Update HUD cooldowns
+    updateCombatHUD();
+  }
+
+  function buildBattleZoneMap() {
+    currentMap = 'battle_zone';
+    scene.background = new THREE.Color(0x0a0c16);
+    scene.fog = new THREE.FogExp2(0x0a0c16, 0.015);
+
+    while (worldObjects.children.length > 0) {
+      worldObjects.remove(worldObjects.children[0]);
+    }
+
+    activeCombatMobs = [];
+    activeDropGems = [];
+    activeSlashTrails = [];
+    activeProjectiles = [];
+    vortexMesh = null;
+    isVortexActive = false;
+
+    // 1. Arena Dark Stone Ground
+    const floorGeo = new THREE.CircleGeometry(42, 32);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      roughness: 0.85,
+      metalness: 0.2
+    });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    worldObjects.add(floor);
+
+    // Outer rim
+    const rim = new THREE.Mesh(
+      new THREE.RingGeometry(40, 44, 32),
+      new THREE.MeshLambertMaterial({ color: 0x1e293b })
+    );
+    rim.rotation.x = -Math.PI / 2;
+    rim.position.y = 0.04;
+    worldObjects.add(rim);
+
+    // Arcane Rings
+    const ring1 = new THREE.Mesh(
+      new THREE.RingGeometry(9.5, 10.2, 32),
+      new THREE.MeshBasicMaterial({ color: 0x6366f1, side: THREE.DoubleSide, opacity: 0.45, transparent: true })
+    );
+    ring1.rotation.x = -Math.PI / 2;
+    ring1.position.y = 0.02;
+    worldObjects.add(ring1);
+
+    const ring2 = new THREE.Mesh(
+      new THREE.RingGeometry(21.5, 22.2, 32),
+      new THREE.MeshBasicMaterial({ color: 0xa855f7, side: THREE.DoubleSide, opacity: 0.35, transparent: true })
+    );
+    ring2.rotation.x = -Math.PI / 2;
+    ring2.position.y = 0.02;
+    worldObjects.add(ring2);
+
+    // 2. Ruin Perimeter Columns with Burning Torches (16 columns)
+    for (let i = 0; i < 16; i++) {
+      const angle = (i / 16) * Math.PI * 2;
+      const px = Math.cos(angle) * 39;
+      const pz = Math.sin(angle) * 39;
+
+      const col = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.85, 1.05, 6.5, 8),
+        new THREE.MeshLambertMaterial({ color: 0x1e293b })
+      );
+      col.position.set(px, 3.25, pz);
+      col.castShadow = true;
+      worldObjects.add(col);
+
+      const bowl = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.2, 0.6, 0.8, 8),
+        new THREE.MeshLambertMaterial({ color: 0x0f172a })
+      );
+      bowl.position.set(px, 6.8, pz);
+      worldObjects.add(bowl);
+
+      const flame = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(0.5),
+        new THREE.MeshBasicMaterial({ color: 0xf97316 })
+      );
+      flame.position.set(px, 7.3, pz);
+      worldObjects.add(flame);
+
+      const bLight = new THREE.PointLight(0xf97316, 0.7, 12, 2);
+      bLight.position.set(px, 7.4, pz);
+      worldObjects.add(bLight);
+    }
+
+    // 3. North Boss Dais (at z = 14)
+    const dais = new THREE.Mesh(
+      new THREE.CylinderGeometry(9.5, 10.5, 0.7, 16),
+      new THREE.MeshLambertMaterial({ color: 0x1e293b })
+    );
+    dais.position.set(0, 0.35, 14);
+    dais.receiveShadow = true;
+    worldObjects.add(dais);
+
+    const daisRune = new THREE.Mesh(
+      new THREE.RingGeometry(6.5, 7.2, 16),
+      new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide, opacity: 0.6, transparent: true })
+    );
+    daisRune.rotation.x = -Math.PI / 2;
+    daisRune.position.set(0, 0.72, 14);
+    worldObjects.add(daisRune);
+
+    // 4. Return Portal Gate back to Town at (0, -32)
+    const returnPortal = createBattlePortalGate(0, -32, 'Kasabaya Dön');
+    returnPortal.rotation.y = Math.PI;
+    worldObjects.add(returnPortal);
+
+    // 5. Lighting
+    const dirLight = new THREE.DirectionalLight(0x818cf8, 0.75);
+    dirLight.position.set(15, 35, 15);
+    dirLight.castShadow = true;
+    worldObjects.add(dirLight);
+
+    const ambLight = new THREE.AmbientLight(0x1e1b4b, 0.65);
+    worldObjects.add(ambLight);
+
+    // 6. Equip player weapon and show combat HUD
+    attachCombatWeapon();
+    document.getElementById('combat-hud')?.classList.remove('hidden');
+
+    playerHP = playerMaxHP = 500;
+    playerEnergy = 35;
+    updateCombatHUD();
+
+    // 7. Spawn Initial Mob Wave
+    spawnInitialMobs();
+
+    addChatMessage('⚔️ Zindan', '🔥 Canavarları kes, fırlayan Primogemleri topla! [F / Sol Tık: Kılıç Kombosu, Shift: Takla, E: Girdap, Q: Ulti]');
+  }
+
   // --- 13. Event Listeners ---
   function initEvents() {
     // Keyboard Input
@@ -5554,6 +6999,38 @@
           }
         }
         return; // Pause movement while fishing
+      }
+
+      // Combat Interception (Battle Zone)
+      if (currentMap === 'battle_zone') {
+        if (k === 'f') {
+          if (e.repeat) return;
+          e.preventDefault();
+          performAttack();
+          return;
+        }
+        if (e.key === 'Shift') {
+          if (e.repeat) return;
+          e.preventDefault();
+          performDash();
+          return;
+        }
+        if (k === 'e') {
+          if (nearbyInteractable && nearbyInteractable.type === 'door') {
+            triggerInteract();
+            return;
+          }
+          if (e.repeat) return;
+          e.preventDefault();
+          performVortexSkill();
+          return;
+        }
+        if (k === 'q') {
+          if (e.repeat) return;
+          e.preventDefault();
+          performBurstSkill();
+          return;
+        }
       }
 
       if (k === 'w' || k === 'arrowup') keys.w = true;
@@ -5756,6 +7233,21 @@
 
     // Mobile Virtual Joystick Touch Handling
     setupMobileJoystick();
+
+    // Battle Zone Canvas Left-Click Attack
+    window.addEventListener('mousedown', (e) => {
+      if (currentMap === 'battle_zone' && e.button === 0) {
+        const tag = e.target.tagName.toLowerCase();
+        if (tag === 'button' || tag === 'input' || tag === 'textarea' || e.target.closest('#chat-container') || e.target.closest('#nav-controls') || e.target.closest('#combat-hud')) return;
+        performAttack();
+      }
+    });
+
+    // Mobile Combat Action Buttons
+    document.getElementById('btn-combat-atk')?.addEventListener('click', () => performAttack());
+    document.getElementById('btn-combat-dash')?.addEventListener('click', () => performDash());
+    document.getElementById('btn-combat-skill')?.addEventListener('click', () => performVortexSkill());
+    document.getElementById('btn-combat-burst')?.addEventListener('click', () => performBurstSkill());
 
     // Spectator Mode Check
     const params = new URLSearchParams(window.location.search);
@@ -5965,6 +7457,20 @@
     // 10. Update Fishing Reel Minigame (Physics, AI, Progress)
     if (fishingState === 'minigame') {
       updateFishingMinigame(delta, now);
+    }
+
+    // 11. Update Combat & Battle Zone Engine
+    if (currentMap === 'battle_zone') {
+      updateCombatEngine(delta, now);
+    }
+
+    // Screen Shake Camera Jitter
+    if (screenShakeTimer > 0) {
+      screenShakeTimer -= delta;
+      const shakeX = (Math.random() - 0.5) * screenShakeMagnitude;
+      const shakeY = (Math.random() - 0.5) * screenShakeMagnitude;
+      camera.position.x += shakeX;
+      camera.position.y += shakeY;
     }
 
     // Render Minimap
