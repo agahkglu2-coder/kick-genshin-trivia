@@ -55,12 +55,21 @@
   // River Fishing System State
   let riverFishSpots = [];
   let isFishing = false;
-  let fishingState = 'idle'; // 'idle' | 'waiting' | 'bite' | 'caught'
+  let fishingState = 'idle'; // 'idle' | 'waiting' | 'bite' | 'minigame' | 'caught'
   let fishingRodMesh = null;
   let fishingBobberMesh = null;
   let fishingTimer = null;
   let biteTimeout = null;
   let currentHookedFish = null;
+  let minigameFish = null;
+  let minigameBarY = 0.2;
+  let minigameBarVel = 0;
+  let minigameFishY = 0.35;
+  let minigameFishTargetY = 0.5;
+  let minigameFishMoveTimer = 0;
+  let minigameProgress = 35;
+  let isReeling = false;
+  let minigameAudioTick = 0;
 
   // Active Trade State
   let activeTrade = null;
@@ -4686,7 +4695,13 @@
       emoji: '👞',
       primo: 10,
       weight: 15,
-      desc: "Nehrin dibinden yosunlu eski bir çizme çıktı... Ama içine baktığında unutulmuş 10 Primogem buldun!"
+      desc: "Nehrin dibinden yosunlu eski bir çizme çıktı... Ama içine baktığında unutulmuş 10 Primogem buldun!",
+      difficulty: 'Çok Kolay',
+      barRatio: 0.32,
+      fishSpeed: 0.45,
+      erratic: 0.15,
+      fillRate: 38,
+      decayRate: 14
     },
     {
       id: 'carp',
@@ -4696,7 +4711,13 @@
       emoji: '🐟',
       primo: 25,
       weight: 42,
-      desc: "Taze ve lezzetli bir Gümüş Nehir Sazanı yakalandı! Kasaba şefleri buna bayılacak."
+      desc: "Taze ve lezzetli bir Gümüş Nehir Sazanı yakalandı! Kasaba şefleri buna bayılacak.",
+      difficulty: 'Kolay',
+      barRatio: 0.28,
+      fishSpeed: 0.85,
+      erratic: 0.35,
+      fillRate: 32,
+      decayRate: 18
     },
     {
       id: 'bass',
@@ -4706,7 +4727,13 @@
       emoji: '🐠',
       primo: 50,
       weight: 23,
-      desc: "Güneş ışığında pulları altın gibi parıldayan dolgun ve çevik bir Altın Levrek!"
+      desc: "Güneş ışığında pulları altın gibi parıldayan dolgun ve çevik bir Altın Levrek!",
+      difficulty: 'Orta',
+      barRatio: 0.24,
+      fishSpeed: 1.45,
+      erratic: 0.6,
+      fillRate: 28,
+      decayRate: 22
     },
     {
       id: 'crystal',
@@ -4716,7 +4743,13 @@
       emoji: '🐡',
       primo: 90,
       weight: 12,
-      desc: "Derin kaynak sularında yaşayan, pulları saf kristal berraklığında efsanevi bir nehir balığı!"
+      desc: "Derin kaynak sularında yaşayan, pulları saf kristal berraklığında efsanevi bir nehir balığı!",
+      difficulty: 'Zorlu',
+      barRatio: 0.20,
+      fishSpeed: 2.3,
+      erratic: 0.85,
+      fillRate: 24,
+      decayRate: 26
     },
     {
       id: 'paimon',
@@ -4726,7 +4759,13 @@
       emoji: '✨🧚',
       primo: 160,
       weight: 8,
-      desc: "İNANILMAZ! Oltana suda yüzen Acil Durum Yiyeceği Paimon takıldı! 'Beni boğulmaktan kurtardın!' diyerek sana tam 160 Primogem (1 Wish) hediye ediyor!"
+      desc: "İNANILMAZ! Oltana suda yüzen Acil Durum Yiyeceği Paimon takıldı! 'Beni boğulmaktan kurtardın!' diyerek sana tam 160 Primogem (1 Wish) hediye ediyor!",
+      difficulty: 'Efsanevi (Çevik & Hızlı)',
+      barRatio: 0.16,
+      fishSpeed: 3.2,
+      erratic: 1.25,
+      fillRate: 22,
+      decayRate: 28
     }
   ];
 
@@ -4861,33 +4900,237 @@
 
     if (fishingState === 'bite') {
       if (biteTimeout) clearTimeout(biteTimeout);
-      fishingState = 'caught';
-
       const caughtFish = rollFishReward();
       currentHookedFish = caughtFish;
-
-      playVictoryJingle();
-      showFishCatchModal(caughtFish);
-
-      // Award Primogems
-      myPlayer.primogems += caughtFish.primo;
-      updateUIProfile();
-
-      // Broadcast and sync with server
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({
-          type: 'WORLD_FISH_CATCH',
-          fish: caughtFish
-        }));
-      }
-
-      if (myMesh) {
-        showSpeechBubble(myMesh, `🎣 ${caughtFish.emoji} ${caughtFish.name}! (+${caughtFish.primo}💎)`);
-      }
-      addChatMessage(myPlayer.username, `🎣 Nehirde ${caughtFish.emoji} ${caughtFish.name} tuttum ve +${caughtFish.primo} Primogem kazandım!`);
-
-      stopFishing();
+      startFishingMinigame(caughtFish);
+      return;
     }
+  }
+
+  // --- River Fishing Minigame (Stardew / Genshin Reel Mechanics) ---
+  function startFishingMinigame(fish) {
+    fishingState = 'minigame';
+    minigameFish = fish;
+
+    // Play hook tension sound
+    playBeep(587.33, 'triangle', 0.15);
+    setTimeout(() => playBeep(783.99, 'sine', 0.2), 70);
+
+    // Hide waiting HUD
+    const hud = document.getElementById('fishing-hud');
+    if (hud) hud.classList.add('hidden');
+
+    // Show Minigame UI
+    const mg = document.getElementById('fishing-minigame');
+    if (mg) mg.classList.remove('hidden');
+
+    // Init values
+    const barRatio = fish.barRatio || 0.24;
+    minigameBarY = 0.2;
+    minigameBarVel = 0;
+    minigameFishY = 0.35;
+    minigameFishTargetY = 0.5;
+    minigameFishMoveTimer = 0.4;
+    minigameProgress = 35; // starts at 35% buffer
+    isReeling = false;
+    minigameAudioTick = 0;
+
+    // Populate UI
+    const iconEl = document.getElementById('fishing-mg-icon');
+    if (iconEl) iconEl.textContent = fish.emoji || '🐟';
+    const fishEl = document.getElementById('fishing-mg-fish');
+    if (fishEl) fishEl.textContent = fish.emoji || '🐟';
+
+    const titleEl = document.getElementById('fishing-mg-title');
+    if (titleEl) titleEl.textContent = `${fish.name} Direniyor!`;
+
+    const badgeEl = document.getElementById('fishing-mg-badge');
+    if (badgeEl) badgeEl.textContent = `${fish.stars || '★★★☆☆'} ${fish.difficulty || 'Mücadele'}`;
+
+    const barEl = document.getElementById('fishing-mg-bar');
+    if (barEl) {
+      barEl.style.height = (barRatio * 100) + '%';
+      barEl.style.bottom = (minigameBarY * 100) + '%';
+      barEl.classList.remove('on-fish');
+    }
+
+    const progFill = document.getElementById('fishing-mg-progress-fill');
+    if (progFill) progFill.style.height = minigameProgress + '%';
+    const pctEl = document.getElementById('fishing-mg-pct');
+    if (pctEl) pctEl.textContent = Math.round(minigameProgress) + '%';
+
+    const tensionEl = document.getElementById('fishing-mg-tension');
+    const tensionText = document.getElementById('fishing-mg-tension-text');
+    if (tensionEl && tensionText) {
+      tensionEl.classList.remove('warning');
+      tensionText.textContent = 'MİSİNA HAZIR';
+    }
+  }
+
+  function updateFishingMinigame(delta, now) {
+    if (fishingState !== 'minigame' || !minigameFish) return;
+
+    const fish = minigameFish;
+    const barRatio = fish.barRatio || 0.24;
+    const barMax = 1.0 - barRatio;
+
+    // 1. Player Bar Physics
+    if (isReeling) {
+      minigameBarVel += 3.4 * delta; // Upward pull
+    } else {
+      minigameBarVel -= 2.6 * delta; // Gravity pull
+    }
+
+    // Damping / Friction
+    minigameBarVel *= Math.pow(0.86, delta * 60);
+    // Clamp velocity
+    minigameBarVel = Math.max(-1.8, Math.min(2.0, minigameBarVel));
+
+    minigameBarY += minigameBarVel * delta;
+
+    // Bounce off floor
+    if (minigameBarY <= 0) {
+      minigameBarY = 0;
+      minigameBarVel = -minigameBarVel * 0.25;
+    }
+    // Bounce off ceiling
+    if (minigameBarY >= barMax) {
+      minigameBarY = barMax;
+      minigameBarVel = -minigameBarVel * 0.25;
+    }
+
+    // 2. Fish AI Movement
+    minigameFishMoveTimer -= delta;
+    if (minigameFishMoveTimer <= 0) {
+      if (fish.id === 'boot') {
+        minigameFishTargetY = 0.05 + Math.random() * 0.2;
+      } else {
+        minigameFishTargetY = 0.08 + Math.random() * 0.84;
+      }
+      minigameFishMoveTimer = (0.5 + Math.random() * 1.5) / (fish.erratic || 0.5);
+    }
+
+    const dy = minigameFishTargetY - minigameFishY;
+    const speed = (fish.fishSpeed || 1.0) * delta;
+    if (Math.abs(dy) <= speed) {
+      minigameFishY = minigameFishTargetY;
+    } else {
+      minigameFishY += Math.sign(dy) * speed;
+    }
+
+    // Wobble visual position
+    const visualFishY = Math.max(0.02, Math.min(0.98, minigameFishY + Math.sin(now * 0.007) * 0.025));
+
+    // 3. Overlap / Catch Zone Check
+    const inZone = (visualFishY >= minigameBarY && visualFishY <= (minigameBarY + barRatio));
+
+    minigameAudioTick += delta;
+    if (inZone) {
+      minigameProgress += (fish.fillRate || 28) * delta;
+      if (minigameAudioTick >= 0.16) {
+        minigameAudioTick = 0;
+        playBeep(680 + (minigameProgress * 4), 'sine', 0.03);
+      }
+    } else {
+      minigameProgress -= (fish.decayRate || 20) * delta;
+      if (minigameAudioTick >= 0.22) {
+        minigameAudioTick = 0;
+        playBeep(210, 'sawtooth', 0.05);
+      }
+    }
+
+    minigameProgress = Math.max(0, Math.min(100, minigameProgress));
+
+    // 4. Update DOM Elements
+    const barEl = document.getElementById('fishing-mg-bar');
+    if (barEl) {
+      barEl.style.bottom = (minigameBarY * 100) + '%';
+      if (inZone) {
+        barEl.classList.add('on-fish');
+      } else {
+        barEl.classList.remove('on-fish');
+      }
+    }
+
+    const fishEl = document.getElementById('fishing-mg-fish');
+    if (fishEl) {
+      fishEl.style.bottom = (visualFishY * 100) + '%';
+    }
+
+    const progFill = document.getElementById('fishing-mg-progress-fill');
+    if (progFill) progFill.style.height = minigameProgress + '%';
+    const pctEl = document.getElementById('fishing-mg-pct');
+    if (pctEl) pctEl.textContent = Math.round(minigameProgress) + '%';
+
+    const tensionEl = document.getElementById('fishing-mg-tension');
+    const tensionText = document.getElementById('fishing-mg-tension-text');
+    if (tensionEl && tensionText) {
+      if (inZone) {
+        tensionEl.classList.remove('warning');
+        tensionText.textContent = 'MAKARA SARIYOR (+)';
+      } else {
+        tensionEl.classList.add('warning');
+        tensionText.textContent = 'DİKKAT! MİSİNA GERGİN (-)';
+      }
+    }
+
+    // 5. Win / Lose Evaluation
+    if (minigameProgress >= 100) {
+      finishMinigameSuccess();
+    } else if (minigameProgress <= 0) {
+      finishMinigameFail();
+    }
+  }
+
+  function finishMinigameSuccess() {
+    if (fishingState !== 'minigame') return;
+    fishingState = 'caught';
+
+    const caughtFish = minigameFish;
+    currentHookedFish = caughtFish;
+
+    const mg = document.getElementById('fishing-minigame');
+    if (mg) mg.classList.add('hidden');
+
+    playVictoryJingle();
+    showFishCatchModal(caughtFish);
+
+    // Award Primogems
+    myPlayer.primogems += caughtFish.primo;
+    updateUIProfile();
+
+    // Broadcast and sync with server
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({
+        type: 'WORLD_FISH_CATCH',
+        fish: caughtFish
+      }));
+    }
+
+    if (myMesh) {
+      showSpeechBubble(myMesh, `🎣 ${caughtFish.emoji} ${caughtFish.name}! (+${caughtFish.primo}💎)`);
+    }
+    addChatMessage(myPlayer.username, `🎣 Nehir mücadelesini kazandım! ${caughtFish.emoji} ${caughtFish.name} tuttum (+${caughtFish.primo} Primogem)`);
+
+    stopFishing();
+  }
+
+  function finishMinigameFail() {
+    if (fishingState !== 'minigame') return;
+
+    const lostFish = minigameFish;
+    const mg = document.getElementById('fishing-minigame');
+    if (mg) mg.classList.add('hidden');
+
+    // Snap sound
+    playBeep(180, 'sawtooth', 0.28);
+
+    if (myMesh) {
+      showSpeechBubble(myMesh, '💨 Misina koptu! Balık kaçtı!');
+    }
+    addChatMessage('Sistem', `💨 ${lostFish ? lostFish.name : 'Balık'} misinayı kopardı ve suya geri kaçtı! Yeşil çubuğu balığın üzerinde tutmaya çalış.`);
+
+    stopFishing();
   }
 
   function fishEscaped() {
@@ -4905,6 +5148,7 @@
 
     isFishing = false;
     fishingState = 'idle';
+    isReeling = false;
 
     if (fishingRodMesh && myMesh?.userData?.rig?.rightArmGroup) {
       myMesh.userData.rig.rightArmGroup.remove(fishingRodMesh);
@@ -4917,6 +5161,9 @@
 
     const hud = document.getElementById('fishing-hud');
     if (hud) hud.classList.add('hidden');
+
+    const mg = document.getElementById('fishing-minigame');
+    if (mg) mg.classList.add('hidden');
   }
 
   function showFishCatchModal(fish) {
@@ -5322,6 +5569,19 @@
 
       // River Fishing Interception
       if (isFishing) {
+        if (fishingState === 'minigame') {
+          if (k === ' ' || k === 'e' || k === 'arrowup' || k === 'w') {
+            e.preventDefault();
+            isReeling = true;
+            return;
+          }
+          if (k === 'escape') {
+            e.preventDefault();
+            finishMinigameFail();
+            return;
+          }
+          return;
+        }
         if (fishingState === 'bite' && (k === 'e' || k === ' ' || k === 'enter')) {
           e.preventDefault();
           reelIn();
@@ -5355,6 +5615,11 @@
 
     window.addEventListener('keyup', (e) => {
       const k = e.key.toLowerCase();
+      if (isFishing && fishingState === 'minigame') {
+        if (k === ' ' || k === 'e' || k === 'arrowup' || k === 'w') {
+          isReeling = false;
+        }
+      }
       if (k === 'w' || k === 'arrowup') keys.w = false;
       if (k === 's' || k === 'arrowdown') keys.s = false;
       if (k === 'a' || k === 'arrowleft') keys.a = false;
@@ -5500,6 +5765,34 @@
         reelIn();
       }
     });
+
+    // Fishing Minigame Mouse & Touch Reel Input
+    window.addEventListener('mousedown', (e) => {
+      if (isFishing && fishingState === 'minigame') {
+        isReeling = true;
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isFishing && fishingState === 'minigame') {
+        isReeling = false;
+      }
+    });
+
+    const btnReelMobile = document.getElementById('btn-reel-mobile');
+    if (btnReelMobile) {
+      btnReelMobile.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        if (isFishing && fishingState === 'minigame') isReeling = true;
+      });
+      btnReelMobile.addEventListener('pointerup', (e) => {
+        e.preventDefault();
+        if (isFishing && fishingState === 'minigame') isReeling = false;
+      });
+      btnReelMobile.addEventListener('pointercancel', () => {
+        isReeling = false;
+      });
+    }
 
     // RPG Dialogue Click Triggers
     const diagBox = document.getElementById('rpg-dialogue-box');
@@ -5710,9 +6003,14 @@
     if (isFishing && fishingBobberMesh) {
       if (fishingState === 'waiting') {
         fishingBobberMesh.position.y = 0.06 + Math.sin(now * 0.005) * 0.04;
-      } else if (fishingState === 'bite') {
+      } else if (fishingState === 'bite' || fishingState === 'minigame') {
         fishingBobberMesh.position.y = -0.12 + Math.sin(now * 0.035) * 0.08;
       }
+    }
+
+    // 10. Update Fishing Reel Minigame (Physics, AI, Progress)
+    if (fishingState === 'minigame') {
+      updateFishingMinigame(delta, now);
     }
 
     // Render Minimap

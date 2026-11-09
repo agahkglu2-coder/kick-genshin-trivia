@@ -312,6 +312,59 @@
     </div>
   </div>
 
+  <!-- 8. Interactive Fishing Reel Minigame (Stardew / Genshin Style) -->
+  <div id="fishing-minigame" class="fishing-minigame hidden">
+    <div class="fishing-mg-card">
+      <div class="fishing-mg-header">
+        <div class="fishing-mg-title-group">
+          <span class="fishing-mg-icon" id="fishing-mg-icon">🐟</span>
+          <div>
+            <h3 class="fishing-mg-title" id="fishing-mg-title">Balık Direniyor!</h3>
+            <span class="fishing-mg-badge" id="fishing-mg-badge">3★ Orta</span>
+          </div>
+        </div>
+        <div class="fishing-mg-tension" id="fishing-mg-tension">
+          <span class="tension-dot" id="tension-dot"></span>
+          <span id="fishing-mg-tension-text">MİSİNA GERGİN</span>
+        </div>
+      </div>
+
+      <div class="fishing-mg-body">
+        <!-- Vertical Water Column / Reel Track -->
+        <div class="fishing-mg-track" id="fishing-mg-track">
+          <!-- Bubbles & water ripple decor -->
+          <div class="track-bubble b1"></div>
+          <div class="track-bubble b2"></div>
+          <div class="track-bubble b3"></div>
+
+          <!-- Player Green Catch Bar -->
+          <div class="fishing-mg-bar" id="fishing-mg-bar">
+            <div class="bar-grip"></div>
+          </div>
+
+          <!-- Target Fish Swimming Inside Track -->
+          <div class="fishing-mg-fish" id="fishing-mg-fish">🐟</div>
+        </div>
+
+        <!-- Vertical Catch Progress Bar -->
+        <div class="fishing-mg-meter">
+          <div class="fishing-mg-progress-outer">
+            <div class="fishing-mg-progress-fill" id="fishing-mg-progress-fill" style="height: 35%;"></div>
+          </div>
+          <span class="fishing-mg-pct" id="fishing-mg-pct">35%</span>
+        </div>
+      </div>
+
+      <div class="fishing-mg-footer">
+        <div class="fishing-mg-hint">
+          <span class="hint-badge"><kbd>SPACE</kbd> / <kbd>E</kbd> / Fare Tık</span>
+          <span>Basılı Tut = <b>Çek ⬆</b> | Bırak = <b>Düşür ⬇</b></span>
+        </div>
+        <button type="button" class="btn-reel-mobile" id="btn-reel-mobile">🎣 MAKARA ÇEK</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="/world.js"></script>
 </body>
