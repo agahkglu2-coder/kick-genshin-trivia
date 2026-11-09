@@ -46,6 +46,7 @@
   let shrineCrystalMesh = null;
   let chimneyPos = { x: 17, y: 9.2, z: -12.5 };
   let animatedCats = [];
+  let animatedNPCs = [];
   let fountainParticlesData = [];
   let chimneySmokeData = [];
   let firefliesData = [];
@@ -80,87 +81,1030 @@
     } catch (e) {}
   }
 
-  // --- 1. Procedural 20 Pixel Avatars Generator ---
-  const AVATAR_PALETTES = [
-    { name: 'Gezgin (Aether)', hair: '#f59e0b', clothes: '#3b82f6', skin: '#fed7aa', cape: '#1e293b' },
-    { name: 'Kırmızı Şövalye', hair: '#ef4444', clothes: '#b91c1c', skin: '#fecaca', cape: '#ffffff' },
-    { name: 'Anemo Okçu', hair: '#10b981', clothes: '#059669', skin: '#d1fae5', cape: '#34d399' },
-    { name: 'Electro Büyücü', hair: '#8b5cf6', clothes: '#6d28d9', skin: '#ede9fe', cape: '#a78bfa' },
-    { name: 'Cryo Kaptan', hair: '#38bdf8', clothes: '#0284c7', skin: '#e0f2fe', cape: '#0f172a' },
-    { name: 'Pyro Tilki', hair: '#f97316', clothes: '#c2410c', skin: '#ffedd5', cape: '#fb923c' },
-    { name: 'Geo Muhafız', hair: '#d97706', clothes: '#92400e', skin: '#fef3c7', cape: '#78350f' },
-    { name: 'Hydro Rahibe', hair: '#06b6d4', clothes: '#0891b2', skin: '#cffafe', cape: '#22d3ee' },
-    { name: 'Gölge Ninja', hair: '#1e293b', clothes: '#0f172a', skin: '#cbd5e1', cape: '#dc2626' },
-    { name: 'Piksel Kedi (Miyav)', hair: '#fbbf24', clothes: '#f59e0b', skin: '#fffbeb', cape: '#f43f5e' },
-    { name: 'Fatui Ajanı', hair: '#475569', clothes: '#334155', skin: '#f1f5f9', cape: '#991b1b' },
-    { name: 'Arkon Raiden', hair: '#7c3aed', clothes: '#5b21b6', skin: '#ede9fe', cape: '#fbbf24' },
-    { name: 'Deniz Kaptanı', hair: '#0369a1', clothes: '#075985', skin: '#e0f2fe', cape: '#f59e0b' },
-    { name: 'Orman Korucusu', hair: '#15803d', clothes: '#166534', skin: '#dcfce7', cape: '#ca8a04' },
-    { name: 'Kraliyet Muhafızı', hair: '#e2e8f0', clothes: '#cbd5e1', skin: '#f8fafc', cape: '#2563eb' },
-    { name: 'Çöl Savaşçısı', hair: '#78350f', clothes: '#b45309', skin: '#fde68a', cape: '#451a03' },
-    { name: 'Kar Prensesi', hair: '#bae6fd', clothes: '#7dd3fc', skin: '#f0f9ff', cape: '#38bdf8' },
-    { name: 'Alev Dansçısı', hair: '#ea580c', clothes: '#dc2626', skin: '#ffedd5', cape: '#facc15' },
-    { name: 'Yıldız Gözlemcisi', hair: '#4338ca', clothes: '#3730a3', skin: '#e0e7ff', cape: '#a855f7' },
-    { name: 'Paimon Yoldaş', hair: '#f8fafc', clothes: '#e2e8f0', skin: '#fff1f2', cape: '#38bdf8' }
+  // --- 1. Procedural 3D Anime Chibi Characters System ---
+  function hexToCss(hex) {
+    if (typeof hex === 'string' && hex.startsWith('#')) return hex;
+    return '#' + hex.toString(16).padStart(6, '0');
+  }
+
+  const AVATAR_PRESETS = [
+    {
+      name: 'Gezgin (Aether)',
+      hair: 0xf59e0b,
+      skin: 0xfed7aa,
+      eyes: '#f59e0b',
+      clothes: 0x1e293b,
+      trim: 0xf59e0b,
+      pants: 0x334155,
+      boots: 0x78350f,
+      cape: 0xffffff,
+      hairStyle: 'aether_braid',
+      weapon: 'sword',
+      weaponColor: 0xe2e8f0,
+      element: 'anemo',
+      badgeColor: '#f59e0b'
+    },
+    {
+      name: 'Gezgin (Lumine)',
+      hair: 0xfde047,
+      skin: 0xfef08a,
+      eyes: '#f59e0b',
+      clothes: 0xf8fafc,
+      trim: 0x38bdf8,
+      pants: 0xf8fafc,
+      boots: 0xe2e8f0,
+      cape: 0x38bdf8,
+      hairStyle: 'lumine_flowers',
+      weapon: 'sword',
+      weaponColor: 0x38bdf8,
+      element: 'anemo',
+      badgeColor: '#fde047'
+    },
+    {
+      name: 'Amber (Favonius Okçusu)',
+      hair: 0x78350f,
+      skin: 0xfed7aa,
+      eyes: '#b45309',
+      clothes: 0xdc2626,
+      trim: 0xfef08a,
+      pants: 0xffffff,
+      boots: 0x78350f,
+      cape: 0xb91c1c,
+      hairStyle: 'amber_ears',
+      weapon: 'bow',
+      weaponColor: 0xd97706,
+      element: 'pyro',
+      badgeColor: '#ef4444'
+    },
+    {
+      name: 'Zhongli (Geo Danışman)',
+      hair: 0x1e293b,
+      skin: 0xfef3c7,
+      eyes: '#d97706',
+      clothes: 0x78350f,
+      trim: 0xf59e0b,
+      pants: 0x0f172a,
+      boots: 0x0f172a,
+      cape: 0x451a03,
+      hairStyle: 'zhongli_tail',
+      weapon: 'polearm',
+      weaponColor: 0xf59e0b,
+      element: 'geo',
+      badgeColor: '#d97706'
+    },
+    {
+      name: 'Raiden Shogun (Electro)',
+      hair: 0x6b21a8,
+      skin: 0xede9fe,
+      eyes: '#a855f7',
+      clothes: 0x581c87,
+      trim: 0xfacc15,
+      pants: 0x3b0764,
+      boots: 0x2e1065,
+      cape: 0x7c3aed,
+      hairStyle: 'raiden_braid',
+      weapon: 'catalyst',
+      weaponColor: 0xc084fc,
+      element: 'electro',
+      badgeColor: '#9333ea'
+    },
+    {
+      name: 'Furina (Hydro Diva)',
+      hair: 0xbae6fd,
+      skin: 0xf0f9ff,
+      eyes: '#0284c7',
+      clothes: 0x1e3a8a,
+      trim: 0xf8fafc,
+      pants: 0x0f172a,
+      boots: 0x1e293b,
+      cape: 0x2563eb,
+      hairStyle: 'furina_hat',
+      weapon: 'sword',
+      weaponColor: 0x38bdf8,
+      element: 'hydro',
+      badgeColor: '#0284c7'
+    },
+    {
+      name: 'Il Capitano (1. Harbiye)',
+      hair: 0x0f172a,
+      skin: 0x334155,
+      eyes: '#06b6d4',
+      clothes: 0x0f172a,
+      trim: 0x64748b,
+      pants: 0x0f172a,
+      boots: 0x18181b,
+      cape: 0x334155,
+      hairStyle: 'capitano_helm',
+      weapon: 'greatsword',
+      weaponColor: 0x06b6d4,
+      element: 'cryo',
+      badgeColor: '#0891b2'
+    },
+    {
+      name: 'Klee (Kıvılcım Şövalyesi)',
+      hair: 0xfef08a,
+      skin: 0xfff1f2,
+      eyes: '#ea580c',
+      clothes: 0xef4444,
+      trim: 0xffffff,
+      pants: 0xffffff,
+      boots: 0x78350f,
+      cape: 0xdc2626,
+      hairStyle: 'klee_beret',
+      weapon: 'bomb',
+      weaponColor: 0xf97316,
+      element: 'pyro',
+      badgeColor: '#f97316'
+    },
+    {
+      name: "Diona (Cat's Tail Barmen)",
+      hair: 0xf472b6,
+      skin: 0xfff1f2,
+      eyes: '#10b981',
+      clothes: 0xf43f5e,
+      trim: 0xfacc15,
+      pants: 0x831843,
+      boots: 0x4c0519,
+      cape: 0xfb7185,
+      hairStyle: 'cat_ears',
+      weapon: 'potion',
+      weaponColor: 0x34d399,
+      element: 'cryo',
+      badgeColor: '#f43f5e'
+    },
+    {
+      name: 'Gölge Shinobi (Ninja)',
+      hair: 0x0f172a,
+      skin: 0xcbd5e1,
+      eyes: '#ef4444',
+      clothes: 0x0f172a,
+      trim: 0xdc2626,
+      pants: 0x0f172a,
+      boots: 0x0f172a,
+      cape: 0xdc2626,
+      hairStyle: 'ninja_mask',
+      weapon: 'sword',
+      weaponColor: 0xef4444,
+      element: 'pyro',
+      badgeColor: '#dc2626'
+    },
+    {
+      name: 'Venti (Rüzgar Ozanı)',
+      hair: 0x065f46,
+      skin: 0xecfdf5,
+      eyes: '#10b981',
+      clothes: 0x059669,
+      trim: 0xfacc15,
+      pants: 0x78350f,
+      boots: 0x451a03,
+      cape: 0x10b981,
+      hairStyle: 'venti_beret',
+      weapon: 'bow',
+      weaponColor: 0x34d399,
+      element: 'anemo',
+      badgeColor: '#059669'
+    },
+    {
+      name: 'Yae Miko (Büyük Rahibe)',
+      hair: 0xf472b6,
+      skin: 0xfdf2f8,
+      eyes: '#a855f7',
+      clothes: 0xdc2626,
+      trim: 0xffffff,
+      pants: 0xdc2626,
+      boots: 0x450a0a,
+      cape: 0xffffff,
+      hairStyle: 'miko_ears',
+      weapon: 'catalyst',
+      weaponColor: 0xf472b6,
+      element: 'electro',
+      badgeColor: '#ec4899'
+    },
+    {
+      name: 'Nahida (Bilgelik Arkonu)',
+      hair: 0xdcfce7,
+      skin: 0xf0fdf4,
+      eyes: '#22c55e',
+      clothes: 0x15803d,
+      trim: 0xfacc15,
+      pants: 0xffffff,
+      boots: 0xffffff,
+      cape: 0x86efac,
+      hairStyle: 'leaf_tail',
+      weapon: 'catalyst',
+      weaponColor: 0x4ade80,
+      element: 'dendro',
+      badgeColor: '#16a34a'
+    },
+    {
+      name: 'Diluc (Gece Muhafızı)',
+      hair: 0xdc2626,
+      skin: 0xfed7aa,
+      eyes: '#991b1b',
+      clothes: 0x18181b,
+      trim: 0xf59e0b,
+      pants: 0x18181b,
+      boots: 0x09090b,
+      cape: 0x27272a,
+      hairStyle: 'diluc_mane',
+      weapon: 'greatsword',
+      weaponColor: 0xef4444,
+      element: 'pyro',
+      badgeColor: '#b91c1c'
+    },
+    {
+      name: 'Tartaglia (Childe)',
+      hair: 0xea580c,
+      skin: 0xfed7aa,
+      eyes: '#0284c7',
+      clothes: 0x71717a,
+      trim: 0xdc2626,
+      pants: 0x27272a,
+      boots: 0x18181b,
+      cape: 0xdc2626,
+      hairStyle: 'childe_mask',
+      weapon: 'sword',
+      weaponColor: 0x38bdf8,
+      element: 'hydro',
+      badgeColor: '#0284c7'
+    },
+    {
+      name: 'Paimon (Uçan Yoldaş)',
+      hair: 0xf8fafc,
+      skin: 0xfff1f2,
+      eyes: '#38bdf8',
+      clothes: 0xf1f5f9,
+      trim: 0xf59e0b,
+      pants: 0xffffff,
+      boots: 0xffffff,
+      cape: 0x38bdf8,
+      hairStyle: 'paimon_halo',
+      weapon: 'sparkle',
+      weaponColor: 0xfde047,
+      element: 'omni',
+      badgeColor: '#38bdf8'
+    },
+    {
+      name: 'Xiao (Yakşa Muhafız)',
+      hair: 0x047857,
+      skin: 0xecfdf5,
+      eyes: '#f59e0b',
+      clothes: 0x064e3b,
+      trim: 0x34d399,
+      pants: 0x1e293b,
+      boots: 0x0f172a,
+      cape: 0x059669,
+      hairStyle: 'xiao_spikes',
+      weapon: 'polearm',
+      weaponColor: 0x10b981,
+      element: 'anemo',
+      badgeColor: '#059669'
+    },
+    {
+      name: 'Ganyu (Kirin Elçisi)',
+      hair: 0x7dd3fc,
+      skin: 0xf0f9ff,
+      eyes: '#d97706',
+      clothes: 0x1e293b,
+      trim: 0x38bdf8,
+      pants: 0x0f172a,
+      boots: 0x1e293b,
+      cape: 0x0284c7,
+      hairStyle: 'ganyu_horns',
+      weapon: 'bow',
+      weaponColor: 0x38bdf8,
+      element: 'cryo',
+      badgeColor: '#0284c7'
+    },
+    {
+      name: 'Kaeya (Süvari Kaptanı)',
+      hair: 0x1d4ed8,
+      skin: 0xd97706,
+      eyes: '#60a5fa',
+      clothes: 0x1e293b,
+      trim: 0xffffff,
+      pants: 0xffffff,
+      boots: 0x1e293b,
+      cape: 0xf8fafc,
+      hairStyle: 'eyepatch',
+      weapon: 'sword',
+      weaponColor: 0x60a5fa,
+      element: 'cryo',
+      badgeColor: '#2563eb'
+    },
+    {
+      name: 'Hu Tao (Cenaze Yöneticisi)',
+      hair: 0x451a03,
+      skin: 0xfef2f2,
+      eyes: '#dc2626',
+      clothes: 0x18181b,
+      trim: 0xdc2626,
+      pants: 0x18181b,
+      boots: 0x09090b,
+      cape: 0xdc2626,
+      hairStyle: 'hutao_hat',
+      weapon: 'polearm',
+      weaponColor: 0xef4444,
+      element: 'pyro',
+      badgeColor: '#b91c1c'
+    }
   ];
 
-  function createAvatarTexture(paletteIndex = 0, frame = 0) {
-    const p = AVATAR_PALETTES[paletteIndex % AVATAR_PALETTES.length];
+  const AVATAR_PALETTES = AVATAR_PRESETS;
+
+  // Generate 128x128 High-Resolution Cel-Shaded Anime Face Texture
+  function createChibiFaceTexture(preset) {
     const cvs = document.createElement('canvas');
-    cvs.width = 32;
-    cvs.height = 48;
+    cvs.width = 128;
+    cvs.height = 128;
     const ctx = cvs.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
 
-    // Bobbing walk offset
-    const legOffset = frame === 1 ? -2 : frame === 2 ? 2 : 0;
-    const armOffset = frame === 1 ? 2 : frame === 2 ? -2 : 0;
+    // Base skin fill
+    ctx.fillStyle = hexToCss(preset.skin);
+    ctx.fillRect(0, 0, 128, 128);
 
-    // Cape / Back
-    ctx.fillStyle = p.cape;
-    ctx.fillRect(8, 16, 16, 18);
+    if (preset.hairStyle === 'capitano_helm') {
+      // Dark iron faceplate
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(8, 12, 112, 108);
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(16, 20, 96, 92);
 
-    // Legs
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(10, 34 + legOffset, 5, 10);
-    ctx.fillRect(17, 34 - legOffset, 5, 10);
+      // Glowing Cyan Visor Slit
+      ctx.shadowColor = '#06b6d4';
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = '#06b6d4';
+      ctx.fillRect(20, 56, 88, 16);
+      ctx.fillStyle = '#e0f2fe';
+      ctx.fillRect(32, 60, 64, 8);
+      ctx.shadowBlur = 0;
 
-    // Torso / Clothes
-    ctx.fillStyle = p.clothes;
-    ctx.fillRect(9, 18, 14, 16);
+      // Rivets / bolts
+      ctx.fillStyle = '#475569';
+      [24, 104].forEach(rx => {
+        ctx.beginPath();
+        ctx.arc(rx, 30, 3, 0, Math.PI * 2);
+        ctx.arc(rx, 96, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    } else if (preset.hairStyle === 'ninja_mask') {
+      // Shinobi Cowl & Mask
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, 128, 38);
+      ctx.fillRect(0, 66, 128, 62);
 
-    // Arms
-    ctx.fillStyle = p.clothes;
-    ctx.fillRect(6, 20 + armOffset, 3, 11);
-    ctx.fillRect(23, 20 - armOffset, 3, 11);
+      // Sharp Red Shinobi Eyes
+      [36, 92].forEach(cx => {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(cx, 52, 12, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
 
-    // Hands
-    ctx.fillStyle = p.skin;
-    ctx.fillRect(6, 31 + armOffset, 3, 3);
-    ctx.fillRect(23, 31 - armOffset, 3, 3);
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.ellipse(cx, 52, 7, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
 
-    // Head / Skin
-    ctx.fillStyle = p.skin;
-    ctx.fillRect(9, 7, 14, 12);
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(cx, 52, 3, 0, Math.PI * 2);
+        ctx.fill();
 
-    // Hair
-    ctx.fillStyle = p.hair;
-    ctx.fillRect(8, 4, 16, 6);
-    ctx.fillRect(7, 7, 3, 7);
-    ctx.fillRect(22, 7, 3, 7);
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(cx - 2, 49, 2.5, 0, Math.PI * 2);
+        ctx.fill();
 
-    // Eyes
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(12, 11, 2, 3);
-    ctx.fillRect(18, 11, 2, 3);
+        ctx.strokeStyle = '#020617';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(cx - 14, 50);
+        ctx.lineTo(cx + 14, 48);
+        ctx.stroke();
+      });
+    } else {
+      // Regular Anime Chibi Eyes
+      const eyeColor = preset.eyes || '#3b82f6';
 
-    // Sparkle / Accessory
-    ctx.fillStyle = '#fde047';
-    ctx.fillRect(15, 23, 2, 2);
+      [
+        { cx: 36, isRight: false },
+        { cx: 92, isRight: true }
+      ].forEach(({ cx, isRight }) => {
+        if (preset.hairStyle === 'eyepatch' && isRight) {
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.ellipse(cx, 60, 16, 20, 0.2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = '#334155';
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(0, 42);
+          ctx.lineTo(128, 76);
+          ctx.stroke();
+          return;
+        }
 
+        const cy = 60;
+        // 1. Sclera (White eye background)
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, 14, 19, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Iris (Gradient)
+        const irisGrad = ctx.createLinearGradient(cx, cy - 16, cx, cy + 18);
+        irisGrad.addColorStop(0, '#0f172a');
+        irisGrad.addColorStop(0.45, eyeColor);
+        irisGrad.addColorStop(1, '#ffffff');
+
+        ctx.fillStyle = irisGrad;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + 1, 10, 16, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 3. Pupil
+        ctx.fillStyle = '#090d16';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + 1, 5, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4. Large Sparkle Highlight
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(cx - 3.5, cy - 6, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 5. Secondary Small Sparkle
+        ctx.beginPath();
+        ctx.arc(cx + 4, cy + 6, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 6. Upper Eyelash / Liner
+        ctx.lineWidth = 3.5;
+        ctx.strokeStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(cx, cy - 5, 14, Math.PI * 1.12, Math.PI * 1.88);
+        ctx.stroke();
+
+        // Wing flick
+        const wingDir = isRight ? 1 : -1;
+        ctx.beginPath();
+        ctx.moveTo(cx + wingDir * 12, cy - 8);
+        ctx.lineTo(cx + wingDir * 17, cy - 12);
+        ctx.stroke();
+
+        // 7. Eyebrow
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = hexToCss(preset.hair);
+        ctx.beginPath();
+        ctx.arc(cx, cy - 18, 11, Math.PI * 1.15, Math.PI * 1.85);
+        ctx.stroke();
+      });
+
+      // Rosy Anime Blushes under eyes
+      ctx.fillStyle = 'rgba(244, 63, 94, 0.38)';
+      ctx.beginPath();
+      ctx.ellipse(26, 82, 11, 6.5, -0.1, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.ellipse(102, 82, 11, 6.5, 0.1, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Cute Blush Hatch marks
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(225, 29, 72, 0.6)';
+      [-3, 3].forEach(dx => {
+        ctx.beginPath();
+        ctx.moveTo(26 + dx - 2, 79);
+        ctx.lineTo(26 + dx + 2, 85);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(102 + dx - 2, 79);
+        ctx.lineTo(102 + dx + 2, 85);
+        ctx.stroke();
+      });
+
+      // Cute Mouth
+      if (preset.hairStyle === 'cat_ears') {
+        ctx.lineWidth = 2.2;
+        ctx.strokeStyle = '#881337';
+        ctx.beginPath();
+        ctx.arc(60, 93, 4.5, 0, Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(68, 93, 4.5, 0, Math.PI);
+        ctx.stroke();
+      } else {
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#881337';
+        ctx.beginPath();
+        ctx.arc(64, 91, 7.5, 0.25, Math.PI - 0.25);
+        ctx.stroke();
+      }
+    }
+
+    const tex = new THREE.CanvasTexture(cvs);
+    tex.generateMipmaps = true;
+    return tex;
+  }
+
+  // Draw 2D Avatar Portrait for HUD profile & Avatar Selection Modal
+  function drawAvatarPreviewPortrait(canvas, preset) {
+    if (!canvas || !preset) return;
+    const w = canvas.width || 48;
+    const h = canvas.height || 48;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, w, h);
+
+    // 1. Vibrant Elemental Badge Background
+    const bgGrad = ctx.createRadialGradient(w / 2, h / 2, 4, w / 2, h / 2, w * 0.7);
+    bgGrad.addColorStop(0, preset.badgeColor || '#38bdf8');
+    bgGrad.addColorStop(1, '#090d16');
+    ctx.fillStyle = bgGrad;
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, w / 2 - 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = preset.badgeColor || '#38bdf8';
+    ctx.stroke();
+
+    // 2. Chibi Face Base
+    const headX = w / 2;
+    const headY = h / 2 + 2;
+    const headR = w * 0.28;
+
+    ctx.fillStyle = hexToCss(preset.skin);
+    ctx.beginPath();
+    ctx.arc(headX, headY, headR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3. Hair Bangs & Silhouette
+    ctx.fillStyle = hexToCss(preset.hair);
+    ctx.beginPath();
+    ctx.arc(headX, headY - 3, headR + 1.5, Math.PI, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(headX - headR, headY - 2);
+    ctx.lineTo(headX - headR * 0.4, headY + 3);
+    ctx.lineTo(headX, headY - 1);
+    ctx.lineTo(headX + headR * 0.4, headY + 3);
+    ctx.lineTo(headX + headR, headY - 2);
+    ctx.lineTo(headX + headR, headY - headR);
+    ctx.lineTo(headX - headR, headY - headR);
+    ctx.fill();
+
+    // 4. Headgear / Signature Accessory
+    if (preset.hairStyle === 'capitano_helm') {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(headX - headR - 1, headY - headR - 2, headR * 2 + 2, headR * 2 + 2);
+      ctx.fillStyle = '#06b6d4';
+      ctx.fillRect(headX - headR * 0.65, headY - 1, headR * 1.3, 4);
+    } else if (preset.hairStyle === 'furina_hat') {
+      ctx.fillStyle = '#1e3a8a';
+      ctx.fillRect(headX - 6, headY - headR - 10, 14, 10);
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(headX - 8, headY - headR - 2, 18, 3);
+    } else if (preset.hairStyle === 'klee_beret') {
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.ellipse(headX, headY - headR - 2, headR * 1.1, headR * 0.55, -0.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.ellipse(headX + headR * 0.7, headY - headR - 5, 2.5, 5, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (preset.hairStyle === 'amber_ears') {
+      ctx.fillStyle = '#dc2626';
+      [-6, 6].forEach(ex => {
+        ctx.beginPath();
+        ctx.ellipse(headX + ex, headY - headR - 5, 3.5, 8, ex > 0 ? 0.35 : -0.35, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    } else if (preset.hairStyle === 'cat_ears') {
+      ctx.fillStyle = hexToCss(preset.hair);
+      [-8, 8].forEach(ex => {
+        ctx.beginPath();
+        ctx.moveTo(headX + ex - 4, headY - headR + 2);
+        ctx.lineTo(headX + ex, headY - headR - 8);
+        ctx.lineTo(headX + ex + 4, headY - headR + 2);
+        ctx.fill();
+      });
+    } else if (preset.hairStyle === 'paimon_halo') {
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#facc15';
+      ctx.beginPath();
+      ctx.ellipse(headX, headY - headR - 6, 10, 3, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // 5. Anime Eyes & Smile on portrait
+    if (preset.hairStyle !== 'capitano_helm') {
+      const eyeCol = preset.eyes || '#3b82f6';
+      [-5, 5].forEach(ex => {
+        const eyeX = headX + ex;
+        const eyeY = headY + 3;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(eyeX, eyeY, 3.5, 4.8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = eyeCol;
+        ctx.beginPath();
+        ctx.ellipse(eyeX, eyeY + 0.5, 2.4, 3.6, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(eyeX - 0.8, eyeY - 1.2, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(eyeX, eyeY - 1, 3.5, Math.PI * 1.15, Math.PI * 1.85);
+        ctx.stroke();
+      });
+
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = '#881337';
+      ctx.beginPath();
+      ctx.arc(headX, headY + 7.5, 2.2, 0, Math.PI);
+      ctx.stroke();
+    }
+
+    // 6. Clothes Collar
+    ctx.fillStyle = hexToCss(preset.clothes);
+    ctx.beginPath();
+    ctx.arc(headX, h + 6, w * 0.35, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.fill();
+  }
+
+  // --- 3D Chibi Character Rig Creator ---
+  function create3DChibiCharacter(avatarIndex = 0) {
+    const preset = AVATAR_PRESETS[Math.abs(avatarIndex) % AVATAR_PRESETS.length];
+    const root = new THREE.Group();
+
+    // Standard materials
+    const matSkin = new THREE.MeshLambertMaterial({ color: preset.skin });
+    const matHair = new THREE.MeshLambertMaterial({ color: preset.hair });
+    const matClothes = new THREE.MeshLambertMaterial({ color: preset.clothes });
+    const matTrim = new THREE.MeshLambertMaterial({ color: preset.trim || 0xfacc15 });
+    const matPants = new THREE.MeshLambertMaterial({ color: preset.pants || 0x1e293b });
+    const matBoots = new THREE.MeshLambertMaterial({ color: preset.boots || 0x334155 });
+    const matCape = new THREE.MeshLambertMaterial({ color: preset.cape || preset.clothes, side: THREE.DoubleSide });
+
+    // Face material
+    const faceTex = createChibiFaceTexture(preset);
+    const matFace = new THREE.MeshLambertMaterial({ map: faceTex });
+
+    // 1. Head Group (Pivot at base of neck/head)
+    const headGroup = new THREE.Group();
+    headGroup.position.set(0, 1.48, 0);
+
+    // Box face order: +X, -X, +Y, -Y, +Z (Front face), -Z (Back)
+    const headMats = [matSkin, matSkin, matSkin, matSkin, matFace, matHair];
+    const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.76, 0.76), headMats);
+    headMesh.castShadow = true;
+    headGroup.add(headMesh);
+
+    // 3D Hair & Accessories
+    const bangs = new THREE.Mesh(new THREE.BoxGeometry(0.80, 0.22, 0.22), matHair);
+    bangs.position.set(0, 0.30, 0.31);
+    headGroup.add(bangs);
+
+    const sideL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.52, 0.78), matHair);
+    sideL.position.set(-0.40, -0.05, 0.02);
+    headGroup.add(sideL);
+
+    const sideR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.52, 0.78), matHair);
+    sideR.position.set(0.40, -0.05, 0.02);
+    headGroup.add(sideR);
+
+    const hairTop = new THREE.Mesh(new THREE.BoxGeometry(0.80, 0.16, 0.78), matHair);
+    hairTop.position.set(0, 0.40, 0);
+    headGroup.add(hairTop);
+
+    const hairBack = new THREE.Mesh(new THREE.BoxGeometry(0.80, 0.72, 0.16), matHair);
+    hairBack.position.set(0, 0.02, -0.40);
+    headGroup.add(hairBack);
+
+    let hairTail = null;
+    let floatingGear = null;
+
+    // Special headgear / accessories per style
+    if (preset.hairStyle === 'capitano_helm') {
+      const helmCowl = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.84, 0.84), new THREE.MeshLambertMaterial({ color: 0x0f172a }));
+      headGroup.add(helmCowl);
+
+      const visorSlit = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.12, 0.08), new THREE.MeshBasicMaterial({ color: 0x06b6d4 }));
+      visorSlit.position.set(0, 0, 0.42);
+      headGroup.add(visorSlit);
+
+      [-0.42, 0.42].forEach(hx => {
+        const horn = new THREE.Mesh(new THREE.ConeGeometry(0.10, 0.38, 4), new THREE.MeshLambertMaterial({ color: 0x475569 }));
+        horn.rotation.z = hx > 0 ? -0.4 : 0.4;
+        horn.position.set(hx, 0.36, -0.1);
+        headGroup.add(horn);
+      });
+    } else if (preset.hairStyle === 'furina_hat') {
+      const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.42, 8), new THREE.MeshLambertMaterial({ color: 0x1e3a8a }));
+      hat.position.set(0.12, 0.58, 0);
+      hat.rotation.z = -0.15;
+      headGroup.add(hat);
+
+      const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.04, 8), new THREE.MeshLambertMaterial({ color: 0x172554 }));
+      brim.position.set(0.12, 0.40, 0);
+      brim.rotation.z = -0.15;
+      headGroup.add(brim);
+
+      const rib = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.08, 8), matTrim);
+      rib.position.set(0.12, 0.44, 0);
+      rib.rotation.z = -0.15;
+      headGroup.add(rib);
+    } else if (preset.hairStyle === 'klee_beret') {
+      const beret = new THREE.Mesh(new THREE.CylinderGeometry(0.50, 0.58, 0.20, 10), new THREE.MeshLambertMaterial({ color: 0xef4444 }));
+      beret.position.set(0, 0.48, 0);
+      beret.rotation.z = -0.1;
+      headGroup.add(beret);
+
+      const feather = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.45, 4), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+      feather.rotation.z = -0.7;
+      feather.position.set(0.42, 0.62, 0);
+      headGroup.add(feather);
+    } else if (preset.hairStyle === 'amber_ears') {
+      [-0.18, 0.18].forEach(ex => {
+        const ear = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.42, 0.06), new THREE.MeshLambertMaterial({ color: 0xdc2626 }));
+        ear.position.set(ex, 0.58, 0);
+        ear.rotation.z = ex > 0 ? -0.25 : 0.25;
+        headGroup.add(ear);
+      });
+      const knot = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.14, 0.12), new THREE.MeshLambertMaterial({ color: 0xb91c1c }));
+      knot.position.set(0, 0.45, 0.05);
+      headGroup.add(knot);
+    } else if (preset.hairStyle === 'cat_ears') {
+      [-0.26, 0.26].forEach(ex => {
+        const ear = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.32, 4), matHair);
+        ear.position.set(ex, 0.52, 0);
+        ear.rotation.z = ex > 0 ? -0.2 : 0.2;
+        headGroup.add(ear);
+
+        const inner = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.22, 4), new THREE.MeshLambertMaterial({ color: 0xfda4af }));
+        inner.position.set(ex, 0.50, 0.06);
+        inner.rotation.z = ex > 0 ? -0.2 : 0.2;
+        headGroup.add(inner);
+      });
+    } else if (preset.hairStyle === 'paimon_halo') {
+      const halo = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.045, 6, 16), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+      halo.rotation.x = Math.PI / 2.3;
+      halo.position.set(0, 0.64, -0.05);
+      headGroup.add(halo);
+      floatingGear = halo;
+    } else if (['aether_braid', 'zhongli_tail', 'raiden_braid', 'diluc_mane'].includes(preset.hairStyle)) {
+      const tailGeo = new THREE.CylinderGeometry(0.08, 0.04, 0.85, 6);
+      tailGeo.translate(0, -0.42, 0);
+      hairTail = new THREE.Mesh(tailGeo, matHair);
+      hairTail.position.set(0, -0.05, -0.42);
+      hairTail.rotation.x = 0.15;
+      headGroup.add(hairTail);
+    }
+
+    root.add(headGroup);
+
+    // 2. Torso Group (y = 0.94)
+    const torsoGroup = new THREE.Group();
+    torsoGroup.position.set(0, 0.94, 0);
+
+    const torsoMesh = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.56, 0.36), matClothes);
+    torsoMesh.castShadow = true;
+    torsoGroup.add(torsoMesh);
+
+    // Collar
+    const collar = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.10, 0.38), matTrim);
+    collar.position.set(0, 0.26, 0);
+    torsoGroup.add(collar);
+
+    // Belt & Buckle
+    const belt = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.10, 0.38), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+    belt.position.set(0, -0.20, 0);
+    torsoGroup.add(belt);
+
+    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.40), matTrim);
+    buckle.position.set(0, -0.20, 0);
+    torsoGroup.add(buckle);
+
+    // Dynamic Cape (hinged at upper back shoulders)
+    const capeGeo = new THREE.BoxGeometry(0.50, 0.68, 0.03);
+    capeGeo.translate(0, -0.34, 0);
+    const capeMesh = new THREE.Mesh(capeGeo, matCape);
+    capeMesh.position.set(0, 0.24, -0.20);
+    capeMesh.rotation.x = 0.12;
+    torsoGroup.add(capeMesh);
+
+    root.add(torsoGroup);
+
+    // 3. Arms
+    const leftArmGroup = new THREE.Group();
+    leftArmGroup.position.set(-0.37, 1.15, 0);
+    const leftSleeve = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.42, 0.18), matClothes);
+    leftSleeve.position.set(0, -0.21, 0);
+    leftArmGroup.add(leftSleeve);
+    const leftHand = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), matSkin);
+    leftHand.position.set(0, -0.46, 0);
+    leftArmGroup.add(leftHand);
+    root.add(leftArmGroup);
+
+    const rightArmGroup = new THREE.Group();
+    rightArmGroup.position.set(0.37, 1.15, 0);
+    const rightSleeve = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.42, 0.18), matClothes);
+    rightSleeve.position.set(0, -0.21, 0);
+    rightArmGroup.add(rightSleeve);
+    const rightHand = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), matSkin);
+    rightHand.position.set(0, -0.46, 0);
+    rightArmGroup.add(rightHand);
+
+    // Held Weapon / Gear in right hand
+    const weaponType = preset.weapon || 'sword';
+    const wepCol = preset.weaponColor || 0xe2e8f0;
+
+    if (weaponType === 'sword') {
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.70, 0.02), new THREE.MeshLambertMaterial({ color: wepCol }));
+      blade.position.set(0, 0.20, 0.15);
+      blade.rotation.x = Math.PI / 4;
+      rightHand.add(blade);
+      const guard = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.04, 0.06), matTrim);
+      guard.position.set(0, -0.06, 0.04);
+      rightHand.add(guard);
+    } else if (weaponType === 'greatsword') {
+      const bigBlade = new THREE.Mesh(new THREE.BoxGeometry(0.14, 1.10, 0.04), new THREE.MeshLambertMaterial({ color: wepCol }));
+      bigBlade.position.set(0, 0.35, 0.22);
+      bigBlade.rotation.x = Math.PI / 4;
+      rightHand.add(bigBlade);
+      const bigGuard = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.06, 0.08), matTrim);
+      bigGuard.position.set(0, -0.08, 0.05);
+      rightHand.add(bigGuard);
+    } else if (weaponType === 'polearm') {
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 1.45, 6), new THREE.MeshLambertMaterial({ color: 0x78350f }));
+      shaft.position.set(0, 0.20, 0.18);
+      shaft.rotation.x = Math.PI / 4;
+      rightHand.add(shaft);
+      const head = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.32, 4), new THREE.MeshLambertMaterial({ color: wepCol }));
+      head.position.set(0, 0.82, 0.18);
+      head.rotation.x = Math.PI / 4;
+      rightHand.add(head);
+    } else if (weaponType === 'catalyst') {
+      const orb = new THREE.Mesh(new THREE.DodecahedronGeometry(0.16), new THREE.MeshBasicMaterial({ color: wepCol }));
+      orb.position.set(0.16, 0.10, 0.20);
+      rightHand.add(orb);
+      floatingGear = orb;
+    } else if (weaponType === 'bow') {
+      const bow = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.025, 6, 12, Math.PI), new THREE.MeshLambertMaterial({ color: wepCol }));
+      bow.rotation.y = Math.PI / 2;
+      bow.position.set(0, 0.10, 0.15);
+      rightHand.add(bow);
+    } else if (weaponType === 'bomb') {
+      const bomb = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), new THREE.MeshLambertMaterial({ color: 0xef4444 }));
+      bomb.position.set(0, -0.05, 0.15);
+      rightHand.add(bomb);
+    } else if (weaponType === 'potion') {
+      const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.26, 8), new THREE.MeshLambertMaterial({ color: wepCol }));
+      pot.position.set(0, -0.05, 0.15);
+      rightHand.add(pot);
+    }
+
+    root.add(rightArmGroup);
+
+    // 4. Legs
+    const leftLegGroup = new THREE.Group();
+    leftLegGroup.position.set(-0.16, 0.62, 0);
+    const leftPants = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.36, 0.20), matPants);
+    leftPants.position.set(0, -0.18, 0);
+    leftLegGroup.add(leftPants);
+    const leftBoot = new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.24, 0.26), matBoots);
+    leftBoot.position.set(0, -0.46, 0.02);
+    leftLegGroup.add(leftBoot);
+    root.add(leftLegGroup);
+
+    const rightLegGroup = new THREE.Group();
+    rightLegGroup.position.set(0.16, 0.62, 0);
+    const rightPants = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.36, 0.20), matPants);
+    rightPants.position.set(0, -0.18, 0);
+    rightLegGroup.add(rightPants);
+    const rightBoot = new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.24, 0.26), matBoots);
+    rightBoot.position.set(0, -0.46, 0.02);
+    rightLegGroup.add(rightBoot);
+    root.add(rightLegGroup);
+
+    // 5. Contact Drop Shadow
+    const shadowGeo = new THREE.CircleGeometry(0.65, 16);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.35
+    });
+    const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+    shadowMesh.rotation.x = -Math.PI / 2;
+    shadowMesh.position.y = 0.02;
+    root.add(shadowMesh);
+
+    // Rig storage
+    root.userData.rig = {
+      headGroup,
+      torsoGroup,
+      leftArmGroup,
+      rightArmGroup,
+      leftLegGroup,
+      rightLegGroup,
+      capeMesh,
+      hairTail,
+      floatingGear,
+      floatingGearBaseY: 0.10,
+      baseTorsoY: 0.94,
+      baseHeadY: 1.48,
+      walkCycle: Math.random() * Math.PI * 2,
+      preset
+    };
+
+    return root;
+  }
+
+  // --- Procedural Chibi Animation Controller ---
+  function animateRig(rig, isMoving, delta, now) {
+    if (!rig) return;
+
+    if (isMoving) {
+      rig.walkCycle += delta * 11.5;
+      const s = Math.sin(rig.walkCycle);
+
+      // Alternate leg swings at hip
+      rig.leftLegGroup.rotation.x = s * 0.72;
+      rig.rightLegGroup.rotation.x = -s * 0.72;
+
+      // Arms swing in opposition at shoulder
+      rig.leftArmGroup.rotation.x = -s * 0.62;
+      rig.rightArmGroup.rotation.x = s * 0.62;
+
+      // Vertical stride bob
+      const strideBob = Math.abs(s) * 0.065;
+      rig.torsoGroup.position.y = rig.baseTorsoY + strideBob;
+      rig.headGroup.position.y = rig.baseHeadY + strideBob;
+      rig.headGroup.rotation.z = s * 0.035;
+
+      // Dynamic Cape fluttering
+      if (rig.capeMesh) {
+        rig.capeMesh.rotation.x = 0.34 + Math.abs(s) * 0.28;
+        rig.capeMesh.rotation.z = Math.sin(rig.walkCycle * 0.5) * 0.05;
+      }
+
+      // Hair swing
+      if (rig.hairTail) {
+        rig.hairTail.rotation.x = 0.38 + Math.abs(s) * 0.25;
+        rig.hairTail.rotation.z = Math.sin(rig.walkCycle * 0.5) * 0.08;
+      }
+    } else {
+      // Idle: smooth decay of rotations back to zero
+      rig.leftLegGroup.rotation.x += (0 - rig.leftLegGroup.rotation.x) * 0.22;
+      rig.rightLegGroup.rotation.x += (0 - rig.rightLegGroup.rotation.x) * 0.22;
+      rig.leftArmGroup.rotation.x += (0 - rig.leftArmGroup.rotation.x) * 0.22;
+      rig.rightArmGroup.rotation.x += (0 - rig.rightArmGroup.rotation.x) * 0.22;
+      rig.headGroup.rotation.z += (0 - rig.headGroup.rotation.z) * 0.15;
+
+      // Gentle rhythmic breathing
+      const breath = Math.sin(now * 0.0035);
+      rig.torsoGroup.position.y = rig.baseTorsoY + breath * 0.018;
+      rig.headGroup.position.y = rig.baseHeadY + breath * 0.022;
+
+      // Subtle breeze on cape & hair
+      if (rig.capeMesh) {
+        rig.capeMesh.rotation.x = 0.12 + Math.sin(now * 0.0028) * 0.06;
+        rig.capeMesh.rotation.z = Math.cos(now * 0.0022) * 0.03;
+      }
+      if (rig.hairTail) {
+        rig.hairTail.rotation.x = 0.16 + Math.sin(now * 0.0028) * 0.04;
+      }
+    }
+
+    // Floating gear rotation
+    if (rig.floatingGear) {
+      rig.floatingGear.rotation.y += 0.035;
+      rig.floatingGear.position.y = rig.floatingGearBaseY + Math.sin(now * 0.004) * 0.05;
+    }
+  }
+
+  // Legacy fallback texture generator
+  function createAvatarTexture(paletteIndex = 0, frame = 0) {
+    const p = AVATAR_PRESETS[paletteIndex % AVATAR_PRESETS.length];
+    const cvs = document.createElement('canvas');
+    cvs.width = 48;
+    cvs.height = 48;
+    drawAvatarPreviewPortrait(cvs, p);
     const texture = new THREE.CanvasTexture(cvs);
-    texture.magFilter = THREE.NearestFilter;
-    texture.minFilter = THREE.NearestFilter;
     return texture;
   }
 
@@ -1817,26 +2761,16 @@
     const mat = new THREE.SpriteMaterial({ map: tex });
     const sprite = new THREE.Sprite(mat);
     sprite.scale.set(3.4, 0.85, 1);
-    sprite.position.y = 3.3;
+    sprite.position.y = 2.45;
     return sprite;
   }
 
   function createNPCBillboard(avatarIndex, name, title, x, z) {
-    const group = new THREE.Group();
-
-    const tex = createAvatarTexture(avatarIndex, 0);
-    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
-    const spriteMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 2.7), mat);
-    spriteMesh.position.y = 1.35;
-    group.add(spriteMesh);
-
-    const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.7, 16), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 }));
-    shadow.rotation.x = -Math.PI / 2;
-    shadow.position.y = 0.02;
-    group.add(shadow);
-
-    group.add(createNPCNametag(name, title));
+    const group = create3DChibiCharacter(avatarIndex);
+    const tag = createNPCNametag(name, title);
+    group.add(tag);
     group.position.set(x, 0, z);
+    animatedNPCs.push(group);
     return group;
   }
 
@@ -2042,7 +2976,7 @@
     });
 
     // NPC Bartender Diona
-    worldObjects.add(createNPCBillboard(1, '🐱 Diona', 'Baş Barmen & Kedi İksir Ustası', 10.5, -2.5));
+    worldObjects.add(createNPCBillboard(8, '🐱 Diona', 'Baş Barmen & Kedi İksir Ustası', 10.5, -2.5));
 
     // 3. Tavern Dining Tables with Mugs & Stools (Left Side)
     [-4, 3].forEach(tz => {
@@ -2174,7 +3108,7 @@
     });
 
     // 7. NPC Shrine Maiden "Yae Miko"
-    worldObjects.add(createNPCBillboard(2, '✨ Yae Miko', 'Baş Rahibe & Kader Danışmanı', 3.0, -4.5));
+    worldObjects.add(createNPCBillboard(11, '✨ Yae Miko', 'Baş Rahibe & Kader Danışmanı', 3.0, -4.5));
 
     // 8. Incense Urns in corners
     [-11, 11].forEach(ux => {
@@ -2234,7 +3168,7 @@
     worldObjects.add(ledger);
 
     // NPC Guild Receptionist Katheryne
-    worldObjects.add(createNPCBillboard(3, 'Katheryne', 'Maceracılar Loncası Katibi', -8.5, -6.8));
+    worldObjects.add(createNPCBillboard(1, 'Katheryne', 'Maceracılar Loncası Katibi', -8.5, -6.8));
 
     // 4. Grand Bounty Quest Notice Board (Back Wall)
     const board = new THREE.Mesh(new THREE.BoxGeometry(8.0, 3.5, 0.15), new THREE.MeshLambertMaterial({ color: 0x78350f }));
@@ -2285,6 +3219,7 @@
   // --- 5. Map Builders (Town vs Interior) ---
   function clearWorld() {
     animatedCats = [];
+    animatedNPCs = [];
     fountainParticlesData = [];
     chimneySmokeData = [];
     firefliesData = [];
@@ -2518,7 +3453,11 @@
     worldObjects.add(createPixelCat(-3.5, 2.5, 0x0f172a)); // Calico near fountain
     worldObjects.add(createPixelCat(22, 16, 0xffffff)); // White cat near scenic gazebo
 
-    // 9. Procedural Pine Trees around perimeter
+    // 9. Welcoming Town NPCs
+    worldObjects.add(createNPCBillboard(2, 'Amber', 'Favonius Öncü Keşifçisi', -16, 9.5));
+    worldObjects.add(createNPCBillboard(10, '🍃 Venti', 'Özgür Rüzgar Ozanı', 24, 13.8));
+
+    // 10. Procedural Pine Trees around perimeter
     const treePositions = [
       { x: -42, z: -35 }, { x: -38, z: -20 }, { x: -40, z: 5 }, { x: -42, z: 32 },
       { x: 42, z: -35 }, { x: 38, z: -20 }, { x: 40, z: 5 }, { x: 42, z: 32 },
@@ -2648,50 +3587,22 @@
     }
   }
 
-  // --- 6. Character Billboard Mesh Creation ---
+  // --- 6. Character 3D Mesh Creation & Bubbles ---
   function createPlayerMesh(avatarIndex, username, isGuest, primogems) {
-    const group = new THREE.Group();
+    const group = create3DChibiCharacter(avatarIndex);
 
-    // 1. Pixel Sprite Plane
-    const tex = createAvatarTexture(avatarIndex, 0);
-    const mat = new THREE.MeshBasicMaterial({
-      map: tex,
-      transparent: true,
-      side: THREE.DoubleSide
-    });
-    const geo = new THREE.PlaneGeometry(1.8, 2.7);
-    const spriteMesh = new THREE.Mesh(geo, mat);
-    spriteMesh.position.y = 1.35;
-    group.add(spriteMesh);
-
-    // 2. Circular Shadow on Ground
-    const shadowGeo = new THREE.CircleGeometry(0.8, 16);
-    const shadowMat = new THREE.MeshBasicMaterial({
-      color: 0x000000,
-      transparent: true,
-      opacity: 0.35
-    });
-    const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
-    shadowMesh.rotation.x = -Math.PI / 2;
-    shadowMesh.position.y = 0.02;
-    group.add(shadowMesh);
-
-    // 3. Overhead Nametag Billboard
+    // Overhead Nametag Billboard
     const nameTex = createNametagCanvas(username, isGuest, primogems);
     const nameMat = new THREE.SpriteMaterial({ map: nameTex });
     const nameSprite = new THREE.Sprite(nameMat);
     nameSprite.scale.set(3.2, 0.8, 1);
-    nameSprite.position.y = 3.3;
+    nameSprite.position.y = 2.45;
     group.add(nameSprite);
 
-    group.userData = {
-      spriteMesh,
-      nameSprite,
-      avatarIndex,
-      frame: 0,
-      lastFrameTime: 0,
-      bubbleMesh: null
-    };
+    group.userData.nameSprite = nameSprite;
+    group.userData.avatarIndex = avatarIndex;
+    group.userData.username = username;
+    group.userData.bubbleMesh = null;
 
     return group;
   }
@@ -2701,7 +3612,7 @@
     if (!playerGroup) return;
 
     // Remove existing
-    if (playerGroup.userData.bubbleMesh) {
+    if (playerGroup.userData && playerGroup.userData.bubbleMesh) {
       playerGroup.remove(playerGroup.userData.bubbleMesh);
       playerGroup.userData.bubbleMesh = null;
     }
@@ -2710,13 +3621,15 @@
     const bMat = new THREE.SpriteMaterial({ map: bTex });
     const bSprite = new THREE.Sprite(bMat);
     bSprite.scale.set(4.2, 1.45, 1);
-    bSprite.position.y = 4.7;
+    bSprite.position.y = 3.65;
     playerGroup.add(bSprite);
-    playerGroup.userData.bubbleMesh = bSprite;
+    if (playerGroup.userData) {
+      playerGroup.userData.bubbleMesh = bSprite;
+    }
 
     // Fade out after 6 seconds
     setTimeout(() => {
-      if (playerGroup.userData.bubbleMesh === bSprite) {
+      if (playerGroup.userData && playerGroup.userData.bubbleMesh === bSprite) {
         playerGroup.remove(bSprite);
         playerGroup.userData.bubbleMesh = null;
       }
@@ -2849,6 +3762,13 @@
       } else {
         // Update existing player targets
         const entry = otherPlayers.get(p.id);
+        if (entry.mesh.userData && entry.mesh.userData.avatarIndex !== p.avatarIndex) {
+          scene.remove(entry.mesh);
+          entry.mesh = createPlayerMesh(p.avatarIndex, p.username, p.isGuest, p.primogems);
+          entry.mesh.position.set(entry.targetX, p.y || 0, entry.targetZ);
+          entry.mesh.rotation.y = entry.targetRot;
+          scene.add(entry.mesh);
+        }
         entry.targetX = p.x;
         entry.targetZ = p.z;
         entry.targetRot = p.rot;
@@ -2885,6 +3805,12 @@
   // --- 9. Movement & Proximity Loop ---
   function updateMovement(delta) {
     if (!myMesh) return;
+
+    if (isRPGDialogueOpen) {
+      myPlayer.anim = 'idle';
+      checkProximity();
+      return;
+    }
 
     let moveX = 0;
     let moveZ = 0;
@@ -2987,8 +3913,14 @@
     const promptText = document.getElementById('prompt-text');
     nearbyInteractable = null;
 
-    // Check Town Doors
+    if (isRPGDialogueOpen) {
+      prompt.classList.add('hidden');
+      return;
+    }
+
+    // Check Town Doors & Town NPCs
     if (currentMap === 'town') {
+      // 1. Town Doors
       const doors = [
         { id: 'door_trade', name: 'Pazar & Takas Binası', pos: { x: -24, z: -10.0 } },
         { id: 'door_tavern', name: "Cat's Tail Taverna", pos: { x: 24, z: -10.0 } },
@@ -3005,6 +3937,23 @@
           return;
         }
       }
+
+      // 2. Town NPCs
+      const amberDist = Math.hypot(myPlayer.x - (-16), myPlayer.z - 9.5);
+      if (amberDist < 3.4) {
+        nearbyInteractable = { type: 'npc_amber', name: 'Amber' };
+        promptText.textContent = `[E] Amber ile Konuş (Kasaba Rehberi)`;
+        prompt.classList.remove('hidden');
+        return;
+      }
+
+      const ventiDist = Math.hypot(myPlayer.x - 24, myPlayer.z - 13.8);
+      if (ventiDist < 3.4) {
+        nearbyInteractable = { type: 'npc_venti', name: 'Venti' };
+        promptText.textContent = `[E] Venti ile Konuş (Rüzgar Ozanı)`;
+        prompt.classList.remove('hidden');
+        return;
+      }
     } else {
       // Check Exit Door
       const dist = Math.hypot(myPlayer.x - 0, myPlayer.z - 10.0);
@@ -3018,33 +3967,33 @@
       // Check Interior NPC / Object interactions
       if (currentMap === 'trade_house') {
         const dNpc = Math.hypot(myPlayer.x - 0, myPlayer.z - (-4.0));
-        if (dNpc < 3.2) {
+        if (dNpc < 3.4) {
           nearbyInteractable = { type: 'npc_trade', name: 'Tüccar Liben' };
-          promptText.textContent = `[E] Tüccar Liben: Pazar & Takas`;
+          promptText.textContent = `[E] Tüccar Liben ile Konuş`;
           prompt.classList.remove('hidden');
           return;
         }
       } else if (currentMap === 'tavern') {
         const dNpc = Math.hypot(myPlayer.x - 7.5, myPlayer.z - (-2.5));
-        if (dNpc < 3.2) {
+        if (dNpc < 3.4) {
           nearbyInteractable = { type: 'npc_tavern', name: 'Diona' };
-          promptText.textContent = `[E] Diona: Özel Kedi Kokteyli İste`;
+          promptText.textContent = `[E] Diona ile Konuş`;
           prompt.classList.remove('hidden');
           return;
         }
       } else if (currentMap === 'shrine') {
         const dNpc = Math.hypot(myPlayer.x - 0, myPlayer.z - (-3.0));
-        if (dNpc < 3.5) {
+        if (dNpc < 3.8) {
           nearbyInteractable = { type: 'npc_shrine', name: 'Kader Sunağı' };
-          promptText.textContent = `[E] Kader Sunağı: Yıldız Dileği Çek`;
+          promptText.textContent = `[E] Yae Miko ile Konuş`;
           prompt.classList.remove('hidden');
           return;
         }
       } else if (currentMap === 'guild') {
         const dNpc = Math.hypot(myPlayer.x - (-8.5), myPlayer.z - (-4.5));
-        if (dNpc < 3.2) {
+        if (dNpc < 3.4) {
           nearbyInteractable = { type: 'npc_guild', name: 'Katheryne' };
-          promptText.textContent = `[E] Katheryne: Seferler & Görevler`;
+          promptText.textContent = `[E] Katheryne ile Konuş`;
           prompt.classList.remove('hidden');
           return;
         }
@@ -3066,6 +4015,11 @@
   }
 
   function triggerInteract() {
+    if (isRPGDialogueOpen) {
+      advanceRPGDialogue();
+      return;
+    }
+
     if (!nearbyInteractable) return;
 
     if (nearbyInteractable.type === 'door') {
@@ -3078,16 +4032,483 @@
       sendTradeRequest(nearbyInteractable.data.username);
     } else if (nearbyInteractable.type && nearbyInteractable.type.startsWith('npc_')) {
       playBeep(659, 'sine', 0.15);
-      if (nearbyInteractable.type === 'npc_trade') {
-        addChatMessage('Tüccar Liben', '💰 "Hoş geldin dostum! Meydanda diğer gezginlerle [E] tuşuna basarak eşya ve Primogem takası yapabilirsin!"');
-      } else if (nearbyInteractable.type === 'npc_tavern') {
-        addChatMessage('Diona', '🐱 "Hıh! Şarap sarhoşlarına inat sana özel ferahlatıcı kurbağaotu kokteyli hazırlayabilirim!"');
-      } else if (nearbyInteractable.type === 'npc_shrine') {
-        addChatMessage('Kader Sunağı', '✨ "Yıldızlar fısıldıyor! Sohbet kutusuna !wish veya !wish10 yazarak hemen kader dileği çekebilirsin! (160 💎)"');
-      } else if (nearbyInteractable.type === 'npc_guild') {
-        addChatMessage('Katheryne', '⚔️ "Yıldızlara ve derinliklere doğru! Kedi madenci ve balıkçı seferleri için /expeditions panelini açabilirsin."');
-      }
+      openRPGDialogue(nearbyInteractable.type);
     }
+  }
+
+  // --- 10. Classic JRPG Ornate Dialogue System (Fire Emblem Style) ---
+  const NPC_DIALOGUES = {
+    npc_trade: {
+      name: 'Tüccar Liben',
+      title: 'Büyük Gezgin Tüccar',
+      presetIndex: 0,
+      lines: [
+        "Hoş geldin dostum! Teyvat'ın dört bir yanındaki gizli harabelerden nadir eşyalar topluyorum.",
+        "Meydandaki diğer gezginlerle [E] tuşuna basarak istediğin gibi eşya ve Primogem takası yapabilirsin!"
+      ],
+      choices: [
+        { text: '📦 Takas Pazarı Nasıl Çalışır?', action: 'explain_trade' },
+        { text: '💎 Primogem Kazanma Yolları', action: 'explain_primo' },
+        { text: '👋 Teşekkürler, sonra görüşürüz', action: 'close' }
+      ]
+    },
+    npc_tavern: {
+      name: 'Diona',
+      title: 'Kedi İksir Ustası',
+      presetIndex: 8,
+      lines: [
+        "Hıh! Şarap sarhoşlarına inat sana özel ferahlatıcı kurbağaotu ve buzlu çilek kokteyli hazırlayabilirim!",
+        "İçtiğin anda enerjin yerine gelecek ve kasabada rüzgar gibi adımlayabileceksin!"
+      ],
+      choices: [
+        { text: '🍸 Özel Kedi Kokteyli Ismarla (+20 💎)', action: 'diona_drink' },
+        { text: '🐱 Kedi Kulaklarını Sev', action: 'diona_pat' },
+        { text: '👋 Şimdilik hoşça kal', action: 'close' }
+      ]
+    },
+    npc_shrine: {
+      name: '🌸 Yae Miko',
+      title: 'Baş Rahibe & Kader Danışmanı',
+      presetIndex: 11,
+      lines: [
+        "Ah, sevimli küçük gezgin... Kaderin gizemli iplikleri bugün senin için parıldıyor.",
+        "Büyük Narukami Mabedi'nin kutsal yıldızları seni çağırıyor. Kader dileği çekmek ister misin?"
+      ],
+      choices: [
+        { text: '✨ Kader Dileği Çek (!wish / 160 💎)', action: 'wish_single' },
+        { text: '🌟 10x Büyük Yıldız Çekilişi (!wish10)', action: 'wish_ten' },
+        { text: '👋 Huzurla ayrıl', action: 'close' }
+      ]
+    },
+    npc_guild: {
+      name: 'Katheryne',
+      title: 'Maceracılar Loncası Katibi',
+      presetIndex: 1,
+      lines: [
+        "Yıldızlara ve derinliklere doğru! Maceracılar Loncası Kasaba Şubesine hoş geldiniz.",
+        "Sadık kedi madenci ve balıkçı dostlarımız uzak seferlerden eşsiz ganimetlerle dönüyor!"
+      ],
+      choices: [
+        { text: '🗺️ Kedi Seferlerini Aç (/expeditions)', action: 'open_expeditions' },
+        { text: '📜 Günlük Lonca Emirleri', action: 'guild_bounty' },
+        { text: '👋 Teşekkürler Katheryne', action: 'close' }
+      ]
+    },
+    npc_amber: {
+      name: 'Amber',
+      title: 'Favonius Öncü Keşifçisi',
+      presetIndex: 2,
+      lines: [
+        "Selam Gezgin! Ben Favonius Şövalyeleri Öncü Keşifçisi Amber!",
+        "Kasabamız çok ferah! Fıskiyenin etrafındaki banklarda dinlenebilir, Cat's Tail tavernasında kedilerle vakit geçirebilirsin."
+      ],
+      choices: [
+        { text: '🗺️ Kasaba Binaları Nerede?', action: 'amber_guide' },
+        { text: '🏹 Rüzgar Planörü Tavsiyeleri', action: 'amber_glider' },
+        { text: '👋 Teşekkürler Amber!', action: 'close' }
+      ]
+    },
+    npc_venti: {
+      name: '🍃 Venti',
+      title: 'Özgür Rüzgar Ozanı',
+      presetIndex: 10,
+      lines: [
+        "Ehehe~ Rüzgarın kadim şarkısını duyuyor musun dostum?",
+        "Nehir kenarındaki gazebonun manzarası eşliğinde sana eski Mondstadt baladlarından çalabilirim..."
+      ],
+      choices: [
+        { text: '🎵 Ozan Baladı Dinle', action: 'venti_song' },
+        { text: '🍃 Rüzgar Kutsaması Al (%35 Hız)', action: 'venti_blessing' },
+        { text: '👋 Görüşürüz Venti', action: 'close' }
+      ]
+    }
+  };
+
+  let isRPGDialogueOpen = false;
+  let currentDialogue = null;
+  let dialogueLineIndex = 0;
+  let typewriterTimer = null;
+  let isTyping = false;
+  let currentFullText = '';
+
+  function drawNPCDialoguePortrait(canvas, npcKey, presetIndex) {
+    if (!canvas) return;
+    const w = canvas.width;
+    const h = canvas.height;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, w, h);
+
+    const preset = AVATAR_PRESETS[presetIndex % AVATAR_PRESETS.length];
+    const skinCss = hexToCss(preset.skin);
+    const hairCss = hexToCss(preset.hair);
+    const clothesCss = hexToCss(preset.clothes);
+
+    const cx = w / 2;
+    const headY = 110;
+    const headR = 52;
+
+    // 1. Shoulders & Upper Torso
+    ctx.fillStyle = clothesCss;
+    ctx.beginPath();
+    ctx.moveTo(cx - 75, h);
+    ctx.lineTo(cx - 50, 165);
+    ctx.lineTo(cx + 50, 165);
+    ctx.lineTo(cx + 75, h);
+    ctx.closePath();
+    ctx.fill();
+
+    // Collar & Scarf / Trims
+    ctx.fillStyle = hexToCss(preset.trim || 0xfacc15);
+    ctx.beginPath();
+    ctx.moveTo(cx - 30, 155);
+    ctx.lineTo(cx, 185);
+    ctx.lineTo(cx + 30, 155);
+    ctx.lineTo(cx + 15, 155);
+    ctx.lineTo(cx, 172);
+    ctx.lineTo(cx - 15, 155);
+    ctx.closePath();
+    ctx.fill();
+
+    // Neck
+    ctx.fillStyle = skinCss;
+    ctx.fillRect(cx - 18, 140, 36, 26);
+
+    // 2. Head Silhouette
+    ctx.fillStyle = skinCss;
+    ctx.beginPath();
+    ctx.arc(cx, headY, headR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3. Hair (Back)
+    ctx.fillStyle = hairCss;
+    ctx.beginPath();
+    ctx.arc(cx, headY - 4, headR + 4, Math.PI, Math.PI * 2);
+    ctx.fill();
+
+    // 4. Character Specific Accessories & Headgear
+    if (npcKey === 'npc_tavern' || preset.hairStyle === 'cat_ears') {
+      [-28, 28].forEach(ex => {
+        ctx.fillStyle = hairCss;
+        ctx.beginPath();
+        ctx.moveTo(cx + ex - 16, headY - headR + 10);
+        ctx.lineTo(cx + ex, headY - headR - 35);
+        ctx.lineTo(cx + ex + 16, headY - headR + 10);
+        ctx.fill();
+
+        ctx.fillStyle = '#fda4af';
+        ctx.beginPath();
+        ctx.moveTo(cx + ex - 10, headY - headR + 10);
+        ctx.lineTo(cx + ex, headY - headR - 24);
+        ctx.lineTo(cx + ex + 10, headY - headR + 10);
+        ctx.fill();
+      });
+    } else if (npcKey === 'npc_amber' || preset.hairStyle === 'amber_ears') {
+      ctx.fillStyle = '#dc2626';
+      [-22, 22].forEach(ex => {
+        ctx.beginPath();
+        ctx.ellipse(cx + ex, headY - headR - 18, 12, 32, ex > 0 ? 0.35 : -0.35, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.fillStyle = '#991b1b';
+      ctx.beginPath();
+      ctx.arc(cx, headY - headR + 2, 10, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (npcKey === 'npc_venti' || preset.hairStyle === 'venti_beret') {
+      ctx.fillStyle = '#059669';
+      ctx.beginPath();
+      ctx.ellipse(cx, headY - headR - 6, headR * 1.05, 24, -0.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(cx + 38, headY - headR - 4, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.arc(cx + 38, headY - headR - 4, 4, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (npcKey === 'npc_shrine' || preset.hairStyle === 'miko_ears') {
+      ctx.fillStyle = hairCss;
+      [-36, 36].forEach(ex => {
+        ctx.beginPath();
+        ctx.moveTo(cx + ex - 14, headY - 10);
+        ctx.lineTo(cx + ex * 1.4, headY - headR - 25);
+        ctx.lineTo(cx + ex + 14, headY - 20);
+        ctx.fill();
+      });
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(cx - 38, headY - 24, 14, 28);
+    } else if (npcKey === 'npc_trade') {
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(cx - headR, headY - headR + 6, headR * 2, 16);
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(cx, headY - headR + 14, 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 5. Hair Bangs & Face Framing Locks
+    ctx.fillStyle = hairCss;
+    ctx.beginPath();
+    ctx.moveTo(cx - headR, headY - 10);
+    ctx.quadraticCurveTo(cx - 24, headY + 16, cx - 10, headY - 6);
+    ctx.quadraticCurveTo(cx + 12, headY + 18, cx + 22, headY - 8);
+    ctx.quadraticCurveTo(cx + 42, headY + 16, cx + headR, headY - 10);
+    ctx.lineTo(cx + headR + 4, headY - headR);
+    ctx.lineTo(cx - headR - 4, headY - headR);
+    ctx.closePath();
+    ctx.fill();
+
+    // Side locks
+    ctx.beginPath();
+    ctx.moveTo(cx - headR - 2, headY - 10);
+    ctx.lineTo(cx - headR + 8, headY + 45);
+    ctx.lineTo(cx - headR + 18, headY + 10);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(cx + headR + 2, headY - 10);
+    ctx.lineTo(cx + headR - 8, headY + 45);
+    ctx.lineTo(cx + headR - 18, headY + 10);
+    ctx.fill();
+
+    // 6. Expressive Sparkling Anime Eyes
+    const eyeColor = preset.eyes || '#3b82f6';
+    [-22, 22].forEach(ex => {
+      const eyeX = cx + ex;
+      const eyeY = headY + 8;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.ellipse(eyeX, eyeY, 11, 15, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      const ig = ctx.createLinearGradient(eyeX, eyeY - 12, eyeX, eyeY + 14);
+      ig.addColorStop(0, '#0f172a');
+      ig.addColorStop(0.5, eyeColor);
+      ig.addColorStop(1, '#ffffff');
+      ctx.fillStyle = ig;
+      ctx.beginPath();
+      ctx.ellipse(eyeX, eyeY + 1, 8, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#020617';
+      ctx.beginPath();
+      ctx.ellipse(eyeX, eyeY + 1, 4, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(eyeX - 3, eyeY - 4, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(eyeX + 3, eyeY + 4, 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(eyeX, eyeY - 4, 11, Math.PI * 1.15, Math.PI * 1.85);
+      ctx.stroke();
+
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = hairCss;
+      ctx.beginPath();
+      ctx.arc(eyeX, eyeY - 15, 9, Math.PI * 1.18, Math.PI * 1.82);
+      ctx.stroke();
+    });
+
+    // 7. Soft Rosy Blushes
+    ctx.fillStyle = 'rgba(244, 63, 94, 0.42)';
+    ctx.beginPath();
+    ctx.ellipse(cx - 30, headY + 24, 9, 5, -0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx + 30, headY + 24, 9, 5, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 8. Cute Anime Mouth
+    if (preset.hairStyle === 'cat_ears') {
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#881337';
+      ctx.beginPath();
+      ctx.arc(cx - 4, headY + 31, 3.5, 0, Math.PI);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx + 4, headY + 31, 3.5, 0, Math.PI);
+      ctx.stroke();
+    } else {
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = '#881337';
+      ctx.beginPath();
+      ctx.arc(cx, headY + 29, 6, 0.2, Math.PI - 0.2);
+      ctx.stroke();
+    }
+  }
+
+  function openRPGDialogue(npcType) {
+    const diag = NPC_DIALOGUES[npcType];
+    if (!diag) return;
+
+    currentDialogue = diag;
+    dialogueLineIndex = 0;
+    isRPGDialogueOpen = true;
+
+    // Reset keyboard motion
+    keys.w = keys.a = keys.s = keys.d = keys.up = keys.down = keys.left = keys.right = false;
+    joystickVector.x = 0;
+    joystickVector.y = 0;
+
+    const modal = document.getElementById('rpg-dialogue-modal');
+    const nameEl = document.getElementById('rpg-dialogue-name');
+    const titleEl = document.getElementById('rpg-dialogue-title');
+    const portraitCanvas = document.getElementById('rpg-npc-portrait');
+    const choicesBox = document.getElementById('rpg-dialogue-choices');
+
+    if (nameEl) nameEl.textContent = diag.name;
+    if (titleEl) titleEl.textContent = diag.title || '';
+    if (choicesBox) {
+      choicesBox.classList.add('hidden');
+      choicesBox.innerHTML = '';
+    }
+
+    drawNPCDialoguePortrait(portraitCanvas, npcType, diag.presetIndex || 0);
+
+    if (modal) modal.classList.remove('hidden');
+    displayDialogueLine(0);
+  }
+
+  function displayDialogueLine(index) {
+    if (!currentDialogue) return;
+    const textEl = document.getElementById('rpg-dialogue-text');
+    const choicesBox = document.getElementById('rpg-dialogue-choices');
+
+    if (typewriterTimer) clearInterval(typewriterTimer);
+    if (choicesBox) {
+      choicesBox.classList.add('hidden');
+      choicesBox.innerHTML = '';
+    }
+
+    currentFullText = currentDialogue.lines[index] || '';
+    let charIdx = 0;
+    if (textEl) textEl.textContent = '';
+    isTyping = true;
+
+    typewriterTimer = setInterval(() => {
+      charIdx++;
+      if (textEl) textEl.textContent = currentFullText.slice(0, charIdx);
+
+      if (charIdx % 2 === 0) {
+        playBeep(440 + (charIdx % 6) * 35, 'triangle', 0.03);
+      }
+
+      if (charIdx >= currentFullText.length) {
+        clearInterval(typewriterTimer);
+        typewriterTimer = null;
+        isTyping = false;
+        onLineFinished(index);
+      }
+    }, 22);
+  }
+
+  function onLineFinished(index) {
+    if (index >= currentDialogue.lines.length - 1 && currentDialogue.choices && currentDialogue.choices.length > 0) {
+      const choicesBox = document.getElementById('rpg-dialogue-choices');
+      if (!choicesBox) return;
+      choicesBox.innerHTML = '';
+      currentDialogue.choices.forEach(ch => {
+        const btn = document.createElement('button');
+        btn.className = 'rpg-choice-btn';
+        btn.innerHTML = `<span>${ch.text}</span> <span style="opacity:0.6">▶</span>`;
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          handleRPGChoice(ch.action);
+        };
+        choicesBox.appendChild(btn);
+      });
+      choicesBox.classList.remove('hidden');
+    }
+  }
+
+  function advanceRPGDialogue() {
+    if (!isRPGDialogueOpen || !currentDialogue) return;
+
+    if (isTyping) {
+      if (typewriterTimer) clearInterval(typewriterTimer);
+      typewriterTimer = null;
+      isTyping = false;
+      const textEl = document.getElementById('rpg-dialogue-text');
+      if (textEl) textEl.textContent = currentFullText;
+      onLineFinished(dialogueLineIndex);
+      return;
+    }
+
+    if (dialogueLineIndex < currentDialogue.lines.length - 1) {
+      dialogueLineIndex++;
+      displayDialogueLine(dialogueLineIndex);
+    } else {
+      const choicesBox = document.getElementById('rpg-dialogue-choices');
+      if (choicesBox && !choicesBox.classList.contains('hidden') && choicesBox.children.length > 0) {
+        return;
+      }
+      closeRPGDialogue();
+    }
+  }
+
+  function closeRPGDialogue() {
+    if (typewriterTimer) clearInterval(typewriterTimer);
+    typewriterTimer = null;
+    isTyping = false;
+    isRPGDialogueOpen = false;
+    currentDialogue = null;
+    const modal = document.getElementById('rpg-dialogue-modal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  function handleRPGChoice(action) {
+    playBeep(750, 'sine', 0.12);
+    closeRPGDialogue();
+
+    if (action === 'explain_trade') {
+      addChatMessage('Tüccar Liben', '🤝 "Meydanda herhangi bir gezginin yanına gidip [E] tuşuna bas! Karşılıklı Primogem ve eşya teklifi yapıp kilitledikten sonra anında takas edin."');
+    } else if (action === 'explain_primo') {
+      addChatMessage('Tüccar Liben', '💎 "Kick yayınını izlerken veya sohbette sohbet ederek Primogem kazanırsın. Ayrıca kedi madencilerin mağara seferlerinden de Primogem cevherleri çıkar!"');
+    } else if (action === 'diona_drink') {
+      playBeep(880, 'sine', 0.25);
+      myPlayer.primogems += 20;
+      updateUIProfile();
+      addChatMessage('Diona', '🍸 "Al bakalım! Özel kurbağaotu ve buzlu çilek iksiri! Kendini zinde hissedeceksin! (+20 💎 hediye)"');
+    } else if (action === 'diona_pat') {
+      addChatMessage('Diona', '🐱 "Miyav! Dur... saçlarımı dağıtma! Ama... sadece birazcık sevebilirsin..."');
+    } else if (action === 'wish_single') {
+      addChatMessage('Sistem', '✨ Sohbet kutusuna !wish yazarak 160 Primogem karşılığı hemen kader dileği çekebilirsin!');
+    } else if (action === 'wish_ten') {
+      addChatMessage('Sistem', '🌟 Sohbet kutusuna !wish10 yazarak 10 adet kader dileğini aynı anda çekebilirsin!');
+    } else if (action === 'open_expeditions') {
+      addChatMessage('Katheryne', '🗺️ "Kedi seferleri panelini açmak için /expeditions sekmesini ziyaret edin!"');
+    } else if (action === 'guild_bounty') {
+      addChatMessage('Katheryne', '📜 "Bugünkü lonca emri: Kasaba sakinleriyle tanış ve 1 kez eşya takası yap!"');
+    } else if (action === 'amber_guide') {
+      addChatMessage('Amber', '🗺️ "Kuzeyde Dilek Tapınağı, batıda Pazar ve Lonca, doğuda Cat\'s Tail Taverna ve Gazebo Parkı var!"');
+    } else if (action === 'amber_glider') {
+      addChatMessage('Amber', '🏹 "Planörle uçarken rüzgar akıntılarını arkana almayı unutma! Mondstadt semaları seni bekler!"');
+    } else if (action === 'venti_song') {
+      playVentiArpeggio();
+      addChatMessage('Venti', '🎵 "Nehirler akar, rüzgar fısıldar... Eski çağların kahramanları hâlâ aramızda..."');
+    } else if (action === 'venti_blessing') {
+      playBeep(659, 'sine', 0.2);
+      CONFIG.moveSpeed *= 1.35;
+      setTimeout(() => { CONFIG.moveSpeed /= 1.35; }, 15000);
+      addChatMessage('Venti', '🍃 "Barbatos\'un rüzgarı seninle olsun! 15 saniye boyunca %35 daha hızlı koşacaksın!"');
+    }
+  }
+
+  function playVentiArpeggio() {
+    const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+    notes.forEach((freq, idx) => {
+      setTimeout(() => {
+        playBeep(freq, 'sine', 0.22);
+      }, idx * 120);
+    });
   }
 
   function triggerDoorWipe(targetMap) {
@@ -3399,10 +4820,7 @@
     // Avatar preview in ring
     const previewCvs = document.getElementById('ui-avatar-preview');
     if (previewCvs) {
-      const pCtx = previewCvs.getContext('2d');
-      pCtx.clearRect(0, 0, 48, 48);
-      const avTex = createAvatarTexture(myPlayer.avatarIndex, 0);
-      pCtx.drawImage(avTex.image, 0, 0, 48, 48);
+      drawAvatarPreviewPortrait(previewCvs, AVATAR_PRESETS[myPlayer.avatarIndex % AVATAR_PRESETS.length]);
     }
   }
 
@@ -3433,16 +4851,14 @@
     const grid = document.getElementById('avatar-grid-select');
     grid.innerHTML = '';
 
-    AVATAR_PALETTES.forEach((p, idx) => {
+    AVATAR_PRESETS.forEach((p, idx) => {
       const btn = document.createElement('button');
       btn.className = `avatar-choice-btn ${myPlayer.avatarIndex === idx ? 'selected' : ''}`;
       const avCanvas = document.createElement('canvas');
-      avCanvas.width = 32;
+      avCanvas.width = 48;
       avCanvas.height = 48;
       avCanvas.className = 'avatar-choice-canvas';
-      const aCtx = avCanvas.getContext('2d');
-      const tex = createAvatarTexture(idx, 0);
-      aCtx.drawImage(tex.image, 0, 0, 32, 48);
+      drawAvatarPreviewPortrait(avCanvas, p);
 
       btn.appendChild(avCanvas);
       const nameSpan = document.createElement('span');
@@ -3476,6 +4892,22 @@
       if (tag === 'input' || tag === 'textarea') return;
 
       const k = e.key.toLowerCase();
+
+      // RPG Dialogue Interception
+      if (isRPGDialogueOpen) {
+        if (k === 'e' || k === ' ' || k === 'enter') {
+          e.preventDefault();
+          advanceRPGDialogue();
+          return;
+        }
+        if (k === 'escape') {
+          e.preventDefault();
+          closeRPGDialogue();
+          return;
+        }
+        return; // Pause movement while talking
+      }
+
       if (k === 'w' || k === 'arrowup') keys.w = true;
       if (k === 's' || k === 'arrowdown') keys.s = true;
       if (k === 'a' || k === 'arrowleft') keys.a = true;
@@ -3621,6 +5053,12 @@
       }
     };
 
+    // RPG Dialogue Click Triggers
+    const diagBox = document.getElementById('rpg-dialogue-box');
+    if (diagBox) diagBox.onclick = () => advanceRPGDialogue();
+    const diagBackdrop = document.getElementById('rpg-dialogue-backdrop');
+    if (diagBackdrop) diagBackdrop.onclick = () => closeRPGDialogue();
+
     // Mobile Virtual Joystick Touch Handling
     setupMobileJoystick();
 
@@ -3694,11 +5132,27 @@
     // Update local movement & proximity
     updateMovement(delta);
 
-    // Interpolate other players
+    // 1. Animate local player rig
+    if (myMesh && myMesh.userData && myMesh.userData.rig) {
+      animateRig(myMesh.userData.rig, myPlayer.anim === 'walk', delta, now);
+    }
+
+    // 2. Interpolate and animate other players
     for (const entry of otherPlayers.values()) {
       entry.mesh.position.x += (entry.targetX - entry.mesh.position.x) * CONFIG.posLerp;
       entry.mesh.position.z += (entry.targetZ - entry.mesh.position.z) * CONFIG.posLerp;
       entry.mesh.rotation.y += (entry.targetRot - entry.mesh.rotation.y) * CONFIG.rotLerp;
+      if (entry.mesh.userData && entry.mesh.userData.rig) {
+        animateRig(entry.mesh.userData.rig, entry.anim === 'walk', delta, now);
+      }
+    }
+
+    // 3. Animate NPCs (gentle breathing & idle)
+    for (let i = 0; i < animatedNPCs.length; i++) {
+      const npc = animatedNPCs[i];
+      if (npc.userData && npc.userData.rig) {
+        animateRig(npc.userData.rig, false, delta, now);
+      }
     }
 
     // 1. Animate River Water Surface Ripples
@@ -3793,6 +5247,9 @@
   }
 
   // --- Bootstrap ---
+  window.openRPGDialogue = openRPGDialogue;
+  window.closeRPGDialogue = closeRPGDialogue;
+
   window.addEventListener('DOMContentLoaded', () => {
     initThree();
     updateMyMesh();

@@ -240,6 +240,46 @@
     </div>
   </div>
 
+  <!-- 5. Classic JRPG Ornate Dialogue Modal (Fire Emblem Style) -->
+  <div id="rpg-dialogue-modal" class="rpg-dialogue-overlay hidden">
+    <div class="rpg-dialogue-backdrop" id="rpg-dialogue-backdrop"></div>
+    <div class="rpg-dialogue-container">
+      <!-- NPC Bust / Portrait on left -->
+      <div class="rpg-portrait-wrapper">
+        <canvas id="rpg-npc-portrait" width="240" height="280" class="rpg-npc-portrait"></canvas>
+      </div>
+
+      <!-- Ornate Parchment Dialogue Box -->
+      <div class="rpg-dialogue-box" id="rpg-dialogue-box">
+        <!-- Ornate Beveled Nameplate on top edge -->
+        <div class="rpg-nameplate">
+          <span class="rpg-nameplate-wing">◄</span>
+          <span class="rpg-nameplate-name" id="rpg-dialogue-name">Donnel</span>
+          <span class="rpg-nameplate-title" id="rpg-dialogue-title">Köy Savaşçısı</span>
+          <span class="rpg-nameplate-wing">►</span>
+        </div>
+
+        <!-- Dialogue Text Area with Typewriter -->
+        <div class="rpg-dialogue-content">
+          <div class="rpg-dialogue-text" id="rpg-dialogue-text">
+            Fight and get stronger, he says... Guess it can't hurt to try.
+          </div>
+        </div>
+
+        <!-- Interactive Choice Options -->
+        <div class="rpg-dialogue-choices hidden" id="rpg-dialogue-choices">
+          <!-- Dynamically populated choice buttons -->
+        </div>
+
+        <!-- Bottom right navigation prompt -->
+        <div class="rpg-dialogue-footer">
+          <span class="rpg-key-hint"><kbd>E</kbd> / <kbd>Space</kbd> Devam Et</span>
+          <span class="rpg-blinking-arrow">▼</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="/world.js"></script>
 </body>

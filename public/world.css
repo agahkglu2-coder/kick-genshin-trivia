@@ -1038,6 +1038,245 @@ html, body {
   cursor: pointer;
 }
 
+/* ==========================================================
+   CLASSIC JRPG ORNATE DIALOGUE BOX (FIRE EMBLEM STYLE)
+   ========================================================== */
+.rpg-dialogue-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.rpg-dialogue-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.25s ease;
+}
+
+.rpg-dialogue-container {
+  position: relative;
+  width: 94%;
+  max-width: 860px;
+  margin-bottom: 28px;
+  z-index: 10;
+  animation: dialogPopUp 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes dialogPopUp {
+  0% { transform: translateY(30px) scale(0.96); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Portrait Placement (Overlapping left corner) */
+.rpg-portrait-wrapper {
+  position: absolute;
+  bottom: 6px;
+  left: 12px;
+  width: 220px;
+  height: 260px;
+  z-index: 15;
+  pointer-events: none;
+  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.65));
+}
+
+.rpg-npc-portrait {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Ornate Parchment Dialogue Frame */
+.rpg-dialogue-box {
+  position: relative;
+  background: linear-gradient(180deg, #fffdf5 0%, #fef5dc 55%, #fae8be 100%);
+  border: 4px solid #451a03;
+  border-radius: 18px;
+  box-shadow: 
+    0 20px 45px rgba(0, 0, 0, 0.7),
+    0 4px 12px rgba(69, 26, 3, 0.4),
+    inset 0 0 0 2px #d97706,
+    inset 0 3px 8px rgba(255, 255, 255, 0.9),
+    inset 0 -6px 14px rgba(180, 83, 9, 0.25);
+  padding: 34px 28px 24px 220px;
+  min-height: 145px;
+  cursor: pointer;
+}
+
+/* Subtle corner flourish accents */
+.rpg-dialogue-box::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(180, 83, 9, 0.35);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+/* Ornate Nameplate (Badge at Top-Left) */
+.rpg-nameplate {
+  position: absolute;
+  top: -19px;
+  left: 215px;
+  background: linear-gradient(180deg, #3d2212 0%, #1c0e07 60%, #2b170c 100%);
+  border: 2px solid #b45309;
+  border-radius: 9px;
+  padding: 4px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 
+    0 5px 14px rgba(0, 0, 0, 0.6),
+    inset 0 1px 1px rgba(254, 240, 138, 0.5),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.8);
+  z-index: 20;
+}
+
+.rpg-nameplate-wing {
+  color: #f59e0b;
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.rpg-nameplate-name {
+  color: #fef08a;
+  font-family: 'Cinzel', 'Georgia', 'Palatino Linotype', serif;
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: 0.8px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.rpg-nameplate-title {
+  color: #94a3b8;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: 6px;
+  border-left: 1px solid rgba(148, 163, 184, 0.3);
+  padding-left: 8px;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* Dialogue Text Body */
+.rpg-dialogue-content {
+  min-height: 64px;
+}
+
+.rpg-dialogue-text {
+  color: #3b1d09;
+  font-family: 'Cinzel', 'Palatino Linotype', 'Book Antiqua', 'Georgia', serif;
+  font-size: 1.18rem;
+  font-weight: 600;
+  line-height: 1.65;
+  letter-spacing: 0.2px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Dialogue Choice Buttons */
+.rpg-dialogue-choices {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: fadeIn 0.2s ease;
+}
+
+.rpg-choice-btn {
+  background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 60%, #fde68a 100%);
+  border: 2px solid #b45309;
+  border-radius: 10px;
+  padding: 8px 16px;
+  color: #451a03;
+  font-family: 'Cinzel', 'Georgia', serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), inset 0 1px 1px #fff;
+  transition: all 0.18s ease;
+}
+
+.rpg-choice-btn:hover {
+  background: linear-gradient(180deg, #fef08a 0%, #f59e0b 100%);
+  border-color: #78350f;
+  color: #1c0e07;
+  transform: translateX(6px);
+  box-shadow: 0 5px 12px rgba(180, 83, 9, 0.35);
+}
+
+.rpg-choice-btn:active {
+  transform: scale(0.98);
+}
+
+/* Footer / Key Prompt / Blinking Arrow */
+.rpg-dialogue-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.rpg-key-hint {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #92400e;
+  opacity: 0.8;
+  font-family: 'Nunito', sans-serif;
+}
+
+.rpg-key-hint kbd {
+  background: #fde68a;
+  border: 1px solid #d97706;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-weight: 800;
+}
+
+.rpg-blinking-arrow {
+  color: #78350f;
+  font-size: 1.1rem;
+  animation: rpgArrowBounce 0.65s infinite alternate ease-in-out;
+}
+
+@keyframes rpgArrowBounce {
+  0% { transform: translateY(-2px); opacity: 0.45; }
+  100% { transform: translateY(4px); opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .rpg-dialogue-container {
+    width: 98%;
+    margin-bottom: 12px;
+  }
+  .rpg-portrait-wrapper {
+    width: 140px;
+    height: 180px;
+    left: 4px;
+  }
+  .rpg-dialogue-box {
+    padding: 30px 16px 16px 145px;
+  }
+  .rpg-nameplate {
+    left: 145px;
+    font-size: 0.95rem;
+  }
+  .rpg-dialogue-text {
+    font-size: 1.0rem;
+    line-height: 1.45;
+  }
+}
+
 .hidden {
   display: none !important;
 }
