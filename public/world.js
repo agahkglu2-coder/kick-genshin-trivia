@@ -3374,7 +3374,7 @@
     grass.receiveShadow = true;
     worldObjects.add(grass);
 
-    // 2. Wide Cobblestone Crossroads with Curbs (88m Grand Avenues)
+    // 2. Wide Cobblestone Crossroads (Clean '+' Shaped Grand Avenues)
     const pathTexX = createProceduralCobbleTexture(2, 28);
     const pathMatX = new THREE.MeshLambertMaterial({ map: pathTexX });
     const pathX = new THREE.Mesh(new THREE.PlaneGeometry(8, 88), pathMatX);
@@ -3390,52 +3390,6 @@
     pathZ.position.y = 0.02;
     pathZ.receiveShadow = true;
     worldObjects.add(pathZ);
-
-    // Secondary Paved Building Branches (Direct paved plazas to each quarter)
-    const branchTex = createProceduralCobbleTexture(6, 2);
-    const branchMat = new THREE.MeshLambertMaterial({ map: branchTex });
-
-    // Trade Mart Branch (West-North)
-    const bTrade = new THREE.Mesh(new THREE.PlaneGeometry(18, 6), branchMat);
-    bTrade.rotation.x = -Math.PI / 2;
-    bTrade.position.set(-15, 0.022, -10);
-    bTrade.receiveShadow = true;
-    worldObjects.add(bTrade);
-
-    // Taverna Branch (East-North)
-    const bTavern = new THREE.Mesh(new THREE.PlaneGeometry(18, 6), branchMat);
-    bTavern.rotation.x = -Math.PI / 2;
-    bTavern.position.set(15, 0.022, -10);
-    bTavern.receiveShadow = true;
-    worldObjects.add(bTavern);
-
-    // Guild Branch (West-South)
-    const bGuild = new THREE.Mesh(new THREE.PlaneGeometry(18, 6), branchMat);
-    bGuild.rotation.x = -Math.PI / 2;
-    bGuild.position.set(-15, 0.022, 10);
-    bGuild.receiveShadow = true;
-    worldObjects.add(bGuild);
-
-    // Gazebo Park Branch (East-South)
-    const bGazebo = new THREE.Mesh(new THREE.PlaneGeometry(18, 6), branchMat);
-    bGazebo.rotation.x = -Math.PI / 2;
-    bGazebo.position.set(15, 0.022, 10);
-    bGazebo.receiveShadow = true;
-    worldObjects.add(bGazebo);
-
-    // Stone Curb Lines along the main avenues
-    const curbMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
-    [-4.1, 4.1].forEach(offset => {
-      const curbX = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.15, 88), curbMat);
-      curbX.position.set(offset, 0.08, 0);
-      curbX.receiveShadow = true;
-      worldObjects.add(curbX);
-
-      const curbZ = new THREE.Mesh(new THREE.BoxGeometry(88, 0.15, 0.25), curbMat);
-      curbZ.position.set(0, 0.08, offset);
-      curbZ.receiveShadow = true;
-      worldObjects.add(curbZ);
-    });
 
     // 3. Central Fountain (Zero Z-Fighting Carved Stone Basin)
     worldObjects.add(createCentralFountain());

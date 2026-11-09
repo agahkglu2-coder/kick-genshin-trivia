@@ -280,17 +280,15 @@
     </div>
   </div>
 
-  <!-- 6. Fire Emblem Style Fish Catch Celebration Modal -->
+  <!-- 6. Fish Catch Celebration Modal -->
   <div id="modal-fish-catch" class="modal-overlay hidden">
     <div class="modal-card modal-card-fish">
-      <div class="fish-catch-sparkles">✨</div>
       <div class="fish-catch-icon" id="fish-catch-icon">🐟</div>
-      <div class="fish-catch-stars" id="fish-catch-stars">★★★★☆</div>
       <h2 class="fish-catch-name" id="fish-catch-name">Nehir Sazanı</h2>
-      <div class="fish-catch-rarity" id="fish-catch-rarity">Nadir Nehir Balığı</div>
+      <div class="fish-catch-rarity" id="fish-catch-rarity">★★☆☆☆ Nadir Nehir Balığı</div>
       
       <div class="fish-primo-reward" id="fish-primo-reward">
-        <span>Kazanılan Ödül:</span>
+        <span>Ödül:</span>
         <strong id="fish-catch-primo">+25 💎 Primogem</strong>
       </div>
 
@@ -299,7 +297,7 @@
       </p>
 
       <div class="fish-catch-actions">
-        <button class="btn-fish-claim" id="btn-fish-claim">💎 Ödülü Al & Devam Et</button>
+        <button class="btn-fish-claim" id="btn-fish-claim">Tamam</button>
       </div>
     </div>
   </div>
@@ -308,39 +306,32 @@
   <div id="fishing-hud" class="fishing-hud hidden">
     <div class="fishing-hud-content" id="fishing-hud-content">
       <span class="fishing-hud-spinner">🎣</span>
-      <span class="fishing-hud-text" id="fishing-hud-text">Yem suda salınıyor... Balıklar yaklaşıyor...</span>
+      <span class="fishing-hud-text" id="fishing-hud-text">Yem suda... Balık bekleniyor...</span>
     </div>
   </div>
 
-  <!-- 8. Interactive Fishing Reel Minigame (Stardew / Genshin Style) -->
+  <!-- 8. Interactive Fishing Reel Minigame -->
   <div id="fishing-minigame" class="fishing-minigame hidden">
     <div class="fishing-mg-card">
       <div class="fishing-mg-header">
         <div class="fishing-mg-title-group">
           <span class="fishing-mg-icon" id="fishing-mg-icon">🐟</span>
           <div>
-            <h3 class="fishing-mg-title" id="fishing-mg-title">Balık Direniyor!</h3>
+            <h3 class="fishing-mg-title" id="fishing-mg-title">Balık Tutuluyor</h3>
             <span class="fishing-mg-badge" id="fishing-mg-badge">3★ Orta</span>
           </div>
         </div>
         <div class="fishing-mg-tension" id="fishing-mg-tension">
           <span class="tension-dot" id="tension-dot"></span>
-          <span id="fishing-mg-tension-text">MİSİNA GERGİN</span>
+          <span id="fishing-mg-tension-text">MİSİNA</span>
         </div>
       </div>
 
       <div class="fishing-mg-body">
-        <!-- Vertical Water Column / Reel Track -->
+        <!-- Vertical Reel Track -->
         <div class="fishing-mg-track" id="fishing-mg-track">
-          <!-- Bubbles & water ripple decor -->
-          <div class="track-bubble b1"></div>
-          <div class="track-bubble b2"></div>
-          <div class="track-bubble b3"></div>
-
           <!-- Player Green Catch Bar -->
-          <div class="fishing-mg-bar" id="fishing-mg-bar">
-            <div class="bar-grip"></div>
-          </div>
+          <div class="fishing-mg-bar" id="fishing-mg-bar"></div>
 
           <!-- Target Fish Swimming Inside Track -->
           <div class="fishing-mg-fish" id="fishing-mg-fish">🐟</div>
@@ -357,10 +348,9 @@
 
       <div class="fishing-mg-footer">
         <div class="fishing-mg-hint">
-          <span class="hint-badge"><kbd>SPACE</kbd> / <kbd>E</kbd> / Fare Tık</span>
-          <span>Basılı Tut = <b>Çek ⬆</b> | Bırak = <b>Düşür ⬇</b></span>
+          <span><kbd>SPACE</kbd> / Fare Sol Tık: <b>Basılı Tut</b> = Çek ⬆ | <b>Bırak</b> = Düşür ⬇</span>
         </div>
-        <button type="button" class="btn-reel-mobile" id="btn-reel-mobile">🎣 MAKARA ÇEK</button>
+        <button type="button" class="btn-reel-mobile" id="btn-reel-mobile">🎣 Çek</button>
       </div>
     </div>
   </div>
