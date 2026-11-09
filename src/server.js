@@ -214,6 +214,10 @@ const { BossEngine } = require('./bossEngine');
 const bossEngine = new BossEngine({ gachaEngine, kickBot, db });
 const { ExpeditionEngine } = require('./expeditionEngine');
 const expeditionEngine = new ExpeditionEngine({ gachaEngine, kickBot });
+const { TradeEngine } = require('./tradeEngine');
+const tradeEngine = new TradeEngine({ gachaEngine });
+const { WorldEngine } = require('./worldEngine');
+const worldEngine = new WorldEngine({ gachaEngine, tradeEngine });
 
 // Initialize persistent database (PostgreSQL or local fallback)
 db.init(process.env.DATABASE_URL || config.databaseUrl).then(async () => {
@@ -366,6 +370,21 @@ kickClient.on('message', async (chatMsg) => {
     bossEngine.handleChatMessage(chatMsg);
   } catch (err) {
     console.error('[Server] BossEngine handleChatMessage hatası:', err);
+  }
+
+  // Feed to WorldEngine for MMO 3D Speech Bubbles and Kick PIN verification
+  try {
+    const rawUser = (chatMsg.sender?.username || 'Viewer').trim();
+    const content = (chatMsg.content || '').trim();
+    if (content.startsWith('!giris') || content.startsWith('!giriş')) {
+      const pinResult = worldEngine.verifyPinFromChat(rawUser, content);
+      if (pinResult && pinResult.success) {
+        kickBot.sendMessage(`✅ @${rawUser} Teyvat Piksel Dünyasına Kick kimliğinle bağlandın! Hoş geldin!`).catch(() => {});
+      }
+    }
+    worldEngine.bridgeKickChat(rawUser, content);
+  } catch (err) {
+    console.error('[Server] WorldEngine handleChatMessage hatası:', err);
   }
 
   // Broadcast to admin dashboard chat preview
@@ -754,8 +773,57 @@ expeditionEngine.on('expedition_completed', (data) => {
   broadcast({ type: 'CHATTER_PRIMO_RAIN', count: data.reward?.isJackpot ? 35 : 15 });
 });
 
+// World MMO Engine Events
+worldEngine.on('player_joined', (player) => {
+  broadcast({ type: 'WORLD_PLAYER_JOINED', player });
+});
+
+worldEngine.on('player_left', (info) => {
+  broadcast({ type: 'WORLD_PLAYER_LEFT', ...info });
+});
+
+worldEngine.on('player_changed_map', (info) => {
+  broadcast({ type: 'WORLD_PLAYER_MAP_CHANGED', ...info });
+});
+
+worldEngine.on('player_authenticated', (data) => {
+  broadcast({ type: 'WORLD_PLAYER_AUTHED', ...data });
+});
+
+worldEngine.on('speech_bubble', (data) => {
+  broadcast({ type: 'WORLD_SPEECH_BUBBLE', ...data });
+});
+
+// Trade Engine Events
+tradeEngine.on('trade_started', (session) => {
+  broadcast({ type: 'TRADE_SESSION_STARTED', session });
+});
+
+tradeEngine.on('trade_updated', (session) => {
+  broadcast({ type: 'TRADE_SESSION_UPDATED', session });
+});
+
+tradeEngine.on('trade_completed', (data) => {
+  broadcast({ type: 'TRADE_COMPLETED', ...data });
+  kickBot.sendMessage(`🤝 [Pazar] @${data.session.p1} ve @${data.session.p2} takası başarıyla tamamladı!`).catch(() => {});
+});
+
+tradeEngine.on('trade_cancelled', (data) => {
+  broadcast({ type: 'TRADE_CANCELLED', ...data });
+});
+
+// 20 FPS (50ms) MMO World State Delta Broadcast Loop
+setInterval(() => {
+  if (worldEngine.players.size > 0) {
+    const states = worldEngine.getMapStates();
+    broadcast({ type: 'WORLD_STATE', states });
+  }
+}, 50);
+
 // WebSocket Connection Handler
 wss.on('connection', (ws) => {
+  const socketId = 'sock_' + Math.random().toString(36).substr(2, 9);
+  ws.socketId = socketId;
   // Send initial full state immediately upon connect
   ws.send(JSON.stringify({
     type: 'INIT_STATE',
@@ -808,7 +876,86 @@ wss.on('connection', (ws) => {
       } else if (data.type === 'CHATTER_CLEAR') {
         broadcast({ type: 'CHATTER_CLEAR' });
       }
+      // --- MMO World & Three.js Messages ---
+      else if (data.type === 'WORLD_JOIN') {
+        const player = worldEngine.addPlayer(socketId, {
+          username: data.username,
+          avatarIndex: data.avatarIndex,
+          isGuest: data.isGuest,
+          profilePic: data.profilePic
+        });
+        ws.send(JSON.stringify({
+          type: 'WORLD_INIT',
+          self: player,
+          maps: worldEngine.maps,
+          states: worldEngine.getMapStates()
+        }));
+      } else if (data.type === 'WORLD_MOVE') {
+        worldEngine.updateMovement(socketId, data);
+      } else if (data.type === 'WORLD_DOOR_INTERACT') {
+        const res = worldEngine.interactDoor(socketId);
+        ws.send(JSON.stringify({ type: 'WORLD_DOOR_RESULT', ...res }));
+      } else if (data.type === 'WORLD_CHAT') {
+        worldEngine.addChatBubble(socketId, data.text);
+      } else if (data.type === 'WORLD_REQ_PIN') {
+        const pinData = worldEngine.createPinAuth(socketId, data.username);
+        ws.send(JSON.stringify({ type: 'WORLD_PIN_RESULT', ...pinData }));
+      }
+      // --- MMO P2P Trade Messages ---
+      else if (data.type === 'TRADE_REQUEST') {
+        const targetPlayer = worldEngine.getPlayerByName(data.targetUser);
+        const me = worldEngine.getPlayer(socketId);
+        if (targetPlayer && me) {
+          broadcast({
+            type: 'TRADE_INVITE',
+            initiator: me.username,
+            target: targetPlayer.username,
+            targetSocketId: targetPlayer.id
+          });
+        }
+      } else if (data.type === 'TRADE_RESPOND') {
+        if (data.accepted) {
+          const res = tradeEngine.startSession(data.initiator, data.responder);
+          if (res.success) {
+            broadcast({ type: 'TRADE_SESSION_STARTED', session: res.session });
+          } else {
+            ws.send(JSON.stringify({ type: 'TRADE_ERROR', error: res.error }));
+          }
+        } else {
+          broadcast({ type: 'TRADE_DECLINED', initiator: data.initiator, responder: data.responder });
+        }
+      } else if (data.type === 'TRADE_UPDATE') {
+        const res = tradeEngine.updateOffer(data.tradeId, data.username, {
+          items: data.items,
+          primogems: data.primogems
+        });
+        if (res.success) {
+          broadcast({ type: 'TRADE_SESSION_UPDATED', session: res.session });
+        }
+      } else if (data.type === 'TRADE_TOGGLE_LOCK') {
+        const res = tradeEngine.toggleLock(data.tradeId, data.username, data.locked);
+        if (res.success) {
+          broadcast({ type: 'TRADE_SESSION_UPDATED', session: res.session });
+        }
+      } else if (data.type === 'TRADE_CONFIRM') {
+        const res = tradeEngine.confirmTrade(data.tradeId, data.username);
+        if (res.success) {
+          if (res.session && res.session.status === 'COMPLETED') {
+            broadcast({ type: 'TRADE_COMPLETED', session: res.session, message: res.message });
+          } else {
+            broadcast({ type: 'TRADE_SESSION_UPDATED', session: res.session });
+          }
+        } else {
+          ws.send(JSON.stringify({ type: 'TRADE_ERROR', error: res.error }));
+        }
+      } else if (data.type === 'TRADE_CANCEL') {
+        tradeEngine.cancelSession(data.tradeId, data.reason || 'Kullanıcı takası kapattı.');
+      }
     } catch (e) {}
+  });
+
+  ws.on('close', () => {
+    worldEngine.removePlayer(socketId);
   });
 });
 
@@ -839,6 +986,38 @@ app.post('/api/chatter/config', express.json(), (req, res) => {
   saveConfig(config);
   broadcast({ type: 'CHATTER_CONFIG', config: config.chatterConfig });
   res.json({ success: true, config: config.chatterConfig });
+});
+
+// MMO 3D Pixel World REST Endpoints
+app.get('/world', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'world.html'));
+});
+
+app.get('/api/world/state', (req, res) => {
+  res.json({
+    onlineCount: worldEngine.players.size,
+    maps: worldEngine.maps,
+    states: worldEngine.getMapStates()
+  });
+});
+
+app.get('/api/world/inventory', (req, res) => {
+  const username = (req.query.user || '').trim();
+  if (!username) return res.json({ inventory: [], primogems: 0 });
+  const user = gachaEngine.getOrCreateUser(username);
+  res.json({
+    username: user.username,
+    primogems: user.primogems || 0,
+    inventory: (user.inventory || []).map((item, index) => ({
+      index,
+      name: item.name,
+      rarity: item.rarity,
+      type: item.type,
+      element: item.element,
+      icon: item.icon || item.remoteIcon || item.splashArt,
+      weaponType: item.weaponType
+    }))
+  });
 });
 
 app.post('/api/chatter/action', express.json(), (req, res) => {

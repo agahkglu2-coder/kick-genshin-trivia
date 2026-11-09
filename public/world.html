@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Teyvat Pixel MMO - Kick Şehri</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Fredoka:wght@600;700;800&family=Nunito:wght@700;800;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/world.css">
+  <!-- Three.js from CDN with fallback -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <!-- 3D WebGL Canvas Layer -->
+  <div id="game-container">
+    <canvas id="world-canvas"></canvas>
+  </div>
+
+  <!-- Screen Wipe / Door Transition Overlay -->
+  <div id="screen-wipe" class="screen-wipe"></div>
+
+  <!-- Top UI Header Bar -->
+  <header id="top-bar" class="ui-layer">
+    <!-- Left: Player Profile Badge -->
+    <div class="player-profile-card" id="profile-card">
+      <div class="avatar-ring" id="ui-avatar-ring">
+        <canvas id="ui-avatar-preview" width="48" height="48"></canvas>
+      </div>
+      <div class="profile-info">
+        <div class="profile-name-row">
+          <span id="ui-username" class="username-text">Gezgin</span>
+          <span id="ui-badge" class="badge-guest">Misafir</span>
+        </div>
+        <div class="profile-stats-row">
+          <span class="primo-pill">💎 <span id="ui-primogems">0</span></span>
+          <span class="location-pill" id="ui-location">Meydan</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Streamer / Spectator Banner (if mode=spectator) -->
+    <div id="spectator-banner" class="spectator-banner hidden">
+      <span class="pulse-dot"></span> CANLI YAYIN KAMERASI - TEYVAT PİKSEL ŞEHRİ
+    </div>
+
+    <!-- Right: Minimap & Online Count -->
+    <div class="top-right-group">
+      <div class="online-pill">
+        <span class="live-dot"></span>
+        <span id="ui-online-count">1</span> Gezgin
+      </div>
+      <div class="minimap-wrap">
+        <canvas id="minimap-canvas" width="130" height="130"></canvas>
+        <div class="minimap-compass">K</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Proximity Action Prompt (e.g. [E] Binaya Gir) -->
+  <div id="action-prompt" class="action-prompt hidden">
+    <div class="prompt-key">E</div>
+    <div class="prompt-text" id="prompt-text">Etkileşime Geç</div>
+  </div>
+
+  <!-- Bottom UI Controls & Chat -->
+  <footer id="bottom-bar" class="ui-layer">
+    <!-- In-Game Chat Dock -->
+    <div class="chat-dock">
+      <div id="chat-messages" class="chat-messages-container"></div>
+      <form id="chat-form" class="chat-input-bar">
+        <input type="text" id="chat-input" placeholder="Sohbete yaz veya emote at... (Enter)" maxlength="80" autocomplete="off">
+        <button type="button" class="btn-chat-action" id="btn-quick-dance" title="Dans Et">💃</button>
+        <button type="button" class="btn-chat-action" id="btn-quick-wave" title="Selam Ver">👋</button>
+        <button type="submit" class="btn-chat-send">Gönder</button>
+      </form>
+    </div>
+
+    <!-- Quick Action Bar -->
+    <div class="quick-nav-bar">
+      <button class="btn-mmo-nav" id="btn-open-inventory">🎒 Envanter</button>
+      <button class="btn-mmo-nav" id="btn-open-auth">🛡️ Kick Girişi</button>
+      <button class="btn-mmo-nav" id="btn-change-avatar">🎭 Karakter</button>
+    </div>
+  </footer>
+
+  <!-- Mobile Touch Virtual Controls -->
+  <div id="mobile-controls" class="mobile-controls">
+    <div id="joystick-zone" class="joystick-zone">
+      <div id="joystick-knob" class="joystick-knob"></div>
+    </div>
+    <div class="action-buttons-zone">
+      <button id="btn-touch-action" class="btn-touch-circle">E</button>
+      <button id="btn-touch-trade" class="btn-touch-circle btn-touch-trade">🤝</button>
+    </div>
+  </div>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- 1. Kick Authentication & PIN Modal -->
+  <div id="modal-auth" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>🛡️ Kick ile Şehre Bağlan</h2>
+        <button class="btn-modal-close" data-close="modal-auth">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="auth-intro">Genshin envanterini, 5★ karakterlerini ve Primogemlerini şehre aktarmak için Kick hesabını bağla!</p>
+        
+        <div class="auth-box">
+          <label for="input-kick-user">Kick Kullanıcı Adın:</label>
+          <div class="input-with-button">
+            <input type="text" id="input-kick-user" placeholder="Örn: Zerkacy">
+            <button id="btn-generate-pin" class="btn-primary-glow">Kod Al</button>
+          </div>
+        </div>
+
+        <div id="pin-display-box" class="pin-display-box hidden">
+          <div class="pin-step">1. Kick yayını sohbetine şu komutu yaz:</div>
+          <div class="pin-code-highlight" id="pin-code-text">!giris 8421</div>
+          <div class="pin-status-loader">
+            <span class="spinner-small"></span> Yayından sohbet mesajı bekleniyor...
+          </div>
+        </div>
+
+        <div class="auth-divider"><span>VEYA</span></div>
+
+        <button id="btn-play-guest" class="btn-secondary-flat">🎲 Misafir Olarak Devam Et</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Avatar Selection Modal -->
+  <div id="modal-avatar" class="modal-overlay hidden">
+    <div class="modal-card modal-card-wide">
+      <div class="modal-header">
+        <h2>🎭 Karakterini Seç</h2>
+        <button class="btn-modal-close" data-close="modal-avatar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="avatar-grid-select" id="avatar-grid-select">
+          <!-- Dynamically populated with 20 pixel characters -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Safe 2-Phase P2P Trade Modal -->
+  <div id="modal-trade" class="modal-overlay hidden">
+    <div class="modal-card modal-card-trade">
+      <div class="modal-header trade-header">
+        <h2>🤝 Güvenli P2P Takas Pazarı</h2>
+        <span class="trade-id-badge" id="trade-session-id">#tr_123</span>
+        <button class="btn-modal-close" id="btn-cancel-trade">✕ İptal</button>
+      </div>
+
+      <div class="trade-columns-wrap">
+        <!-- Left: My Offer Column -->
+        <div class="trade-column" id="trade-my-column">
+          <div class="column-header">
+            <span class="user-tag" id="trade-my-name">Senin Teklifin</span>
+            <span class="lock-status-badge" id="trade-my-lock-badge">Seçim Yapılıyor...</span>
+          </div>
+
+          <div class="trade-slots-box" id="trade-my-slots">
+            <!-- Selected items display here -->
+          </div>
+
+          <div class="trade-primo-input-row">
+            <span>💎 Primogem:</span>
+            <input type="number" id="trade-my-primo" min="0" max="100000" value="0" step="160">
+            <button type="button" class="btn-quick-primo" data-add="160">+1 Dilek (160)</button>
+          </div>
+
+          <button type="button" class="btn-choose-inventory" id="btn-toggle-inventory-drawer">
+            🎒 Envanterinden Eşya Ekle
+          </button>
+
+          <button type="button" class="btn-trade-lock" id="btn-lock-my-offer">
+            🔒 Teklifimi Kilitle
+          </button>
+        </div>
+
+        <!-- Center: Status / Countdown Divider -->
+        <div class="trade-center-divider">
+          <div class="trade-exchange-icon">⇄</div>
+          <div id="trade-countdown-box" class="trade-countdown-box hidden">
+            <div class="countdown-circle" id="trade-countdown-num">3</div>
+            <div class="countdown-label">Son Onay Bekleniyor</div>
+          </div>
+          <button type="button" class="btn-trade-confirm hidden" id="btn-confirm-final-trade">
+            ✅ TAKASI ONAYLA
+          </button>
+        </div>
+
+        <!-- Right: Partner Offer Column -->
+        <div class="trade-column" id="trade-partner-column">
+          <div class="column-header">
+            <span class="user-tag" id="trade-partner-name">Karşı Taraf</span>
+            <span class="lock-status-badge partner-badge" id="trade-partner-lock-badge">Seçim Yapılıyor...</span>
+          </div>
+
+          <div class="trade-slots-box" id="trade-partner-slots">
+            <!-- Partner items display here -->
+          </div>
+
+          <div class="trade-primo-input-row partner-primo-display">
+            <span>💎 Teklif Edilen Primogem:</span>
+            <strong id="trade-partner-primo">0</strong>
+          </div>
+
+          <div class="partner-status-hint" id="trade-partner-hint">
+            Karşı tarafın eşya seçmesi bekleniyor...
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide-Up Inventory Drawer -->
+      <div id="inventory-drawer" class="inventory-drawer hidden">
+        <div class="drawer-header">
+          <span>Envanterindeki 5★ ve 4★ Eşyalar (Tıklayarak Takasa Ekle)</span>
+          <button type="button" class="btn-close-drawer" id="btn-close-drawer">✕</button>
+        </div>
+        <div class="drawer-grid" id="drawer-items-grid">
+          <!-- Populated from player inventory -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Trade Invitation Pop-Up Banner -->
+  <div id="trade-invite-popup" class="trade-invite-popup hidden">
+    <div class="invite-icon">🤝</div>
+    <div class="invite-content">
+      <strong id="invite-sender-name">@Oyuncu</strong> sana bir takas teklifi gönderdi!
+    </div>
+    <div class="invite-actions">
+      <button class="btn-invite-accept" id="btn-accept-invite">Kabul Et</button>
+      <button class="btn-invite-decline" id="btn-decline-invite">Reddet</button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/world.js"></script>
+</body>
+</html>

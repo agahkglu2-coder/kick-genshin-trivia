@@ -31,6 +31,8 @@
   const btnCopyChatterUrl = document.getElementById('btn-copy-chatter-url');
   const obsBossUrl = document.getElementById('obs-boss-url');
   const btnCopyBossUrl = document.getElementById('btn-copy-boss-url');
+  const obsWorldUrl = document.getElementById('obs-world-url');
+  const btnCopyWorldUrl = document.getElementById('btn-copy-world-url');
 
   const tabPreviewTrivia = document.getElementById('tab-preview-trivia');
   const tabPreviewGacha = document.getElementById('tab-preview-gacha');
@@ -171,6 +173,7 @@
   if (obsGachaUrl) obsGachaUrl.value = `${currentOrigin}/gacha.html`;
   if (obsChatterUrl) obsChatterUrl.value = `${currentOrigin}/chatter`;
   if (obsBossUrl) obsBossUrl.value = `${currentOrigin}/boss.html`;
+  if (obsWorldUrl) obsWorldUrl.value = `${currentOrigin}/world`;
   if (obsJackpotUrlInput) obsJackpotUrlInput.value = `${currentOrigin}/jackpot.html`;
   if (obsJackpotSourceUrl) obsJackpotSourceUrl.value = `${currentOrigin}/jackpot.html`;
   const defaultRedirectUri = `${currentOrigin}/auth/kick/callback`;
@@ -675,6 +678,15 @@
       navigator.clipboard.writeText(obsBossUrl.value);
       btnCopyBossUrl.textContent = 'Kopyalandı! ✅';
       setTimeout(() => { btnCopyBossUrl.textContent = 'Kopyala'; }, 2000);
+    });
+  }
+
+  if (btnCopyWorldUrl && obsWorldUrl) {
+    btnCopyWorldUrl.addEventListener('click', () => {
+      obsWorldUrl.select();
+      navigator.clipboard.writeText(obsWorldUrl.value);
+      btnCopyWorldUrl.textContent = 'Kopyalandı! ✅';
+      setTimeout(() => { btnCopyWorldUrl.textContent = 'Kopyala'; }, 2000);
     });
   }
 
