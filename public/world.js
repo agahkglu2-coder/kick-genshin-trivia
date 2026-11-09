@@ -52,6 +52,16 @@
   let firefliesData = [];
   let shrineAuraData = [];
 
+  // River Fishing System State
+  let riverFishSpots = [];
+  let isFishing = false;
+  let fishingState = 'idle'; // 'idle' | 'waiting' | 'bite' | 'caught'
+  let fishingRodMesh = null;
+  let fishingBobberMesh = null;
+  let fishingTimer = null;
+  let biteTimeout = null;
+  let currentHookedFish = null;
+
   // Active Trade State
   let activeTrade = null;
   let myInventory = [];
