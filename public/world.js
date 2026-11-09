@@ -239,41 +239,53 @@
 
   function createProceduralGrassTexture() {
     const cvs = document.createElement('canvas');
-    cvs.width = 64;
-    cvs.height = 64;
+    cvs.width = 128;
+    cvs.height = 128;
     const ctx = cvs.getContext('2d');
     ctx.imageSmoothingEnabled = false;
 
-    ctx.fillStyle = '#16a34a';
-    ctx.fillRect(0, 0, 64, 64);
+    // Rich meadow green base
+    ctx.fillStyle = '#1e7b34';
+    ctx.fillRect(0, 0, 128, 128);
 
-    const greens = ['#15803d', '#166534', '#22c55e', '#14532d', '#4ade80'];
-    for (let x = 0; x < 64; x += 2) {
-      for (let y = 0; y < 64; y += 2) {
-        if (Math.random() > 0.45) {
-          ctx.fillStyle = greens[Math.floor(Math.random() * greens.length)];
-          ctx.fillRect(x, y, 2, 2);
-        }
-      }
+    // Soft organic grass tone variation (larger clusters, gentle blending)
+    const tones = ['#22863a', '#1e7b34', '#196c2e', '#2ea043', '#1b7332'];
+    for (let i = 0; i < 280; i++) {
+      const x = Math.floor(Math.random() * 60) * 2;
+      const y = Math.floor(Math.random() * 60) * 2;
+      const w = 2 + Math.floor(Math.random() * 3) * 2;
+      const h = 2 + Math.floor(Math.random() * 2) * 2;
+      ctx.fillStyle = tones[Math.floor(Math.random() * tones.length)];
+      ctx.fillRect(x, y, w, h);
     }
 
-    // Little 16-bit wildflowers (yellow, white, pink, sky blue)
-    const flowers = [
-      { x: 8, y: 12, c: '#fef08a' }, { x: 10, y: 12, c: '#ffffff' },
-      { x: 24, y: 38, c: '#ffffff' }, { x: 26, y: 38, c: '#f59e0b' },
-      { x: 44, y: 16, c: '#f472b6' }, { x: 52, y: 48, c: '#38bdf8' },
-      { x: 18, y: 54, c: '#fef08a' }, { x: 36, y: 26, c: '#ffffff' },
-      { x: 56, y: 10, c: '#a855f7' }, { x: 6, y: 42, c: '#fb7185' }
-    ];
-    flowers.forEach(f => {
-      ctx.fillStyle = f.c;
-      ctx.fillRect(f.x, f.y, 2, 2);
-    });
+    // Little clover leaves / gentle blades
+    ctx.fillStyle = '#34d058';
+    for (let i = 0; i < 80; i++) {
+      const cx = Math.floor(Math.random() * 62) * 2;
+      const cy = Math.floor(Math.random() * 62) * 2;
+      ctx.fillRect(cx, cy, 2, 4);
+      ctx.fillRect(cx - 2, cy + 2, 2, 2);
+      ctx.fillRect(cx + 2, cy + 2, 2, 2);
+    }
+
+    // Gentle wildflowers (subtle pastel specks: buttercup, daisy, lavender, rose)
+    const flowerColors = ['#fef08a', '#ffffff', '#f472b6', '#a78bfa', '#fb923c'];
+    for (let i = 0; i < 35; i++) {
+      const fx = Math.floor(Math.random() * 62) * 2;
+      const fy = Math.floor(Math.random() * 62) * 2;
+      ctx.fillStyle = flowerColors[i % flowerColors.length];
+      ctx.fillRect(fx, fy, 2, 2);
+      if (i % 2 === 0) {
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(fx + 2, fy, 2, 2);
+      }
+    }
 
     const tex = new THREE.CanvasTexture(cvs);
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(16, 16);
+    tex.repeat.set(12, 12);
     tex.magFilter = THREE.NearestFilter;
     tex.minFilter = THREE.NearestFilter;
     return tex;
@@ -286,29 +298,42 @@
     const ctx = cvs.getContext('2d');
     ctx.imageSmoothingEnabled = false;
 
-    // Mortar
-    ctx.fillStyle = '#1e293b';
+    // Mortar (soft dark slate grey)
+    ctx.fillStyle = '#293548';
     ctx.fillRect(0, 0, 64, 64);
 
-    // Stone pavers
-    const colors = ['#64748b', '#475569', '#94a3b8', '#334155', '#4b5563'];
+    // Stone pavers with natural rounded corners & gentle edge shading
+    const stoneBases = ['#5b697d', '#64748b', '#526071', '#6f7f95', '#4d5b6d'];
+    const stoneHighlights = ['#7c8c9f', '#8595a8', '#718195'];
+    const stoneShadows = ['#1e293b', '#243042', '#1b2434'];
+
     for (let row = 0; row < 8; row++) {
       const y = row * 8;
       const xOffset = (row % 2) * 4;
       for (let col = -1; col < 8; col++) {
         const x = col * 8 + xOffset;
-        ctx.fillStyle = colors[(row + col + 12) % colors.length];
+        const colorIdx = (row * 3 + col * 5 + 20) % stoneBases.length;
+
+        // Base stone body (6x6)
+        ctx.fillStyle = stoneBases[colorIdx];
         ctx.fillRect(x + 1, y + 1, 6, 6);
 
-        // Top-left highlight
-        ctx.fillStyle = '#cbd5e1';
-        ctx.fillRect(x + 1, y + 1, 5, 1);
-        ctx.fillRect(x + 1, y + 1, 1, 5);
+        // Top & Left soft highlight
+        ctx.fillStyle = stoneHighlights[colorIdx % stoneHighlights.length];
+        ctx.fillRect(x + 2, y + 1, 4, 1);
+        ctx.fillRect(x + 1, y + 2, 1, 4);
 
-        // Bottom-right shadow
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(x + 1, y + 6, 6, 1);
-        ctx.fillRect(x + 6, y + 1, 1, 6);
+        // Bottom & Right soft shadow
+        ctx.fillStyle = stoneShadows[colorIdx % stoneShadows.length];
+        ctx.fillRect(x + 2, y + 6, 4, 1);
+        ctx.fillRect(x + 6, y + 2, 1, 4);
+
+        // Rounded corners: soften the 4 corner pixels with mortar color
+        ctx.fillStyle = '#293548';
+        ctx.fillRect(x + 1, y + 1, 1, 1);
+        ctx.fillRect(x + 6, y + 1, 1, 1);
+        ctx.fillRect(x + 1, y + 6, 1, 1);
+        ctx.fillRect(x + 6, y + 6, 1, 1);
       }
     }
 
@@ -363,7 +388,7 @@
 
     renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: false,
+      antialias: true,
       powerPreference: 'high-performance'
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -410,215 +435,855 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
-  // --- 4. Procedural & Textured Voxel Building Generator ---
-  function createVoxelBuilding({
-    width = 8,
-    height = 6,
-    depth = 8,
-    wallColor = 0xe2e8f0,
-    roofColor = 0x3b82f6,
-    roofType = 'hip', // 'hip', 'gable', 'shrine'
-    signText = '',
-    doorColor = 0x78350f,
-    hasAwning = false,
-    facadeTextureUrl = null,
-    hasChimney = false,
-    chimneyOffset = { x: 2.8, z: -2.2 },
-    isShrine = false
-  }) {
+  // --- 4. 3D Stylized Modular Architectural Generators ---
+
+  function createBuildingSign(text, y = 10.0) {
+    const cvs = document.createElement('canvas');
+    cvs.width = 256;
+    cvs.height = 64;
+    const ctx = cvs.getContext('2d');
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.beginPath();
+    ctx.roundRect(8, 8, 240, 48, 12);
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#f59e0b';
+    ctx.stroke();
+    ctx.font = 'bold 20px Nunito, sans-serif';
+    ctx.fillStyle = '#fef08a';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 128, 32);
+
+    const signTex = new THREE.CanvasTexture(cvs);
+    const signMat = new THREE.SpriteMaterial({ map: signTex });
+    const signSprite = new THREE.Sprite(signMat);
+    signSprite.scale.set(4.5, 1.12, 1);
+    signSprite.position.set(0, y, 0);
+    return signSprite;
+  }
+
+  // A) Central Fountain (Hollow-Rim Carved Basin - Zero Z-Fighting)
+  function createCentralFountain() {
     const group = new THREE.Group();
 
-    // 1. Main walls
-    const wallGeo = new THREE.BoxGeometry(width, height, depth);
-    const wallMat = new THREE.MeshLambertMaterial({ color: wallColor });
-    const wallMesh = new THREE.Mesh(wallGeo, wallMat);
-    wallMesh.position.y = height / 2;
-    wallMesh.castShadow = true;
-    wallMesh.receiveShadow = true;
-    group.add(wallMesh);
+    const stoneMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
+    const darkStoneMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
+    const goldMat = new THREE.MeshLambertMaterial({ color: 0xfacc15 });
 
-    // 2. Foundation Stone Base
-    const baseGeo = new THREE.BoxGeometry(width + 0.6, 0.6, depth + 0.6);
-    const baseMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
-    const baseMesh = new THREE.Mesh(baseGeo, baseMat);
-    baseMesh.position.y = 0.3;
-    baseMesh.receiveShadow = true;
-    group.add(baseMesh);
+    // 1. Foundation Base Plinth
+    const plinth = new THREE.Mesh(new THREE.CylinderGeometry(5.2, 5.5, 0.25, 28), darkStoneMat);
+    plinth.position.y = 0.125;
+    plinth.receiveShadow = true;
+    group.add(plinth);
+
+    // 2. Basin Outer Wall (open-ended cylinder)
+    const outerWall = new THREE.Mesh(new THREE.CylinderGeometry(4.7, 4.9, 0.75, 28, 1, true), stoneMat);
+    outerWall.position.y = 0.50;
+    outerWall.castShadow = true;
+    outerWall.receiveShadow = true;
+    group.add(outerWall);
+
+    // Basin Inner Wall (BackSide for interior stone lining)
+    const innerWall = new THREE.Mesh(
+      new THREE.CylinderGeometry(4.35, 4.5, 0.75, 28, 1, true),
+      new THREE.MeshLambertMaterial({ color: 0x64748b, side: THREE.BackSide })
+    );
+    innerWall.position.y = 0.50;
+    group.add(innerWall);
+
+    // 3. Rounded Stone Basin Rim (Torus placed at y = 0.875)
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(4.52, 0.22, 10, 32), stoneMat);
+    rim.position.y = 0.875;
+    rim.rotation.x = Math.PI / 2;
+    rim.castShadow = true;
+    rim.receiveShadow = true;
+    group.add(rim);
+
+    // 4. Basin Sunken Stone Floor (y = 0.15)
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(4.4, 28), new THREE.MeshLambertMaterial({ color: 0x475569 }));
+    floor.position.y = 0.15;
+    floor.rotation.x = -Math.PI / 2;
+    group.add(floor);
+
+    // 5. Basin Water Surface (at y = 0.65 - safely 0.225 units below rim at 0.875, ZERO Z-fighting!)
+    const waterMat = new THREE.MeshLambertMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.82
+    });
+    const water = new THREE.Mesh(new THREE.CircleGeometry(4.3, 32), waterMat);
+    water.position.y = 0.65;
+    water.rotation.x = -Math.PI / 2;
+    group.add(water);
+
+    // 6. Tiered Center Monument
+    // Step 1: Base pedestal
+    const p1 = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.9, 0.6, 16), darkStoneMat);
+    p1.position.y = 0.45;
+    p1.castShadow = true;
+    group.add(p1);
+
+    // Step 2: Mid column
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 1.1, 0.9, 16), stoneMat);
+    col.position.y = 1.05;
+    col.castShadow = true;
+    group.add(col);
+
+    // Step 3: Mid Water Scallop Catch Basin / Bowl
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 1.1, 0.45, 20), stoneMat);
+    bowl.position.y = 1.65;
+    bowl.castShadow = true;
+    group.add(bowl);
+
+    // Mid Bowl Water disc
+    const midWater = new THREE.Mesh(new THREE.CircleGeometry(1.75, 20), waterMat);
+    midWater.position.y = 1.85;
+    midWater.rotation.x = -Math.PI / 2;
+    group.add(midWater);
+
+    // Step 4: Upper Fluted Pedestal
+    const upperCol = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 0.9, 12), stoneMat);
+    upperCol.position.y = 2.25;
+    upperCol.castShadow = true;
+    group.add(upperCol);
+
+    // Step 5: Golden Urn Fountain Topper with Spout
+    const urnBase = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.25, 0.4, 12), goldMat);
+    urnBase.position.y = 2.85;
+    group.add(urnBase);
+
+    const urnBody = new THREE.Mesh(new THREE.SphereGeometry(0.48, 12, 10), goldMat);
+    urnBody.position.y = 3.2;
+    group.add(urnBody);
+
+    const urnSpout = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.35, 0.35, 10), goldMat);
+    urnSpout.position.y = 3.55;
+    group.add(urnSpout);
+
+    // 4 Lion Head / Gargoyle Spouts trickling water into the main basin
+    [-1.2, 1.2].forEach(sx => {
+      const spout = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.4), goldMat);
+      spout.position.set(sx, 1.65, 0);
+      group.add(spout);
+
+      const stream = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.08, 1.0, 6),
+        new THREE.MeshBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.7 })
+      );
+      stream.position.set(sx * 1.1, 1.15, 0);
+      group.add(stream);
+    });
+
+    [-1.2, 1.2].forEach(sz => {
+      const spout = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.3), goldMat);
+      spout.position.set(0, 1.65, sz);
+      group.add(spout);
+
+      const stream = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.08, 1.0, 6),
+        new THREE.MeshBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.7 })
+      );
+      stream.position.set(0, 1.15, sz * 1.1);
+      group.add(stream);
+    });
+
+    return group;
+  }
+
+  // B) Takas Pazarı / Trade Mart
+  function createTradeMartBuilding() {
+    const group = new THREE.Group();
+    const width = 9.5, height = 6.8, depth = 9.0;
+
+    const woodPlankMat = new THREE.MeshLambertMaterial({ color: 0x92400e });
+    const darkBeamMat = new THREE.MeshLambertMaterial({ color: 0x451a03 });
+    const plasterMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+    const stoneBaseMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+    const roofMat = new THREE.MeshLambertMaterial({ color: 0x0284c7 });
+    const roofRidgeMat = new THREE.MeshLambertMaterial({ color: 0x0369a1 });
+    const glassMat = new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.85 });
+    const awningRedMat = new THREE.MeshLambertMaterial({ color: 0xdc2626 });
+    const awningCreamMat = new THREE.MeshLambertMaterial({ color: 0xfef3c7 });
+
+    // 1. Stone Foundation Plinth
+    const base = new THREE.Mesh(new THREE.BoxGeometry(width + 0.6, 0.7, depth + 0.6), stoneBaseMat);
+    base.position.y = 0.35;
+    base.receiveShadow = true;
+    group.add(base);
+
+    // 2. Ground Floor Timber Walls
+    const gf = new THREE.Mesh(new THREE.BoxGeometry(width, 2.8, depth), woodPlankMat);
+    gf.position.y = 2.1;
+    gf.castShadow = true;
+    gf.receiveShadow = true;
+    group.add(gf);
 
     // 3. Timber Framing Corner Beams
-    const beamGeo = new THREE.BoxGeometry(0.5, height + 0.2, 0.5);
-    const beamMat = new THREE.MeshLambertMaterial({ color: 0x451a03 });
-    const corners = [
-      { x: -width / 2 + 0.2, z: depth / 2 - 0.2 },
-      { x: width / 2 - 0.2, z: depth / 2 - 0.2 },
-      { x: -width / 2 + 0.2, z: -depth / 2 + 0.2 },
-      { x: width / 2 - 0.2, z: -depth / 2 + 0.2 }
-    ];
-    corners.forEach(pos => {
-      const b = new THREE.Mesh(beamGeo, beamMat);
-      b.position.set(pos.x, height / 2, pos.z);
+    const cornerGeo = new THREE.BoxGeometry(0.5, 3.0, 0.5);
+    [
+      { x: -width/2 + 0.2, z: depth/2 - 0.2 },
+      { x: width/2 - 0.2, z: depth/2 - 0.2 },
+      { x: -width/2 + 0.2, z: -depth/2 + 0.2 },
+      { x: width/2 - 0.2, z: -depth/2 + 0.2 }
+    ].forEach(p => {
+      const b = new THREE.Mesh(cornerGeo, darkBeamMat);
+      b.position.set(p.x, 2.1, p.z);
       b.castShadow = true;
       group.add(b);
     });
 
-    // 4. Textured Facade Front Plane
-    if (facadeTextureUrl) {
-      const fGeo = new THREE.PlaneGeometry(width * 0.94, height * 0.92);
-      const fTex = loadPixelTexture(facadeTextureUrl);
-      const fMat = new THREE.MeshLambertMaterial({
-        map: fTex,
-        transparent: true,
-        side: THREE.FrontSide
-      });
-      const fMesh = new THREE.Mesh(fGeo, fMat);
-      fMesh.position.set(0, height / 2 + 0.1, depth / 2 + 0.05);
-      group.add(fMesh);
-    }
+    // Middle horizontal belt beam
+    const belt = new THREE.Mesh(new THREE.BoxGeometry(width + 0.4, 0.35, depth + 0.4), darkBeamMat);
+    belt.position.y = 3.5;
+    group.add(belt);
 
-    // 5. Roof Architecture
-    if (roofType === 'shrine') {
-      // 2-tier Stepped Pagoda Roof with Gold/Purple Edges
-      const domeGeo1 = new THREE.ConeGeometry(width * 0.9, 3.2, 8);
-      const domeMat1 = new THREE.MeshLambertMaterial({ color: roofColor });
-      const domeMesh1 = new THREE.Mesh(domeGeo1, domeMat1);
-      domeMesh1.position.y = height + 1.6;
-      domeMesh1.castShadow = true;
-      group.add(domeMesh1);
+    // 4. Second Floor Overhang Jetty (Plaster & Tudor Timber Framing)
+    const upper = new THREE.Mesh(new THREE.BoxGeometry(width + 0.4, 3.0, depth + 0.4), plasterMat);
+    upper.position.y = 5.0;
+    upper.castShadow = true;
+    upper.receiveShadow = true;
+    group.add(upper);
 
-      const domeGeo2 = new THREE.ConeGeometry(width * 0.55, 2.8, 8);
-      const domeMat2 = new THREE.MeshLambertMaterial({ color: 0xfacc15 });
-      const domeMesh2 = new THREE.Mesh(domeGeo2, domeMat2);
-      domeMesh2.position.y = height + 3.8;
-      domeMesh2.castShadow = true;
-      group.add(domeMesh2);
+    // Upper floor corner posts
+    const uCornerGeo = new THREE.BoxGeometry(0.45, 3.0, 0.45);
+    [
+      { x: -width/2, z: depth/2 },
+      { x: width/2, z: depth/2 },
+      { x: -width/2, z: -depth/2 },
+      { x: width/2, z: -depth/2 }
+    ].forEach(p => {
+      const b = new THREE.Mesh(uCornerGeo, darkBeamMat);
+      b.position.set(p.x, 5.0, p.z);
+      group.add(b);
+    });
 
-      // Gold spire
-      const spireGeo = new THREE.CylinderGeometry(0.12, 0.25, 2.2, 8);
-      const spireMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
-      const spire = new THREE.Mesh(spireGeo, spireMat);
-      spire.position.y = height + 5.6;
-      group.add(spire);
-    } else if (roofType === 'gable') {
-      // Sloped Gable Roof with Timber Bargeboards
-      const roofGeo = new THREE.ConeGeometry(width * 0.82, 3.8, 4);
-      const roofMat = new THREE.MeshLambertMaterial({ color: roofColor });
-      const roofMesh = new THREE.Mesh(roofGeo, roofMat);
-      roofMesh.position.y = height + 1.9;
-      roofMesh.rotation.y = Math.PI / 4;
-      roofMesh.castShadow = true;
-      group.add(roofMesh);
+    // Decorative Tudor X-bracing on upper front facade
+    [-2.6, 2.6].forEach(fx => {
+      const diag1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.2, 0.1), darkBeamMat);
+      diag1.position.set(fx, 5.0, depth/2 + 0.22);
+      diag1.rotation.z = 0.55;
+      group.add(diag1);
 
-      // Timber roof ridge beam
-      const ridgeGeo = new THREE.BoxGeometry(0.4, 0.4, depth + 0.6);
-      const ridgeMat = new THREE.MeshLambertMaterial({ color: 0x451a03 });
-      const ridge = new THREE.Mesh(ridgeGeo, ridgeMat);
-      ridge.position.set(0, height + 3.8, 0);
-      group.add(ridge);
-    } else {
-      // Sloped Hip Roof
-      const roofGeo = new THREE.ConeGeometry(width * 0.82, 3.4, 4);
-      const roofMat = new THREE.MeshLambertMaterial({ color: roofColor });
-      const roofMesh = new THREE.Mesh(roofGeo, roofMat);
-      roofMesh.position.y = height + 1.7;
-      roofMesh.rotation.y = Math.PI / 4;
-      roofMesh.castShadow = true;
-      group.add(roofMesh);
-    }
+      const diag2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.2, 0.1), darkBeamMat);
+      diag2.position.set(fx, 5.0, depth/2 + 0.22);
+      diag2.rotation.z = -0.55;
+      group.add(diag2);
+    });
 
-    // 6. Doorway Frame & Glowing Portal
-    const doorGeo = new THREE.BoxGeometry(2.4, 3.4, 0.4);
-    const doorMat = new THREE.MeshLambertMaterial({ color: doorColor });
-    const doorMesh = new THREE.Mesh(doorGeo, doorMat);
-    doorMesh.position.set(0, 1.7, depth / 2 + 0.1);
-    group.add(doorMesh);
+    // 5. Roof: Sloped Royal Blue Hip Roof
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(width * 0.88, 3.8, 4), roofMat);
+    roof.position.y = 7.7;
+    roof.rotation.y = Math.PI / 4;
+    roof.castShadow = true;
+    group.add(roof);
 
-    // Glowing interior portal indicator
-    const portalGeo = new THREE.PlaneGeometry(1.8, 2.8);
-    const portalMat = new THREE.MeshBasicMaterial({
+    // Roof Ridge Beam
+    const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, depth + 0.8), roofRidgeMat);
+    ridge.position.set(0, 9.5, 0);
+    group.add(ridge);
+
+    // 6. Recessed Double Oak Front Doorway
+    const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(2.4, 3.0, 0.4), darkBeamMat);
+    doorFrame.position.set(0, 1.8, depth/2 + 0.1);
+    group.add(doorFrame);
+
+    const doorLeaf = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.7, 0.2), new THREE.MeshLambertMaterial({ color: 0x5c2b0b }));
+    doorLeaf.position.set(0, 1.65, depth/2 + 0.15);
+    group.add(doorLeaf);
+
+    // Door Portal indicator (Green glow)
+    const portal = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 2.4), new THREE.MeshBasicMaterial({
       color: 0x53fc18,
       transparent: true,
       opacity: 0.65
-    });
-    const portalMesh = new THREE.Mesh(portalGeo, portalMat);
-    portalMesh.position.set(0, 1.7, depth / 2 + 0.22);
-    group.add(portalMesh);
+    }));
+    portal.position.set(0, 1.65, depth/2 + 0.28);
+    group.add(portal);
 
-    // 7. Doorway Sconce Lanterns
+    // Brass Door Knocker Handles
+    [-0.3, 0.3].forEach(hx => {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.02, 6, 12), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+      ring.position.set(hx, 1.7, depth/2 + 0.29);
+      group.add(ring);
+    });
+
+    // 7. Protruding 3D Bay Windows on Left and Right of Doorway
+    [-2.9, 2.9].forEach(wx => {
+      const bay = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.8, 0.8), woodPlankMat);
+      bay.position.set(wx, 2.1, depth/2 + 0.35);
+      bay.castShadow = true;
+      group.add(bay);
+
+      const bRoof = new THREE.Mesh(new THREE.ConeGeometry(1.6, 0.6, 4), roofMat);
+      bRoof.position.set(wx, 3.2, depth/2 + 0.35);
+      bRoof.rotation.y = Math.PI / 4;
+      group.add(bRoof);
+
+      const pane = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.2), glassMat);
+      pane.position.set(wx, 2.1, depth/2 + 0.76);
+      group.add(pane);
+
+      const hMullion = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, 0.04), darkBeamMat);
+      hMullion.position.set(wx, 2.1, depth/2 + 0.78);
+      group.add(hMullion);
+      const vMullion = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.2, 0.04), darkBeamMat);
+      vMullion.position.set(wx, 2.1, depth/2 + 0.78);
+      group.add(vMullion);
+
+      // Interior wares in window display (potions, coin bags)
+      const potColor = wx < 0 ? 0xef4444 : 0x38bdf8;
+      const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.14, 0.32, 6), new THREE.MeshBasicMaterial({ color: potColor }));
+      pot.position.set(wx - 0.35, 1.55, depth/2 + 0.55);
+      group.add(pot);
+
+      const coinBag = new THREE.Mesh(new THREE.DodecahedronGeometry(0.14), new THREE.MeshLambertMaterial({ color: 0xf59e0b }));
+      coinBag.position.set(wx + 0.35, 1.5, depth/2 + 0.55);
+      group.add(coinBag);
+    });
+
+    // 8. Sloped Canvas Merchant Canopy Awning
+    const stripeWidth = (width * 0.76) / 6;
+    for (let i = 0; i < 6; i++) {
+      const sx = -width * 0.38 + stripeWidth * (i + 0.5);
+      const sMat = (i % 2 === 0) ? awningRedMat : awningCreamMat;
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(stripeWidth * 0.98, 0.12, 2.2), sMat);
+      stripe.position.set(sx, 3.8, depth/2 + 1.2);
+      stripe.rotation.x = 0.24;
+      stripe.castShadow = true;
+      group.add(stripe);
+
+      const fringe = new THREE.Mesh(new THREE.BoxGeometry(stripeWidth * 0.98, 0.3, 0.08), sMat);
+      fringe.position.set(sx, 3.5, depth/2 + 2.25);
+      group.add(fringe);
+    }
+
+    // Wooden diagonal support corbels
+    [-width * 0.36, width * 0.36].forEach(cx => {
+      const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.0), darkBeamMat);
+      strut.position.set(cx, 2.9, depth/2 + 1.1);
+      strut.rotation.x = -0.58;
+      group.add(strut);
+    });
+
+    // 9. Second floor shuttered casement windows
+    [-2.2, 0, 2.2].forEach(ux => {
+      const win = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.5), glassMat);
+      win.position.set(ux, 5.2, depth/2 + 0.22);
+      group.add(win);
+
+      const shutterMat = new THREE.MeshLambertMaterial({ color: 0x166534 });
+      const sLeft = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.5, 0.08), shutterMat);
+      sLeft.position.set(ux - 0.75, 5.2, depth/2 + 0.24);
+      group.add(sLeft);
+
+      const sRight = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.5, 0.08), shutterMat);
+      sRight.position.set(ux + 0.75, 5.2, depth/2 + 0.24);
+      group.add(sRight);
+    });
+
+    // 10. Front Wall Lantern Sconces
     [-1.6, 1.6].forEach(lx => {
-      const sconceGeo = new THREE.BoxGeometry(0.3, 0.5, 0.3);
-      const sconceMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
-      const sconce = new THREE.Mesh(sconceGeo, sconceMat);
-      sconce.position.set(lx, 2.2, depth / 2 + 0.35);
+      const sconce = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.45, 0.25), glassMat);
+      sconce.position.set(lx, 2.5, depth/2 + 0.3);
       group.add(sconce);
 
-      const sconceLight = new THREE.PointLight(0xfef08a, 0.5, 6, 2);
-      sconceLight.position.set(lx, 2.2, depth / 2 + 0.6);
-      group.add(sconceLight);
+      const pLight = new THREE.PointLight(0xfef08a, 0.6, 7, 2);
+      pLight.position.set(lx, 2.5, depth/2 + 0.6);
+      group.add(pLight);
     });
 
-    // 8. Awning (Shop canopy)
-    if (hasAwning) {
-      const awnGeo = new THREE.BoxGeometry(width * 0.72, 0.3, 2.4);
-      const awnMat = new THREE.MeshLambertMaterial({ color: 0xf59e0b });
-      const awnMesh = new THREE.Mesh(awnGeo, awnMat);
-      awnMesh.position.set(0, 3.8, depth / 2 + 1.2);
-      awnMesh.rotation.x = 0.22;
-      group.add(awnMesh);
+    // 11. Floating Building Sign
+    group.add(createBuildingSign('⚖️ Pazar & Takas', 10.2));
 
-      // Wooden support struts
-      [-width * 0.32, width * 0.32].forEach(sx => {
-        const strutGeo = new THREE.CylinderGeometry(0.08, 0.08, 2.2);
-        const strutMat = new THREE.MeshLambertMaterial({ color: 0x451a03 });
-        const strut = new THREE.Mesh(strutGeo, strutMat);
-        strut.position.set(sx, 2.8, depth / 2 + 1.1);
-        strut.rotation.x = -0.6;
-        group.add(strut);
+    return group;
+  }
+
+  // C) Cat's Tail Taverna
+  function createTavernBuilding() {
+    const group = new THREE.Group();
+    const width = 9.5, height = 6.8, depth = 9.0;
+
+    const fieldstoneMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
+    const darkStoneMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+    const plasterMat = new THREE.MeshLambertMaterial({ color: 0xfde68a });
+    const timberMat = new THREE.MeshLambertMaterial({ color: 0x451a03 });
+    const roofMat = new THREE.MeshLambertMaterial({ color: 0x991b1b });
+    const woodDoorMat = new THREE.MeshLambertMaterial({ color: 0x3f1d0b });
+    const warmGlassMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.9 });
+
+    // 1. Heavy Stone Base
+    const base = new THREE.Mesh(new THREE.BoxGeometry(width + 0.6, 0.7, depth + 0.6), darkStoneMat);
+    base.position.y = 0.35;
+    base.receiveShadow = true;
+    group.add(base);
+
+    // 2. Ground Floor Fieldstone Walls
+    const gf = new THREE.Mesh(new THREE.BoxGeometry(width, 2.8, depth), fieldstoneMat);
+    gf.position.y = 2.1;
+    gf.castShadow = true;
+    gf.receiveShadow = true;
+    group.add(gf);
+
+    // Stone Corner Quoin Blocks
+    [-width/2 + 0.25, width/2 - 0.25].forEach(qx => {
+      [depth/2 - 0.25, -depth/2 + 0.25].forEach(qz => {
+        const qMesh = new THREE.Mesh(new THREE.BoxGeometry(0.65, 3.0, 0.65), darkStoneMat);
+        qMesh.position.set(qx, 2.1, qz);
+        group.add(qMesh);
       });
+    });
+
+    // 3. Second Floor Overhang (Tudor Jetty with Timber X-Bracing)
+    const upper = new THREE.Mesh(new THREE.BoxGeometry(width + 0.5, 3.0, depth + 0.5), plasterMat);
+    upper.position.y = 5.0;
+    upper.castShadow = true;
+    upper.receiveShadow = true;
+    group.add(upper);
+
+    // Horizontal timber fascia dividing floors
+    const fascia = new THREE.Mesh(new THREE.BoxGeometry(width + 0.7, 0.4, depth + 0.7), timberMat);
+    fascia.position.y = 3.5;
+    group.add(fascia);
+
+    // Timber posts & cross framing on upper floor
+    [-width/2 - 0.05, width/2 + 0.05].forEach(px => {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.35, 3.0, 0.35), timberMat);
+      post.position.set(px, 5.0, depth/2 + 0.26);
+      group.add(post);
+    });
+
+    // Tudor diagonal X beams
+    [-2.4, 2.4].forEach(bx => {
+      const beamA = new THREE.Mesh(new THREE.BoxGeometry(0.18, 3.2, 0.08), timberMat);
+      beamA.position.set(bx, 5.0, depth/2 + 0.28);
+      beamA.rotation.z = 0.62;
+      group.add(beamA);
+
+      const beamB = new THREE.Mesh(new THREE.BoxGeometry(0.18, 3.2, 0.08), timberMat);
+      beamB.position.set(bx, 5.0, depth/2 + 0.28);
+      beamB.rotation.z = -0.62;
+      group.add(beamB);
+    });
+
+    // 4. Steeply Pitched Wine Red Gabled Roof
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(width * 0.86, 4.4, 4), roofMat);
+    roof.position.y = 8.2;
+    roof.rotation.y = Math.PI / 4;
+    roof.castShadow = true;
+    group.add(roof);
+
+    // Heavy Timber Roof Ridge
+    const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, depth + 0.8), timberMat);
+    ridge.position.set(0, 10.3, 0);
+    group.add(ridge);
+
+    // 5. Arched Stone Tavern Entrance
+    const archOuter = new THREE.Mesh(new THREE.BoxGeometry(2.6, 3.2, 0.5), darkStoneMat);
+    archOuter.position.set(0, 1.8, depth/2 + 0.1);
+    group.add(archOuter);
+
+    const door = new THREE.Mesh(new THREE.BoxGeometry(1.9, 2.6, 0.2), woodDoorMat);
+    door.position.set(0, 1.5, depth/2 + 0.2);
+    group.add(door);
+
+    // Iron Door Straps
+    [-0.5, 0.5].forEach(dy => {
+      const strap = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.1, 0.04), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+      strap.position.set(0, 1.5 + dy, depth/2 + 0.31);
+      group.add(strap);
+    });
+
+    // Warm Amber Portal Glow
+    const portal = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 2.3), new THREE.MeshBasicMaterial({
+      color: 0xf59e0b,
+      transparent: true,
+      opacity: 0.65
+    }));
+    portal.position.set(0, 1.5, depth/2 + 0.33);
+    group.add(portal);
+
+    // 6. Two 3D Leaded Glass Windows with Blooming Flower Planter Boxes
+    [-2.4, 2.4].forEach(wx => {
+      const win = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.6), warmGlassMat);
+      win.position.set(wx, 5.1, depth/2 + 0.28);
+      group.add(win);
+
+      const mull = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, 0.05), timberMat);
+      mull.position.set(wx, 5.1, depth/2 + 0.3);
+      group.add(mull);
+
+      // Wooden flower planter box
+      const box = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.4, 0.5), timberMat);
+      box.position.set(wx, 4.1, depth/2 + 0.45);
+      box.castShadow = true;
+      group.add(box);
+
+      // Lush green foliage
+      const foliage = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.25, 0.35), new THREE.MeshLambertMaterial({ color: 0x15803d }));
+      foliage.position.set(wx, 4.35, depth/2 + 0.45);
+      group.add(foliage);
+
+      // Blooming red and pink flowers
+      const flowerColors = [0xef4444, 0xf472b6, 0xffffff, 0xf59e0b];
+      for (let fi = -0.6; fi <= 0.6; fi += 0.35) {
+        const blossom = new THREE.Mesh(new THREE.DodecahedronGeometry(0.12), new THREE.MeshBasicMaterial({
+          color: flowerColors[Math.abs(Math.round(fi * 10)) % flowerColors.length]
+        }));
+        blossom.position.set(wx + fi, 4.52, depth/2 + 0.48);
+        group.add(blossom);
+      }
+    });
+
+    // 7. Full Rustic Fieldstone Chimney Stack on Side Wall (rising to y = 9.0)
+    const chimBase = new THREE.Mesh(new THREE.BoxGeometry(1.8, 4.0, 1.8), fieldstoneMat);
+    chimBase.position.set(2.8, 2.0, -2.2);
+    chimBase.castShadow = true;
+    group.add(chimBase);
+
+    const chimShaft = new THREE.Mesh(new THREE.BoxGeometry(1.4, 5.5, 1.4), fieldstoneMat);
+    chimShaft.position.set(2.8, 6.0, -2.2);
+    chimShaft.castShadow = true;
+    group.add(chimShaft);
+
+    // Terracotta Chimney Pot
+    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 0.8, 8), new THREE.MeshLambertMaterial({ color: 0xb45309 }));
+    pot.position.set(2.8, 9.0, -2.2);
+    group.add(pot);
+
+    // 8. Tavern Hanging Pub Sign (🐱 Cat's Tail)
+    const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 1.4), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+    bracket.position.set(2.6, 3.6, depth/2 + 0.7);
+    group.add(bracket);
+
+    const signBoard = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.8, 0.1), timberMat);
+    signBoard.position.set(2.6, 3.1, depth/2 + 1.1);
+    group.add(signBoard);
+
+    const catFace = new THREE.Mesh(new THREE.CircleGeometry(0.24, 8), new THREE.MeshBasicMaterial({ color: 0xf97316 }));
+    catFace.position.set(2.6, 3.1, depth/2 + 1.16);
+    group.add(catFace);
+
+    // 9. Lantern Sconces beside entrance
+    [-1.7, 1.7].forEach(lx => {
+      const lantern = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.3), warmGlassMat);
+      lantern.position.set(lx, 2.2, depth/2 + 0.4);
+      group.add(lantern);
+
+      const light = new THREE.PointLight(0xf59e0b, 0.7, 8, 2);
+      light.position.set(lx, 2.2, depth/2 + 0.65);
+      group.add(light);
+    });
+
+    // 10. Stacked Oak Wine Barrels beside tavern
+    const barrelMat = new THREE.MeshLambertMaterial({ color: 0x78350f });
+    [-width/2 - 0.7, -width/2 - 0.7].forEach((bx, idx) => {
+      const b = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.55, 1.1, 10), barrelMat);
+      b.position.set(bx, 0.55, depth/2 - 1.0 - idx * 1.3);
+      b.castShadow = true;
+      group.add(b);
+    });
+
+    // 11. Floating Building Sign
+    group.add(createBuildingSign("🐱 Cat's Tail Taverna", 11.0));
+
+    return group;
+  }
+
+  // D) Dilek Tapınağı / Gacha Shrine
+  function createShrineBuilding() {
+    const group = new THREE.Group();
+    const width = 10.5, height = 7.5, depth = 10.5;
+
+    const marbleWhiteMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+    const marbleGreyMat = new THREE.MeshLambertMaterial({ color: 0xcbd5e1 });
+    const goldMat = new THREE.MeshLambertMaterial({ color: 0xfacc15 });
+    const royalPurpleMat = new THREE.MeshLambertMaterial({ color: 0x3b0764 });
+    const roofPurpleMat = new THREE.MeshLambertMaterial({ color: 0x581c87 });
+    const arcaneCyanMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+
+    // 1. Grand 3-Tier Stepped White Marble Plinth
+    [
+      { w: width + 2.4, d: depth + 2.4, h: 0.35, y: 0.175 },
+      { w: width + 1.6, d: depth + 1.6, h: 0.35, y: 0.525 },
+      { w: width + 0.8, d: depth + 0.8, h: 0.35, y: 0.875 }
+    ].forEach(step => {
+      const s = new THREE.Mesh(new THREE.BoxGeometry(step.w, step.h, step.d), marbleWhiteMat);
+      s.position.y = step.y;
+      s.receiveShadow = true;
+      group.add(s);
+    });
+
+    // Grand Entrance Front Stairs
+    for (let st = 0; st < 4; st++) {
+      const stepMesh = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.22, 0.6), marbleGreyMat);
+      stepMesh.position.set(0, 0.75 - st * 0.2, depth/2 + 0.6 + st * 0.55);
+      stepMesh.receiveShadow = true;
+      group.add(stepMesh);
     }
 
-    // 9. Stone Chimney Stack
-    if (hasChimney) {
-      const offset = chimneyOffset || { x: 2.8, z: -2.2 };
-      const chimGeo = new THREE.BoxGeometry(1.2, 3.2, 1.2);
-      const chimMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
-      const chimMesh = new THREE.Mesh(chimGeo, chimMat);
-      chimMesh.position.set(offset.x, height + 2.0, offset.z);
-      chimMesh.castShadow = true;
-      group.add(chimMesh);
+    // 2. Sanctuary Sanctum Main Body
+    const body = new THREE.Mesh(new THREE.BoxGeometry(width, 6.2, depth), royalPurpleMat);
+    body.position.y = 4.15;
+    body.castShadow = true;
+    body.receiveShadow = true;
+    group.add(body);
 
-      // Chimney rim
-      const rimGeo = new THREE.BoxGeometry(1.4, 0.3, 1.4);
-      const rim = new THREE.Mesh(rimGeo, chimMat);
-      rim.position.set(offset.x, height + 3.6, offset.z);
-      group.add(rim);
+    // Gold Cornice Trim
+    const cornice = new THREE.Mesh(new THREE.BoxGeometry(width + 0.4, 0.4, depth + 0.4), goldMat);
+    cornice.position.y = 7.3;
+    group.add(cornice);
+
+    // 3. Colonnade: 4 Monumental Fluted Marble Columns in Front
+    [-3.8, -1.3, 1.3, 3.8].forEach(cx => {
+      const cBase = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 0.4, 12), goldMat);
+      cBase.position.set(cx, 1.25, depth/2 + 0.4);
+      group.add(cBase);
+
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.46, 5.5, 14), marbleWhiteMat);
+      col.position.set(cx, 4.1, depth/2 + 0.4);
+      col.castShadow = true;
+      group.add(col);
+
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.42, 0.5, 12), goldMat);
+      cap.position.set(cx, 6.95, depth/2 + 0.4);
+      group.add(cap);
+    });
+
+    // Architrave lintel above columns
+    const lintel = new THREE.Mesh(new THREE.BoxGeometry(width + 0.4, 0.5, 1.2), marbleWhiteMat);
+    lintel.position.set(0, 7.3, depth/2 + 0.4);
+    group.add(lintel);
+
+    // 4. Grand Monumental Arched Sanctuary Portal
+    const archMat = new THREE.MeshLambertMaterial({ color: 0x4c1d95 });
+    const arch = new THREE.Mesh(new THREE.BoxGeometry(3.6, 4.4, 0.6), archMat);
+    arch.position.set(0, 3.25, depth/2 + 0.1);
+    group.add(arch);
+
+    // Stained-Glass Celestial Rose Window above portal
+    const roseRing = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.15, 8, 24), goldMat);
+    roseRing.position.set(0, 5.8, depth/2 + 0.2);
+    group.add(roseRing);
+
+    const roseGlass = new THREE.Mesh(new THREE.CircleGeometry(1.1, 16), new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.85
+    }));
+    roseGlass.position.set(0, 5.8, depth/2 + 0.22);
+    group.add(roseGlass);
+
+    const roseStar = new THREE.Mesh(new THREE.OctahedronGeometry(0.5, 0), goldMat);
+    roseStar.position.set(0, 5.8, depth/2 + 0.28);
+    group.add(roseStar);
+
+    // Mystical Deep Portal Doorway (Purple Nebula glow)
+    const portal = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 3.4), new THREE.MeshBasicMaterial({
+      color: 0xa855f7,
+      transparent: true,
+      opacity: 0.75
+    }));
+    portal.position.set(0, 2.7, depth/2 + 0.42);
+    group.add(portal);
+
+    // Arcane Rune Tablets
+    [-1.5, 1.5].forEach(rx => {
+      const rune = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 2.4), arcaneCyanMat);
+      rune.position.set(rx, 2.7, depth/2 + 0.42);
+      group.add(rune);
+    });
+
+    // 5. Majestic 2-Tier Imperial Pagoda Roof
+    const roof1 = new THREE.Mesh(new THREE.ConeGeometry(width * 0.96, 3.2, 8), roofPurpleMat);
+    roof1.position.y = 8.8;
+    roof1.castShadow = true;
+    group.add(roof1);
+
+    const eaveRing1 = new THREE.Mesh(new THREE.TorusGeometry(width * 0.7, 0.22, 6, 8), goldMat);
+    eaveRing1.position.y = 7.5;
+    eaveRing1.rotation.x = Math.PI / 2;
+    eaveRing1.rotation.z = Math.PI / 8;
+    group.add(eaveRing1);
+
+    const roof2 = new THREE.Mesh(new THREE.ConeGeometry(width * 0.6, 2.8, 8), roofPurpleMat);
+    roof2.position.y = 11.2;
+    roof2.castShadow = true;
+    group.add(roof2);
+
+    const eaveRing2 = new THREE.Mesh(new THREE.TorusGeometry(width * 0.42, 0.18, 6, 8), goldMat);
+    eaveRing2.position.y = 10.0;
+    eaveRing2.rotation.x = Math.PI / 2;
+    eaveRing2.rotation.z = Math.PI / 8;
+    group.add(eaveRing2);
+
+    const spire = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.35, 3.2, 8), goldMat);
+    spire.position.y = 13.5;
+    group.add(spire);
+
+    const starFinial = new THREE.Mesh(new THREE.OctahedronGeometry(0.6, 0), goldMat);
+    starFinial.position.y = 15.2;
+    group.add(starFinial);
+
+    // 6. Floating Celestial Crystal
+    const crystalGeo = new THREE.OctahedronGeometry(1.2, 0);
+    const crystalMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true });
+    shrineCrystalMesh = new THREE.Mesh(crystalGeo, crystalMat);
+    shrineCrystalMesh.position.set(0, 4.8, depth/2 + 2.0);
+    group.add(shrineCrystalMesh);
+
+    const innerCrystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.6, 0), new THREE.MeshBasicMaterial({ color: 0xa855f7 }));
+    shrineCrystalMesh.add(innerCrystal);
+
+    // 7. Ornate Bronze Braziers with Violet Flame
+    [-3.8, 3.8].forEach(bx => {
+      const brazier = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.3, 0.8, 8), new THREE.MeshLambertMaterial({ color: 0x1e1b4b }));
+      brazier.position.set(bx, 1.45, depth/2 + 1.8);
+      group.add(brazier);
+
+      const fire = new THREE.Mesh(new THREE.DodecahedronGeometry(0.28), new THREE.MeshBasicMaterial({ color: 0xc084fc }));
+      fire.position.set(bx, 2.0, depth/2 + 1.8);
+      group.add(fire);
+
+      const pLight = new THREE.PointLight(0xc084fc, 0.9, 10, 2);
+      pLight.position.set(bx, 2.1, depth/2 + 1.8);
+      group.add(pLight);
+    });
+
+    // 8. Floating Building Sign
+    group.add(createBuildingSign('✨ Dilek Tapınağı', 16.2));
+
+    return group;
+  }
+
+  // E) Maceracılar Loncası / Guild Hall
+  function createGuildBuilding() {
+    const group = new THREE.Group();
+    const width = 9.5, height = 6.8, depth = 9.0;
+
+    const stoneMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+    const darkStoneMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+    const emeraldRoofMat = new THREE.MeshLambertMaterial({ color: 0x166534 });
+    const woodDoorMat = new THREE.MeshLambertMaterial({ color: 0x451a03 });
+    const goldMat = new THREE.MeshLambertMaterial({ color: 0xfacc15 });
+    const steelMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
+    const fireMat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
+
+    // 1. Heavy Stone Base
+    const base = new THREE.Mesh(new THREE.BoxGeometry(width + 0.6, 0.7, depth + 0.6), darkStoneMat);
+    base.position.y = 0.35;
+    base.receiveShadow = true;
+    group.add(base);
+
+    // 2. Fortress Stone Walls
+    const walls = new THREE.Mesh(new THREE.BoxGeometry(width, 5.5, depth), stoneMat);
+    walls.position.y = 3.45;
+    walls.castShadow = true;
+    walls.receiveShadow = true;
+    group.add(walls);
+
+    // Reinforced Iron Corner Straps
+    [-width/2 + 0.25, width/2 - 0.25].forEach(cx => {
+      [depth/2 - 0.25, -depth/2 + 0.25].forEach(cz => {
+        const corner = new THREE.Mesh(new THREE.BoxGeometry(0.65, 5.8, 0.65), darkStoneMat);
+        corner.position.set(cx, 3.45, cz);
+        group.add(corner);
+      });
+    });
+
+    // 3. Second Floor Lookout Balcony with Stone Battlements
+    const balcony = new THREE.Mesh(new THREE.BoxGeometry(width * 0.65, 0.4, 1.2), darkStoneMat);
+    balcony.position.set(0, 4.2, depth/2 + 0.6);
+    balcony.castShadow = true;
+    group.add(balcony);
+
+    [-1.8, -0.6, 0.6, 1.8].forEach(bx => {
+      const c = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.2), stoneMat);
+      c.position.set(bx, 4.65, depth/2 + 1.1);
+      group.add(c);
+    });
+
+    const bDoor = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.2, 0.1), woodDoorMat);
+    bDoor.position.set(0, 5.4, depth/2 + 0.05);
+    group.add(bDoor);
+
+    // 4. Emerald Green Slate Hip Roof
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(width * 0.86, 3.8, 4), emeraldRoofMat);
+    roof.position.y = 7.7;
+    roof.rotation.y = Math.PI / 4;
+    roof.castShadow = true;
+    group.add(roof);
+
+    const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, depth + 0.8), new THREE.MeshLambertMaterial({ color: 0x047857 }));
+    ridge.position.set(0, 9.6, 0);
+    group.add(ridge);
+
+    // 5. Heavy Studded Oak Double Entrance Door
+    const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(2.6, 3.2, 0.4), darkStoneMat);
+    doorFrame.position.set(0, 1.8, depth/2 + 0.1);
+    group.add(doorFrame);
+
+    const door = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.7, 0.2), woodDoorMat);
+    door.position.set(0, 1.65, depth/2 + 0.18);
+    group.add(door);
+
+    // Iron Rivets on door
+    for (let rx = -0.6; rx <= 0.6; rx += 0.4) {
+      for (let ry = 0.8; ry <= 2.4; ry += 0.4) {
+        const rivet = new THREE.Mesh(new THREE.DodecahedronGeometry(0.04), steelMat);
+        rivet.position.set(rx, ry, depth/2 + 0.3);
+        group.add(rivet);
+      }
     }
 
-    // 10. Floating Building Sign
-    if (signText) {
-      const cvs = document.createElement('canvas');
-      cvs.width = 256;
-      cvs.height = 64;
-      const ctx = cvs.getContext('2d');
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-      ctx.beginPath();
-      ctx.roundRect(8, 8, 240, 48, 12);
-      ctx.fill();
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = '#f59e0b';
-      ctx.stroke();
-      ctx.font = 'bold 20px Nunito, sans-serif';
-      ctx.fillStyle = '#fef08a';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(signText, 128, 32);
+    // Portal entrance glow
+    const portal = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 2.4), new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.65
+    }));
+    portal.position.set(0, 1.65, depth/2 + 0.32);
+    group.add(portal);
 
-      const signTex = new THREE.CanvasTexture(cvs);
-      const signMat = new THREE.SpriteMaterial({ map: signTex });
-      const signSprite = new THREE.Sprite(signMat);
-      signSprite.scale.set(4.5, 1.12, 1);
-      signSprite.position.set(0, height + 4.2, 0);
-      group.add(signSprite);
-    }
+    // 6. Sculpted Guild Crest Shield & Crossed Swords
+    const shield = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.3, 0.15), darkStoneMat);
+    shield.position.set(0, 3.5, depth/2 + 0.25);
+    group.add(shield);
+
+    const emblem = new THREE.Mesh(new THREE.OctahedronGeometry(0.35, 0), goldMat);
+    emblem.position.set(0, 3.5, depth/2 + 0.36);
+    group.add(emblem);
+
+    [-0.55, 0.55].forEach(rotZ => {
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.8, 0.05), steelMat);
+      blade.position.set(0, 3.5, depth/2 + 0.2);
+      blade.rotation.z = rotZ;
+      group.add(blade);
+
+      const hilt = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.06), goldMat);
+      hilt.position.set(-rotZ * 0.7, 3.5 - 0.7, depth/2 + 0.2);
+      hilt.rotation.z = rotZ;
+      group.add(hilt);
+    });
+
+    // 7. Wall Torches flanking entrance
+    [-1.7, 1.7].forEach(tx => {
+      const torchSconce = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.04, 0.6, 6), darkStoneMat);
+      torchSconce.position.set(tx, 2.3, depth/2 + 0.3);
+      torchSconce.rotation.x = 0.35;
+      group.add(torchSconce);
+
+      const fire = new THREE.Mesh(new THREE.DodecahedronGeometry(0.18), fireMat);
+      fire.position.set(tx, 2.6, depth/2 + 0.45);
+      group.add(fire);
+
+      const pLight = new THREE.PointLight(0xf97316, 0.8, 8, 2);
+      pLight.position.set(tx, 2.6, depth/2 + 0.65);
+      group.add(pLight);
+    });
+
+    // 8. Floating Building Sign
+    group.add(createBuildingSign('⚔️ Maceracılar Loncası', 10.4));
 
     return group;
   }
@@ -1016,15 +1681,15 @@
     // 1. Central Fountain Water Spray Droplets
     const fGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
     const fMat = new THREE.MeshBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.85 });
-    for (let i = 0; i < 35; i++) {
+    for (let i = 0; i < 40; i++) {
       const p = new THREE.Mesh(fGeo, fMat);
-      p.position.set(0, 1.8, 0);
+      p.position.set(0, 3.6, 0);
       worldObjects.add(p);
       fountainParticlesData.push({
         mesh: p,
-        vx: (Math.random() - 0.5) * 1.4,
-        vy: 2.2 + Math.random() * 1.6,
-        vz: (Math.random() - 0.5) * 1.4,
+        vx: (Math.random() - 0.5) * 1.5,
+        vy: 2.0 + Math.random() * 1.8,
+        vz: (Math.random() - 0.5) * 1.5,
         life: Math.random() * 1.5
       });
     }
@@ -1145,30 +1810,8 @@
       worldObjects.add(curbZ);
     });
 
-    // 3. Central Fountain & Basin
-    const fBasinGeo = new THREE.CylinderGeometry(4.6, 5.0, 1.2, 20);
-    const fBasinMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
-    const fBasin = new THREE.Mesh(fBasinGeo, fBasinMat);
-    fBasin.position.set(0, 0.6, 0);
-    fBasin.receiveShadow = true;
-    fBasin.castShadow = true;
-    worldObjects.add(fBasin);
-
-    const fWaterGeo = new THREE.CylinderGeometry(4.3, 4.3, 0.3, 20);
-    const fWaterMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 });
-    const fWater = new THREE.Mesh(fWaterGeo, fWaterMat);
-    fWater.position.set(0, 1.05, 0);
-    worldObjects.add(fWater);
-
-    const fPillarGeo = new THREE.CylinderGeometry(0.8, 1.1, 3.2, 8);
-    const fPillar = new THREE.Mesh(fPillarGeo, fBasinMat);
-    fPillar.position.set(0, 1.8, 0);
-    fPillar.castShadow = true;
-    worldObjects.add(fPillar);
-
-    const fTopper = new THREE.Mesh(new THREE.DodecahedronGeometry(0.7), new THREE.MeshLambertMaterial({ color: 0xfef08a }));
-    fTopper.position.set(0, 3.4, 0);
-    worldObjects.add(fTopper);
+    // 3. Central Fountain (Zero Z-Fighting Carved Stone Basin)
+    worldObjects.add(createCentralFountain());
 
     // 4. Southern River Canal & Arched Stone Bridge
     // Canal Channel at z = 24 (z: 20 to 28, spans x: -46 to 46)
@@ -1247,19 +1890,9 @@
     });
     worldObjects.add(bridgeGroup);
 
-    // 5. Four Key Buildings with High-Res 16-Bit Facade Textures
+    // 5. Four Key 3D Stylized Architectural Buildings (Zero 2D Sticker Planes!)
     // A) Takas Pazarı (Trade Mart) - Top-Left
-    const tradeHouse = createVoxelBuilding({
-      width: 9,
-      height: 6.5,
-      depth: 9,
-      wallColor: 0x0284c7,
-      roofColor: 0x0369a1,
-      roofType: 'hip',
-      signText: '⚖️ Pazar & Takas',
-      hasAwning: true,
-      facadeTextureUrl: '/assets/world/trade_shop_facade.jpg'
-    });
+    const tradeHouse = createTradeMartBuilding();
     tradeHouse.position.set(-14, 0, -10);
     worldObjects.add(tradeHouse);
 
@@ -1274,20 +1907,8 @@
     }));
 
     // B) Cat's Tail Taverna - Top-Right
-    chimneyPos = { x: 16.8, y: 8.8, z: -12.2 };
-    const tavern = createVoxelBuilding({
-      width: 9,
-      height: 6.5,
-      depth: 9,
-      wallColor: 0x78350f,
-      roofColor: 0xb91c1c,
-      roofType: 'gable',
-      signText: "🐱 Cat's Tail Taverna",
-      hasAwning: false,
-      hasChimney: true,
-      chimneyOffset: { x: 2.8, z: -2.2 },
-      facadeTextureUrl: '/assets/world/tavern_facade.jpg'
-    });
+    chimneyPos = { x: 16.8, y: 9.0, z: -12.2 };
+    const tavern = createTavernBuilding();
     tavern.position.set(14, 0, -10);
     worldObjects.add(tavern);
 
@@ -1295,66 +1916,12 @@
     worldObjects.add(createTavernPatio(14, -3));
 
     // C) Dilek Tapınağı (Gacha Shrine) - North Center
-    const shrine = createVoxelBuilding({
-      width: 10,
-      height: 7.5,
-      depth: 10,
-      wallColor: 0x581c87,
-      roofColor: 0x9333ea,
-      roofType: 'shrine',
-      signText: '✨ Dilek Tapınağı',
-      facadeTextureUrl: '/assets/world/gacha_shrine_facade.jpg'
-    });
+    const shrine = createShrineBuilding();
     shrine.position.set(0, 0, -20);
     worldObjects.add(shrine);
 
-    // Shrine Grand Marble Pillars & Purple Braziers
-    [-3.8, 3.8].forEach(px => {
-      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 6.8, 12), new THREE.MeshLambertMaterial({ color: 0xf1f5f9 }));
-      col.position.set(px, 3.4, -15.2);
-      col.castShadow = true;
-      worldObjects.add(col);
-
-      // Gold cap
-      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.45, 0.4, 8), new THREE.MeshLambertMaterial({ color: 0xfacc15 }));
-      cap.position.set(px, 6.8, -15.2);
-      worldObjects.add(cap);
-
-      // Brazier with purple fire light
-      const brazier = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.25, 0.6, 8), new THREE.MeshLambertMaterial({ color: 0x1e1b4b }));
-      brazier.position.set(px, 0.6, -13.5);
-      worldObjects.add(brazier);
-
-      const fire = new THREE.Mesh(new THREE.DodecahedronGeometry(0.25), new THREE.MeshBasicMaterial({ color: 0xc084fc }));
-      fire.position.set(px, 1.05, -13.5);
-      worldObjects.add(fire);
-
-      const pLight = new THREE.PointLight(0xc084fc, 0.8, 9, 2);
-      pLight.position.set(px, 1.1, -13.5);
-      worldObjects.add(pLight);
-    });
-
-    // Floating celestial crystal inside shrine entrance
-    const crystalGeo = new THREE.OctahedronGeometry(1.2, 0);
-    const crystalMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true });
-    shrineCrystalMesh = new THREE.Mesh(crystalGeo, crystalMat);
-    shrineCrystalMesh.position.set(0, 5, -15);
-    worldObjects.add(shrineCrystalMesh);
-
-    // Glowing inner core of celestial crystal
-    const innerCrystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.6, 0), new THREE.MeshBasicMaterial({ color: 0xa855f7 }));
-    shrineCrystalMesh.add(innerCrystal);
-
     // D) Maceracılar Loncası (Guild Hall) - Bottom-Left
-    const guild = createVoxelBuilding({
-      width: 9,
-      height: 6.5,
-      depth: 9,
-      wallColor: 0x334155,
-      roofColor: 0x166534,
-      roofType: 'hip',
-      signText: '⚔️ Maceracılar Loncası'
-    });
+    const guild = createGuildBuilding();
     guild.position.set(-14, 0, 12);
     worldObjects.add(guild);
 
@@ -1370,11 +1937,11 @@
     ];
     lampPositions.forEach(p => worldObjects.add(createStreetLamp(p.x, p.z)));
 
-    // 7. Stone Benches & Flower Beds around Fountain Plaza
-    worldObjects.add(createBench(0, -3.2, 0));
-    worldObjects.add(createBench(0, 3.2, Math.PI));
-    worldObjects.add(createBench(-3.2, 0, Math.PI / 2));
-    worldObjects.add(createBench(3.2, 0, -Math.PI / 2));
+    // 7. Stone Benches & Flower Beds around Fountain Plaza (outside the basin)
+    worldObjects.add(createBench(0, -6.6, 0));
+    worldObjects.add(createBench(0, 6.6, Math.PI));
+    worldObjects.add(createBench(-6.6, 0, Math.PI / 2));
+    worldObjects.add(createBench(6.6, 0, -Math.PI / 2));
 
     worldObjects.add(createFlowerBed(-8, 3, 4, 2));
     worldObjects.add(createFlowerBed(8, 3, 4, 2));
@@ -1769,6 +2336,35 @@
     myPlayer.x = Math.max(bounds.minX, Math.min(bounds.maxX, myPlayer.x));
     myPlayer.z = Math.max(bounds.minZ, Math.min(bounds.maxZ, myPlayer.z));
 
+    // Soft obstacle collision in Town
+    if (currentMap === 'town') {
+      const fDist = Math.hypot(myPlayer.x, myPlayer.z);
+      if (fDist < 4.9 && fDist > 0.01) {
+        const angle = Math.atan2(myPlayer.z, myPlayer.x);
+        myPlayer.x = Math.cos(angle) * 4.9;
+        myPlayer.z = Math.sin(angle) * 4.9;
+      }
+      const buildingColliders = [
+        { x1: -19, x2: -9, z1: -15, z2: -5.8 },
+        { x1: 9, x2: 19, z1: -15, z2: -5.8 },
+        { x1: -5.8, x2: 5.8, z1: -25.5, z2: -15.4 },
+        { x1: -19, x2: -9, z1: 7.4, z2: 17 }
+      ];
+      for (const b of buildingColliders) {
+        if (myPlayer.x > b.x1 && myPlayer.x < b.x2 && myPlayer.z > b.z1 && myPlayer.z < b.z2) {
+          const dL = myPlayer.x - b.x1;
+          const dR = b.x2 - myPlayer.x;
+          const dT = myPlayer.z - b.z1;
+          const dB = b.z2 - myPlayer.z;
+          const minD = Math.min(dL, dR, dT, dB);
+          if (minD === dL) myPlayer.x = b.x1;
+          else if (minD === dR) myPlayer.x = b.x2;
+          else if (minD === dT) myPlayer.z = b.z1;
+          else myPlayer.z = b.z2;
+        }
+      }
+    }
+
     // Lerp Mesh Position & Rotation
     myMesh.position.x = myPlayer.x;
     myMesh.position.z = myPlayer.z;
@@ -1808,15 +2404,15 @@
     // Check Town Doors
     if (currentMap === 'town') {
       const doors = [
-        { id: 'door_trade', name: 'Pazar & Takas Binası', pos: { x: -14, z: -10 } },
-        { id: 'door_tavern', name: "Cat's Tail Taverna", pos: { x: 14, z: -10 } },
-        { id: 'door_shrine', name: 'Dilek Tapınağı', pos: { x: 0, z: -20 } },
-        { id: 'door_guild', name: 'Maceracılar Loncası', pos: { x: -14, z: 12 } }
+        { id: 'door_trade', name: 'Pazar & Takas Binası', pos: { x: -14, z: -5.5 } },
+        { id: 'door_tavern', name: "Cat's Tail Taverna", pos: { x: 14, z: -5.5 } },
+        { id: 'door_shrine', name: 'Dilek Tapınağı', pos: { x: 0, z: -15.0 } },
+        { id: 'door_guild', name: 'Maceracılar Loncası', pos: { x: -14, z: 7.5 } }
       ];
 
       for (const d of doors) {
         const dist = Math.hypot(myPlayer.x - d.pos.x, myPlayer.z - d.pos.z);
-        if (dist < 3.2) {
+        if (dist < 4.0) {
           nearbyInteractable = { type: 'door', data: d };
           promptText.textContent = `[E] ${d.name}'na Gir`;
           prompt.classList.remove('hidden');
@@ -2486,11 +3082,11 @@
         p.mesh.position.z += p.vz * delta;
         p.vy -= 4.5 * delta; // Gravity
 
-        if (p.mesh.position.y <= 1.05) {
-          p.mesh.position.set(0, 1.8, 0);
-          p.vx = (Math.random() - 0.5) * 1.4;
-          p.vy = 2.0 + Math.random() * 1.6;
-          p.vz = (Math.random() - 0.5) * 1.4;
+        if (p.mesh.position.y <= 0.65) {
+          p.mesh.position.set(0, 3.6, 0);
+          p.vx = (Math.random() - 0.5) * 1.5;
+          p.vy = 2.0 + Math.random() * 1.8;
+          p.vz = (Math.random() - 0.5) * 1.5;
         }
       }
     }
