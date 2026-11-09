@@ -2615,6 +2615,114 @@
     return group;
   }
 
+  // --- River Wooden Fishing Pier & Shimmering Fish Schools ---
+  function createFishingPier(x, z) {
+    const group = new THREE.Group();
+    const woodMat = new THREE.MeshLambertMaterial({ color: 0x78350f });
+    const darkWood = new THREE.MeshLambertMaterial({ color: 0x451a03 });
+
+    // Deck planks
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.3, 5.8), woodMat);
+    deck.position.set(0, 0.28, 0);
+    deck.castShadow = true;
+    deck.receiveShadow = true;
+    group.add(deck);
+
+    // 4 Support timber pilings sinking into riverbed
+    [
+      { px: -1.6, pz: -2.4 }, { px: 1.6, pz: -2.4 },
+      { px: -1.6, pz: 2.4 }, { px: 1.6, pz: 2.4 }
+    ].forEach(p => {
+      const piling = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 1.4, 6), darkWood);
+      piling.position.set(p.px, -0.3, p.pz);
+      piling.castShadow = true;
+      group.add(piling);
+    });
+
+    // Fishing Tackle Box
+    const tackle = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.35, 0.45), new THREE.MeshLambertMaterial({ color: 0x0284c7 }));
+    tackle.position.set(-1.2, 0.58, 1.8);
+    group.add(tackle);
+
+    // Fish Bucket
+    const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.22, 0.55, 8), new THREE.MeshLambertMaterial({ color: 0x64748b }));
+    bucket.position.set(1.2, 0.68, 1.8);
+    group.add(bucket);
+
+    // Bamboo fishing rods leaning in bucket
+    [-0.15, 0.15].forEach(rx => {
+      const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, 1.8, 6), new THREE.MeshLambertMaterial({ color: 0xd97706 }));
+      rod.rotation.z = rx * 1.5;
+      rod.position.set(1.2 + rx, 1.3, 1.8);
+      group.add(rod);
+    });
+
+    // Pier Lantern Post
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 2.2, 6), darkWood);
+    post.position.set(-1.6, 1.3, -2.4);
+    group.add(post);
+
+    const lantern = new THREE.Mesh(new THREE.DodecahedronGeometry(0.2), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+    lantern.position.set(-1.6, 2.3, -2.4);
+    group.add(lantern);
+
+    const lLight = new THREE.PointLight(0xfef08a, 0.65, 8, 2);
+    lLight.position.set(-1.6, 2.3, -2.4);
+    group.add(lLight);
+
+    group.position.set(x, 0, z);
+    return group;
+  }
+
+  function createRiverFishSchool(x, z) {
+    const group = new THREE.Group();
+
+    // Concentric shimmering water ripple rings
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.55,
+      side: THREE.DoubleSide
+    });
+
+    const ring1 = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.48, 16), ringMat);
+    ring1.rotation.x = -Math.PI / 2;
+    ring1.position.y = 0.06;
+    group.add(ring1);
+
+    const ring2 = new THREE.Mesh(new THREE.RingGeometry(0.65, 0.82, 16), ringMat.clone());
+    ring2.rotation.x = -Math.PI / 2;
+    ring2.position.y = 0.06;
+    ring2.material.opacity = 0.35;
+    group.add(ring2);
+
+    // Swimming fish under surface
+    const fishBody = new THREE.Mesh(
+      new THREE.ConeGeometry(0.12, 0.45, 4),
+      new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.75 })
+    );
+    fishBody.rotation.x = Math.PI / 2;
+    fishBody.position.set(0.4, 0.01, 0);
+    group.add(fishBody);
+
+    group.position.set(x, 0, z);
+
+    riverFishSpots.push({
+      group,
+      ring1,
+      ring2,
+      fishBody,
+      baseX: x,
+      baseZ: z,
+      swimAngle: Math.random() * Math.PI * 2,
+      swimSpeed: 1.2 + Math.random() * 0.8,
+      swimRadius: 0.5 + Math.random() * 0.4,
+      jumpTimer: Math.random() * 5.0
+    });
+
+    return group;
+  }
+
   // --- Living Particle Systems Initialization ---
   function initParticleSystems() {
     fountainParticlesData = [];
@@ -3352,6 +3460,16 @@
       { x: 8, z: 24.8 }, { x: 18, z: 22.6 }, { x: 28, z: 25.0 }
     ].forEach(p => worldObjects.add(createWaterLily(p.x, p.z)));
 
+    // Wooden Fishing Piers on Canal Banks
+    worldObjects.add(createFishingPier(-14, 24));
+    worldObjects.add(createFishingPier(14, 24));
+
+    // Shimmering Fish Schools in River Water
+    [
+      { x: -22, z: 24.5 }, { x: -8, z: 23.5 },
+      { x: 8, z: 24.5 }, { x: 22, z: 23.5 }
+    ].forEach(p => worldObjects.add(createRiverFishSchool(p.x, p.z)));
+
     // Arched Stone Bridge at x = 0, z = 24
     const bridgeGroup = new THREE.Group();
     const bridgeGeo = new THREE.BoxGeometry(6.6, 0.4, 8.4);
@@ -3704,6 +3822,13 @@
         document.getElementById('pin-display-box').classList.remove('hidden');
         document.getElementById('pin-code-text').textContent = msg.command;
       }
+    } else if (msg.type === 'WORLD_PRIMO_UPDATE') {
+      myPlayer.primogems = msg.primogems;
+      updateUIProfile();
+    } else if (msg.type === 'WORLD_FISH_ANNOUNCE') {
+      if (msg.username !== myPlayer.username) {
+        addChatMessage('🎣 Nehir', `@${msg.username} nehirde ${msg.fish.emoji || '🐟'} ${msg.fish.name} yakaladı ve +${msg.fish.primo} Primogem kazandı!`);
+      }
     }
     // Trade Messages
     else if (msg.type === 'TRADE_INVITE') {
@@ -3806,7 +3931,7 @@
   function updateMovement(delta) {
     if (!myMesh) return;
 
-    if (isRPGDialogueOpen) {
+    if (isRPGDialogueOpen || isFishing) {
       myPlayer.anim = 'idle';
       checkProximity();
       return;
@@ -3954,6 +4079,15 @@
         prompt.classList.remove('hidden');
         return;
       }
+
+      // 3. River Fishing Spot (along southern canal z = 24)
+      const distToRiver = Math.abs(myPlayer.z - 24);
+      if (distToRiver < 4.4 && !isFishing) {
+        nearbyInteractable = { type: 'river_fishing' };
+        promptText.textContent = `[E] 🎣 Oltayı Nehre At (Balık Tut & Primogem Kazan)`;
+        prompt.classList.remove('hidden');
+        return;
+      }
     } else {
       // Check Exit Door
       const dist = Math.hypot(myPlayer.x - 0, myPlayer.z - 10.0);
@@ -4033,6 +4167,8 @@
     } else if (nearbyInteractable.type && nearbyInteractable.type.startsWith('npc_')) {
       playBeep(659, 'sine', 0.15);
       openRPGDialogue(nearbyInteractable.type);
+    } else if (nearbyInteractable.type === 'river_fishing') {
+      startFishing();
     }
   }
 
@@ -4530,6 +4666,272 @@
     }, 350);
   }
 
+  // --- 11. Active River Fishing Minigame System ---
+  const FISH_LOOT_TABLE = [
+    {
+      id: 'boot',
+      name: 'Eski Yosunlu Çizme',
+      rarity: '1★ Çöp (Ama Primolu!)',
+      stars: '★☆☆☆☆',
+      emoji: '👞',
+      primo: 10,
+      weight: 15,
+      desc: "Nehrin dibinden yosunlu eski bir çizme çıktı... Ama içine baktığında unutulmuş 10 Primogem buldun!"
+    },
+    {
+      id: 'carp',
+      name: 'Gümüş Nehir Sazanı',
+      rarity: '2★ Yaygın Nehir Balığı',
+      stars: '★★☆☆☆',
+      emoji: '🐟',
+      primo: 25,
+      weight: 42,
+      desc: "Taze ve lezzetli bir Gümüş Nehir Sazanı yakalandı! Kasaba şefleri buna bayılacak."
+    },
+    {
+      id: 'bass',
+      name: 'Altın Levrek',
+      rarity: '3★ Nadir Balık',
+      stars: '★★★☆☆',
+      emoji: '🐠',
+      primo: 50,
+      weight: 23,
+      desc: "Güneş ışığında pulları altın gibi parıldayan dolgun ve çevik bir Altın Levrek!"
+    },
+    {
+      id: 'crystal',
+      name: 'Kraliyet Kristal Balığı',
+      rarity: '4★ Çok Nadir Balık',
+      stars: '★★★★☆',
+      emoji: '🐡',
+      primo: 90,
+      weight: 12,
+      desc: "Derin kaynak sularında yaşayan, pulları saf kristal berraklığında efsanevi bir nehir balığı!"
+    },
+    {
+      id: 'paimon',
+      name: 'Acil Durum Yiyeceği Paimon!',
+      rarity: '5★ EFSANEVİ JACKPOT (1 WISH)',
+      stars: '★★★★★',
+      emoji: '✨🧚',
+      primo: 160,
+      weight: 8,
+      desc: "İNANILMAZ! Oltana suda yüzen Acil Durum Yiyeceği Paimon takıldı! 'Beni boğulmaktan kurtardın!' diyerek sana tam 160 Primogem (1 Wish) hediye ediyor!"
+    }
+  ];
+
+  function rollFishReward() {
+    const total = FISH_LOOT_TABLE.reduce((s, f) => s + f.weight, 0);
+    let r = Math.random() * total;
+    for (const f of FISH_LOOT_TABLE) {
+      if (r < f.weight) return f;
+      r -= f.weight;
+    }
+    return FISH_LOOT_TABLE[0];
+  }
+
+  function startFishing() {
+    if (isFishing || currentMap !== 'town' || !myMesh) return;
+
+    if (Math.abs(myPlayer.z - 24) > 4.4) {
+      addChatMessage('Sistem', '⚠️ Balık tutmak için nehir kıyısına veya ahşap iskeleye yaklaşmalısın!');
+      return;
+    }
+
+    isFishing = true;
+    fishingState = 'waiting';
+    myPlayer.anim = 'idle';
+
+    // Face the water
+    if (myPlayer.z < 24) {
+      myPlayer.rot = 0; // Face south
+    } else {
+      myPlayer.rot = Math.PI; // Face north
+    }
+    myMesh.rotation.y = myPlayer.rot;
+
+    // Attach 3D Bamboo Fishing Rod to Player's right hand
+    const rightArm = myMesh.userData?.rig?.rightArmGroup;
+    if (rightArm) {
+      if (fishingRodMesh) rightArm.remove(fishingRodMesh);
+
+      fishingRodMesh = new THREE.Group();
+      const poleGeo = new THREE.CylinderGeometry(0.018, 0.038, 2.4, 8);
+      poleGeo.translate(0, 1.2, 0);
+      const poleMat = new THREE.MeshLambertMaterial({ color: 0xd97706 });
+      const pole = new THREE.Mesh(poleGeo, poleMat);
+      pole.rotation.x = Math.PI / 3.4;
+      pole.position.set(0, -0.45, 0.1);
+      fishingRodMesh.add(pole);
+
+      rightArm.add(fishingRodMesh);
+    }
+
+    // Spawn 3D Bobber in River Water
+    const bobberX = myPlayer.x + (Math.random() - 0.5) * 1.5;
+    const bobberZ = 24.0 + (Math.random() - 0.5) * 1.2;
+
+    if (fishingBobberMesh) scene.remove(fishingBobberMesh);
+    const bobberGroup = new THREE.Group();
+
+    const floatTop = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 10, 10, 0, Math.PI * 2, 0, Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0xef4444 })
+    );
+    const floatBottom = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 10, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0xffffff })
+    );
+    const antenna = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.015, 0.015, 0.25),
+      new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+    );
+    antenna.position.y = 0.16;
+
+    bobberGroup.add(floatTop);
+    bobberGroup.add(floatBottom);
+    bobberGroup.add(antenna);
+    bobberGroup.position.set(bobberX, 0.06, bobberZ);
+    scene.add(bobberGroup);
+    fishingBobberMesh = bobberGroup;
+
+    // Cast Sound
+    playBeep(480, 'sine', 0.12);
+
+    // Show Fishing HUD
+    const hud = document.getElementById('fishing-hud');
+    const hudText = document.getElementById('fishing-hud-text');
+    if (hud && hudText) {
+      hud.classList.remove('bite');
+      hud.classList.remove('hidden');
+      hudText.textContent = '🎣 Yem suda salınıyor... Balıklar yaklaşıyor...';
+    }
+
+    // Suspense delay before fish bites (2.2s - 4.5s)
+    const waitTime = 2200 + Math.random() * 2300;
+    fishingTimer = setTimeout(() => {
+      triggerBite();
+    }, waitTime);
+  }
+
+  function triggerBite() {
+    if (!isFishing || fishingState !== 'waiting') return;
+    fishingState = 'bite';
+
+    if (fishingBobberMesh) {
+      fishingBobberMesh.position.y = -0.15;
+    }
+
+    // Sharp tension sound
+    playBeep(784, 'triangle', 0.18);
+    setTimeout(() => playBeep(880, 'sine', 0.22), 80);
+
+    // Update HUD with alert
+    const hud = document.getElementById('fishing-hud');
+    const hudText = document.getElementById('fishing-hud-text');
+    if (hud && hudText) {
+      hud.classList.add('bite');
+      hudText.textContent = '❗ VURDU! OLTAYI ÇEK! [E] / [SPACE] / TIKLA! ❗';
+    }
+
+    // Reaction window (1.8 seconds)
+    biteTimeout = setTimeout(() => {
+      fishEscaped();
+    }, 1800);
+  }
+
+  function reelIn() {
+    if (!isFishing) return;
+
+    if (fishingState === 'waiting') {
+      addChatMessage('Sistem', '⚠️ Çok erken çektin! Balık henüz yemi ısırmamıştı.');
+      stopFishing();
+      return;
+    }
+
+    if (fishingState === 'bite') {
+      if (biteTimeout) clearTimeout(biteTimeout);
+      fishingState = 'caught';
+
+      const caughtFish = rollFishReward();
+      currentHookedFish = caughtFish;
+
+      playVictoryJingle();
+      showFishCatchModal(caughtFish);
+
+      // Award Primogems
+      myPlayer.primogems += caughtFish.primo;
+      updateUIProfile();
+
+      // Broadcast and sync with server
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+          type: 'WORLD_FISH_CATCH',
+          fish: caughtFish
+        }));
+      }
+
+      if (myMesh) {
+        showSpeechBubble(myMesh, `🎣 ${caughtFish.emoji} ${caughtFish.name}! (+${caughtFish.primo}💎)`);
+      }
+      addChatMessage(myPlayer.username, `🎣 Nehirde ${caughtFish.emoji} ${caughtFish.name} tuttum ve +${caughtFish.primo} Primogem kazandım!`);
+
+      stopFishing();
+    }
+  }
+
+  function fishEscaped() {
+    if (!isFishing) return;
+    playBeep(260, 'sawtooth', 0.2);
+    addChatMessage('Sistem', '💨 Balık yemi kaptı ve kaçtı! Bir dahaki sefere daha hızlı davran.');
+    stopFishing();
+  }
+
+  function stopFishing(silent = false) {
+    if (fishingTimer) clearTimeout(fishingTimer);
+    if (biteTimeout) clearTimeout(biteTimeout);
+    fishingTimer = null;
+    biteTimeout = null;
+
+    isFishing = false;
+    fishingState = 'idle';
+
+    if (fishingRodMesh && myMesh?.userData?.rig?.rightArmGroup) {
+      myMesh.userData.rig.rightArmGroup.remove(fishingRodMesh);
+      fishingRodMesh = null;
+    }
+    if (fishingBobberMesh) {
+      scene.remove(fishingBobberMesh);
+      fishingBobberMesh = null;
+    }
+
+    const hud = document.getElementById('fishing-hud');
+    if (hud) hud.classList.add('hidden');
+  }
+
+  function showFishCatchModal(fish) {
+    const modal = document.getElementById('modal-fish-catch');
+    if (!modal) return;
+
+    document.getElementById('fish-catch-icon').textContent = fish.emoji || '🐟';
+    document.getElementById('fish-catch-stars').textContent = fish.stars || '★★★☆☆';
+    document.getElementById('fish-catch-name').textContent = fish.name;
+    document.getElementById('fish-catch-rarity').textContent = fish.rarity;
+    document.getElementById('fish-catch-primo').textContent = `+${fish.primo} 💎 Primogem`;
+    document.getElementById('fish-catch-desc').textContent = fish.desc;
+
+    modal.classList.remove('hidden');
+  }
+
+  function playVictoryJingle() {
+    const melody = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
+    melody.forEach((note, idx) => {
+      setTimeout(() => {
+        playBeep(note, 'sine', 0.18);
+      }, idx * 90);
+    });
+  }
+
   // --- 10. Minimap Render ---
   function renderMinimap() {
     const cvs = document.getElementById('minimap-canvas');
@@ -4908,6 +5310,28 @@
         return; // Pause movement while talking
       }
 
+      // River Fishing Interception
+      if (isFishing) {
+        if (fishingState === 'bite' && (k === 'e' || k === ' ' || k === 'enter')) {
+          e.preventDefault();
+          reelIn();
+          return;
+        }
+        if (fishingState === 'waiting') {
+          if (k === 'escape') {
+            e.preventDefault();
+            stopFishing();
+            return;
+          }
+          if (k === 'e' || k === ' ' || k === 'enter') {
+            e.preventDefault();
+            reelIn();
+            return;
+          }
+        }
+        return; // Pause movement while fishing
+      }
+
       if (k === 'w' || k === 'arrowup') keys.w = true;
       if (k === 's' || k === 'arrowdown') keys.s = true;
       if (k === 'a' || k === 'arrowleft') keys.a = true;
@@ -5052,6 +5476,20 @@
         openModal('modal-auth');
       }
     };
+
+    // River Fishing Claim Button & Click Interaction
+    const btnFishClaim = document.getElementById('btn-fish-claim');
+    if (btnFishClaim) {
+      btnFishClaim.onclick = () => closeModal('modal-fish-catch');
+    }
+
+    window.addEventListener('click', () => {
+      if (isFishing && fishingState === 'bite') {
+        const modal = document.getElementById('modal-fish-catch');
+        if (modal && !modal.classList.contains('hidden')) return;
+        reelIn();
+      }
+    });
 
     // RPG Dialogue Click Triggers
     const diagBox = document.getElementById('rpg-dialogue-box');
@@ -5236,6 +5674,34 @@
       const cat = animatedCats[i];
       if (cat.userData && cat.userData.tail) {
         cat.userData.tail.rotation.z = Math.sin(now * 0.004 + cat.userData.timeOffset) * 0.35;
+      }
+    }
+
+    // 8. Update River Fish Schools (Swimming & ripples)
+    if (riverFishSpots && riverFishSpots.length > 0) {
+      for (let i = 0; i < riverFishSpots.length; i++) {
+        const spot = riverFishSpots[i];
+        spot.swimAngle += spot.swimSpeed * delta;
+        const fx = Math.cos(spot.swimAngle) * spot.swimRadius;
+        const fz = Math.sin(spot.swimAngle) * spot.swimRadius;
+        spot.fishBody.position.x = fx;
+        spot.fishBody.position.z = fz;
+        spot.fishBody.rotation.y = -spot.swimAngle + Math.PI / 2;
+
+        // Ripple pulse
+        const s1 = 1.0 + Math.sin(now * 0.003 + i) * 0.25;
+        spot.ring1.scale.set(s1, s1, 1);
+        const s2 = 1.0 + Math.cos(now * 0.0025 + i) * 0.25;
+        spot.ring2.scale.set(s2, s2, 1);
+      }
+    }
+
+    // 9. Update Fishing Bobber Animation (Bobbing on ripples / pulling underwater)
+    if (isFishing && fishingBobberMesh) {
+      if (fishingState === 'waiting') {
+        fishingBobberMesh.position.y = 0.06 + Math.sin(now * 0.005) * 0.04;
+      } else if (fishingState === 'bite') {
+        fishingBobberMesh.position.y = -0.12 + Math.sin(now * 0.035) * 0.08;
       }
     }
 

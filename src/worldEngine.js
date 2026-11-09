@@ -242,6 +242,26 @@ class WorldEngine extends EventEmitter {
   }
 
   /**
+   * Award or deduct Primogems for a player (e.g. from river fishing or trading)
+   */
+  awardPrimogems(socketId, amount) {
+    const player = this.players.get(socketId);
+    if (!player) return 0;
+    const addAmt = parseInt(amount, 10) || 0;
+    player.primogems = Math.max(0, (player.primogems || 0) + addAmt);
+
+    if (this.gachaEngine && !player.isGuest) {
+      try {
+        const u = this.gachaEngine.getOrCreateUser(player.username);
+        u.primogems = player.primogems;
+        this.gachaEngine.saveUsers();
+      } catch (e) {}
+    }
+
+    return player.primogems;
+  }
+
+  /**
    * Add a chat speech bubble over player
    */
   addChatBubble(socketId, text) {

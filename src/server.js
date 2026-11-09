@@ -900,6 +900,20 @@ wss.on('connection', (ws) => {
       } else if (data.type === 'WORLD_REQ_PIN') {
         const pinData = worldEngine.createPinAuth(socketId, data.username);
         ws.send(JSON.stringify({ type: 'WORLD_PIN_RESULT', ...pinData }));
+      } else if (data.type === 'WORLD_FISH_CATCH') {
+        const me = worldEngine.getPlayer(socketId);
+        if (me && data.fish) {
+          const rewardPrimo = data.fish.primo || data.fish.primogems || 0;
+          const newTotal = worldEngine.awardPrimogems(socketId, rewardPrimo);
+          ws.send(JSON.stringify({ type: 'WORLD_PRIMO_UPDATE', primogems: newTotal }));
+          broadcast({
+            type: 'WORLD_FISH_ANNOUNCE',
+            username: me.username,
+            fish: data.fish,
+            mapId: me.mapId
+          });
+          worldEngine.addChatBubble(socketId, `🎣 ${data.fish.emoji || '🐟'} ${data.fish.name}! (+${rewardPrimo}💎)`);
+        }
       }
       // --- MMO P2P Trade Messages ---
       else if (data.type === 'TRADE_REQUEST') {

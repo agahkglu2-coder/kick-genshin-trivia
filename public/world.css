@@ -1277,6 +1277,193 @@ html, body {
   }
 }
 
+/* ==========================================================
+   RIVER FISHING & CATCH CELEBRATION MODAL
+   ========================================================== */
+.modal-card-fish {
+  position: relative;
+  background: radial-gradient(circle at top, #fffdf5 0%, #fef3c7 60%, #fae8be 100%);
+  border: 4px solid #b45309;
+  border-radius: 24px;
+  box-shadow: 
+    0 24px 60px rgba(0, 0, 0, 0.75),
+    0 0 35px rgba(245, 158, 11, 0.35),
+    inset 0 0 0 2px #fef08a,
+    inset 0 4px 10px rgba(255, 255, 255, 0.9);
+  padding: 32px 28px;
+  width: 90%;
+  max-width: 480px;
+  text-align: center;
+  animation: fishModalPop 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes fishModalPop {
+  0% { transform: scale(0.8) translateY(20px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.fish-catch-sparkles {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  font-size: 1.8rem;
+  animation: spinSlow 6s linear infinite;
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.fish-catch-icon {
+  font-size: 4.8rem;
+  line-height: 1;
+  margin: 4px 0 10px;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.25));
+  animation: fishBounce 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes fishBounce {
+  0% { transform: translateY(0) rotate(-4deg); }
+  100% { transform: translateY(-10px) rotate(4deg); }
+}
+
+.fish-catch-stars {
+  color: #f59e0b;
+  font-size: 1.6rem;
+  letter-spacing: 5px;
+  margin-bottom: 6px;
+  text-shadow: 0 2px 8px rgba(245, 158, 11, 0.5);
+}
+
+.fish-catch-name {
+  color: #451a03;
+  font-family: 'Cinzel', 'Georgia', serif;
+  font-size: 1.85rem;
+  font-weight: 800;
+  margin: 0 0 4px;
+}
+
+.fish-catch-rarity {
+  color: #92400e;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+.fish-primo-reward {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(56, 189, 248, 0.25) 100%);
+  border: 2px solid #0284c7;
+  border-radius: 14px;
+  padding: 10px 18px;
+  margin: 0 auto 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+.fish-primo-reward span {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #0369a1;
+}
+
+.fish-primo-reward strong {
+  font-size: 1.35rem;
+  color: #0284c7;
+  font-weight: 900;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.fish-catch-desc {
+  color: #451a03;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  font-weight: 600;
+  margin: 0 0 20px;
+  padding: 0 12px;
+}
+
+.fish-catch-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.btn-fish-claim {
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+  color: #fff;
+  border: 2px solid #fef08a;
+  border-radius: 14px;
+  padding: 12px 34px;
+  font-family: 'Cinzel', 'Georgia', serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(217, 119, 6, 0.45);
+  transition: all 0.2s ease;
+}
+
+.btn-fish-claim:hover {
+  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(217, 119, 6, 0.6);
+}
+
+/* Floating Fishing Status HUD */
+.fishing-hud {
+  position: fixed;
+  top: 75px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  pointer-events: none;
+  animation: fadeIn 0.25s ease;
+}
+
+.fishing-hud-content {
+  background: rgba(15, 23, 42, 0.88);
+  border: 2px solid #38bdf8;
+  backdrop-filter: blur(8px);
+  border-radius: 999px;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.3);
+  color: #f8fafc;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.fishing-hud-spinner {
+  font-size: 1.4rem;
+  animation: bobberPulse 1s infinite alternate ease-in-out;
+}
+
+@keyframes bobberPulse {
+  0% { transform: translateY(-2px) rotate(-10deg); }
+  100% { transform: translateY(4px) rotate(10deg); }
+}
+
+.fishing-hud.bite .fishing-hud-content {
+  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+  border-color: #facc15;
+  box-shadow: 0 0 35px rgba(239, 68, 68, 0.8), 0 0 15px rgba(250, 204, 21, 0.9);
+  animation: biteShake 0.18s infinite alternate;
+  color: #fff;
+  font-weight: 900;
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+}
+
+@keyframes biteShake {
+  0% { transform: scale(1) rotate(-1deg); }
+  100% { transform: scale(1.06) rotate(1deg); }
+}
+
 .hidden {
   display: none !important;
 }
