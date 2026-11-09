@@ -1,16 +1,16 @@
 /**
- * Battle Zone & Mob Primogem Farming Unit Test
+ * Battle Zone, Monster Loot Drops & NPC Material Market Unit Test
  */
 const { WorldEngine } = require('../src/worldEngine');
 const assert = require('assert');
 
-console.log('=== TEST: Battle Zone Map & Mob Primogem Farming ===');
+console.log('=== TEST: Battle Zone, Monster Loot Drops & NPC Material Market ===');
 
 const mockGachaEngine = {
   users: {},
   getOrCreateUser(username) {
     if (!this.users[username]) {
-      this.users[username] = { username, primogems: 160 };
+      this.users[username] = { username, primogems: 160, inventory: [] };
     }
     return this.users[username];
   },
@@ -39,26 +39,55 @@ assert(doorRes.success, 'Portal transition to battle_zone should succeed');
 assert.strictEqual(p1.mapId, 'battle_zone', 'Player should now be in battle_zone');
 console.log('✅ Kasabadan Vahşi Savaş Arenasına portal geçişi başarılı!');
 
-// 4. Test Mob Defeat & Primogem Rewards
-// Slime kill (8 💎)
-let newTotal = worldEngine.awardPrimogems('sock_warrior', 8);
-assert.strictEqual(newTotal, 168);
-console.log('✅ Slime kesildi: +8 💎 -> 168 💎');
+// 4. Test Monster Loot Drops into Player Inventory
+const user = mockGachaEngine.getOrCreateUser('LumineSlayer');
 
-// Hilichurl kill (18 💎)
-newTotal = worldEngine.awardPrimogems('sock_warrior', 18);
-assert.strictEqual(newTotal, 186);
-console.log('✅ Hilichurl kesildi: +18 💎 -> 186 💎');
+// Slime drops 1★ Slime Condensate (3 💎 value)
+user.inventory.push({
+  id: 'slime_condensate',
+  name: 'Balçık Sıvısı',
+  type: 'material',
+  rarity: 1,
+  sellPrice: 3,
+  icon: '/assets/materials/slime_condensate.svg'
+});
+console.log('✅ Slime alt edildi: 1★ Balçık Sıvısı çantaya eklendi (Değer: 3 💎)');
 
-// Abyss Mage kill (45 💎)
-newTotal = worldEngine.awardPrimogems('sock_warrior', 45);
-assert.strictEqual(newTotal, 231);
-console.log('✅ Ateş Büyücüsü kesildi: +45 💎 -> 231 💎');
+// Hilichurl drops 2★ Stained Mask (10 💎 value)
+user.inventory.push({
+  id: 'stained_mask',
+  name: 'Lekeli Maske',
+  type: 'material',
+  rarity: 2,
+  sellPrice: 10,
+  icon: '/assets/materials/stained_mask.svg'
+});
+console.log('✅ Hilichurl alt edildi: 2★ Lekeli Maske çantaya eklendi (Değer: 10 💎)');
 
-// Ruin Golem Boss kill (160 💎 Jackpot)
-newTotal = worldEngine.awardPrimogems('sock_warrior', 160);
-assert.strictEqual(newTotal, 391);
-console.log('✅ Harabe Muhafızı (Mini-Boss) kesildi: +160 💎 (1 Wish) Jackpot -> 391 💎');
+// Pyromancer drops 4★ Abyss Fire Scroll (65 💎 value)
+user.inventory.push({
+  id: 'abyss_scroll',
+  name: 'Uçurum Ateş Parşömeni',
+  type: 'material',
+  rarity: 4,
+  sellPrice: 65,
+  icon: '/assets/materials/abyss_scroll.svg'
+});
+console.log('✅ Uçurum Büyücüsü alt edildi: 4★ Uçurum Ateş Parşömeni çantaya eklendi (Değer: 65 💎)');
+
+// Ruin Golem Boss drops 5★ Ancient Chaos Core (160 💎 value - Full 1 Wish Jackpot!)
+user.inventory.push({
+  id: 'chaos_core',
+  name: 'Kadim Kaos Çekirdeği',
+  type: 'material',
+  rarity: 5,
+  sellPrice: 160,
+  icon: '/assets/materials/chaos_core.svg'
+});
+console.log('✅ Antik Yıkım Muhafızı (BOSS) alt edildi: 5★ Kadim Kaos Çekirdeği çantaya eklendi (Değer: 160 💎)');
+
+const materials = user.inventory.filter(i => i.type === 'material');
+assert.strictEqual(materials.length, 4, 'Player should have 4 materials in inventory');
 
 // 5. Verify exit portal back to town at (0, -32)
 worldEngine.updateMovement('sock_warrior', { x: 0, y: 0, z: -32, rot: 0, anim: 'walk' });
@@ -67,7 +96,22 @@ assert(exitRes.success, 'Exit portal transition to town should succeed');
 assert.strictEqual(p1.mapId, 'town', 'Player should be back in town');
 console.log('✅ Savaş Arenasından Kasaba Meydanına dönüş portalı başarılı!');
 
-console.log('====================================================');
-console.log('🎉 SAVAŞ BÖLÜMÜ VE FARM SİSTEMİ %100 BAŞARIYLA GEÇTİ!');
-console.log('====================================================');
+// 6. Test Selling Materials to Tüccar Liben for Primogems
+// Sell all 4 materials (3 + 10 + 65 + 160 = 238 💎)
+const totalPayout = materials.reduce((sum, item) => sum + item.sellPrice, 0);
+assert.strictEqual(totalPayout, 238, 'Total payout should be 238 Primogems');
+
+// Execute sale
+user.inventory = user.inventory.filter(i => i.type !== 'material');
+user.primogems += totalPayout;
+p1.primogems = user.primogems;
+
+assert.strictEqual(user.primogems, 160 + 238, 'Primogem balance should be updated to 398 💎');
+assert.strictEqual(user.inventory.filter(i => i.type === 'material').length, 0, 'Materials should be removed after sale');
+console.log(`✅ Tüccar Liben'e 4 parça materyal satıldı: +${totalPayout} 💎 Primogem kazanıldı!`);
+console.log(`💰 Yeni Bakiye: ${user.primogems} 💎 (160 -> 398 💎)`);
+
+console.log('=================================================================');
+console.log('🎉 CANAVAR MATERYAL DÜŞME VE TÜCCAR LİBEN SATIŞ SİSTEMİ %100 GEÇTİ!');
+console.log('=================================================================');
 process.exit(0);

@@ -408,6 +408,52 @@
   <!-- 10. Floating Damage Numbers Layer -->
   <div id="damage-numbers-layer" class="damage-numbers-layer"></div>
 
+  <!-- 11. Loot Pickup Toast Notifications -->
+  <div id="loot-toast-container" class="loot-toast-container"></div>
+
+  <!-- 12. Tüccar Liben - Canavar Materyalleri Pazarı Modal -->
+  <div id="modal-monster-market" class="modal-overlay hidden">
+    <div class="modal-card modal-card-market">
+      <div class="market-modal-header">
+        <div class="market-title-group">
+          <div class="market-avatar-thumb">💰</div>
+          <div>
+            <h2 class="market-title">Tüccar Liben - Canavar Pazarı</h2>
+            <p class="market-subtitle">Topladığın materyalleri bana sat, Primogem kazan!</p>
+          </div>
+        </div>
+        <div class="market-balance-badge">
+          <span>Bakiye:</span>
+          <strong id="market-player-primo">💎 0</strong>
+        </div>
+        <button type="button" class="btn-close-market" data-close="modal-monster-market">✕</button>
+      </div>
+
+      <div class="market-modal-body">
+        <div id="market-empty-state" class="market-empty-state hidden">
+          <span class="empty-icon">🎒</span>
+          <p>Çantanda henüz hiç canavar materyali yok!</p>
+          <small>Vahşi Savaş Arenası zindanına girerek Slime, Hilichurl, Büyücü ve Yıkım Muhafızından ganimet toplayabilirsin.</small>
+        </div>
+
+        <div id="market-items-grid" class="market-items-grid">
+          <!-- Dynamically populated item cards -->
+        </div>
+      </div>
+
+      <div class="market-modal-footer">
+        <div class="market-summary-info">
+          <span>Tüm Materyallerin Değeri:</span>
+          <strong id="market-total-value">0 💎</strong>
+        </div>
+        <div class="market-action-buttons">
+          <button type="button" class="btn-market-cancel" data-close="modal-monster-market">Kapat</button>
+          <button type="button" class="btn-market-sell-all" id="btn-market-sell-all">💰 Tümünü Sat</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="/world.js"></script>
 </body>

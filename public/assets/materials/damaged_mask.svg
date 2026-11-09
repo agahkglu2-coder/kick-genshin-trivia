@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <linearGradient id="woodMask" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="60%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="64" cy="112" rx="38" ry="8" fill="rgba(15, 23, 42, 0.35)"/>
+  <!-- Mask Outline with notch / chipped ear -->
+  <path d="M 64 18 C 96 18 108 45 106 78 C 104 100 86 112 64 112 C 42 112 24 100 22 78 C 20 45 32 18 64 18 Z" fill="url(#woodMask)" stroke="#475569" stroke-width="3"/>
+  <!-- Crack line -->
+  <path d="M 85 22 L 78 44 L 84 56 L 79 72" fill="none" stroke="#334155" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Slit Eyes -->
+  <ellipse cx="44" cy="62" rx="8" ry="4" transform="rotate(-15 44 62)" fill="#0f172a"/>
+  <ellipse cx="82" cy="62" rx="8" ry="4" transform="rotate(15 82 62)" fill="#0f172a"/>
+  <!-- Faint red notch symbol -->
+  <path d="M 64 36 L 56 46 L 72 46 Z" fill="#ef4444" opacity="0.7"/>
+</svg>

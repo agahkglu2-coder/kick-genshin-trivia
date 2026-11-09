@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <radialGradient id="slimeDrop" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#bbf7d0"/>
+      <stop offset="40%" stop-color="#4ade80"/>
+      <stop offset="85%" stop-color="#16a34a"/>
+      <stop offset="100%" stop-color="#14532d"/>
+    </radialGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <ellipse cx="64" cy="112" rx="42" ry="10" fill="rgba(20, 83, 45, 0.35)"/>
+  <path d="M 64 16 C 54 36 28 68 28 88 A 36 36 0 0 0 100 88 C 100 68 74 36 64 16 Z" fill="url(#slimeDrop)" stroke="#86efac" stroke-width="2.5" filter="url(#glow)"/>
+  <ellipse cx="48" cy="72" rx="12" ry="6" transform="rotate(-35 48 72)" fill="rgba(255, 255, 255, 0.75)"/>
+  <circle cx="42" cy="84" r="3.5" fill="rgba(255, 255, 255, 0.6)"/>
+</svg>

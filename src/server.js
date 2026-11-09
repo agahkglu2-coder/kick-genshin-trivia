@@ -914,20 +914,39 @@ wss.on('connection', (ws) => {
           });
           worldEngine.addChatBubble(socketId, `🎣 ${data.fish.emoji || '🐟'} ${data.fish.name}! (+${rewardPrimo}💎)`);
         }
+      } else if (data.type === 'WORLD_ITEM_LOOT') {
+        const me = worldEngine.getPlayer(socketId);
+        if (me && data.item) {
+          const user = gachaEngine.getOrCreateUser(me.username);
+          if (!user.inventory) user.inventory = [];
+          const newItem = {
+            id: data.item.id,
+            name: data.item.name,
+            type: 'material',
+            rarity: parseInt(data.item.rarity, 10) || 1,
+            sellPrice: parseInt(data.item.sellPrice, 10) || 3,
+            icon: data.item.icon,
+            desc: data.item.desc || '',
+            obtainedAt: new Date().toISOString()
+          };
+          user.inventory.push(newItem);
+          gachaEngine.saveUsers();
+          ws.send(JSON.stringify({
+            type: 'WORLD_ITEM_LOOT_ACK',
+            item: newItem
+          }));
+        }
       } else if (data.type === 'WORLD_MOB_DEFEAT') {
         const me = worldEngine.getPlayer(socketId);
         if (me && data.mob) {
-          const rewardPrimo = parseInt(data.mob.primo, 10) || 0;
-          const newTotal = worldEngine.awardPrimogems(socketId, rewardPrimo);
-          ws.send(JSON.stringify({ type: 'WORLD_PRIMO_UPDATE', primogems: newTotal }));
           if (data.mob.isBoss) {
             broadcast({
               type: 'WORLD_BOSS_ANNOUNCE',
               username: me.username,
               mobName: data.mob.name,
-              primo: rewardPrimo
+              item: data.mob.bossLootName || 'Kadim Kaos Çekirdeği'
             });
-            worldEngine.addChatBubble(socketId, `⚔️ 👑 ${data.mob.name} yenildi! (+${rewardPrimo}💎)`);
+            worldEngine.addChatBubble(socketId, `⚔️ 👑 ${data.mob.name} yenildi! Nadir ganimetler düştü!`);
           }
         }
       }
@@ -1040,13 +1059,68 @@ app.get('/api/world/inventory', (req, res) => {
     primogems: user.primogems || 0,
     inventory: (user.inventory || []).map((item, index) => ({
       index,
+      id: item.id || null,
       name: item.name,
       rarity: item.rarity,
       type: item.type,
+      sellPrice: item.sellPrice || 0,
       element: item.element,
       icon: item.icon || item.remoteIcon || item.splashArt,
+      desc: item.desc || item.description || '',
       weaponType: item.weaponType
     }))
+  });
+});
+
+app.post('/api/world/sell-materials', express.json(), (req, res) => {
+  const { username, itemId, sellAll, quantity } = req.body || {};
+  if (!username) return res.status(400).json({ success: false, message: 'Kullanıcı adı belirtilmedi.' });
+  const user = gachaEngine.getOrCreateUser(username);
+  if (!user || !user.inventory) return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı.' });
+
+  let soldItems = [];
+  let remaining = [];
+  let soldCountForId = 0;
+  const maxToSell = quantity || Infinity;
+
+  user.inventory.forEach(item => {
+    if (item.type === 'material') {
+      if (sellAll) {
+        soldItems.push(item);
+      } else if (itemId && item.id === itemId && soldCountForId < maxToSell) {
+        soldItems.push(item);
+        soldCountForId++;
+      } else {
+        remaining.push(item);
+      }
+    } else {
+      remaining.push(item);
+    }
+  });
+
+  if (soldItems.length === 0) {
+    return res.json({ success: false, message: 'Satılacak materyal bulunamadı.' });
+  }
+
+  const earnedPrimo = soldItems.reduce((acc, it) => acc + (parseInt(it.sellPrice, 10) || 0), 0);
+  user.inventory = remaining;
+  user.primogems = (user.primogems || 0) + earnedPrimo;
+  gachaEngine.saveUsers();
+
+  // Sync with worldEngine if player is online
+  const onlinePlayers = worldEngine.getPlayers ? worldEngine.getPlayers() : [];
+  for (const p of onlinePlayers) {
+    if (p.username && p.username.toLowerCase() === username.toLowerCase()) {
+      p.primogems = user.primogems;
+    }
+  }
+
+  res.json({
+    success: true,
+    earnedPrimo,
+    newTotalPrimo: user.primogems,
+    soldCount: soldItems.length,
+    remainingMaterials: remaining.filter(i => i.type === 'material')
   });
 });
 

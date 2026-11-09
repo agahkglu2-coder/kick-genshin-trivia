@@ -4217,10 +4217,11 @@
       title: 'Büyük Gezgin Tüccar',
       presetIndex: 0,
       lines: [
-        "Hoş geldin dostum! Teyvat'ın dört bir yanındaki gizli harabelerden nadir eşyalar topluyorum.",
-        "Meydandaki diğer gezginlerle [E] tuşuna basarak istediğin gibi eşya ve Primogem takası yapabilirsin!"
+        "Hoş geldin dostum! Teyvat'ın dört bir yanındaki zindanlardan ve harabelerden canavar materyalleri topluyorum.",
+        "Savaş Arenasından getireceğin Slime sıvılarını, Hilichurl maskelerini, Uçurum parşömenlerini ve Kadim Kaos Çekirdeklerini yüksek fiyata Primogem karşılığı satın alırım!"
       ],
       choices: [
+        { text: '💰 Canavar Materyallerini Sat (Primogem Pazarı)', action: 'open_monster_market' },
         { text: '📦 Takas Pazarı Nasıl Çalışır?', action: 'explain_trade' },
         { text: '💎 Primogem Kazanma Yolları', action: 'explain_primo' },
         { text: '👋 Teşekkürler, sonra görüşürüz', action: 'close' }
@@ -4642,7 +4643,9 @@
     playBeep(750, 'sine', 0.12);
     closeRPGDialogue();
 
-    if (action === 'explain_trade') {
+    if (action === 'open_monster_market') {
+      openMonsterMarketModal();
+    } else if (action === 'explain_trade') {
       addChatMessage('Tüccar Liben', '🤝 "Meydanda herhangi bir gezginin yanına gidip [E] tuşuna bas! Karşılıklı Primogem ve eşya teklifi yapıp kilitledikten sonra anında takas edin."');
     } else if (action === 'explain_primo') {
       addChatMessage('Tüccar Liben', '💎 "Kick yayınını izlerken veya sohbette sohbet ederek Primogem kazanırsın. Ayrıca kedi madencilerin mağara seferlerinden de Primogem cevherleri çıkar!"');
@@ -5525,6 +5528,130 @@
     });
   }
 
+  // --- Monster Material Shop (Tüccar Liben) ---
+  async function openMonsterMarketModal() {
+    await fetchInventory();
+    renderMonsterMarket();
+    document.getElementById('modal-monster-market')?.classList.remove('hidden');
+  }
+
+  function renderMonsterMarket() {
+    const primoEl = document.getElementById('market-player-primo');
+    if (primoEl) primoEl.textContent = `💎 ${myPlayer.primogems}`;
+
+    const materials = myInventory.filter(it => it.type === 'material');
+    const emptyState = document.getElementById('market-empty-state');
+    const grid = document.getElementById('market-items-grid');
+    const totalValEl = document.getElementById('market-total-value');
+    const sellAllBtn = document.getElementById('btn-market-sell-all');
+
+    if (materials.length === 0) {
+      if (emptyState) emptyState.classList.remove('hidden');
+      if (grid) grid.innerHTML = '';
+      if (totalValEl) totalValEl.textContent = '0 💎';
+      if (sellAllBtn) {
+        sellAllBtn.disabled = true;
+        sellAllBtn.textContent = '💰 Tümünü Sat';
+      }
+      return;
+    }
+
+    if (emptyState) emptyState.classList.add('hidden');
+    if (sellAllBtn) sellAllBtn.disabled = false;
+
+    // Group materials by id or name
+    const grouped = {};
+    let grandTotal = 0;
+
+    materials.forEach(mat => {
+      const key = mat.id || mat.name;
+      if (!grouped[key]) {
+        grouped[key] = {
+          id: mat.id,
+          name: mat.name,
+          rarity: mat.rarity || 1,
+          sellPrice: mat.sellPrice || 3,
+          icon: mat.icon || '/assets/materials/slime_condensate.svg',
+          desc: mat.desc || mat.description || 'Canavarlardan düşen değerli simya materyali.',
+          count: 0
+        };
+      }
+      grouped[key].count++;
+      grandTotal += (mat.sellPrice || 0);
+    });
+
+    if (totalValEl) totalValEl.textContent = `+${grandTotal} 💎`;
+    if (sellAllBtn) sellAllBtn.textContent = `💰 Tümünü Sat (+${grandTotal} 💎)`;
+
+    if (grid) {
+      grid.innerHTML = '';
+      Object.values(grouped).forEach(item => {
+        const card = document.createElement('div');
+        card.className = `market-item-card rarity-${item.rarity}`;
+        const totalItemValue = item.count * item.sellPrice;
+        card.innerHTML = `
+          <div class="market-card-thumb">
+            <img src="${item.icon}" alt="${item.name}">
+          </div>
+          <div class="market-card-info">
+            <div class="market-card-header">
+              <span class="market-card-name">${item.name}</span>
+              <span class="market-card-qty">x${item.count}</span>
+            </div>
+            <div class="market-card-stars">${'⭐'.repeat(item.rarity)}</div>
+            <div class="market-card-desc">${item.desc}</div>
+            <div class="market-card-actions">
+              <div class="market-card-price">💎 ${item.sellPrice} / adet <small style="color:#71717a;">(Top: ${totalItemValue}💎)</small></div>
+              <div style="display:flex; gap:6px;">
+                <button type="button" class="btn-sell-single" data-item-id="${item.id}" data-qty="1">1 Sat</button>
+                ${item.count > 1 ? `<button type="button" class="btn-sell-single" data-item-id="${item.id}" data-qty="${item.count}">Hepsi</button>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      // Bind sell buttons
+      grid.querySelectorAll('.btn-sell-single').forEach(btn => {
+        btn.onclick = async () => {
+          const itemId = btn.getAttribute('data-item-id');
+          const qty = parseInt(btn.getAttribute('data-qty'), 10) || 1;
+          await sellMaterialItem(itemId, qty, false);
+        };
+      });
+    }
+  }
+
+  async function sellMaterialItem(itemId, quantity, sellAll = false) {
+    try {
+      const res = await fetch('/api/world/sell-materials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: myPlayer.username,
+          itemId: itemId,
+          quantity: quantity,
+          sellAll: sellAll
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        playPrimoChime();
+        myPlayer.primogems = data.newTotalPrimo;
+        updateUIProfile();
+        await fetchInventory();
+        renderMonsterMarket();
+        addChatMessage('Tüccar Liben', `💰 "Harika ticaret dostum! ${data.soldCount} adet materyali aldım, hesabına +${data.earnedPrimo} 💎 Primogem aktardım!"`);
+        showDamageNumber({ x: myPlayer.x, y: 2.0, z: myPlayer.z }, `+${data.earnedPrimo} 💎`, 'primo');
+      } else {
+        addChatMessage('Tüccar Liben', `❌ ${data.message || 'Satış işlemi gerçekleştirilemedi.'}`);
+      }
+    } catch (e) {
+      console.error('[Market] Satış hatası:', e);
+    }
+  }
+
   // --- 12. UI Updates & Modal Helpers ---
   function updateUIProfile() {
     document.getElementById('ui-username').textContent = myPlayer.username;
@@ -5963,31 +6090,198 @@
     return group;
   }
 
-  function createPrimogemCrystalMesh() {
-    const gemGroup = new THREE.Group();
+  // Monster Loot Materials & Drop System
+  const MONSTER_MATERIALS = {
+    slime_condensate: {
+      id: 'slime_condensate',
+      name: 'Balçık Sıvısı',
+      rarity: 1,
+      sellPrice: 3,
+      type: 'material',
+      icon: '/assets/materials/slime_condensate.svg',
+      desc: 'Balçıklardan sızan temel yapışkan sıvı. Tüccar Liben simya için kullanıyor.'
+    },
+    slime_secretions: {
+      id: 'slime_secretions',
+      name: 'Balçık Salgısı',
+      rarity: 2,
+      sellPrice: 8,
+      type: 'material',
+      icon: '/assets/materials/slime_secretions.svg',
+      desc: 'Daha yoğun ve arıtılmış balçık salgısı.'
+    },
+    slime_concentrate: {
+      id: 'slime_concentrate',
+      name: 'Balçık Konsantresi',
+      rarity: 3,
+      sellPrice: 20,
+      type: 'material',
+      icon: '/assets/materials/slime_concentrate.svg',
+      desc: 'Yüksek enerjili saf elemental balçık çekirdeği.'
+    },
+    damaged_mask: {
+      id: 'damaged_mask',
+      name: 'Hasarlı Maske',
+      rarity: 1,
+      sellPrice: 4,
+      type: 'material',
+      icon: '/assets/materials/damaged_mask.svg',
+      desc: 'Kabile savaşçısının taktığı tahta maske parçası.'
+    },
+    stained_mask: {
+      id: 'stained_mask',
+      name: 'Lekeli Maske',
+      rarity: 2,
+      sellPrice: 10,
+      type: 'material',
+      icon: '/assets/materials/stained_mask.svg',
+      desc: 'Savaş yaralarıyla dolu kemik maske.'
+    },
+    ominous_mask: {
+      id: 'ominous_mask',
+      name: 'Uğursuz Maske',
+      rarity: 3,
+      sellPrice: 25,
+      type: 'material',
+      icon: '/assets/materials/ominous_mask.svg',
+      desc: 'Karanlık bir lanetle parıldayan kadim savaşçı maskesi.'
+    },
+    dead_ley_branch: {
+      id: 'dead_ley_branch',
+      name: 'Kuru Leyline Dalı',
+      rarity: 2,
+      sellPrice: 12,
+      type: 'material',
+      icon: '/assets/materials/dead_ley_branch.svg',
+      desc: 'Toprağın derinliklerindeki leylinelardan koparılmış kuru dal.'
+    },
+    ley_leaves: {
+      id: 'ley_leaves',
+      name: 'Parlayan Leyline Yaprağı',
+      rarity: 3,
+      sellPrice: 30,
+      type: 'material',
+      icon: '/assets/materials/ley_leaves.svg',
+      desc: 'Elemental enerjiyle hafifçe parıldayan sihirli yaprak.'
+    },
+    abyss_scroll: {
+      id: 'abyss_scroll',
+      name: 'Uçurum Ateş Parşömeni',
+      rarity: 4,
+      sellPrice: 65,
+      type: 'material',
+      icon: '/assets/materials/abyss_scroll.svg',
+      desc: 'Uçurum büyücülerinin gizli alev büyülerini içeren kadim parşömen.'
+    },
+    chaos_device: {
+      id: 'chaos_device',
+      name: 'Kaos Aygıtı',
+      rarity: 3,
+      sellPrice: 35,
+      type: 'material',
+      icon: '/assets/materials/chaos_device.svg',
+      desc: 'Antik otomatın hareket etmesini sağlayan dişli mekanizma parçası.'
+    },
+    chaos_circuit: {
+      id: 'chaos_circuit',
+      name: 'Kaos Devresi',
+      rarity: 4,
+      sellPrice: 75,
+      type: 'material',
+      icon: '/assets/materials/chaos_circuit.svg',
+      desc: 'Kayıp medeniyetlerin inşa ettiği karmaşık enerji devresi.'
+    },
+    chaos_core: {
+      id: 'chaos_core',
+      name: 'Kadim Kaos Çekirdeği',
+      rarity: 5,
+      sellPrice: 160,
+      type: 'material',
+      icon: '/assets/materials/chaos_core.svg',
+      desc: 'Yıkım Muhafızının göğsündeki kalıcı enerji kaynağı (Tam 1 Dilek Değerinde!).'
+    }
+  };
 
-    // Outer Faceted Diamond Octahedron (Emissive glow without heavy PointLight overhead)
-    const geo = new THREE.OctahedronGeometry(0.32, 0);
-    geo.scale(0.85, 1.35, 0.5);
+  function rollMobLoot(mobType) {
+    const drops = [];
+    const roll = Math.random();
+
+    if (mobType === 'slime_green' || mobType === 'slime_pyro') {
+      if (roll < 0.06) {
+        drops.push(MONSTER_MATERIALS.slime_concentrate);
+      } else if (roll < 0.32) {
+        drops.push(MONSTER_MATERIALS.slime_secretions);
+      } else {
+        drops.push(MONSTER_MATERIALS.slime_condensate);
+      }
+    } else if (mobType === 'hilichurl') {
+      if (roll < 0.08) {
+        drops.push(MONSTER_MATERIALS.ominous_mask);
+      } else if (roll < 0.35) {
+        drops.push(MONSTER_MATERIALS.stained_mask);
+      } else {
+        drops.push(MONSTER_MATERIALS.damaged_mask);
+      }
+    } else if (mobType === 'pyromancer') {
+      if (roll < 0.12) {
+        drops.push(MONSTER_MATERIALS.abyss_scroll);
+      } else if (roll < 0.45) {
+        drops.push(MONSTER_MATERIALS.ley_leaves);
+      } else {
+        drops.push(MONSTER_MATERIALS.dead_ley_branch);
+      }
+    } else if (mobType === 'ruin_golem') {
+      // Boss drops 2 items!
+      if (Math.random() < 0.4) {
+        drops.push(MONSTER_MATERIALS.chaos_circuit);
+      } else {
+        drops.push(MONSTER_MATERIALS.chaos_device);
+      }
+
+      if (Math.random() < 0.18) {
+        drops.push(MONSTER_MATERIALS.chaos_core); // 5★ Jackpot!
+      } else {
+        drops.push(MONSTER_MATERIALS.chaos_device);
+      }
+    } else {
+      drops.push(MONSTER_MATERIALS.slime_condensate);
+    }
+
+    return drops;
+  }
+
+  const RARITY_COLORS = {
+    1: { main: 0x94a3b8, emissive: 0x475569 },
+    2: { main: 0x22c55e, emissive: 0x15803d },
+    3: { main: 0x38bdf8, emissive: 0x0284c7 },
+    4: { main: 0xc084fc, emissive: 0x7e22ce },
+    5: { main: 0xf59e0b, emissive: 0xb45309 }
+  };
+
+  function createLootOrbMesh(rarity = 1) {
+    const orbGroup = new THREE.Group();
+    const col = RARITY_COLORS[rarity] || RARITY_COLORS[1];
+
+    // Glowing Faceted Material Core
+    const geo = new THREE.OctahedronGeometry(0.3, 0);
     const mat = new THREE.MeshStandardMaterial({
-      color: 0x38bdf8,
-      emissive: 0x0284c7,
+      color: col.main,
+      emissive: col.emissive,
       emissiveIntensity: 0.85,
-      roughness: 0.15,
-      metalness: 0.8
+      roughness: 0.2,
+      metalness: 0.7
     });
-    const outer = new THREE.Mesh(geo, mat);
-    gemGroup.add(outer);
+    const core = new THREE.Mesh(geo, mat);
+    orbGroup.add(core);
 
-    // Inner Amethyst Cross Star
-    const innerGeo = new THREE.OctahedronGeometry(0.22, 0);
-    innerGeo.scale(1.25, 0.65, 0.4);
-    const innerMat = new THREE.MeshBasicMaterial({ color: 0xc084fc });
-    const inner = new THREE.Mesh(innerGeo, innerMat);
-    inner.rotation.z = Math.PI / 4;
-    gemGroup.add(inner);
+    // Orbital Ring
+    const ringGeo = new THREE.TorusGeometry(0.42, 0.035, 6, 16);
+    const ringMat = new THREE.MeshBasicMaterial({ color: col.main });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI / 3;
+    orbGroup.add(ring);
 
-    return gemGroup;
+    return orbGroup;
   }
 
   // Pre-allocated geometries and materials for slash arcs (Zero GC stutter!)
@@ -6514,50 +6808,71 @@
     }
   }
 
+  function showLootToast(item) {
+    const container = document.getElementById('loot-toast-container');
+    if (!container) return;
+
+    const pill = document.createElement('div');
+    pill.className = `loot-toast-pill rarity-${item.rarity}`;
+    pill.innerHTML = `
+      <img src="${item.icon || '/assets/materials/slime_condensate.svg'}" alt="${item.name}">
+      <div>
+        <span class="loot-toast-name">${item.name}</span>
+        <span class="loot-toast-rarity">${'⭐'.repeat(item.rarity)} (+${item.sellPrice} 💎)</span>
+      </div>
+    `;
+
+    container.appendChild(pill);
+    setTimeout(() => {
+      pill.remove();
+    }, 2500);
+  }
+
   function defeatMob(mob) {
     mob.isDead = true;
     if (mob.mesh) {
       worldObjects.remove(mob.mesh);
     }
 
-    const count = mob.isBoss ? 8 : (mob.dropPrimo > 15 ? 4 : 2);
-    const primoPerGem = Math.max(1, Math.round(mob.dropPrimo / count));
+    const droppedItems = rollMobLoot(mob.type);
 
-    for (let i = 0; i < count; i++) {
-      const angle = (i / count) * Math.PI * 2 + Math.random() * 0.5;
-      const rad = 0.8 + Math.random() * 1.2;
+    droppedItems.forEach((item, idx) => {
+      const angle = (idx / droppedItems.length) * Math.PI * 2 + Math.random() * 0.5;
+      const rad = 0.8 + Math.random() * 0.8;
       const gx = mob.x + Math.cos(angle) * rad;
       const gz = mob.z + Math.sin(angle) * rad;
-      const gemMesh = createPrimogemCrystalMesh();
-      gemMesh.position.set(gx, 0.8, gz);
-      worldObjects.add(gemMesh);
+
+      const orbMesh = createLootOrbMesh(item.rarity);
+      orbMesh.position.set(gx, 0.8, gz);
+      worldObjects.add(orbMesh);
 
       activeDropGems.push({
-        mesh: gemMesh,
-        value: primoPerGem,
+        mesh: orbMesh,
+        item: item,
         x: gx,
         y: 0.8,
         z: gz,
         spawnTime: performance.now(),
-        vacuumDelay: 350 + i * 80
+        vacuumDelay: 300 + idx * 100
       });
-    }
-
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({
-        type: 'WORLD_MOB_DEFEAT',
-        mob: {
-          name: mob.name,
-          primo: mob.dropPrimo,
-          isBoss: mob.isBoss
-        }
-      }));
-    }
+    });
 
     if (mob.isBoss) {
       playVictoryJingle();
-      addChatMessage('⚔️ BOSS YENİLDİ', `👑 Antik Yıkım Muhafızı yere serildi! +${mob.dropPrimo} Primogem kazandın!`);
+      const bossLootName = droppedItems.find(i => i.rarity === 5)?.name || droppedItems[0]?.name || 'Kadim Kaos Çekirdeği';
+      addChatMessage('⚔️ BOSS YENİLDİ', `👑 Antik Yıkım Muhafızı yere serildi! Çantana nadir materyaller düştü!`);
       bossRespawnTimer = performance.now() + 25000;
+
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+          type: 'WORLD_MOB_DEFEAT',
+          mob: {
+            name: mob.name,
+            isBoss: true,
+            bossLootName: bossLootName
+          }
+        }));
+      }
     }
   }
 
@@ -6767,10 +7082,21 @@
           // Reached player!
           worldObjects.remove(gem.mesh);
           activeDropGems.splice(i, 1);
-          myPlayer.primogems += gem.value;
-          updateUIProfile();
-          playPrimoChime();
-          showDamageNumber({ x: myPlayer.x, y: 1.8, z: myPlayer.z }, `+${gem.value} 💎`, 'primo');
+
+          const item = gem.item;
+          if (item) {
+            myInventory.push(item);
+            playBeep(659, 'sine', 0.1);
+            showDamageNumber({ x: myPlayer.x, y: 1.8, z: myPlayer.z }, `📦 +1 ${item.name}`, `rarity-${item.rarity}`);
+            showLootToast(item);
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+              socket.send(JSON.stringify({
+                type: 'WORLD_ITEM_LOOT',
+                item: item
+              }));
+            }
+          }
         } else {
           // Vacuum flight towards player
           const vacSpeed = Math.min(18.0, 7.0 + (elapsed - gem.vacuumDelay) * 0.012) * delta;
@@ -7248,6 +7574,11 @@
     document.getElementById('btn-combat-dash')?.addEventListener('click', () => performDash());
     document.getElementById('btn-combat-skill')?.addEventListener('click', () => performVortexSkill());
     document.getElementById('btn-combat-burst')?.addEventListener('click', () => performBurstSkill());
+
+    // Monster Material Market Actions
+    document.getElementById('btn-market-sell-all')?.addEventListener('click', async () => {
+      await sellMaterialItem(null, null, true);
+    });
 
     // Spectator Mode Check
     const params = new URLSearchParams(window.location.search);

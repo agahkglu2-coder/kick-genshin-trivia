@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <radialGradient id="darkMask" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="70%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </radialGradient>
+    <filter id="purpleAura" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Sweeping Demonic Horns -->
+  <path d="M 28 34 Q 4 4 2 30 Q 18 52 32 46 Z" fill="#0f172a" stroke="#c084fc" stroke-width="1.5"/>
+  <path d="M 100 34 Q 124 4 126 30 Q 110 52 96 46 Z" fill="#0f172a" stroke="#c084fc" stroke-width="1.5"/>
+  <!-- Mask Plate -->
+  <path d="M 64 20 C 98 20 106 48 104 84 C 102 106 86 116 64 116 C 42 116 26 106 24 84 C 22 48 30 20 64 20 Z" fill="url(#darkMask)" stroke="#a855f7" stroke-width="3.5"/>
+  <!-- Glowing Violet Arcane Runes -->
+  <circle cx="64" cy="40" r="7" fill="none" stroke="#e879f9" stroke-width="2.5" filter="url(#purpleAura)"/>
+  <path d="M 64 47 L 64 68 M 52 56 L 76 56" stroke="#e879f9" stroke-width="2.5" stroke-linecap="round" filter="url(#purpleAura)"/>
+  <!-- Glowing Eyes -->
+  <ellipse cx="44" cy="76" rx="8" ry="4" transform="rotate(-15 44 76)" fill="#f43f5e" filter="url(#purpleAura)"/>
+  <ellipse cx="84" cy="76" rx="8" ry="4" transform="rotate(15 84 76)" fill="#f43f5e" filter="url(#purpleAura)"/>
+</svg>

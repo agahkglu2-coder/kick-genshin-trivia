@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <radialGradient id="bossAura" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.95"/>
+      <stop offset="45%" stop-color="#f59e0b" stop-opacity="0.65"/>
+      <stop offset="75%" stop-color="#d97706" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#78350f" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="cyclopsEye" cx="45%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#fef08a"/>
+      <stop offset="60%" stop-color="#f59e0b"/>
+      <stop offset="90%" stop-color="#b45309"/>
+      <stop offset="100%" stop-color="#451a03"/>
+    </radialGradient>
+    <filter id="coreSuperGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Pulsing Solar Aura -->
+  <circle cx="64" cy="64" r="60" fill="url(#bossAura)"/>
+  <!-- Geometric Ancient Containment Rhombus -->
+  <polygon points="64,8 116,64 64,120 12,64" fill="#1e293b" stroke="#f59e0b" stroke-width="4"/>
+  <polygon points="64,18 106,64 64,110 22,64" fill="#0f172a" stroke="#d97706" stroke-width="2.5"/>
+  <!-- Golden Armor Pauldron Claws Holding Core -->
+  <polygon points="64,18 78,42 64,36 50,42" fill="#f59e0b"/>
+  <polygon points="64,110 78,86 64,92 50,86" fill="#f59e0b"/>
+  <polygon points="22,64 46,78 40,64 46,50" fill="#f59e0b"/>
+  <polygon points="106,64 82,78 88,64 82,50" fill="#f59e0b"/>
+  <!-- Cyclops Automaton Eye Core -->
+  <circle cx="64" cy="64" r="28" fill="url(#cyclopsEye)" filter="url(#coreSuperGlow)"/>
+  <circle cx="64" cy="64" r="14" fill="#451a03"/>
+  <circle cx="64" cy="64" r="8" fill="#fef08a" filter="url(#coreSuperGlow)"/>
+  <circle cx="61" cy="60" r="3" fill="#ffffff"/>
+  <!-- Radiating Energy Rays -->
+  <line x1="64" y1="2" x2="64" y2="10" stroke="#fef08a" stroke-width="3" stroke-linecap="round"/>
+  <line x1="64" y1="118" x2="64" y2="126" stroke="#fef08a" stroke-width="3" stroke-linecap="round"/>
+  <line x1="2" y1="64" x2="10" y2="64" stroke="#fef08a" stroke-width="3" stroke-linecap="round"/>
+  <line x1="118" y1="64" x2="126" y2="64" stroke="#fef08a" stroke-width="3" stroke-linecap="round"/>
+</svg>
