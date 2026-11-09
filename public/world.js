@@ -1737,7 +1737,7 @@
     for (let i = 0; i < 24; i++) {
       const aMat = new THREE.MeshBasicMaterial({ color: auraColors[i % auraColors.length] });
       const aMesh = new THREE.Mesh(auraGeo, aMat);
-      aMesh.position.set(0, 5, -15);
+      aMesh.position.set(0, 4.8, -24.8);
       worldObjects.add(aMesh);
       shrineAuraData.push({
         mesh: aMesh,
@@ -1747,6 +1747,539 @@
         heightOffset: (Math.random() - 0.5) * 1.8
       });
     }
+  }
+
+  // --- Town Scenic Park Helpers ---
+  function createScenicGazebo(x, z) {
+    const group = new THREE.Group();
+    // Circular stone base
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 4.5, 0.4, 16), new THREE.MeshLambertMaterial({ color: 0x94a3b8 }));
+    base.position.y = 0.2;
+    group.add(base);
+
+    // 6 Marble Pillars
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const px = Math.cos(angle) * 3.5;
+      const pz = Math.sin(angle) * 3.5;
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 3.6, 8), new THREE.MeshLambertMaterial({ color: 0xf1f5f9 }));
+      col.position.set(px, 2.0, pz);
+      group.add(col);
+    }
+
+    // Domed copper roof
+    const dome = new THREE.Mesh(new THREE.ConeGeometry(4.4, 2.2, 16), new THREE.MeshLambertMaterial({ color: 0x059669 }));
+    dome.position.y = 4.7;
+    group.add(dome);
+
+    // Golden finial on top
+    const finial = new THREE.Mesh(new THREE.OctahedronGeometry(0.35), new THREE.MeshLambertMaterial({ color: 0xfacc15 }));
+    finial.position.y = 6.0;
+    group.add(finial);
+
+    // Central stone pedestal & flower urn
+    const seat = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.8, 0.45, 12), new THREE.MeshLambertMaterial({ color: 0x64748b }));
+    seat.position.y = 0.45;
+    group.add(seat);
+
+    const urn = new THREE.Mesh(new THREE.DodecahedronGeometry(0.4), new THREE.MeshBasicMaterial({ color: 0xf43f5e }));
+    urn.position.y = 0.95;
+    group.add(urn);
+
+    group.position.set(x, 0, z);
+    return group;
+  }
+
+  // --- Interior Helpers & NPC Billboards ---
+  function createNPCNametag(name, title) {
+    const cvs = document.createElement('canvas');
+    cvs.width = 256;
+    cvs.height = 64;
+    const ctx = cvs.getContext('2d');
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    ctx.beginPath();
+    ctx.roundRect(8, 8, 240, 48, 12);
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#f59e0b';
+    ctx.stroke();
+
+    ctx.font = 'bold 18px Nunito, sans-serif';
+    ctx.fillStyle = '#fef08a';
+    ctx.textAlign = 'center';
+    ctx.fillText(name, 128, 28);
+
+    ctx.font = '12px Nunito, sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(title, 128, 46);
+
+    const tex = new THREE.CanvasTexture(cvs);
+    const mat = new THREE.SpriteMaterial({ map: tex });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(3.4, 0.85, 1);
+    sprite.position.y = 3.3;
+    return sprite;
+  }
+
+  function createNPCBillboard(avatarIndex, name, title, x, z) {
+    const group = new THREE.Group();
+
+    const tex = createAvatarTexture(avatarIndex, 0);
+    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+    const spriteMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 2.7), mat);
+    spriteMesh.position.y = 1.35;
+    group.add(spriteMesh);
+
+    const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.7, 16), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 }));
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = 0.02;
+    group.add(shadow);
+
+    group.add(createNPCNametag(name, title));
+    group.position.set(x, 0, z);
+    return group;
+  }
+
+  function createCeilingChandelier(x, y, z, lightColor = 0xfef08a) {
+    const group = new THREE.Group();
+
+    const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.8), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+    chain.position.y = 0.9;
+    group.add(chain);
+
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.1, 8, 16), new THREE.MeshLambertMaterial({ color: 0x334155 }));
+    ring.rotation.x = Math.PI / 2;
+    group.add(ring);
+
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const lx = Math.cos(angle) * 1.4;
+      const lz = Math.sin(angle) * 1.4;
+      const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.35), new THREE.MeshBasicMaterial({ color: lightColor }));
+      candle.position.set(lx, 0.2, lz);
+      group.add(candle);
+    }
+
+    const light = new THREE.PointLight(lightColor, 0.9, 14, 2);
+    light.position.y = 0.3;
+    group.add(light);
+
+    group.position.set(x, y, z);
+    return group;
+  }
+
+  // --- Detailed Themed Building Interiors ---
+  function buildTradeHouseInterior() {
+    // 1. Ornate Red & Gold Centerpiece Persian Carpet
+    const rugGeo = new THREE.PlaneGeometry(16, 10);
+    const rug = new THREE.Mesh(rugGeo, new THREE.MeshLambertMaterial({ color: 0x991b1b }));
+    rug.rotation.x = -Math.PI / 2;
+    rug.position.set(0, 0.03, 1);
+    worldObjects.add(rug);
+
+    const border = new THREE.Mesh(new THREE.PlaneGeometry(16.6, 10.6), new THREE.MeshLambertMaterial({ color: 0xfacc15 }));
+    border.rotation.x = -Math.PI / 2;
+    border.position.set(0, 0.02, 1);
+    worldObjects.add(border);
+
+    // 2. Large Polished Mahogany Merchant Counter (L-shaped)
+    const darkWood = new THREE.MeshLambertMaterial({ color: 0x451a03 });
+    const counter = new THREE.Mesh(new THREE.BoxGeometry(16, 1.3, 1.6), darkWood);
+    counter.position.set(0, 0.65, -4);
+    counter.castShadow = true;
+    worldObjects.add(counter);
+
+    const sideCounter = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.3, 5), darkWood);
+    sideCounter.position.set(-7.2, 0.65, -6.5);
+    worldObjects.add(sideCounter);
+
+    // Brass Scales of Justice in center
+    const scale = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.8), new THREE.MeshLambertMaterial({ color: 0xfacc15 }));
+    scale.position.set(0, 1.7, -4);
+    worldObjects.add(scale);
+    const scaleBar = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.05), new THREE.MeshLambertMaterial({ color: 0xfacc15 }));
+    scaleBar.position.set(0, 2.0, -4);
+    worldObjects.add(scaleBar);
+
+    // Open Ledger Book & Feather Quill
+    const ledger = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.08, 0.45), new THREE.MeshLambertMaterial({ color: 0xfef9c3 }));
+    ledger.position.set(-2, 1.34, -4);
+    worldObjects.add(ledger);
+
+    // Coin pouches
+    [-3.2, -2.8, 2.5].forEach(cx => {
+      const bag = new THREE.Mesh(new THREE.DodecahedronGeometry(0.18), new THREE.MeshLambertMaterial({ color: 0xf59e0b }));
+      bag.position.set(cx, 1.45, -4);
+      worldObjects.add(bag);
+    });
+
+    // Display of glowing potion flasks
+    const potColors = [0x38bdf8, 0xef4444, 0x10b981, 0xa855f7];
+    potColors.forEach((col, idx) => {
+      const flask = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.15, 0.35, 8), new THREE.MeshBasicMaterial({ color: col }));
+      flask.position.set(3.5 + idx * 0.5, 1.48, -4);
+      worldObjects.add(flask);
+    });
+
+    // 3. NPC Merchant "Tüccar Liben" Behind Counter
+    worldObjects.add(createNPCBillboard(0, 'Tüccar Liben', 'Büyük Gezgin Tüccar', 0, -6.2));
+
+    // 4. Back Wall Shelving & Goods
+    const shelf = new THREE.Mesh(new THREE.BoxGeometry(18, 5, 0.8), darkWood);
+    shelf.position.set(0, 3.5, -11.2);
+    worldObjects.add(shelf);
+
+    // Stacked Trade Crates & Barrels
+    [-11, -11, 11, 11].forEach((bx, idx) => {
+      const bz = idx % 2 === 0 ? -9 : -6.5;
+      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.65, 1.4, 10), new THREE.MeshLambertMaterial({ color: 0x854d0e }));
+      barrel.position.set(bx, 0.7, bz);
+      barrel.castShadow = true;
+      worldObjects.add(barrel);
+    });
+
+    // Treasure Chest spilling gold
+    const chest = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.0, 1.0), new THREE.MeshLambertMaterial({ color: 0x78350f }));
+    chest.position.set(-11, 0.5, -3);
+    worldObjects.add(chest);
+    const goldPiles = new THREE.Mesh(new THREE.DodecahedronGeometry(0.35), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+    goldPiles.position.set(-11, 1.1, -3);
+    worldObjects.add(goldPiles);
+
+    // 5. Private Trading Negotiation Lounges (Left & Right)
+    [-9, 9].forEach(lx => {
+      const table = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.1, 12), darkWood);
+      table.position.set(lx, 1.0, 4);
+      worldObjects.add(table);
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.0), darkWood);
+      leg.position.set(lx, 0.5, 4);
+      worldObjects.add(leg);
+
+      const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.4), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+      candle.position.set(lx, 1.25, 4);
+      worldObjects.add(candle);
+      const candleLight = new THREE.PointLight(0xfef08a, 0.5, 6, 2);
+      candleLight.position.set(lx, 1.5, 4);
+      worldObjects.add(candleLight);
+
+      [-1.4, 1.4].forEach(cz => {
+        const chair = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.8, 1.0), new THREE.MeshLambertMaterial({ color: 0x991b1b }));
+        chair.position.set(lx, 0.4, 4 + cz);
+        worldObjects.add(chair);
+        const back = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 0.2), new THREE.MeshLambertMaterial({ color: 0x991b1b }));
+        back.position.set(lx, 0.9, 4 + cz + (cz < 0 ? -0.4 : 0.4));
+        worldObjects.add(back);
+      });
+    });
+
+    // 6. Hanging Grand Chandelier
+    worldObjects.add(createCeilingChandelier(0, 6.2, 0, 0xfef08a));
+  }
+
+  function buildTavernInterior() {
+    const darkWood = new THREE.MeshLambertMaterial({ color: 0x451a03 });
+    const medWood = new THREE.MeshLambertMaterial({ color: 0x78350f });
+
+    // 1. Grand Rustic Fieldstone Fireplace (Back Wall Center)
+    const stoneMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
+    const hearth = new THREE.Mesh(new THREE.BoxGeometry(5.5, 5.0, 1.8), stoneMat);
+    hearth.position.set(0, 2.5, -10.8);
+    worldObjects.add(hearth);
+
+    const recess = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.5, 1.2), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+    recess.position.set(0, 1.25, -10.3);
+    worldObjects.add(recess);
+
+    const fire = new THREE.Mesh(new THREE.DodecahedronGeometry(0.55), new THREE.MeshBasicMaterial({ color: 0xf97316 }));
+    fire.position.set(0, 0.65, -10.2);
+    worldObjects.add(fire);
+
+    const fireInner = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+    fireInner.position.set(0, 0.75, -10.2);
+    worldObjects.add(fireInner);
+
+    const fireLight = new THREE.PointLight(0xf97316, 1.2, 14, 2);
+    fireLight.position.set(0, 1.4, -9.5);
+    worldObjects.add(fireLight);
+
+    // Sleeping cat in front of hearth
+    const cushion = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.0, 0.2, 12), new THREE.MeshLambertMaterial({ color: 0x991b1b }));
+    cushion.position.set(0, 0.1, -8.0);
+    worldObjects.add(cushion);
+
+    const sleepCat = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), new THREE.MeshLambertMaterial({ color: 0xf97316 }));
+    sleepCat.position.set(0, 0.35, -8.0);
+    sleepCat.scale.set(1.2, 0.7, 0.9);
+    worldObjects.add(sleepCat);
+
+    // 2. Tavern Bar Counter & Backbar (Right Side)
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.3, 9.0), darkWood);
+    bar.position.set(7.5, 0.65, -2.5);
+    bar.castShadow = true;
+    worldObjects.add(bar);
+
+    const barReturn = new THREE.Mesh(new THREE.BoxGeometry(4.0, 1.3, 1.6), darkWood);
+    barReturn.position.set(9.5, 0.65, 2.0);
+    worldObjects.add(barReturn);
+
+    // 4 High Bar Stools
+    for (let i = 0; i < 4; i++) {
+      const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.8, 8), medWood);
+      stool.position.set(5.8, 0.4, -5.5 + i * 2.0);
+      worldObjects.add(stool);
+    }
+
+    // Backbar Shelves with Wine Bottles & Rum Casks
+    const backShelf = new THREE.Mesh(new THREE.BoxGeometry(0.8, 5.0, 9.0), darkWood);
+    backShelf.position.set(13.5, 3.0, -2.5);
+    worldObjects.add(backShelf);
+
+    [-4, -2, 0].forEach(bz => {
+      const cask = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 0.9, 8), medWood);
+      cask.rotation.z = Math.PI / 2;
+      cask.position.set(12.8, 3.2, bz);
+      worldObjects.add(cask);
+    });
+
+    // NPC Bartender Diona
+    worldObjects.add(createNPCBillboard(1, '🐱 Diona', 'Baş Barmen & Kedi İksir Ustası', 10.5, -2.5));
+
+    // 3. Tavern Dining Tables with Mugs & Stools (Left Side)
+    [-4, 3].forEach(tz => {
+      const table = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.12, 12), medWood);
+      table.position.set(-8.0, 1.0, tz);
+      worldObjects.add(table);
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 1.0), darkWood);
+      leg.position.set(-8.0, 0.5, tz);
+      worldObjects.add(leg);
+
+      [-0.4, 0.4].forEach(mx => {
+        const mug = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.22, 8), new THREE.MeshLambertMaterial({ color: 0xd97706 }));
+        mug.position.set(-8.0 + mx, 1.15, tz);
+        worldObjects.add(mug);
+        const foam = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.06, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        foam.position.set(-8.0 + mx, 1.28, tz);
+        worldObjects.add(foam);
+      });
+
+      [
+        { x: -9.6, z: tz }, { x: -6.4, z: tz },
+        { x: -8.0, z: tz - 1.5 }, { x: -8.0, z: tz + 1.5 }
+      ].forEach(sp => {
+        const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.6, 8), medWood);
+        stool.position.set(sp.x, 0.3, sp.z);
+        worldObjects.add(stool);
+      });
+    });
+
+    // 4. Minstrel Corner
+    const stage = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.35, 4.0), darkWood);
+    stage.position.set(12.0, 0.18, 8.5);
+    worldObjects.add(stage);
+
+    const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.45, 0.7, 8), medWood);
+    drum.position.set(12.5, 0.7, 8.5);
+    worldObjects.add(drum);
+
+    // 5. Hanging Wagon Wheel Chandelier
+    worldObjects.add(createCeilingChandelier(0, 5.8, 0, 0xf59e0b));
+  }
+
+  function buildShrineInterior() {
+    const goldMat = new THREE.MeshLambertMaterial({ color: 0xfacc15 });
+    const marbleWhite = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+
+    // 1. Celestial Zodiac Floor Constellation Ring
+    const ring = new THREE.Mesh(new THREE.RingGeometry(5.2, 5.6, 32), new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide }));
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(0, 0.03, -3);
+    worldObjects.add(ring);
+
+    // 2. 3-Tier Elevated Sacred Dais
+    [
+      { r: 4.8, h: 0.3, y: 0.15 },
+      { r: 3.8, h: 0.3, y: 0.45 },
+      { r: 2.6, h: 0.3, y: 0.75 }
+    ].forEach(tier => {
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(tier.r, tier.r + 0.2, tier.h, 24), marbleWhite);
+      m.position.set(0, tier.y, -3);
+      m.receiveShadow = true;
+      worldObjects.add(m);
+    });
+
+    const altPed = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.0, 0.8, 12), goldMat);
+    altPed.position.set(0, 1.3, -3);
+    worldObjects.add(altPed);
+
+    // 3. Central Hovering, Rotating Primogem Star
+    const starGeo = new THREE.OctahedronGeometry(1.2, 0);
+    const starMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true });
+    const starMesh = new THREE.Mesh(starGeo, starMat);
+    starMesh.position.set(0, 3.2, -3);
+    worldObjects.add(starMesh);
+    shrineCrystalMesh = starMesh;
+
+    const starCore = new THREE.Mesh(new THREE.OctahedronGeometry(0.65, 0), new THREE.MeshBasicMaterial({ color: 0xa855f7 }));
+    starMesh.add(starCore);
+
+    const starLight = new THREE.PointLight(0xa855f7, 1.2, 16, 2);
+    starLight.position.set(0, 3.2, -3);
+    worldObjects.add(starLight);
+
+    // 4. Sanctuary Colonnade: 4 Monumental Marble Pillars
+    [
+      { x: -5.5, z: -7.5 }, { x: 5.5, z: -7.5 },
+      { x: -5.5, z: 1.5 }, { x: 5.5, z: 1.5 }
+    ].forEach(p => {
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 7.5, 12), marbleWhite);
+      col.position.set(p.x, 3.75, p.z);
+      col.castShadow = true;
+      worldObjects.add(col);
+
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.45, 0.4, 8), goldMat);
+      cap.position.set(p.x, 7.5, p.z);
+      worldObjects.add(cap);
+    });
+
+    // 5. Stained-Glass Cosmic Rose Window on Back Wall
+    const winRing = new THREE.Mesh(new THREE.TorusGeometry(3.2, 0.25, 8, 32), goldMat);
+    winRing.position.set(0, 4.8, -11.8);
+    worldObjects.add(winRing);
+
+    const winGlass = new THREE.Mesh(new THREE.CircleGeometry(3.0, 24), new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.8
+    }));
+    winGlass.position.set(0, 4.8, -11.75);
+    worldObjects.add(winGlass);
+
+    const roseStar = new THREE.Mesh(new THREE.OctahedronGeometry(1.2, 0), goldMat);
+    roseStar.position.set(0, 4.8, -11.6);
+    worldObjects.add(roseStar);
+
+    // 6. Two Ornate Tall Braziers with Violet Flames
+    [-4.0, 4.0].forEach(bx => {
+      const brazier = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.35, 1.2, 8), new THREE.MeshLambertMaterial({ color: 0x1e1b4b }));
+      brazier.position.set(bx, 0.6, -1.0);
+      worldObjects.add(brazier);
+
+      const fire = new THREE.Mesh(new THREE.DodecahedronGeometry(0.35), new THREE.MeshBasicMaterial({ color: 0xc084fc }));
+      fire.position.set(bx, 1.4, -1.0);
+      worldObjects.add(fire);
+
+      const bLight = new THREE.PointLight(0xc084fc, 0.8, 10, 2);
+      bLight.position.set(bx, 1.5, -1.0);
+      worldObjects.add(bLight);
+    });
+
+    // 7. NPC Shrine Maiden "Yae Miko"
+    worldObjects.add(createNPCBillboard(2, '✨ Yae Miko', 'Baş Rahibe & Kader Danışmanı', 3.0, -4.5));
+
+    // 8. Incense Urns in corners
+    [-11, 11].forEach(ux => {
+      const urn = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.2, 1.0, 8), goldMat);
+      urn.position.set(ux, 0.5, -8);
+      worldObjects.add(urn);
+    });
+  }
+
+  function buildGuildInterior() {
+    const darkWood = new THREE.MeshLambertMaterial({ color: 0x451a03 });
+    const steelMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
+
+    // 1. Royal Emerald-Green Runner Carpet Down Center
+    const runner = new THREE.Mesh(new THREE.PlaneGeometry(6, 20), new THREE.MeshLambertMaterial({ color: 0x14532d }));
+    runner.rotation.x = -Math.PI / 2;
+    runner.position.set(0, 0.02, 1);
+    worldObjects.add(runner);
+
+    // 2. Large Tactical War & Strategy Table (Center)
+    const table = new THREE.Mesh(new THREE.BoxGeometry(6.5, 1.2, 4.5), darkWood);
+    table.position.set(0, 0.6, 0);
+    table.castShadow = true;
+    worldObjects.add(table);
+
+    // Miniature Topographic Terrain Map on Table
+    const map = new THREE.Mesh(new THREE.PlaneGeometry(5.8, 3.8), new THREE.MeshLambertMaterial({ color: 0x166534 }));
+    map.rotation.x = -Math.PI / 2;
+    map.position.set(0, 1.22, 0);
+    worldObjects.add(map);
+
+    // Mini mountain peaks on map
+    [
+      { x: -1.4, z: -0.6, h: 0.45 },
+      { x: -1.0, z: -0.3, h: 0.35 },
+      { x: 1.2, z: 0.5, h: 0.5 }
+    ].forEach(m => {
+      const peak = new THREE.Mesh(new THREE.ConeGeometry(0.35, m.h, 4), new THREE.MeshLambertMaterial({ color: 0x64748b }));
+      peak.position.set(m.x, 1.22 + m.h / 2, m.z);
+      worldObjects.add(peak);
+    });
+
+    // Red Battle Pin Markers
+    [-1.2, 0.8, -0.2].forEach((px, idx) => {
+      const pin = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.25, 4), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+      pin.position.set(px, 1.35, (idx - 1) * 0.7);
+      worldObjects.add(pin);
+    });
+
+    // 3. Reception Desk (Left Side)
+    const desk = new THREE.Mesh(new THREE.BoxGeometry(5.5, 1.2, 1.6), darkWood);
+    desk.position.set(-8.5, 0.6, -4.5);
+    worldObjects.add(desk);
+
+    const ledger = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.08, 0.5), new THREE.MeshLambertMaterial({ color: 0xfef3c7 }));
+    ledger.position.set(-8.5, 1.25, -4.5);
+    worldObjects.add(ledger);
+
+    // NPC Guild Receptionist Katheryne
+    worldObjects.add(createNPCBillboard(3, 'Katheryne', 'Maceracılar Loncası Katibi', -8.5, -6.8));
+
+    // 4. Grand Bounty Quest Notice Board (Back Wall)
+    const board = new THREE.Mesh(new THREE.BoxGeometry(8.0, 3.5, 0.15), new THREE.MeshLambertMaterial({ color: 0x78350f }));
+    board.position.set(0, 4.0, -11.8);
+    worldObjects.add(board);
+
+    // 6 Pinned Bounty Posters on Board
+    [-3.0, -1.8, -0.6, 0.6, 1.8, 3.0].forEach((px, idx) => {
+      const poster = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.1), new THREE.MeshBasicMaterial({ color: 0xfef9c3 }));
+      poster.position.set(px, 4.0 + (idx % 2 === 0 ? 0.2 : -0.2), -11.7);
+      worldObjects.add(poster);
+
+      const seal = new THREE.Mesh(new THREE.CircleGeometry(0.08, 6), new THREE.MeshBasicMaterial({ color: 0xb91c1c }));
+      seal.position.set(px, 4.45 + (idx % 2 === 0 ? 0.2 : -0.2), -11.68);
+      worldObjects.add(seal);
+    });
+
+    // 5. Armory & Weapon Racks (Right Wall)
+    [2, -4].forEach(rz => {
+      const rack = new THREE.Mesh(new THREE.BoxGeometry(0.4, 3.2, 2.8), darkWood);
+      rack.position.set(14.5, 1.6, rz);
+      worldObjects.add(rack);
+
+      [-0.8, 0, 0.8].forEach(sz => {
+        const sword = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.4, 0.04), steelMat);
+        sword.position.set(14.3, 1.6, rz + sz);
+        worldObjects.add(sword);
+      });
+    });
+
+    // Trophy Dragon Skull above Bounty Board
+    const skull = new THREE.Mesh(new THREE.DodecahedronGeometry(0.7), new THREE.MeshLambertMaterial({ color: 0xe2e8f0 }));
+    skull.position.set(0, 6.4, -11.6);
+    worldObjects.add(skull);
+
+    // 6. Practice Dummy in Corner
+    const dummyPole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.2), darkWood);
+    dummyPole.position.set(-12, 1.1, 7.5);
+    worldObjects.add(dummyPole);
+    const dummyBody = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.3, 1.0, 8), new THREE.MeshLambertMaterial({ color: 0xd97706 }));
+    dummyBody.position.set(-12, 1.4, 7.5);
+    worldObjects.add(dummyBody);
+
+    // 7. Heavy Iron Ring Chandelier
+    worldObjects.add(createCeilingChandelier(0, 5.8, 0, 0xf97316));
   }
 
   // --- 5. Map Builders (Town vs Interior) ---
@@ -1769,8 +2302,8 @@
     currentMap = 'town';
     document.getElementById('ui-location').textContent = 'Kasaba Meydanı';
 
-    // 1. Terrain Grass with 16-bit Flower Texture
-    const grassGeo = new THREE.PlaneGeometry(92, 92);
+    // 1. Terrain Grass (Expansive 120x120 Meadow)
+    const grassGeo = new THREE.PlaneGeometry(120, 120);
     const grassMat = new THREE.MeshLambertMaterial({
       map: createProceduralGrassTexture()
     });
@@ -1779,32 +2312,64 @@
     grass.receiveShadow = true;
     worldObjects.add(grass);
 
-    // 2. Cobblestone Crossroads with Curbs
-    const pathTexX = createProceduralCobbleTexture(2, 24);
+    // 2. Wide Cobblestone Crossroads with Curbs (88m Grand Avenues)
+    const pathTexX = createProceduralCobbleTexture(2, 28);
     const pathMatX = new THREE.MeshLambertMaterial({ map: pathTexX });
-    const pathX = new THREE.Mesh(new THREE.PlaneGeometry(8, 72), pathMatX);
+    const pathX = new THREE.Mesh(new THREE.PlaneGeometry(8, 88), pathMatX);
     pathX.rotation.x = -Math.PI / 2;
     pathX.position.y = 0.02;
     pathX.receiveShadow = true;
     worldObjects.add(pathX);
 
-    const pathTexZ = createProceduralCobbleTexture(24, 2);
+    const pathTexZ = createProceduralCobbleTexture(28, 2);
     const pathMatZ = new THREE.MeshLambertMaterial({ map: pathTexZ });
-    const pathZ = new THREE.Mesh(new THREE.PlaneGeometry(72, 8), pathMatZ);
+    const pathZ = new THREE.Mesh(new THREE.PlaneGeometry(88, 8), pathMatZ);
     pathZ.rotation.x = -Math.PI / 2;
     pathZ.position.y = 0.02;
     pathZ.receiveShadow = true;
     worldObjects.add(pathZ);
 
-    // Stone Curb Lines along the roads
+    // Secondary Paved Building Branches (Direct paved plazas to each quarter)
+    const branchTex = createProceduralCobbleTexture(6, 2);
+    const branchMat = new THREE.MeshLambertMaterial({ map: branchTex });
+
+    // Trade Mart Branch (West-North)
+    const bTrade = new THREE.Mesh(new THREE.PlaneGeometry(18, 6), branchMat);
+    bTrade.rotation.x = -Math.PI / 2;
+    bTrade.position.set(-15, 0.022, -10);
+    bTrade.receiveShadow = true;
+    worldObjects.add(bTrade);
+
+    // Taverna Branch (East-North)
+    const bTavern = new THREE.Mesh(new THREE.PlaneGeometry(18, 6), branchMat);
+    bTavern.rotation.x = -Math.PI / 2;
+    bTavern.position.set(15, 0.022, -10);
+    bTavern.receiveShadow = true;
+    worldObjects.add(bTavern);
+
+    // Guild Branch (West-South)
+    const bGuild = new THREE.Mesh(new THREE.PlaneGeometry(18, 6), branchMat);
+    bGuild.rotation.x = -Math.PI / 2;
+    bGuild.position.set(-15, 0.022, 10);
+    bGuild.receiveShadow = true;
+    worldObjects.add(bGuild);
+
+    // Gazebo Park Branch (East-South)
+    const bGazebo = new THREE.Mesh(new THREE.PlaneGeometry(18, 6), branchMat);
+    bGazebo.rotation.x = -Math.PI / 2;
+    bGazebo.position.set(15, 0.022, 10);
+    bGazebo.receiveShadow = true;
+    worldObjects.add(bGazebo);
+
+    // Stone Curb Lines along the main avenues
     const curbMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
     [-4.1, 4.1].forEach(offset => {
-      const curbX = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.15, 72), curbMat);
+      const curbX = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.15, 88), curbMat);
       curbX.position.set(offset, 0.08, 0);
       curbX.receiveShadow = true;
       worldObjects.add(curbX);
 
-      const curbZ = new THREE.Mesh(new THREE.BoxGeometry(72, 0.15, 0.25), curbMat);
+      const curbZ = new THREE.Mesh(new THREE.BoxGeometry(88, 0.15, 0.25), curbMat);
       curbZ.position.set(0, 0.08, offset);
       curbZ.receiveShadow = true;
       worldObjects.add(curbZ);
@@ -1814,9 +2379,9 @@
     worldObjects.add(createCentralFountain());
 
     // 4. Southern River Canal & Arched Stone Bridge
-    // Canal Channel at z = 24 (z: 20 to 28, spans x: -46 to 46)
+    // Canal Channel at z = 24 (spans x: -60 to 60)
     const canalBed = new THREE.Mesh(
-      new THREE.PlaneGeometry(92, 8),
+      new THREE.PlaneGeometry(120, 8),
       new THREE.MeshLambertMaterial({ color: 0x0f172a })
     );
     canalBed.rotation.x = -Math.PI / 2;
@@ -1825,7 +2390,7 @@
     worldObjects.add(canalBed);
 
     // River water surface with animated ripples
-    const canalWaterGeo = new THREE.PlaneGeometry(92, 7.8);
+    const canalWaterGeo = new THREE.PlaneGeometry(120, 7.8);
     const canalWaterMat = new THREE.MeshLambertMaterial({
       map: createProceduralWaterTexture(),
       transparent: true,
@@ -1839,7 +2404,7 @@
     // Embankment stone retaining walls
     const bankMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
     [20.1, 27.9].forEach(bz => {
-      const wall = new THREE.Mesh(new THREE.BoxGeometry(92, 0.7, 0.4), bankMat);
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(120, 0.7, 0.4), bankMat);
       wall.position.set(0, 0.25, bz);
       wall.castShadow = true;
       wall.receiveShadow = true;
@@ -1848,13 +2413,12 @@
 
     // Floating water lilies in canal
     [
-      { x: -18, z: 22.8 }, { x: -12, z: 25.2 }, { x: -6, z: 23.4 },
-      { x: 8, z: 24.8 }, { x: 16, z: 22.6 }, { x: 25, z: 25.0 }
+      { x: -24, z: 22.8 }, { x: -16, z: 25.2 }, { x: -8, z: 23.4 },
+      { x: 8, z: 24.8 }, { x: 18, z: 22.6 }, { x: 28, z: 25.0 }
     ].forEach(p => worldObjects.add(createWaterLily(p.x, p.z)));
 
     // Arched Stone Bridge at x = 0, z = 24
     const bridgeGroup = new THREE.Group();
-    // Central arched walkway
     const bridgeGeo = new THREE.BoxGeometry(6.6, 0.4, 8.4);
     const bridgeMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
     const bridgeMesh = new THREE.Mesh(bridgeGeo, bridgeMat);
@@ -1872,7 +2436,6 @@
       rail.castShadow = true;
       bridgeGroup.add(rail);
 
-      // 4 Bridge Corner Lantern Pedestals
       [19.8, 28.2].forEach(pz => {
         const ped = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, 0.6), bankMat);
         ped.position.set(rx, 0.6, pz);
@@ -1890,73 +2453,76 @@
     });
     worldObjects.add(bridgeGroup);
 
-    // 5. Four Key 3D Stylized Architectural Buildings (Zero 2D Sticker Planes!)
-    // A) Takas Pazarı (Trade Mart) - Top-Left
+    // 5. Four Key 3D Stylized Architectural Buildings (Spaced Generously Apart!)
+    // A) Takas Pazarı (Trade Mart) - North-West Quarter (-24, -14)
     const tradeHouse = createTradeMartBuilding();
-    tradeHouse.position.set(-14, 0, -10);
+    tradeHouse.position.set(-24, 0, -14);
     worldObjects.add(tradeHouse);
 
     // Market Plaza Stalls in front of Trade Mart
     worldObjects.add(createMarketStall({
-      x: -9, z: -4, rotY: 0,
+      x: -17, z: -5, rotY: 0,
       awningColor1: 0xef4444, awningColor2: 0xffffff, wareType: 'fruits'
     }));
     worldObjects.add(createMarketStall({
-      x: -5, z: -4, rotY: 0,
+      x: -12, z: -5, rotY: 0,
       awningColor1: 0x3b82f6, awningColor2: 0xfacc15, wareType: 'potions'
     }));
 
-    // B) Cat's Tail Taverna - Top-Right
-    chimneyPos = { x: 16.8, y: 9.0, z: -12.2 };
+    // B) Cat's Tail Taverna - North-East Quarter (24, -14)
+    chimneyPos = { x: 26.8, y: 9.0, z: -16.2 };
     const tavern = createTavernBuilding();
-    tavern.position.set(14, 0, -10);
+    tavern.position.set(24, 0, -14);
     worldObjects.add(tavern);
 
-    // Cat's Tail Outdoor Patio with Parasols and Tables
-    worldObjects.add(createTavernPatio(14, -3));
+    // Cat's Tail Outdoor Patio with Parasols and Tables (24, -4)
+    worldObjects.add(createTavernPatio(24, -4));
 
-    // C) Dilek Tapınağı (Gacha Shrine) - North Center
+    // C) Dilek Tapınağı (Gacha Shrine) - Grand North Sanctuary (0, -32)
     const shrine = createShrineBuilding();
-    shrine.position.set(0, 0, -20);
+    shrine.position.set(0, 0, -32);
     worldObjects.add(shrine);
 
-    // D) Maceracılar Loncası (Guild Hall) - Bottom-Left
+    // D) Maceracılar Loncası (Guild Hall) - South-West Quarter (-24, 14)
     const guild = createGuildBuilding();
-    guild.position.set(-14, 0, 12);
+    guild.position.set(-24, 0, 14);
     worldObjects.add(guild);
 
     // Quest Notice Board in front of Guild
-    worldObjects.add(createNoticeBoard(-8, 9, 0));
+    worldObjects.add(createNoticeBoard(-17, 8, 0));
+
+    // E) Scenic Waterside Gazebo & Garden - South-East Quarter (24, 14)
+    worldObjects.add(createScenicGazebo(24, 14));
 
     // 6. Street Lamps along crossroads & plazas
     const lampPositions = [
-      { x: -5, z: -14 }, { x: 5, z: -14 },
-      { x: -5, z: -3 }, { x: 5, z: -3 },
-      { x: -5, z: 9 }, { x: 5, z: 9 },
-      { x: -5, z: 17 }, { x: 5, z: 17 }
+      { x: -12, z: 0 }, { x: -24, z: 0 }, { x: 12, z: 0 }, { x: 24, z: 0 },
+      { x: 0, z: -14 }, { x: 0, z: -24 }, { x: 0, z: 12 },
+      { x: -16, z: -7 }, { x: 16, z: -7 }, { x: -16, z: 7 }, { x: 16, z: 7 }
     ];
     lampPositions.forEach(p => worldObjects.add(createStreetLamp(p.x, p.z)));
 
-    // 7. Stone Benches & Flower Beds around Fountain Plaza (outside the basin)
-    worldObjects.add(createBench(0, -6.6, 0));
-    worldObjects.add(createBench(0, 6.6, Math.PI));
-    worldObjects.add(createBench(-6.6, 0, Math.PI / 2));
-    worldObjects.add(createBench(6.6, 0, -Math.PI / 2));
+    // 7. Stone Benches & Flower Beds around Fountain Plaza (Framing the fountain)
+    worldObjects.add(createBench(0, -7.2, 0));
+    worldObjects.add(createBench(0, 7.2, Math.PI));
+    worldObjects.add(createBench(-7.2, 0, Math.PI / 2));
+    worldObjects.add(createBench(7.2, 0, -Math.PI / 2));
 
-    worldObjects.add(createFlowerBed(-8, 3, 4, 2));
-    worldObjects.add(createFlowerBed(8, 3, 4, 2));
-    worldObjects.add(createFlowerBed(-8, -14, 4, 2));
-    worldObjects.add(createFlowerBed(8, -14, 4, 2));
+    worldObjects.add(createFlowerBed(-10, 5, 4, 2));
+    worldObjects.add(createFlowerBed(10, 5, 4, 2));
+    worldObjects.add(createFlowerBed(-10, -10, 4, 2));
+    worldObjects.add(createFlowerBed(10, -10, 4, 2));
 
     // 8. Cute Wandering Pixel Cats
-    worldObjects.add(createPixelCat(11, -1.8, 0xf97316)); // Ginger tabby near tavern
-    worldObjects.add(createPixelCat(-2.8, 2.2, 0x0f172a)); // Calico near fountain
+    worldObjects.add(createPixelCat(20, -2.5, 0xf97316)); // Ginger tabby near tavern patio
+    worldObjects.add(createPixelCat(-3.5, 2.5, 0x0f172a)); // Calico near fountain
+    worldObjects.add(createPixelCat(22, 16, 0xffffff)); // White cat near scenic gazebo
 
     // 9. Procedural Pine Trees around perimeter
     const treePositions = [
-      { x: -28, z: -25 }, { x: -25, z: -10 }, { x: -26, z: 8 }, { x: -28, z: 32 },
-      { x: 28, z: -25 }, { x: 25, z: -10 }, { x: 26, z: 8 }, { x: 28, z: 32 },
-      { x: -10, z: -32 }, { x: 10, z: -32 }, { x: -18, z: 34 }, { x: 18, z: 34 }
+      { x: -42, z: -35 }, { x: -38, z: -20 }, { x: -40, z: 5 }, { x: -42, z: 32 },
+      { x: 42, z: -35 }, { x: 38, z: -20 }, { x: 40, z: 5 }, { x: 42, z: 32 },
+      { x: -16, z: -42 }, { x: 16, z: -42 }, { x: -28, z: 38 }, { x: 28, z: 38 }
     ];
 
     const trunkGeo = new THREE.CylinderGeometry(0.4, 0.5, 2.2, 6);
@@ -1995,71 +2561,90 @@
     if (mapId === 'trade_house') {
       locName = 'Büyük Takas Pazarı';
       floorColor = 0x854d0e;
-      wallColor = 0x0284c7;
+      wallColor = 0x3b1803;
     } else if (mapId === 'tavern') {
       locName = "Cat's Tail Taverna";
-      floorColor = 0x5c3d2e;
-      wallColor = 0x78350f;
+      floorColor = 0x451a03;
+      wallColor = 0x334155;
     } else if (mapId === 'shrine') {
-      locName = 'Dilek Tapınağı';
-      floorColor = 0x3b0764;
-      wallColor = 0x581c87;
+      locName = 'Kader & Dilek Tapınağı';
+      floorColor = 0x1e1b4b;
+      wallColor = 0x3b0764;
     } else if (mapId === 'guild') {
       locName = 'Maceracılar Loncası';
       floorColor = 0x334155;
-      wallColor = 0x166534;
+      wallColor = 0x1e293b;
     }
 
     document.getElementById('ui-location').textContent = locName;
 
-    // Room Floor
-    const floorGeo = new THREE.PlaneGeometry(28, 22);
+    // Room Floor (Grand 32x24 Hall)
+    const floorGeo = new THREE.PlaneGeometry(32, 24);
     const floorMat = new THREE.MeshLambertMaterial({ color: floorColor });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     worldObjects.add(floor);
 
-    // Walls
+    // Walls (North, West, East, South wings)
     const wallMat = new THREE.MeshLambertMaterial({ color: wallColor });
-    const backWall = new THREE.Mesh(new THREE.BoxGeometry(28, 8, 1), wallMat);
-    backWall.position.set(0, 4, -11);
+    // Back Wall (North)
+    const backWall = new THREE.Mesh(new THREE.BoxGeometry(32, 8, 1), wallMat);
+    backWall.position.set(0, 4, -12);
     worldObjects.add(backWall);
 
-    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(1, 8, 22), wallMat);
-    leftWall.position.set(-14, 4, 0);
+    // Left Wall (West)
+    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(1, 8, 24), wallMat);
+    leftWall.position.set(-16, 4, 0);
     worldObjects.add(leftWall);
 
-    const rightWall = new THREE.Mesh(new THREE.BoxGeometry(1, 8, 22), wallMat);
-    rightWall.position.set(14, 4, 0);
+    // Right Wall (East)
+    const rightWall = new THREE.Mesh(new THREE.BoxGeometry(1, 8, 24), wallMat);
+    rightWall.position.set(16, 4, 0);
     worldObjects.add(rightWall);
 
-    // Exit Door Marker at south
-    const exitGeo = new THREE.BoxGeometry(4, 0.2, 2);
-    const exitMat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.7 });
+    // South Wall Wings (leaving doorway at center)
+    const southWallLeft = new THREE.Mesh(new THREE.BoxGeometry(13, 8, 1), wallMat);
+    southWallLeft.position.set(-9.5, 4, 12);
+    worldObjects.add(southWallLeft);
+
+    const southWallRight = new THREE.Mesh(new THREE.BoxGeometry(13, 8, 1), wallMat);
+    southWallRight.position.set(9.5, 4, 12);
+    worldObjects.add(southWallRight);
+
+    // Timber Door Archway Header at South Exit
+    const doorHeader = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 1.2), new THREE.MeshLambertMaterial({ color: 0x451a03 }));
+    doorHeader.position.set(0, 6.5, 12);
+    worldObjects.add(doorHeader);
+
+    // Exit Doorway Portal Mat (Green Glow)
+    const exitGeo = new THREE.PlaneGeometry(4.5, 2.5);
+    const exitMat = new THREE.MeshBasicMaterial({ color: 0x53fc18, transparent: true, opacity: 0.65 });
     const exitMesh = new THREE.Mesh(exitGeo, exitMat);
-    exitMesh.position.set(0, 0.1, 9.5);
+    exitMesh.rotation.x = -Math.PI / 2;
+    exitMesh.position.set(0, 0.05, 10.0);
     worldObjects.add(exitMesh);
 
-    // Interior Furnishings depending on type
-    if (mapId === 'trade_house') {
-      // 2 Big Trading Tables
-      const tGeo = new THREE.BoxGeometry(6, 1.2, 3);
-      const tMat = new THREE.MeshLambertMaterial({ color: 0x451a03 });
-      const table1 = new THREE.Mesh(tGeo, tMat);
-      table1.position.set(-5, 0.6, 0);
-      worldObjects.add(table1);
+    // Exit Wall Torches
+    [-3.2, 3.2].forEach(tx => {
+      const sconce = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.3), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+      sconce.position.set(tx, 3.0, 11.4);
+      worldObjects.add(sconce);
 
-      const table2 = new THREE.Mesh(tGeo, tMat);
-      table2.position.set(5, 0.6, 0);
-      worldObjects.add(table2);
+      const light = new THREE.PointLight(0xfef08a, 0.6, 8, 2);
+      light.position.set(tx, 3.0, 10.8);
+      worldObjects.add(light);
+    });
+
+    // Populate Detailed Themed Interior
+    if (mapId === 'trade_house') {
+      buildTradeHouseInterior();
+    } else if (mapId === 'tavern') {
+      buildTavernInterior();
     } else if (mapId === 'shrine') {
-      // Summoning Circle in Center
-      const cGeo = new THREE.CylinderGeometry(5, 5, 0.4, 32);
-      const cMat = new THREE.MeshBasicMaterial({ color: 0xa855f7, wireframe: true });
-      const circle = new THREE.Mesh(cGeo, cMat);
-      circle.position.set(0, 0.2, -1);
-      worldObjects.add(circle);
+      buildShrineInterior();
+    } else if (mapId === 'guild') {
+      buildGuildInterior();
     }
   }
 
@@ -2332,7 +2917,7 @@
     }
 
     // Map bounds clamping
-    const bounds = currentMap === 'town' ? { minX: -40, maxX: 40, minZ: -40, maxZ: 40 } : { minX: -13, maxX: 13, minZ: -10, maxZ: 10 };
+    const bounds = currentMap === 'town' ? { minX: -44, maxX: 44, minZ: -44, maxZ: 44 } : { minX: -15, maxX: 15, minZ: -11, maxZ: 11 };
     myPlayer.x = Math.max(bounds.minX, Math.min(bounds.maxX, myPlayer.x));
     myPlayer.z = Math.max(bounds.minZ, Math.min(bounds.maxZ, myPlayer.z));
 
@@ -2345,10 +2930,11 @@
         myPlayer.z = Math.sin(angle) * 4.9;
       }
       const buildingColliders = [
-        { x1: -19, x2: -9, z1: -15, z2: -5.8 },
-        { x1: 9, x2: 19, z1: -15, z2: -5.8 },
-        { x1: -5.8, x2: 5.8, z1: -25.5, z2: -15.4 },
-        { x1: -19, x2: -9, z1: 7.4, z2: 17 }
+        { x1: -29.2, x2: -18.8, z1: -19.0, z2: -9.6 }, // Trade Mart (-24, -14)
+        { x1: 18.8, x2: 29.2, z1: -19.0, z2: -9.6 },   // Cat's Tail Taverna (24, -14)
+        { x1: -6.5, x2: 6.5, z1: -37.8, z2: -26.2 },  // Dilek Tapınağı (0, -32)
+        { x1: -29.2, x2: -18.8, z1: 9.4, z2: 18.8 },   // Maceracılar Loncası (-24, 14)
+        { x1: 20.0, x2: 28.0, z1: 10.0, z2: 18.0 }     // Gazebo (24, 14)
       ];
       for (const b of buildingColliders) {
         if (myPlayer.x > b.x1 && myPlayer.x < b.x2 && myPlayer.z > b.z1 && myPlayer.z < b.z2) {
@@ -2392,7 +2978,7 @@
       }));
     }
 
-    // Check Proximity to Doors or Players
+    // Check Proximity to Doors, Players, or NPCs
     checkProximity();
   }
 
@@ -2404,15 +2990,15 @@
     // Check Town Doors
     if (currentMap === 'town') {
       const doors = [
-        { id: 'door_trade', name: 'Pazar & Takas Binası', pos: { x: -14, z: -5.5 } },
-        { id: 'door_tavern', name: "Cat's Tail Taverna", pos: { x: 14, z: -5.5 } },
-        { id: 'door_shrine', name: 'Dilek Tapınağı', pos: { x: 0, z: -15.0 } },
-        { id: 'door_guild', name: 'Maceracılar Loncası', pos: { x: -14, z: 7.5 } }
+        { id: 'door_trade', name: 'Pazar & Takas Binası', pos: { x: -24, z: -10.0 } },
+        { id: 'door_tavern', name: "Cat's Tail Taverna", pos: { x: 24, z: -10.0 } },
+        { id: 'door_shrine', name: 'Dilek Tapınağı', pos: { x: 0, z: -26.0 } },
+        { id: 'door_guild', name: 'Maceracılar Loncası', pos: { x: -24, z: 10.0 } }
       ];
 
       for (const d of doors) {
         const dist = Math.hypot(myPlayer.x - d.pos.x, myPlayer.z - d.pos.z);
-        if (dist < 4.0) {
+        if (dist < 4.2) {
           nearbyInteractable = { type: 'door', data: d };
           promptText.textContent = `[E] ${d.name}'na Gir`;
           prompt.classList.remove('hidden');
@@ -2421,12 +3007,47 @@
       }
     } else {
       // Check Exit Door
-      const dist = Math.hypot(myPlayer.x - 0, myPlayer.z - 9.5);
-      if (dist < 3.0) {
+      const dist = Math.hypot(myPlayer.x - 0, myPlayer.z - 10.0);
+      if (dist < 3.2) {
         nearbyInteractable = { type: 'door', data: { name: 'Kasaba Meydanı' } };
         promptText.textContent = `[E] Meydana Çık`;
         prompt.classList.remove('hidden');
         return;
+      }
+
+      // Check Interior NPC / Object interactions
+      if (currentMap === 'trade_house') {
+        const dNpc = Math.hypot(myPlayer.x - 0, myPlayer.z - (-4.0));
+        if (dNpc < 3.2) {
+          nearbyInteractable = { type: 'npc_trade', name: 'Tüccar Liben' };
+          promptText.textContent = `[E] Tüccar Liben: Pazar & Takas`;
+          prompt.classList.remove('hidden');
+          return;
+        }
+      } else if (currentMap === 'tavern') {
+        const dNpc = Math.hypot(myPlayer.x - 7.5, myPlayer.z - (-2.5));
+        if (dNpc < 3.2) {
+          nearbyInteractable = { type: 'npc_tavern', name: 'Diona' };
+          promptText.textContent = `[E] Diona: Özel Kedi Kokteyli İste`;
+          prompt.classList.remove('hidden');
+          return;
+        }
+      } else if (currentMap === 'shrine') {
+        const dNpc = Math.hypot(myPlayer.x - 0, myPlayer.z - (-3.0));
+        if (dNpc < 3.5) {
+          nearbyInteractable = { type: 'npc_shrine', name: 'Kader Sunağı' };
+          promptText.textContent = `[E] Kader Sunağı: Yıldız Dileği Çek`;
+          prompt.classList.remove('hidden');
+          return;
+        }
+      } else if (currentMap === 'guild') {
+        const dNpc = Math.hypot(myPlayer.x - (-8.5), myPlayer.z - (-4.5));
+        if (dNpc < 3.2) {
+          nearbyInteractable = { type: 'npc_guild', name: 'Katheryne' };
+          promptText.textContent = `[E] Katheryne: Seferler & Görevler`;
+          prompt.classList.remove('hidden');
+          return;
+        }
       }
     }
 
@@ -2455,6 +3076,17 @@
     } else if (nearbyInteractable.type === 'player') {
       playBeep(659, 'sine', 0.15);
       sendTradeRequest(nearbyInteractable.data.username);
+    } else if (nearbyInteractable.type && nearbyInteractable.type.startsWith('npc_')) {
+      playBeep(659, 'sine', 0.15);
+      if (nearbyInteractable.type === 'npc_trade') {
+        addChatMessage('Tüccar Liben', '💰 "Hoş geldin dostum! Meydanda diğer gezginlerle [E] tuşuna basarak eşya ve Primogem takası yapabilirsin!"');
+      } else if (nearbyInteractable.type === 'npc_tavern') {
+        addChatMessage('Diona', '🐱 "Hıh! Şarap sarhoşlarına inat sana özel ferahlatıcı kurbağaotu kokteyli hazırlayabilirim!"');
+      } else if (nearbyInteractable.type === 'npc_shrine') {
+        addChatMessage('Kader Sunağı', '✨ "Yıldızlar fısıldıyor! Sohbet kutusuna !wish veya !wish10 yazarak hemen kader dileği çekebilirsin! (160 💎)"');
+      } else if (nearbyInteractable.type === 'npc_guild') {
+        addChatMessage('Katheryne', '⚔️ "Yıldızlara ve derinliklere doğru! Kedi madenci ve balıkçı seferleri için /expeditions panelini açabilirsin."');
+      }
     }
   }
 
@@ -2488,7 +3120,7 @@
     ctx.fillStyle = '#0b0f19';
     ctx.fillRect(0, 0, w, h);
 
-    const scale = currentMap === 'town' ? 1.4 : 3.8;
+    const scale = currentMap === 'town' ? 1.2 : 3.2;
     const cx = w / 2;
     const cy = h / 2;
 
@@ -2511,6 +3143,12 @@
       const pathZTop = cy + (0 - myPlayer.z) * scale - 4 * scale;
       ctx.fillRect(0, pathZTop, w, 8 * scale);
 
+      // Secondary Branches
+      ctx.fillRect(cx + (-24 - myPlayer.x) * scale, cy + (-10 - myPlayer.z) * scale - 3 * scale, 18 * scale, 6 * scale);
+      ctx.fillRect(cx + (6 - myPlayer.x) * scale, cy + (-10 - myPlayer.z) * scale - 3 * scale, 18 * scale, 6 * scale);
+      ctx.fillRect(cx + (-24 - myPlayer.x) * scale, cy + (10 - myPlayer.z) * scale - 3 * scale, 18 * scale, 6 * scale);
+      ctx.fillRect(cx + (6 - myPlayer.x) * scale, cy + (10 - myPlayer.z) * scale - 3 * scale, 18 * scale, 6 * scale);
+
       // Stone Bridge
       ctx.fillStyle = '#94a3b8';
       ctx.fillRect(pathXLeft - 0.5 * scale, riverY - 4.2 * scale, 9 * scale, 8.4 * scale);
@@ -2523,13 +3161,15 @@
 
       // Buildings
       ctx.fillStyle = '#0284c7';
-      ctx.fillRect(cx + (-14 - myPlayer.x) * scale - 6, cy + (-10 - myPlayer.z) * scale - 6, 12, 12); // Trade Mart
+      ctx.fillRect(cx + (-24 - myPlayer.x) * scale - 6, cy + (-14 - myPlayer.z) * scale - 6, 12, 12); // Trade Mart
       ctx.fillStyle = '#b91c1c';
-      ctx.fillRect(cx + (14 - myPlayer.x) * scale - 6, cy + (-10 - myPlayer.z) * scale - 6, 12, 12); // Tavern
+      ctx.fillRect(cx + (24 - myPlayer.x) * scale - 6, cy + (-14 - myPlayer.z) * scale - 6, 12, 12); // Tavern
       ctx.fillStyle = '#9333ea';
-      ctx.fillRect(cx + (0 - myPlayer.x) * scale - 7, cy + (-20 - myPlayer.z) * scale - 7, 14, 14); // Shrine
+      ctx.fillRect(cx + (0 - myPlayer.x) * scale - 7, cy + (-32 - myPlayer.z) * scale - 7, 14, 14); // Shrine
       ctx.fillStyle = '#166534';
-      ctx.fillRect(cx + (-14 - myPlayer.x) * scale - 6, cy + (12 - myPlayer.z) * scale - 6, 12, 12); // Guild
+      ctx.fillRect(cx + (-24 - myPlayer.x) * scale - 6, cy + (14 - myPlayer.z) * scale - 6, 12, 12); // Guild
+      ctx.fillStyle = '#059669';
+      ctx.fillRect(cx + (24 - myPlayer.x) * scale - 5, cy + (14 - myPlayer.z) * scale - 5, 10, 10); // Gazebo
     }
 
     // Draw Radar Circles

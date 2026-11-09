@@ -31,8 +31,8 @@ assert.strictEqual(p1.z, 45); // clamped to maxZ
 console.log('✅ Oyuncu hareketi ve sınır koruması başarılı!');
 
 console.log('--- TEST 3: Kapı Etkileşimi & İç Mekan Geçişi ---');
-// Move Ash near Trade House door (pos: -14, -10)
-world.updateMovement('sock_1', { x: -14, y: 0, z: -10, rot: 0, anim: 'idle' });
+// Move Ash near Trade House door (pos: -24, -10)
+world.updateMovement('sock_1', { x: -24, y: 0, z: -10, rot: 0, anim: 'idle' });
 const doorRes = world.interactDoor('sock_1');
 assert(doorRes.success, 'Door transition should succeed');
 assert.strictEqual(p1.mapId, 'trade_house');

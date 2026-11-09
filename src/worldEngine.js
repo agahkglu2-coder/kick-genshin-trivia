@@ -24,32 +24,32 @@ class WorldEngine extends EventEmitter {
           {
             id: 'door_trade',
             name: 'Pazar & Takas Binası',
-            pos: { x: -14, z: -10 },
-            radius: 2.8,
+            pos: { x: -24, z: -10 },
+            radius: 3.8,
             targetMap: 'trade_house',
             spawnPos: { x: 0, z: 6 }
           },
           {
             id: 'door_tavern',
             name: "Cat's Tail Taverna",
-            pos: { x: 14, z: -10 },
-            radius: 2.8,
+            pos: { x: 24, z: -10 },
+            radius: 3.8,
             targetMap: 'tavern',
             spawnPos: { x: 0, z: 6 }
           },
           {
             id: 'door_shrine',
             name: 'Kader & Dilek Tapınağı',
-            pos: { x: 0, z: -20 },
-            radius: 3.2,
+            pos: { x: 0, z: -26 },
+            radius: 4.2,
             targetMap: 'shrine',
             spawnPos: { x: 0, z: 6 }
           },
           {
             id: 'door_guild',
             name: 'Maceracılar Loncası',
-            pos: { x: -14, z: 12 },
-            radius: 2.8,
+            pos: { x: -24, z: 10 },
+            radius: 3.8,
             targetMap: 'guild',
             spawnPos: { x: 0, z: 6 }
           }
@@ -58,26 +58,26 @@ class WorldEngine extends EventEmitter {
       trade_house: {
         id: 'trade_house',
         name: 'Büyük Takas Pazarı',
-        bounds: { minX: -15, maxX: 15, minZ: -12, maxZ: 12 },
-        exitDoor: { pos: { x: 0, z: 9 }, radius: 2.5, targetMap: 'town', spawnPos: { x: -14, z: -7 } }
+        bounds: { minX: -16, maxX: 16, minZ: -12, maxZ: 12 },
+        exitDoor: { pos: { x: 0, z: 9.5 }, radius: 2.8, targetMap: 'town', spawnPos: { x: -24, z: -6.5 } }
       },
       tavern: {
         id: 'tavern',
         name: "Cat's Tail Taverna",
-        bounds: { minX: -15, maxX: 15, minZ: -12, maxZ: 12 },
-        exitDoor: { pos: { x: 0, z: 9 }, radius: 2.5, targetMap: 'town', spawnPos: { x: 14, z: -7 } }
+        bounds: { minX: -16, maxX: 16, minZ: -12, maxZ: 12 },
+        exitDoor: { pos: { x: 0, z: 9.5 }, radius: 2.8, targetMap: 'town', spawnPos: { x: 24, z: -6.5 } }
       },
       shrine: {
         id: 'shrine',
         name: 'Dilek Tapınağı',
-        bounds: { minX: -15, maxX: 15, minZ: -15, maxZ: 15 },
-        exitDoor: { pos: { x: 0, z: 11 }, radius: 2.5, targetMap: 'town', spawnPos: { x: 0, z: -16 } }
+        bounds: { minX: -17, maxX: 17, minZ: -14, maxZ: 14 },
+        exitDoor: { pos: { x: 0, z: 9.5 }, radius: 2.8, targetMap: 'town', spawnPos: { x: 0, z: -22 } }
       },
       guild: {
         id: 'guild',
         name: 'Maceracılar Loncası',
-        bounds: { minX: -15, maxX: 15, minZ: -12, maxZ: 12 },
-        exitDoor: { pos: { x: 0, z: 9 }, radius: 2.5, targetMap: 'town', spawnPos: { x: -14, z: 15 } }
+        bounds: { minX: -16, maxX: 16, minZ: -12, maxZ: 12 },
+        exitDoor: { pos: { x: 0, z: 9.5 }, radius: 2.8, targetMap: 'town', spawnPos: { x: -24, z: 6.5 } }
       }
     };
 
