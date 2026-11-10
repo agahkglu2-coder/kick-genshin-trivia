@@ -79,6 +79,7 @@
 
     <!-- Quick Action Bar -->
     <div class="quick-nav-bar">
+      <button class="btn-mmo-nav btn-nav-companion" id="btn-open-companion" title="5★ Yoldaş Seçimi [P]">🐾 5★ Yoldaş [P]</button>
       <button class="btn-mmo-nav btn-nav-character" id="btn-open-character">⚔️ Ekipman & GS</button>
       <button class="btn-mmo-nav" id="btn-open-inventory">🎒 Envanter</button>
       <button class="btn-mmo-nav" id="btn-open-auth">🛡️ Kick Girişi</button>
@@ -359,6 +360,20 @@
 
   <!-- 9. Combat HUD (Visible in Battle Zone) -->
   <div id="combat-hud" class="combat-hud hidden">
+    <!-- Active 5★ Companion Widget -->
+    <div class="combat-companion-badge" id="combat-companion-badge" title="Yoldaş Değiştir [P]">
+      <div class="companion-avatar-circle" id="hud-companion-circle">
+        <img id="hud-companion-img" src="" alt="Yoldaş" class="hidden" />
+        <span id="hud-companion-placeholder">🐾</span>
+        <div class="companion-element-badge" id="hud-companion-element">⚡</div>
+      </div>
+      <div class="companion-meta-column">
+        <span class="companion-label">5★ YOLDAŞ</span>
+        <strong class="companion-name-text" id="hud-companion-name">Yoldaş Seçilmedi</strong>
+      </div>
+      <button type="button" class="btn-hud-companion-open" id="btn-hud-companion-open" title="Yoldaş Seçimi [P]">P</button>
+    </div>
+
     <!-- Player Combat Status -->
     <div class="combat-player-card">
       <div class="combat-hp-bar-outer">
@@ -373,10 +388,10 @@
 
     <!-- Bottom Center Skill Bar -->
     <div class="combat-skill-bar">
-      <div class="skill-slot active" id="slot-attack" title="Normal Kılıç Saldırısı [Sol Tık / F]">
+      <div class="skill-slot active" id="slot-attack" title="Normal Saldırı [Sol Tık / F]">
         <span class="skill-key">F / TIK</span>
-        <span class="skill-icon">⚔️</span>
-        <span class="skill-name">Kılıç</span>
+        <span class="skill-icon" id="icon-slot-attack">⚔️</span>
+        <span class="skill-name" id="name-slot-attack">Saldırı</span>
       </div>
       <div class="skill-slot" id="slot-dash" title="Hızlı Kaçış / Takla [Shift]">
         <span class="skill-key">SHIFT</span>
@@ -384,16 +399,16 @@
         <span class="skill-name">Takla</span>
         <div class="skill-cd-overlay" id="cd-dash"></div>
       </div>
-      <div class="skill-slot" id="slot-vortex" title="Rüzgar Girdabı [E]">
+      <div class="skill-slot" id="slot-vortex" title="Elemental Beceri [E]">
         <span class="skill-key">E</span>
-        <span class="skill-icon">🌀</span>
-        <span class="skill-name">Girdap</span>
+        <span class="skill-icon" id="icon-slot-skill">🌀</span>
+        <span class="skill-name" id="name-slot-skill">Beceri</span>
         <div class="skill-cd-overlay" id="cd-vortex"></div>
       </div>
-      <div class="skill-slot" id="slot-burst" title="Kader Yıldızı [Q]">
+      <div class="skill-slot" id="slot-burst" title="Elemental Patlama (Nihai) [Q]">
         <span class="skill-key">Q</span>
-        <span class="skill-icon">☄️</span>
-        <span class="skill-name">Ulti</span>
+        <span class="skill-icon" id="icon-slot-burst">☄️</span>
+        <span class="skill-name" id="name-slot-burst">Ulti</span>
         <div class="skill-cd-overlay" id="cd-burst"></div>
       </div>
     </div>
@@ -401,7 +416,7 @@
     <!-- Mobile Combat Controls -->
     <div class="combat-mobile-controls" id="combat-mobile-controls">
       <button type="button" class="btn-combat-action btn-combat-dash" id="btn-combat-dash">⚡ Takla</button>
-      <button type="button" class="btn-combat-action btn-combat-skill" id="btn-combat-skill">🌀 Girdap</button>
+      <button type="button" class="btn-combat-action btn-combat-skill" id="btn-combat-skill">🌀 Beceri</button>
       <button type="button" class="btn-combat-action btn-combat-burst" id="btn-combat-burst">☄️ Ulti</button>
       <button type="button" class="btn-combat-action btn-combat-atk" id="btn-combat-atk">⚔️ Saldır</button>
     </div>
@@ -744,6 +759,177 @@
       </div>
     </div>
   </div>
+
+  <!-- 15. Ancient Portal Zone Selection Modal -->
+  <div id="modal-portal-zones" class="mmo-modal-overlay hidden">
+    <div class="mmo-modal-container portal-zones-container">
+      <div class="mmo-modal-header">
+        <div class="sheet-title-group">
+          <span class="sheet-icon">🌀</span>
+          <div>
+            <h3>Kadim Zindan Portalı</h3>
+            <span class="sheet-subtitle">Zorluk Seviyesi ve Bölge Seçimi</span>
+          </div>
+        </div>
+        <div class="sheet-header-actions">
+          <div class="portal-current-gs">
+            <span>Senin GearScore:</span>
+            <strong id="portal-player-gs">0 GS</strong>
+          </div>
+          <button type="button" class="btn-modal-close" data-close="modal-portal-zones">✕</button>
+        </div>
+      </div>
+
+      <div class="portal-zones-body">
+        <!-- Zone 1 Card -->
+        <div class="zone-card" id="card-zone-1">
+          <div class="zone-card-badge status-safe" id="badge-zone-1">🟢 Güvenli</div>
+          <div class="zone-card-header">
+            <span class="zone-card-icon">🌲</span>
+            <div>
+              <h4 class="zone-card-title">Kadim Sarmaşıklı Orman</h4>
+              <span class="zone-card-desc">Kadim Kökler, Parlayan Mantarlar & Balçıklar</span>
+            </div>
+          </div>
+          <div class="zone-card-meta">
+            <div class="meta-row"><span>Önerilen GearScore:</span> <strong>100 GS</strong></div>
+            <div class="meta-row"><span>Yaratık Seviyeleri:</span> <strong>Lv.1 - Lv.10</strong></div>
+            <div class="meta-row"><span>Olası Ganimetler:</span> <strong>1★ - 2★ Eşyalar</strong></div>
+          </div>
+          <div class="zone-card-penalty-hint" id="hint-zone-1">Ceza Yok (Tam Hasar)</div>
+          <button type="button" class="btn-zone-enter" data-zone-id="battle_zone_1">⚔️ Ormana Gir</button>
+        </div>
+
+        <!-- Zone 2 Card -->
+        <div class="zone-card" id="card-zone-2">
+          <div class="zone-card-badge status-challenging" id="badge-zone-2">🟡 Zorlu</div>
+          <div class="zone-card-header">
+            <span class="zone-card-icon">🌋</span>
+            <div>
+              <h4 class="zone-card-title">Kızıl Lav Harabeleri</h4>
+              <span class="zone-card-desc">Lav Yarıkları, Yıkık Surlar & Alev Baltalı Mitachurl</span>
+            </div>
+          </div>
+          <div class="zone-card-meta">
+            <div class="meta-row"><span>Önerilen GearScore:</span> <strong>350 GS</strong></div>
+            <div class="meta-row"><span>Yaratık Seviyeleri:</span> <strong>Lv.15 - Lv.30</strong></div>
+            <div class="meta-row"><span>Olası Ganimetler:</span> <strong>2★ - 3★ Nadir Eşyalar, 3-5 💎</strong></div>
+          </div>
+          <div class="zone-card-penalty-hint" id="hint-zone-2">Düşük GS'de hafif hasar cezası</div>
+          <button type="button" class="btn-zone-enter" data-zone-id="battle_zone_2">⚔️ Harabelere Gir</button>
+        </div>
+
+        <!-- Zone 3 Card -->
+        <div class="zone-card" id="card-zone-3">
+          <div class="zone-card-badge status-deadly" id="badge-zone-3">🔴 Ölümcül Risk</div>
+          <div class="zone-card-header">
+            <span class="zone-card-icon">🌌</span>
+            <div>
+              <h4 class="zone-card-title">Kadim Uçurum Boşluğu</h4>
+              <span class="zone-card-desc">Kozmik Uçurumda Yüzen Ada & Antik Yıkım Muhafızı</span>
+            </div>
+          </div>
+          <div class="zone-card-meta">
+            <div class="meta-row"><span>Önerilen GearScore:</span> <strong>750 GS</strong></div>
+            <div class="meta-row"><span>Yaratık Seviyeleri:</span> <strong>Lv.35 - Lv.50</strong></div>
+            <div class="meta-row"><span>Olası Ganimetler:</span> <strong>3★-5★ Efsanevi Eşyalar, 15-25 💎</strong></div>
+          </div>
+          <div class="zone-card-penalty-hint" id="hint-zone-3">Düşük GS'de vuruşlar seker (%35)!</div>
+          <button type="button" class="btn-zone-enter" data-zone-id="battle_zone_3">⚔️ Boşluğa Gir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 16. Player Defeat Fullscreen Overlay -->
+  <div id="player-defeat-overlay" class="player-defeat-overlay hidden">
+    <div class="defeat-card">
+      <span class="defeat-icon">💀</span>
+      <h2>YENİLDİN!</h2>
+      <p>Yaratıklar seni alt etti. Kasaba meydanına geri taşınıyorsun...</p>
+      <div class="defeat-spinner"></div>
+    </div>
+  </div>
+
+  <!-- 17. 5★ Character Companion (Pet) Selection Modal -->
+  <div id="modal-companion-selector" class="mmo-modal-overlay hidden">
+    <div class="mmo-modal-container companion-modal-container">
+      <div class="mmo-modal-header">
+        <div class="sheet-title-group">
+          <span class="sheet-icon">🐾</span>
+          <div>
+            <h3>5★ Karakter Yoldaşları (Pets)</h3>
+            <span class="sheet-subtitle">Dileklerle çıkardığın 5 yıldızlı karakterleri seç ve Genshin yetenek setini kuşan</span>
+          </div>
+        </div>
+        <div class="sheet-header-actions">
+          <span class="companion-count-badge" id="companion-unlocked-count">5 Yoldaş Mevcut</span>
+          <button type="button" class="btn-modal-close" data-close="modal-companion-selector">✕</button>
+        </div>
+      </div>
+
+      <div class="companion-modal-body">
+        <!-- Left: Grid of 5-Star Companion Cards -->
+        <div class="companion-list-column">
+          <div class="companion-filter-row">
+            <span class="filter-label">Element:</span>
+            <button type="button" class="btn-filter-elem active" data-elem="all">Tümü</button>
+            <button type="button" class="btn-filter-elem" data-elem="Electro">⚡</button>
+            <button type="button" class="btn-filter-elem" data-elem="Geo">🪨</button>
+            <button type="button" class="btn-filter-elem" data-elem="Pyro">🔥</button>
+            <button type="button" class="btn-filter-elem" data-elem="Hydro">💧</button>
+            <button type="button" class="btn-filter-elem" data-elem="Anemo">🍃</button>
+          </div>
+          <div class="companion-cards-grid" id="companion-cards-grid">
+            <!-- Populated dynamically with 5-star character cards -->
+          </div>
+        </div>
+
+        <!-- Right: Selected Companion Showcase & Ability Details -->
+        <div class="companion-preview-column" id="companion-preview-box">
+          <div class="companion-preview-card">
+            <div class="companion-splash-wrap">
+              <img id="companion-preview-img" src="" alt="Karakter" class="companion-preview-img" />
+              <div class="companion-element-tag" id="companion-preview-element">⚡ Electro</div>
+            </div>
+
+            <div class="companion-info-block">
+              <h4 id="companion-preview-name">Raiden Shogun</h4>
+              <p class="companion-preview-title" id="companion-preview-title">Plane of Euthymia</p>
+
+              <!-- Skill Previews -->
+              <div class="companion-skill-preview-box">
+                <div class="skill-preview-item">
+                  <div class="skill-preview-badge skill-e">E</div>
+                  <div class="skill-preview-text">
+                    <strong id="companion-skill-e-name">Transcendence: Baleful Omen</strong>
+                    <p id="companion-skill-e-desc">Tepede Şimşek Gözü açar; normal vuruşlarda koordineli Electro kesikler patlatır.</p>
+                  </div>
+                </div>
+
+                <div class="skill-preview-item">
+                  <div class="skill-preview-badge skill-q">Q</div>
+                  <div class="skill-preview-text">
+                    <strong id="companion-skill-q-name">Secret Art: Musou Shinsetsu</strong>
+                    <p id="companion-skill-q-desc">Ekran kararır, boyutsal uzay yarığı ile devasa mor şimşek tachi kesiği fırlatır (350+ DMG)!</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Equip / Unequip Action Button -->
+              <div class="companion-action-row">
+                <button type="button" class="btn-equip-companion" id="btn-equip-companion">🐾 Yoldaş Olarak Kuşan</button>
+                <button type="button" class="btn-unequip-companion" id="btn-unequip-companion">Kaldır</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 18. Cinematic Elemental Flash Screen Overlay -->
+  <div id="elemental-flash-overlay" class="elemental-flash-overlay"></div>
 
   <!-- Scripts -->
   <script src="/world.js"></script>

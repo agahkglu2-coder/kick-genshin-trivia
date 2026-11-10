@@ -63,9 +63,14 @@ const PERCENT_STATS = new Set(['crit', 'critDmg', 'haste', 'lifesteal']);
 const MOB_TABLE = {
   slime_green: { xp: 10, gearChance: 0.2 },
   slime_pyro: { xp: 13, gearChance: 0.22 },
+  hilichurl_recruit: { xp: 15, gearChance: 0.24 },
   hilichurl: { xp: 18, gearChance: 0.26 },
-  pyromancer: { xp: 28, gearChance: 0.34 },
-  ruin_golem: { xp: 140, gearChance: 1, boss: true }
+  hilichurl_warrior: { xp: 24, gearChance: 0.30 },
+  pyromancer: { xp: 32, gearChance: 0.36 },
+  mitachurl_axe: { xp: 60, gearChance: 0.65, elite: true },
+  abyss_sentinel: { xp: 45, gearChance: 0.42 },
+  abyss_mage: { xp: 55, gearChance: 0.48 },
+  ruin_golem: { xp: 180, gearChance: 1.0, boss: true }
 };
 
 const RARITY_WEIGHTS = {
@@ -73,6 +78,72 @@ const RARITY_WEIGHTS = {
   elite: [18, 40, 29, 11, 2],
   boss: [0, 22, 46, 25, 7]
 };
+
+// Çok Kademeli MMORPG Zindan Bölgeleri Konfigürasyonu
+const ZONE_CONFIGS = {
+  battle_zone_1: {
+    id: 'battle_zone_1',
+    name: 'Kadim Sarmaşıklı Orman',
+    tier: 1,
+    reqGS: 100,
+    minIlvl: 1,
+    maxIlvl: 12,
+    theme: 'emerald_glade',
+    weights: [75, 23, 2, 0, 0], // Çoğunlukla Sıradan, biraz Sıradışı, %2 Nadir
+    bossWeights: [30, 55, 15, 0, 0],
+    primoReward: 0
+  },
+  battle_zone_2: {
+    id: 'battle_zone_2',
+    name: 'Kızıl Lav Harabeleri',
+    tier: 2,
+    reqGS: 350,
+    minIlvl: 15,
+    maxIlvl: 30,
+    theme: 'crimson_ruins',
+    weights: [20, 50, 26, 3.8, 0.2], // Sıradışı & Nadir, %3.8 Destansı, %0.2 Efsanevi
+    bossWeights: [0, 30, 55, 13, 2],
+    primoReward: 4 // Mini-boss kesiminde 3-5 Primogem
+  },
+  battle_zone_3: {
+    id: 'battle_zone_3',
+    name: 'Kadim Uçurum Boşluğu',
+    tier: 3,
+    reqGS: 750,
+    minIlvl: 32,
+    maxIlvl: 50,
+    theme: 'abyssal_core',
+    weights: [0, 20, 55, 22, 3], // Nadir & Destansı, %3 Efsanevi
+    bossWeights: [0, 10, 48, 37, 5], // Boss: %5 Efsanevi (prestijli ve dengeli), %37 Destansı
+    primoReward: 20 // Boss kesildiğinde 15-25 Primogem
+  }
+};
+
+/**
+ * GearScore zorluk ve ceza çarpanı hesaplayıcı (Soft-Gate).
+ * Oyuncunun GS'i önerilen GS'ten düşükse hasar cezası ve darbe sektirme devreye girer.
+ */
+function getGsDifficultyMultiplier(playerGS = 0, reqGS = 100) {
+  if (!reqGS || reqGS <= 0) {
+    return { damageMult: 1.0, damageTakenMult: 1.0, glanceChance: 0, status: 'safe', ratio: 1.0 };
+  }
+  const ratio = Math.max(0.05, playerGS / reqGS);
+  if (ratio >= 1.0) {
+    return { damageMult: 1.0, damageTakenMult: 1.0, glanceChance: 0, status: 'safe', ratio: 1.0 };
+  } else if (ratio >= 0.6) {
+    // Zorlu Seviye (Challenging): %40'a varan hasar cezası, hafif darbe artışı
+    const damageMult = Math.max(0.45, Math.round(ratio * 100) / 100);
+    const damageTakenMult = Math.min(1.8, Math.round((1 + (1 - ratio) * 1.3) * 100) / 100);
+    const glanceChance = Math.round((1 - ratio) * 0.25 * 100) / 100; // %5 - %10 sektirme
+    return { damageMult, damageTakenMult, glanceChance, status: 'challenging', ratio: Math.round(ratio * 100) / 100 };
+  } else {
+    // Ölümcül Risk (Deadly): %85'e varan hasar cezası, 2.5 kat hasar alma, %35 vuruş sektirme
+    const damageMult = Math.max(0.15, Math.round(ratio * 0.7 * 100) / 100);
+    const damageTakenMult = Math.min(2.5, Math.round((1.5 + (1 - ratio) * 1.5) * 100) / 100);
+    const glanceChance = 0.35; // %35 sektirme
+    return { damageMult, damageTakenMult, glanceChance, status: 'deadly', ratio: Math.round(ratio * 100) / 100 };
+  }
+}
 
 const MAX_LEVEL = 50;
 const BAG_SIZE = 40;
@@ -397,9 +468,11 @@ class RpgEngine {
 
   /**
    * Canavar öldürme: XP + ganimet üretir.
-   * @returns {{ok:boolean, xp?:number, leveledUp?:boolean, drops?:object[], autoSalvaged?:object[], dust?:number}}
+   * @param {string} username
+   * @param {{mobType:string, level?:number, elite?:boolean, zoneId?:string}} [param1]
+   * @returns {{ok:boolean, xp?:number, leveledUp?:boolean, drops?:object[], autoSalvaged?:object[], dust?:number, primoGain?:number}}
    */
-  handleKill(username, { mobType, level = 1, elite = false } = {}, opts) {
+  handleKill(username, { mobType, level = 1, elite = false, zoneId } = {}, opts) {
     const profile = this.getProfile(username, opts);
     const cfg = MOB_TABLE[mobType];
     if (!profile || !cfg) return { ok: false, error: 'Geçersiz canavar.' };
@@ -431,16 +504,33 @@ class RpgEngine {
       if (profile.level >= MAX_LEVEL) profile.xp = 0;
     }
 
-    // Ganimet
+    // Bölgeye göre ganimet ve Primogem dengesi
+    const zone = (zoneId && ZONE_CONFIGS[zoneId]) || null;
+    let primoGain = 0;
+    if (zone && zone.primoReward > 0) {
+      if (cfg.boss) {
+        // Boss kesildiğinde dengeli 15-25 Primogem (abartısız MMORPG ödülü)
+        primoGain = 15 + Math.floor(rng() * 11);
+      } else if (cfg.elite || isElite) {
+        // Mini-boss kesiminde %60 ihtimalle 3-5 Primogem
+        if (rng() < 0.6) primoGain = 3 + Math.floor(rng() * 3);
+      }
+    }
+
     const drops = [];
     const autoSalvaged = [];
-    const table = cfg.boss ? RARITY_WEIGHTS.boss : (isElite ? RARITY_WEIGHTS.elite : RARITY_WEIGHTS.normal);
-    const count = cfg.boss ? 2 : ((isElite || rng() < cfg.gearChance) ? 1 : 0);
-    let dustGain = cfg.boss ? 6 + Math.round(mobLevel * 0.6) : (isElite ? 2 : (rng() < 0.25 ? 1 : 0));
+    const table = zone ? (cfg.boss ? zone.bossWeights : (isElite ? zone.bossWeights : zone.weights)) :
+      (cfg.boss ? RARITY_WEIGHTS.boss : (isElite ? RARITY_WEIGHTS.elite : RARITY_WEIGHTS.normal));
+    const count = cfg.boss ? 2 : ((isElite || rng() < (cfg.gearChance || 0.25)) ? 1 : 0);
+    let dustGain = cfg.boss ? 8 + Math.round(mobLevel * 0.8) : (isElite ? 3 : (rng() < 0.3 ? 1 : 0));
+
+    const minIlvl = zone ? zone.minIlvl : 1;
+    const maxIlvl = zone ? zone.maxIlvl : 50;
 
     for (let i = 0; i < count; i++) {
       const rarity = pickWeighted(table, rng) + 1;
-      const ilvl = Math.max(1, mobLevel + (cfg.boss ? 1 : 0) + (rng() < 0.2 ? 1 : 0));
+      const baseIlvl = Math.max(minIlvl, Math.min(maxIlvl, mobLevel + Math.floor(rng() * 3)));
+      const ilvl = cfg.boss ? Math.min(maxIlvl, baseIlvl + 2) : baseIlvl;
       const item = this.generateItem({ ilvl, rarity });
       if (profile.bag.length >= BAG_SIZE) {
         dustGain += salvageValue(item);
@@ -453,7 +543,19 @@ class RpgEngine {
     profile.dust += dustGain;
 
     this._scheduleSave(username);
-    return { ok: true, xp, leveledUp, level: profile.level, drops, autoSalvaged, dust: dustGain, mobLevel, isBoss: !!cfg.boss };
+    return {
+      ok: true,
+      xp,
+      leveledUp,
+      level: profile.level,
+      drops,
+      autoSalvaged,
+      dust: dustGain,
+      primoGain,
+      mobLevel,
+      isBoss: !!cfg.boss,
+      zoneId: zone ? zone.id : null
+    };
   }
 
   equip(username, uid) {
@@ -534,6 +636,7 @@ class RpgEngine {
 
 module.exports = {
   RpgEngine, SLOTS, SLOT_LABELS, RARITIES, STAT_LABELS, PERCENT_STATS, MOB_TABLE,
+  ZONE_CONFIGS, getGsDifficultyMultiplier,
   MAX_LEVEL, BAG_SIZE, MAX_PLUS,
   xpForLevel, itemScore, itemStats, describeItem, upgradeCost, salvageValue
 };

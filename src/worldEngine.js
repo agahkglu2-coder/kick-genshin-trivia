@@ -90,7 +90,29 @@ class WorldEngine extends EventEmitter {
       },
       battle_zone: {
         id: 'battle_zone',
-        name: 'Vahşi Canavar Zindanı (Savaş Arenası)',
+        name: 'Zümrüt Çayırları (Slime Vadisi)',
+        reqGS: 100,
+        bounds: { minX: -42, maxX: 42, minZ: -42, maxZ: 42 },
+        exitDoor: { pos: { x: 0, z: -32 }, radius: 3.5, targetMap: 'town', spawnPos: { x: 0, z: 28 } }
+      },
+      battle_zone_1: {
+        id: 'battle_zone_1',
+        name: 'Kadim Sarmaşıklı Orman',
+        reqGS: 100,
+        bounds: { minX: -42, maxX: 42, minZ: -42, maxZ: 42 },
+        exitDoor: { pos: { x: 0, z: -32 }, radius: 3.5, targetMap: 'town', spawnPos: { x: 0, z: 28 } }
+      },
+      battle_zone_2: {
+        id: 'battle_zone_2',
+        name: 'Kızıl Lav Harabeleri',
+        reqGS: 350,
+        bounds: { minX: -42, maxX: 42, minZ: -42, maxZ: 42 },
+        exitDoor: { pos: { x: 0, z: -32 }, radius: 3.5, targetMap: 'town', spawnPos: { x: 0, z: 28 } }
+      },
+      battle_zone_3: {
+        id: 'battle_zone_3',
+        name: 'Kadim Uçurum Boşluğu',
+        reqGS: 750,
         bounds: { minX: -42, maxX: 42, minZ: -42, maxZ: 42 },
         exitDoor: { pos: { x: 0, z: -32 }, radius: 3.5, targetMap: 'town', spawnPos: { x: 0, z: 28 } }
       }
@@ -118,10 +140,12 @@ class WorldEngine extends EventEmitter {
     // Check if player has gacha profile
     let primogems = 160;
     let fiveStarsCount = 0;
+    let activeCompanion = null;
     if (this.gachaEngine) {
       const u = this.gachaEngine.getOrCreateUser(cleanName);
       primogems = u.primogems || 0;
       fiveStarsCount = u.fiveStarsCount || 0;
+      activeCompanion = u.activeCompanion || null;
     }
 
     const player = {
@@ -136,6 +160,7 @@ class WorldEngine extends EventEmitter {
       rot: 0,
       anim: 'idle',
       mapId: 'town',
+      companion: activeCompanion, // 🐾 5★ Active Flying Companion
       primogems,
       fiveStarsCount,
       speechBubble: null,
@@ -177,6 +202,119 @@ class WorldEngine extends EventEmitter {
     if (!username) return null;
     const socketId = this.userSockets.get(username.toLowerCase());
     return socketId ? this.getPlayer(socketId) : null;
+  }
+
+  /**
+   * Get all unlocked 5-star characters owned by user
+   */
+  getUser5Stars(username) {
+    if (!this.gachaEngine) return [];
+    const clean = (username || '').trim().replace(/[^a-zA-Z0-9_\u00C0-\u017F]/g, '');
+    const u = this.gachaEngine.getOrCreateUser(clean);
+    const userInventory = Array.isArray(u.inventory) ? u.inventory : [];
+    const fiveStarsMap = new Map();
+
+    for (const item of userInventory) {
+      if (item && item.type === 'character' && (item.rarity === 5 || item.rarity === '5')) {
+        const charName = item.name;
+        if (!fiveStarsMap.has(charName)) {
+          const meta = (this.gachaEngine.characters || []).find(
+            c => c.name.toLowerCase() === charName.toLowerCase() || (c.slug && c.slug.toLowerCase() === charName.toLowerCase())
+          );
+          fiveStarsMap.set(charName, {
+            name: charName,
+            rarity: 5,
+            element: meta ? meta.element : (item.element || 'Electro'),
+            weaponType: meta ? meta.weaponType : (item.weaponType || 'Sword'),
+            region: meta ? meta.region : (item.region || 'Teyvat'),
+            title: meta ? meta.title : '',
+            icon: meta ? (meta.remoteIcon || meta.icon) : (item.remoteIcon || item.icon || ''),
+            splashArt: meta ? (meta.splashArt || meta.splashArtDev) : ''
+          });
+        }
+      }
+    }
+
+    // Starter companion pool for testing/new players if empty
+    if (fiveStarsMap.size === 0 && this.gachaEngine.characters) {
+      const demoNames = ['Raiden Shogun', 'Zhongli', 'Hu Tao', 'Furina', 'Kaedehara Kazuha'];
+      for (const dName of demoNames) {
+        const meta = this.gachaEngine.characters.find(c => c.name.toLowerCase().includes(dName.toLowerCase()) || dName.toLowerCase().includes(c.name.toLowerCase()));
+        if (meta) {
+          fiveStarsMap.set(meta.name, {
+            name: meta.name,
+            rarity: 5,
+            element: meta.element,
+            weaponType: meta.weaponType,
+            region: meta.region,
+            title: meta.title,
+            icon: meta.remoteIcon || meta.icon,
+            splashArt: meta.splashArt,
+            isDemoStarter: true
+          });
+        }
+      }
+    }
+
+    return Array.from(fiveStarsMap.values());
+  }
+
+  /**
+   * Set player active 5-star companion
+   */
+  selectCompanion(socketId, companionName) {
+    const player = this.players.get(socketId);
+    if (!player) return { success: false, message: 'Oyuncu bulunamadı' };
+
+    if (!companionName || companionName === 'none') {
+      player.companion = null;
+      if (this.gachaEngine) {
+        const u = this.gachaEngine.getOrCreateUser(player.username);
+        u.activeCompanion = null;
+        this.gachaEngine.saveUsers();
+      }
+      return { success: true, companion: null, username: player.username };
+    }
+
+    const user5Stars = this.getUser5Stars(player.username);
+    let matched = user5Stars.find(c => c.name.toLowerCase() === companionName.toLowerCase());
+
+    if (!matched && this.gachaEngine && this.gachaEngine.characters) {
+      const meta = this.gachaEngine.characters.find(
+        c => c.name.toLowerCase() === companionName.toLowerCase() && c.rarity === 5
+      );
+      if (meta) {
+        matched = {
+          name: meta.name,
+          rarity: 5,
+          element: meta.element,
+          weaponType: meta.weaponType,
+          region: meta.region,
+          title: meta.title,
+          icon: meta.remoteIcon || meta.icon,
+          splashArt: meta.splashArt
+        };
+      }
+    }
+
+    if (!matched) {
+      return { success: false, message: 'Bu karaktere sahip değilsin' };
+    }
+
+    player.companion = matched.name;
+    if (this.gachaEngine) {
+      const u = this.gachaEngine.getOrCreateUser(player.username);
+      u.activeCompanion = matched.name;
+      this.gachaEngine.saveUsers();
+    }
+
+    console.log(`[WorldEngine] 🐾 @${player.username} yoldaş seçti: ${matched.name} (${matched.element})`);
+    return {
+      success: true,
+      companion: matched.name,
+      companionData: matched,
+      username: player.username
+    };
   }
 
   /**
@@ -255,6 +393,33 @@ class WorldEngine extends EventEmitter {
     }
 
     return { success: false, error: 'Yakında girilebilecek bir kapı yok.' };
+  }
+
+  switchZone(socketId, targetMap) {
+    const player = this.players.get(socketId);
+    if (!player || !this.maps[targetMap]) return { success: false, error: 'Geçersiz bölge.' };
+    const oldMap = player.mapId;
+    player.mapId = targetMap;
+    player.x = 0;
+    player.y = 0;
+    player.z = -28;
+    player.rot = 0;
+    player.anim = 'idle';
+    this.emit('player_changed_map', { player, oldMap, newMap: targetMap });
+    return { success: true, player, newMap: targetMap, spawnPos: { x: 0, z: -28 } };
+  }
+
+  respawnPlayer(socketId) {
+    const player = this.players.get(socketId);
+    if (!player) return null;
+    const oldMap = player.mapId;
+    player.mapId = 'town';
+    player.x = 0;
+    player.y = 0;
+    player.z = 2; // Kasaba meydanı çeşme başı
+    player.anim = 'idle';
+    this.emit('player_changed_map', { player, oldMap, newMap: 'town' });
+    return player;
   }
 
   /**

@@ -98,6 +98,226 @@
   let playerInvulnerableUntil = 0;
   let bossRespawnTimer = 0;
   let vortexTickTimer = 0;
+  let isPlayerDefeated = false;
+
+  // --- 5★ Character Companion (Pet) & Ability System State ---
+  let myCompanion = null; // e.g. "Raiden Shogun"
+  let myCompanionData = null; // meta { name, element, weapon, icon, splashArt, title }
+  let myCompanionMesh = null; // 3D floating chibi mesh
+  let otherPlayerCompanions = new Map(); // socketId -> Three.Group
+  let unlockedCompanionsList = []; // list of 5★ characters owned by player
+  let selectedCompanionInModal = null;
+  let companionBuffs = {
+    active: false,
+    timer: 0,
+    dmgMult: 1.0,
+    speedMult: 1.0,
+    type: ''
+  };
+  let activeJadeShieldHP = 0;
+  let activeJadeShieldMesh = null;
+  let activeElectroEyeMesh = null;
+  let electroEyeEndTime = 0;
+  let activeGeoSteleMesh = null;
+  let geoStelePulseTimer = 0;
+  let activeFurinaMinions = [];
+  let furinaMinionsEndTime = 0;
+  let activeKazuhaStormMesh = null;
+  let kazuhaStormEndTime = 0;
+  let kazuhaStormTickTimer = 0;
+  let isKazuhaLeaping = false;
+  let kazuhaLeapTimer = 0;
+  let companionSkillCooldownEndTime = 0;
+
+  // MMORPG Zone Configs & GearScore Calculation
+  const ZONE_CONFIGS = {
+    battle_zone_1: {
+      id: 'battle_zone_1',
+      name: 'Kadim Sarmaşıklı Orman',
+      tier: 1,
+      reqGS: 100,
+      minIlvl: 1,
+      maxIlvl: 12,
+      theme: 'emerald_glade'
+    },
+    battle_zone_2: {
+      id: 'battle_zone_2',
+      name: 'Kızıl Lav Harabeleri',
+      tier: 2,
+      reqGS: 350,
+      minIlvl: 15,
+      maxIlvl: 30,
+      theme: 'crimson_ruins'
+    },
+    battle_zone_3: {
+      id: 'battle_zone_3',
+      name: 'Kadim Uçurum Boşluğu',
+      tier: 3,
+      reqGS: 750,
+      minIlvl: 32,
+      maxIlvl: 50,
+      theme: 'abyssal_core'
+    }
+  };
+
+  function isBattleZone(map) {
+    return map === 'battle_zone' || map === 'battle_zone_1' || map === 'battle_zone_2' || map === 'battle_zone_3';
+  }
+
+  function getGsDifficultyMultiplier(playerGS = 0, reqGS = 100) {
+    if (!reqGS || reqGS <= 0) {
+      return { damageMult: 1.0, damageTakenMult: 1.0, glanceChance: 0, status: 'safe', ratio: 1.0 };
+    }
+    const ratio = Math.max(0.05, playerGS / reqGS);
+    if (ratio >= 1.0) {
+      return { damageMult: 1.0, damageTakenMult: 1.0, glanceChance: 0, status: 'safe', ratio: 1.0 };
+    } else if (ratio >= 0.6) {
+      const damageMult = Math.max(0.45, Math.round(ratio * 100) / 100);
+      const damageTakenMult = Math.min(1.8, Math.round((1 + (1 - ratio) * 1.3) * 100) / 100);
+      const glanceChance = Math.round((1 - ratio) * 0.25 * 100) / 100;
+      return { damageMult, damageTakenMult, glanceChance, status: 'challenging', ratio: Math.round(ratio * 100) / 100 };
+    } else {
+      const damageMult = Math.max(0.15, Math.round(ratio * 0.7 * 100) / 100);
+      const damageTakenMult = Math.min(2.5, Math.round((1.5 + (1 - ratio) * 1.5) * 100) / 100);
+      const glanceChance = 0.35;
+      return { damageMult, damageTakenMult, glanceChance, status: 'deadly', ratio: Math.round(ratio * 100) / 100 };
+    }
+  }
+
+  function getMyGearScore() {
+    if (typeof myRpgProfile !== 'undefined' && myRpgProfile && myRpgProfile.stats && typeof myRpgProfile.stats.gearScore === 'number') {
+      return myRpgProfile.stats.gearScore;
+    }
+    if (typeof myMesh !== 'undefined' && myMesh && myMesh.userData && typeof myMesh.userData.gearScore === 'number') {
+      return myMesh.userData.gearScore;
+    }
+    return (myPlayer && myPlayer.gearScore) || 0;
+  }
+
+  function getPlayerEffectiveStats() {
+    const base = {
+      hp: 500,
+      atk: 28,
+      def: 5,
+      crit: 12,
+      critDmg: 150,
+      haste: 0,
+      lifesteal: 0,
+      gearScore: 0
+    };
+    if (typeof myRpgProfile !== 'undefined' && myRpgProfile && myRpgProfile.stats) {
+      return {
+        hp: Math.max(300, myRpgProfile.stats.hp || 500),
+        atk: Math.max(10, myRpgProfile.stats.atk || 28),
+        def: Math.max(0, myRpgProfile.stats.def || 5),
+        crit: myRpgProfile.stats.crit || 12,
+        critDmg: myRpgProfile.stats.critDmg || 150,
+        haste: myRpgProfile.stats.haste || 0,
+        lifesteal: myRpgProfile.stats.lifesteal || 0,
+        gearScore: myRpgProfile.stats.gearScore || 0
+      };
+    }
+    return base;
+  }
+
+  let activeTelegraphs = [];
+
+  function createTelegraphCircle(x, z, radius, duration, onComplete) {
+    const group = new THREE.Group();
+
+    // Outer warning ring
+    const ringGeo = new THREE.RingGeometry(radius * 0.93, radius, 32);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+    ringMesh.rotation.x = -Math.PI / 2;
+    ringMesh.position.y = 0.05;
+    group.add(ringMesh);
+
+    // Inner charging fill
+    const fillGeo = new THREE.CircleGeometry(radius * 0.92, 32);
+    const fillMat = new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide, transparent: true, opacity: 0.38 });
+    const fillMesh = new THREE.Mesh(fillGeo, fillMat);
+    fillMesh.rotation.x = -Math.PI / 2;
+    fillMesh.position.y = 0.045;
+    fillMesh.scale.set(0.01, 0.01, 1);
+    group.add(fillMesh);
+
+    group.position.set(x, 0, z);
+    worldObjects.add(group);
+
+    const tg = {
+      type: 'circle',
+      group,
+      fillMesh,
+      x,
+      z,
+      radius,
+      startTime: performance.now(),
+      duration,
+      onComplete,
+      cleanup: () => { worldObjects.remove(group); }
+    };
+    activeTelegraphs.push(tg);
+    return tg;
+  }
+
+  function createTelegraphLane(x, z, width, length, rot, duration, onComplete) {
+    const group = new THREE.Group();
+
+    // Outer boundary outline
+    const boxGeo = new THREE.PlaneGeometry(width, length);
+    const boxMat = new THREE.MeshBasicMaterial({ color: 0xf97316, side: THREE.DoubleSide, transparent: true, opacity: 0.55, wireframe: true });
+    const boxMesh = new THREE.Mesh(boxGeo, boxMat);
+    boxMesh.rotation.x = -Math.PI / 2;
+    boxMesh.position.set(0, 0.05, length / 2);
+    group.add(boxMesh);
+
+    // Inner charging fill
+    const fillGeo = new THREE.PlaneGeometry(width * 0.96, length);
+    const fillMat = new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide, transparent: true, opacity: 0.38 });
+    const fillMesh = new THREE.Mesh(fillGeo, fillMat);
+    fillMesh.rotation.x = -Math.PI / 2;
+    fillMesh.position.set(0, 0.045, length / 2);
+    fillMesh.scale.set(1, 0.01, 1);
+    group.add(fillMesh);
+
+    group.position.set(x, 0, z);
+    group.rotation.y = rot;
+    worldObjects.add(group);
+
+    const tg = {
+      type: 'lane',
+      group,
+      fillMesh,
+      x,
+      z,
+      width,
+      length,
+      rot,
+      startTime: performance.now(),
+      duration,
+      onComplete,
+      cleanup: () => { worldObjects.remove(group); }
+    };
+    activeTelegraphs.push(tg);
+    return tg;
+  }
+
+  function createShockwaveRing(x, z, maxRadius, color = 0xef4444) {
+    const ringGeo = new THREE.RingGeometry(0.3, maxRadius || 3.5, 24);
+    const ringMat = new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(x, 0.07, z);
+    worldObjects.add(ring);
+
+    activeSlashTrails.push({
+      mesh: ring,
+      mat: ringMat,
+      birthTime: performance.now(),
+      life: 380
+    });
+  }
 
   // Active Trade State
   let activeTrade = null;
@@ -105,6 +325,7 @@
   let nearbyInteractable = null; // { type: 'door' | 'player', data }
 
   // Input State
+
   const keys = { w: false, a: false, s: false, d: false, up: false, left: false, down: false, right: false };
   let joystickVector = { x: 0, y: 0 };
   let lastMoveSent = 0;
@@ -3821,7 +4042,17 @@
       socketId = msg.self.id;
       myPlayer.id = socketId;
       myPlayer.primogems = msg.self.primogems || 160;
+      if (msg.unlockedCompanions) {
+        unlockedCompanionsList = msg.unlockedCompanions;
+      }
+      if (msg.activeCompanion && msg.activeCompanion !== 'none') {
+        myCompanion = msg.activeCompanion;
+        const found = (unlockedCompanionsList || []).find(c => c.name === myCompanion);
+        myCompanionData = found || { name: myCompanion, element: 'Electro' };
+        spawnCompanionMesh(myCompanion, myCompanionData.element);
+      }
       updateUIProfile();
+      updateCombatHUD();
       updateOtherPlayers(msg.states[currentMap] || []);
     } else if (msg.type === 'WORLD_STATE') {
       updateOtherPlayers(msg.states[currentMap] || []);
@@ -3831,6 +4062,7 @@
         myPlayer.isGuest = false;
         myPlayer.primogems = msg.player.primogems || myPlayer.primogems;
         updateUIProfile();
+        fetchUserCompanions();
         closeModal('modal-auth');
         playBeep(880, 'triangle', 0.25);
         addChatMessage('Sistem', `🛡️ Kick hesabın (@${myPlayer.username}) başarıyla bağlandı!`);
@@ -3872,6 +4104,63 @@
       handleRpgKillResult(msg);
     } else if (msg.type === 'RPG_INSPECT_DATA') {
       renderInspectModal(msg);
+    } else if (msg.type === 'WORLD_COMPANION_RESULT') {
+      if (msg.success) {
+        if (msg.companion && msg.companion !== 'none') {
+          myCompanion = msg.companion;
+          myCompanionData = msg.companionData || { name: myCompanion, element: 'Electro' };
+          spawnCompanionMesh(myCompanion, myCompanionData.element);
+          playBeep(784, 'triangle', 0.2);
+          addChatMessage('🐾 5★ Yoldaş', `✨ ${myCompanion} (${myCompanionData.element}) artık yanında süzülüyor! Yetenek setin dönüştürüldü.`);
+          showDamageNumber({ x: myPlayer.x, y: 2.2, z: myPlayer.z }, `🐾 ${myCompanion} Kuşandı!`, 'heal');
+        } else {
+          addChatMessage('🐾 5★ Yoldaş', `Yoldaş kaldırıldı. Standart yetenek setine dönüldü.`);
+          myCompanion = null;
+          myCompanionData = null;
+          removeCompanionMesh();
+        }
+        updateCombatHUD();
+        const compModal = document.getElementById('modal-companion-selector');
+        if (compModal && !compModal.classList.contains('hidden')) {
+          renderCompanionModal(currentCompanionFilter);
+        }
+      } else {
+        alert(msg.message || 'Yoldaş seçilemedi.');
+      }
+    } else if (msg.type === 'WORLD_COMPANIONS_LIST') {
+      if (msg.unlockedCompanions) {
+        unlockedCompanionsList = msg.unlockedCompanions;
+      }
+      if (msg.activeCompanion && msg.activeCompanion !== 'none' && !myCompanion) {
+        myCompanion = msg.activeCompanion;
+        const found = (unlockedCompanionsList || []).find(c => c.name === myCompanion);
+        myCompanionData = found || { name: myCompanion, element: 'Electro' };
+        spawnCompanionMesh(myCompanion, myCompanionData.element);
+        updateCombatHUD();
+      }
+      const compModal = document.getElementById('modal-companion-selector');
+      if (compModal && !compModal.classList.contains('hidden')) {
+        renderCompanionModal(currentCompanionFilter);
+      }
+    } else if (msg.type === 'WORLD_PLAYER_COMPANION_UPDATE') {
+      const entry = otherPlayers.get(msg.socketId);
+      if (entry) {
+        entry.data.companion = msg.companion;
+        if (msg.companion && msg.companion !== 'none') {
+          if (otherPlayerCompanions.has(msg.socketId)) {
+            scene.remove(otherPlayerCompanions.get(msg.socketId));
+          }
+          const otherPet = createCompanionChibiMesh(msg.companion, msg.companionData ? msg.companionData.element : 'Electro');
+          otherPet.position.set(entry.mesh.position.x, entry.mesh.position.y + 1.85, entry.mesh.position.z);
+          scene.add(otherPet);
+          otherPlayerCompanions.set(msg.socketId, otherPet);
+        } else {
+          if (otherPlayerCompanions.has(msg.socketId)) {
+            scene.remove(otherPlayerCompanions.get(msg.socketId));
+            otherPlayerCompanions.delete(msg.socketId);
+          }
+        }
+      }
     }
     // Trade Messages
     else if (msg.type === 'TRADE_INVITE') {
@@ -3927,6 +4216,14 @@
           targetRot: p.rot,
           anim: p.anim
         });
+
+        // Other player companion
+        if (p.companion && p.companion !== 'none') {
+          const otherPet = createCompanionChibiMesh(p.companion, 'Electro');
+          otherPet.position.set(p.x, p.y + 1.85, p.z);
+          scene.add(otherPet);
+          otherPlayerCompanions.set(p.id, otherPet);
+        }
       } else {
         // Update existing player targets
         const entry = otherPlayers.get(p.id);
@@ -3954,6 +4251,19 @@
           showSpeechBubble(entry.mesh, p.bubble);
           entry.lastBubble = p.bubble;
         }
+
+        // Other player companion follow sync
+        if (p.companion && p.companion !== 'none') {
+          if (!otherPlayerCompanions.has(p.id)) {
+            const compPet = createCompanionChibiMesh(p.companion, 'Electro');
+            compPet.position.set(p.x, (p.y || 0) + 1.85, p.z);
+            scene.add(compPet);
+            otherPlayerCompanions.set(p.id, compPet);
+          }
+        } else if (otherPlayerCompanions.has(p.id)) {
+          scene.remove(otherPlayerCompanions.get(p.id));
+          otherPlayerCompanions.delete(p.id);
+        }
       }
     }
 
@@ -3961,6 +4271,10 @@
     for (const [id, entry] of otherPlayers.entries()) {
       if (!currentIds.has(id)) {
         scene.remove(entry.mesh);
+        if (otherPlayerCompanions.has(id)) {
+          scene.remove(otherPlayerCompanions.get(id));
+          otherPlayerCompanions.delete(id);
+        }
         otherPlayers.delete(id);
       }
     }
@@ -3968,6 +4282,7 @@
     // Update online counter
     document.getElementById('ui-online-count').textContent = otherPlayers.size + 1;
   }
+
 
   // Local Player Mesh
   let myMesh = null;
@@ -4025,7 +4340,7 @@
     // Map bounds clamping
     const bounds = currentMap === 'town'
       ? { minX: -44, maxX: 44, minZ: -44, maxZ: 44 }
-      : (currentMap === 'battle_zone'
+      : (isBattleZone(currentMap)
           ? { minX: -38, maxX: 38, minZ: -38, maxZ: 38 }
           : { minX: -15, maxX: 15, minZ: -11, maxZ: 11 });
     myPlayer.x = Math.max(bounds.minX, Math.min(bounds.maxX, myPlayer.x));
@@ -4110,14 +4425,18 @@
         { id: 'door_tavern', name: "Cat's Tail Taverna", pos: { x: 24, z: -10.0 } },
         { id: 'door_shrine', name: 'Dilek Tapınağı', pos: { x: 0, z: -26.0 } },
         { id: 'door_guild', name: 'Maceracılar Loncası', pos: { x: -24, z: 10.0 } },
-        { id: 'door_battle', name: '⚔️ Vahşi Savaş Arenası', pos: { x: 0, z: 32.0 } }
+        { id: 'door_battle', name: '🌀 Kadim Zindan Portalı', pos: { x: 0, z: 32.0 } }
       ];
 
       for (const d of doors) {
         const dist = Math.hypot(myPlayer.x - d.pos.x, myPlayer.z - d.pos.z);
         if (dist < 4.2) {
           nearbyInteractable = { type: 'door', data: d };
-          promptText.textContent = `[E] ${d.name}'na Gir`;
+          if (d.id === 'door_battle') {
+            promptText.textContent = `[E] ${d.name} (Bölge Seçimi)`;
+          } else {
+            promptText.textContent = `[E] ${d.name}'na Gir`;
+          }
           prompt.classList.remove('hidden');
           return;
         }
@@ -4148,7 +4467,7 @@
         prompt.classList.remove('hidden');
         return;
       }
-    } else if (currentMap === 'battle_zone') {
+    } else if (isBattleZone(currentMap)) {
       // Check Exit Portal Gate back to Town at (0, -32)
       const dist = Math.hypot(myPlayer.x - 0, myPlayer.z - (-32.0));
       if (dist < 4.2) {
@@ -4227,6 +4546,10 @@
     if (!nearbyInteractable) return;
 
     if (nearbyInteractable.type === 'door') {
+      if (nearbyInteractable.data && nearbyInteractable.data.id === 'door_battle') {
+        openPortalZoneModal();
+        return;
+      }
       playBeep(520, 'triangle', 0.15);
       if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({ type: 'WORLD_DOOR_INTERACT' }));
@@ -4732,8 +5055,8 @@
         myPlayer.z = 26;
         document.getElementById('combat-hud')?.classList.add('hidden');
         detachCombatWeapon();
-      } else if (targetMap === 'battle_zone') {
-        buildBattleZoneMap();
+      } else if (isBattleZone(targetMap)) {
+        buildBattleZoneMap(targetMap);
         myPlayer.x = 0;
         myPlayer.z = -28;
       } else {
@@ -5313,8 +5636,8 @@
       ctx.fillRect(cx + (-24 - myPlayer.x) * scale - 6, cy + (14 - myPlayer.z) * scale - 6, 12, 12); // Guild
       ctx.fillStyle = '#059669';
       ctx.fillRect(cx + (24 - myPlayer.x) * scale - 5, cy + (14 - myPlayer.z) * scale - 5, 10, 10); // Gazebo
-    } else if (currentMap === 'battle_zone') {
-      ctx.fillStyle = '#0f172a';
+    } else if (isBattleZone(currentMap)) {
+      ctx.fillStyle = currentMap === 'battle_zone_1' ? '#064e3b' : (currentMap === 'battle_zone_2' ? '#2d1212' : '#05050e');
       ctx.fillRect(0, 0, w, h);
 
       // Arena boundary ring
@@ -5709,6 +6032,14 @@
       const gs = (myRpgProfile && myRpgProfile.stats && myRpgProfile.stats.gearScore) || 0;
       gsVal.textContent = gs;
     }
+
+    // Sync effective RPG stats to Combat HUD
+    const effectiveStats = getPlayerEffectiveStats();
+    playerMaxHP = effectiveStats.hp;
+    if (playerHP > playerMaxHP || playerHP === 500) {
+      playerHP = playerMaxHP;
+    }
+    updateCombatHUD();
   }
 
   function addChatMessage(user, text) {
@@ -5899,8 +6230,16 @@
   function createSlimeMesh(type) {
     const group = new THREE.Group();
     const isPyro = type === 'slime_pyro';
-    const mainColor = isPyro ? 0xef4444 : 0x22c55e;
-    const coreColor = isPyro ? 0xf59e0b : 0x86efac;
+    const isElectro = type === 'slime_electro';
+    let mainColor = 0x22c55e;
+    let coreColor = 0x86efac;
+    if (isPyro) {
+      mainColor = 0xef4444;
+      coreColor = 0xf59e0b;
+    } else if (isElectro) {
+      mainColor = 0xa855f7;
+      coreColor = 0xe9d5ff;
+    }
 
     // Translucent Jelly Dome
     const bodyGeo = new THREE.SphereGeometry(0.75, 14, 12);
@@ -5946,17 +6285,38 @@
       );
       flame.position.set(0, 1.35, 0);
       group.add(flame);
+    } else if (isElectro) {
+      // Spark antenna
+      const spark = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.18),
+        new THREE.MeshBasicMaterial({ color: 0xf0abfc })
+      );
+      spark.position.set(0, 1.38, 0);
+      group.add(spark);
     }
 
     return group;
   }
 
-  function createHilichurlMesh() {
+  function createHilichurlMesh(type = 'hilichurl') {
     const group = new THREE.Group();
-    const furMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
-    const maskMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
-    const hornMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
-    const redMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+    const isElite = type === 'mitachurl_axe';
+    const isSentinel = type === 'abyss_sentinel';
+    const isWarrior = type === 'hilichurl_warrior';
+    const isRecruit = type === 'hilichurl_recruit';
+
+    const furMat = new THREE.MeshLambertMaterial({
+      color: isSentinel ? 0x0f172a : (isElite ? 0x450a0a : (isWarrior ? 0x1e293b : (isRecruit ? 0x475569 : 0x334155)))
+    });
+    const maskMat = new THREE.MeshLambertMaterial({
+      color: isSentinel ? 0x1e1b4b : (isElite ? 0x991b1b : (isWarrior ? 0xe2e8f0 : 0xf8fafc))
+    });
+    const hornMat = new THREE.MeshLambertMaterial({
+      color: isSentinel ? 0x6366f1 : (isElite ? 0x18181b : 0x1e293b)
+    });
+    const redMat = new THREE.MeshBasicMaterial({
+      color: isSentinel ? 0xc084fc : (isElite ? 0xf97316 : 0xef4444)
+    });
 
     // Torso
     const torso = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.0, 0.6), furMat);
@@ -5982,8 +6342,8 @@
 
     // Curved Horns
     [-0.35, 0.35].forEach((hx, idx) => {
-      const horn = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.45, 5), hornMat);
-      horn.position.set(hx, 2.15, 0.1);
+      const horn = new THREE.Mesh(new THREE.ConeGeometry(isElite ? 0.15 : 0.1, isElite ? 0.7 : 0.45, 5), hornMat);
+      horn.position.set(hx, isElite ? 2.3 : 2.15, 0.1);
       horn.rotation.z = idx === 0 ? 0.35 : -0.35;
       group.add(horn);
     });
@@ -5998,21 +6358,47 @@
     rArm.rotation.x = -0.4;
     group.add(rArm);
 
-    // Spiked Wooden Club in Right Hand
-    const clubWoodMat = new THREE.MeshLambertMaterial({ color: 0x78350f });
-    const club = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.08, 1.3, 6), clubWoodMat);
-    club.position.set(0.72, 1.1, 0.45);
-    club.rotation.x = 0.5;
-    club.castShadow = true;
-    group.add(club);
+    // Weapons
+    if (isElite) {
+      // Massive Mitachurl Double Battleaxe
+      const axeHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 2.3, 6), new THREE.MeshLambertMaterial({ color: 0x27272a }));
+      axeHandle.position.set(0.78, 1.25, 0.45);
+      axeHandle.rotation.x = 0.45;
+      group.add(axeHandle);
 
-    // Metal studs on club
-    const studMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8 });
-    for (let s = 0; s < 4; s++) {
-      const stud = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.15, 4), studMat);
-      stud.position.set(0.72, 1.25 + s * 0.12, 0.55);
-      stud.rotation.x = Math.PI / 2;
-      group.add(stud);
+      [-0.28, 0.28].forEach(bx => {
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.75, 0.06), new THREE.MeshStandardMaterial({ color: 0x991b1b, metalness: 0.8 }));
+        blade.position.set(0.78 + bx, 2.05, 0.85);
+        blade.castShadow = true;
+        group.add(blade);
+      });
+    } else if (isSentinel) {
+      // Abyssal Runic Spear
+      const spear = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 2.5, 6), new THREE.MeshLambertMaterial({ color: 0x1e1b4b }));
+      spear.position.set(0.72, 1.3, 0.45);
+      spear.rotation.x = 0.35;
+      group.add(spear);
+
+      const tip = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.55, 4), new THREE.MeshBasicMaterial({ color: 0xa855f7 }));
+      tip.position.set(0.72, 2.5, 0.85);
+      group.add(tip);
+    } else {
+      // Spiked Wooden Club in Right Hand
+      const clubWoodMat = new THREE.MeshLambertMaterial({ color: 0x78350f });
+      const club = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.08, 1.3, 6), clubWoodMat);
+      club.position.set(0.72, 1.1, 0.45);
+      club.rotation.x = 0.5;
+      club.castShadow = true;
+      group.add(club);
+
+      // Metal studs on club
+      const studMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8 });
+      for (let s = 0; s < 4; s++) {
+        const stud = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.15, 4), studMat);
+        stud.position.set(0.72, 1.25 + s * 0.12, 0.55);
+        stud.rotation.x = Math.PI / 2;
+        group.add(stud);
+      }
     }
 
     // Legs
@@ -6022,14 +6408,19 @@
       group.add(leg);
     });
 
+    if (isElite) group.scale.set(1.42, 1.42, 1.42);
+    else if (isSentinel) group.scale.set(1.22, 1.22, 1.22);
+    else if (isRecruit) group.scale.set(0.88, 0.88, 0.88);
+
     return group;
   }
 
-  function createPyromancerMesh() {
+  function createPyromancerMesh(type = 'pyromancer') {
     const group = new THREE.Group();
-    const robeMat = new THREE.MeshLambertMaterial({ color: 0x881337 });
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.8, roughness: 0.3 });
-    const fireMat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
+    const isAbyssMage = type === 'abyss_mage';
+    const robeMat = new THREE.MeshLambertMaterial({ color: isAbyssMage ? 0x1e1b4b : 0x881337 });
+    const goldMat = new THREE.MeshStandardMaterial({ color: isAbyssMage ? 0x818cf8 : 0xf59e0b, metalness: 0.8, roughness: 0.3 });
+    const fireMat = new THREE.MeshBasicMaterial({ color: isAbyssMage ? 0x9333ea : 0xf97316 });
 
     // Floating Robe Body
     const robe = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.9, 1.4, 8), robeMat);
@@ -6049,7 +6440,7 @@
     group.add(hood);
 
     // Glowing Eyes in shadowy hood
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+    const eyeMat = new THREE.MeshBasicMaterial({ color: isAbyssMage ? 0xc084fc : 0xfacc15 });
     [-0.15, 0.15].forEach(ex => {
       const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 4), eyeMat);
       eye.position.set(ex, 1.9, 0.45);
@@ -6064,14 +6455,16 @@
     staff.position.set(0.7, 1.3, 0.2);
     group.add(staff);
 
-    // Fiery Crystal on top of staff
-    const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.22), fireMat);
+    // Fiery / Void Crystal on top of staff
+    const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.24), fireMat);
     crystal.position.set(0.7, 2.25, 0.2);
     group.add(crystal);
 
-    const cLight = new THREE.PointLight(0xf97316, 0.9, 8, 2);
+    const cLight = new THREE.PointLight(isAbyssMage ? 0x9333ea : 0xf97316, 0.9, 8, 2);
     cLight.position.set(0.7, 2.25, 0.2);
     group.add(cLight);
+
+    if (isAbyssMage) group.scale.set(1.15, 1.15, 1.15);
 
     return group;
   }
@@ -6245,7 +6638,7 @@
     const drops = [];
     const roll = Math.random();
 
-    if (mobType === 'slime_green' || mobType === 'slime_pyro') {
+    if (mobType.startsWith('slime_')) {
       if (roll < 0.06) {
         drops.push(MONSTER_MATERIALS.slime_concentrate);
       } else if (roll < 0.32) {
@@ -6253,18 +6646,20 @@
       } else {
         drops.push(MONSTER_MATERIALS.slime_condensate);
       }
-    } else if (mobType === 'hilichurl') {
-      if (roll < 0.08) {
+    } else if (mobType.startsWith('hilichurl') || mobType === 'mitachurl_axe') {
+      const isElite = mobType === 'mitachurl_axe';
+      if (roll < (isElite ? 0.35 : 0.08)) {
         drops.push(MONSTER_MATERIALS.ominous_mask);
-      } else if (roll < 0.35) {
+      } else if (roll < (isElite ? 0.75 : 0.35)) {
         drops.push(MONSTER_MATERIALS.stained_mask);
       } else {
         drops.push(MONSTER_MATERIALS.damaged_mask);
       }
-    } else if (mobType === 'pyromancer') {
-      if (roll < 0.12) {
+      if (isElite) drops.push(MONSTER_MATERIALS.stained_mask); // Bonus drop for mini-boss
+    } else if (mobType === 'pyromancer' || mobType === 'abyss_mage' || mobType === 'abyss_sentinel') {
+      if (roll < 0.18) {
         drops.push(MONSTER_MATERIALS.abyss_scroll);
-      } else if (roll < 0.45) {
+      } else if (roll < 0.5) {
         drops.push(MONSTER_MATERIALS.ley_leaves);
       } else {
         drops.push(MONSTER_MATERIALS.dead_ley_branch);
@@ -6335,7 +6730,7 @@
     3: new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide, transparent: true, opacity: 0.9 })
   };
 
-  function createSlashArcMesh(px, pz, rot, step) {
+  function createSlashArcMesh(px, pz, rot, step, customColor = null) {
     // Keep max 2 active trails at once
     while (activeSlashTrails.length >= 2) {
       const old = activeSlashTrails.shift();
@@ -6345,6 +6740,9 @@
     const geo = SLASH_GEOS[step] || SLASH_GEOS[1];
     const baseMat = SLASH_MATS[step] || SLASH_MATS[1];
     const mat = baseMat.clone();
+    if (customColor !== null) {
+      mat.color.setHex(customColor);
+    }
     const arcMesh = new THREE.Mesh(geo, mat);
     arcMesh.rotation.x = -Math.PI / 2;
     arcMesh.position.set(px, 0.95, pz);
@@ -6475,24 +6873,34 @@
 
   // Mob Templates
   const MOB_TEMPLATES = {
-    slime_green: { name: 'Yeşil Balçık', hp: 80, speed: 2.3, dmg: 8, dropPrimo: 6, height: 1.1, aggroRange: 16, attackRange: 1.4 },
-    slime_pyro: { name: 'Ateş Balçığı', hp: 120, speed: 2.5, dmg: 14, dropPrimo: 10, height: 1.2, aggroRange: 16, attackRange: 1.4 },
-    hilichurl: { name: 'Kabile Savaşçısı', hp: 180, speed: 2.8, dmg: 20, dropPrimo: 18, height: 1.8, aggroRange: 18, attackRange: 2.0 },
-    pyromancer: { name: 'Uçurum Büyücüsü', hp: 250, speed: 1.8, dmg: 28, dropPrimo: 35, height: 2.0, aggroRange: 22, attackRange: 7.5, isRanged: true },
-    ruin_golem: { name: 'Antik Yıkım Muhafızı (BOSS)', hp: 850, speed: 1.4, dmg: 45, dropPrimo: 120, height: 3.2, aggroRange: 26, attackRange: 3.2, isBoss: true }
+    // Zone 1: Zümrüt Çayırları (Slime Vadisi) [GS 100]
+    slime_green: { name: 'Zümrüt Balçık', hp: 70, speed: 2.2, dmg: 7, height: 1.1, aggroRange: 16, attackRange: 1.4 },
+    slime_electro: { name: 'Yıldırım Balçığı', hp: 90, speed: 2.5, dmg: 10, height: 1.2, aggroRange: 16, attackRange: 1.4 },
+    hilichurl_recruit: { name: 'Çırak Hilichurl', hp: 120, speed: 2.6, dmg: 12, height: 1.7, aggroRange: 18, attackRange: 1.9 },
+
+    // Zone 2: Kızıl Hilichurl Harabeleri [GS 350]
+    slime_pyro: { name: 'Ateş Balçığı', hp: 140, speed: 2.6, dmg: 18, height: 1.2, aggroRange: 16, attackRange: 1.4 },
+    hilichurl_warrior: { name: 'Zırhlı Hilichurl Savaşçısı', hp: 260, speed: 2.7, dmg: 24, height: 1.9, aggroRange: 18, attackRange: 2.0 },
+    pyromancer: { name: 'Kızıl Pyro Büyücüsü', hp: 210, speed: 1.9, dmg: 28, height: 2.0, aggroRange: 22, attackRange: 7.5, isRanged: true },
+    mitachurl_axe: { name: 'Alev Baltalı Mitachurl (ELİT)', hp: 750, speed: 2.2, dmg: 44, height: 2.6, aggroRange: 22, attackRange: 2.6, isElite: true },
+
+    // Zone 3: Kadim Uçurum Arenası [GS 750]
+    abyss_sentinel: { name: 'Uçurum Muhafızı', hp: 550, speed: 2.8, dmg: 55, height: 2.2, aggroRange: 22, attackRange: 2.2 },
+    abyss_mage: { name: 'Kadim Hiçlik Büyücüsü', hp: 480, speed: 2.0, dmg: 62, height: 2.1, aggroRange: 24, attackRange: 8.5, isRanged: true },
+    ruin_golem: { name: 'Antik Yıkım Muhafızı (DÜNYA BOSSU)', hp: 2800, speed: 1.4, dmg: 85, height: 3.4, aggroRange: 28, attackRange: 3.4, isBoss: true }
   };
 
   function spawnCombatMob(type, x, z) {
     const cfg = MOB_TEMPLATES[type] || MOB_TEMPLATES.slime_green;
     let mesh;
-    if (type === 'slime_green' || type === 'slime_pyro') {
+    if (type.startsWith('slime_')) {
       mesh = createSlimeMesh(type);
-    } else if (type === 'hilichurl') {
-      mesh = createHilichurlMesh();
-    } else if (type === 'pyromancer') {
-      mesh = createPyromancerMesh();
+    } else if (type === 'pyromancer' || type === 'abyss_mage') {
+      mesh = createPyromancerMesh(type);
     } else if (type === 'ruin_golem') {
       mesh = createRuinGolemMesh();
+    } else {
+      mesh = createHilichurlMesh(type);
     }
 
     mesh.position.set(x, 0, z);
@@ -6511,6 +6919,7 @@
       aggroRange: cfg.aggroRange,
       attackRange: cfg.attackRange,
       isRanged: !!cfg.isRanged,
+      isElite: !!cfg.isElite,
       isBoss: !!cfg.isBoss,
       x: x,
       y: 0,
@@ -6530,27 +6939,49 @@
     return mob;
   }
 
-  function spawnInitialMobs() {
+  function spawnInitialMobs(zoneId = currentMap) {
     activeCombatMobs = [];
 
-    // Slimes
-    spawnCombatMob('slime_green', -9, 4);
-    spawnCombatMob('slime_green', 9, 6);
-    spawnCombatMob('slime_green', -4, 12);
+    if (zoneId === 'battle_zone_1') {
+      // Zone 1: Slimes & Recruits (Req GS 100)
+      spawnCombatMob('slime_green', -9, 4);
+      spawnCombatMob('slime_green', 9, 6);
+      spawnCombatMob('slime_green', -4, 12);
+      spawnCombatMob('slime_electro', -12, 14);
+      spawnCombatMob('slime_electro', 11, 15);
 
-    spawnCombatMob('slime_pyro', -12, 14);
-    spawnCombatMob('slime_pyro', 11, 15);
+      spawnCombatMob('hilichurl_recruit', -14, -4);
+      spawnCombatMob('hilichurl_recruit', 14, -2);
+      spawnCombatMob('hilichurl_recruit', 0, 6);
+      spawnCombatMob('hilichurl_recruit', 0, 14);
 
-    // Hilichurl Club Fighters
-    spawnCombatMob('hilichurl', -14, -4);
-    spawnCombatMob('hilichurl', 14, -2);
-    spawnCombatMob('hilichurl', 0, 6);
+    } else if (zoneId === 'battle_zone_2') {
+      // Zone 2: Warriors, Pyromancers, Mitachurl Axe Elite (Req GS 350)
+      spawnCombatMob('slime_pyro', -10, 8);
+      spawnCombatMob('slime_pyro', 10, 8);
 
-    // Abyss Pyromancer
-    spawnCombatMob('pyromancer', 12, 18);
+      spawnCombatMob('hilichurl_warrior', -14, -4);
+      spawnCombatMob('hilichurl_warrior', 14, -2);
+      spawnCombatMob('hilichurl_warrior', 0, 4);
 
-    // Boss on North Dais
-    spawnCombatMob('ruin_golem', 0, 14);
+      spawnCombatMob('pyromancer', -11, 16);
+      spawnCombatMob('pyromancer', 11, 16);
+
+      // Elite Mitachurl Axe Mini-Boss
+      spawnCombatMob('mitachurl_axe', 0, 14);
+
+    } else {
+      // Zone 3: Abyssal Sentinels, Void Mages & Ruin Golem Boss (Req GS 750)
+      spawnCombatMob('abyss_sentinel', -14, -4);
+      spawnCombatMob('abyss_sentinel', 14, -2);
+      spawnCombatMob('abyss_sentinel', 0, 4);
+
+      spawnCombatMob('abyss_mage', -12, 16);
+      spawnCombatMob('abyss_mage', 12, 16);
+
+      // World Boss
+      spawnCombatMob('ruin_golem', 0, 14);
+    }
   }
 
   // Floating Damage Numbers (Capped DOM pool to prevent layout reflow freezes)
@@ -6684,13 +7115,1069 @@
     });
   }
 
+  // --- Companion Web Audio Elemental Synthesizers ---
+  function playThunderSound(isHeavy = false) {
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(isHeavy ? 1200 : 850, ctx.currentTime);
+      osc1.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + (isHeavy ? 0.35 : 0.18));
+      gain1.gain.setValueAtTime(isHeavy ? 0.28 : 0.18, ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (isHeavy ? 0.35 : 0.18));
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start();
+      osc1.stop(ctx.currentTime + (isHeavy ? 0.36 : 0.19));
+
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(isHeavy ? 75 : 95, ctx.currentTime);
+      osc2.frequency.exponentialRampToValueAtTime(25, ctx.currentTime + (isHeavy ? 0.55 : 0.3));
+      gain2.gain.setValueAtTime(isHeavy ? 0.35 : 0.2, ctx.currentTime);
+      gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (isHeavy ? 0.55 : 0.3));
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start();
+      osc2.stop(ctx.currentTime + (isHeavy ? 0.56 : 0.31));
+    } catch (e) {}
+  }
+
+  function playMeteorImpactSound() {
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(140, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(22, ctx.currentTime + 0.65);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.65);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.66);
+    } catch (e) {}
+  }
+
+  function playFlameBurstSound() {
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(320, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(640, ctx.currentTime + 0.1);
+      osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.35);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.36);
+    } catch (e) {}
+  }
+
+  function playHydroSplashSound() {
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(750, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(280, ctx.currentTime + 0.22);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.23);
+    } catch (e) {}
+  }
+
+  function playAnemoGustSound() {
+    try {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(220, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(680, ctx.currentTime + 0.18);
+      osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.4);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.41);
+    } catch (e) {}
+  }
+
+  // --- Cinematic Elemental Screen Flash Overlay ---
+  function triggerElementalFlash(flashClass) {
+    const overlay = document.getElementById('elemental-flash-overlay');
+    if (!overlay) return;
+    overlay.className = `elemental-flash-overlay ${flashClass}`;
+    setTimeout(() => {
+      overlay.className = 'elemental-flash-overlay';
+    }, 280);
+  }
+
+  // --- 3D Chibi Companion Mesh Creator ---
+  function createCompanionChibiMesh(charName, element = 'Electro') {
+    const group = new THREE.Group();
+    group.name = `companion_${charName}`;
+
+    // Color palettes by character
+    let hairColor = 0x6b21a8;
+    let robeColor = 0x7c3aed;
+    let accentColor = 0xfacc15;
+    let lightColor = 0xc084fc;
+
+    if (charName.toLowerCase().includes('zhongli')) {
+      hairColor = 0x27170e;
+      robeColor = 0x3d271d;
+      accentColor = 0xf59e0b;
+      lightColor = 0xf59e0b;
+    } else if (charName.toLowerCase().includes('hu tao')) {
+      hairColor = 0x3e1d13;
+      robeColor = 0x18181b;
+      accentColor = 0xef4444;
+      lightColor = 0xef4444;
+    } else if (charName.toLowerCase().includes('furina')) {
+      hairColor = 0xe0f2fe;
+      robeColor = 0x1d4ed8;
+      accentColor = 0x38bdf8;
+      lightColor = 0x38bdf8;
+    } else if (charName.toLowerCase().includes('kazuha')) {
+      hairColor = 0xf1f5f9;
+      robeColor = 0x0f172a;
+      accentColor = 0xef4444;
+      lightColor = 0x34d399;
+    } else {
+      // Element Fallbacks
+      if (element === 'Geo') { hairColor = 0x78350f; robeColor = 0xb45309; accentColor = 0xfacc15; lightColor = 0xfacc15; }
+      else if (element === 'Pyro') { hairColor = 0x7f1d1d; robeColor = 0xb91c1c; accentColor = 0xf97316; lightColor = 0xef4444; }
+      else if (element === 'Hydro') { hairColor = 0x075985; robeColor = 0x0284c7; accentColor = 0x38bdf8; lightColor = 0x38bdf8; }
+      else if (element === 'Anemo') { hairColor = 0x064e3b; robeColor = 0x059669; accentColor = 0x34d399; lightColor = 0x34d399; }
+      else if (element === 'Cryo') { hairColor = 0xbae6fd; robeColor = 0x38bdf8; accentColor = 0xe0f2fe; lightColor = 0xa5f3fc; }
+      else if (element === 'Dendro') { hairColor = 0x14532d; robeColor = 0x16a34a; accentColor = 0x86efac; lightColor = 0x4ade80; }
+    }
+
+    // 1. Chibi Head (Cute rounded head)
+    const headMat = new THREE.MeshStandardMaterial({ color: 0xfde68a, roughness: 0.6 });
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 16), headMat);
+    head.position.y = 0.42;
+    group.add(head);
+
+    // 2. Chibi Hair
+    const hairMat = new THREE.MeshStandardMaterial({ color: hairColor, roughness: 0.7 });
+    const hairTop = new THREE.Mesh(new THREE.SphereGeometry(0.34, 14, 14, 0, Math.PI * 2, 0, Math.PI * 0.55), hairMat);
+    hairTop.position.y = 0.44;
+    group.add(hairTop);
+
+    // Back hair / braid / ponytails
+    if (charName.toLowerCase().includes('raiden')) {
+      // Raiden's long purple braid
+      const braid = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.04, 0.55, 8), hairMat);
+      braid.rotation.x = -0.35;
+      braid.position.set(0, 0.22, -0.28);
+      group.add(braid);
+      // Gold hair ornament
+      const pin = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.16, 6), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+      pin.position.set(-0.25, 0.55, 0.1);
+      pin.rotation.z = 0.8;
+      group.add(pin);
+    } else if (charName.toLowerCase().includes('hu tao')) {
+      // Hu Tao's twin-tails & porkpie hat
+      const t1 = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.03, 0.45, 6), hairMat);
+      t1.position.set(-0.28, 0.25, -0.15);
+      t1.rotation.z = -0.3;
+      group.add(t1);
+      const t2 = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.03, 0.45, 6), hairMat);
+      t2.position.set(0.28, 0.25, -0.15);
+      t2.rotation.z = 0.3;
+      group.add(t2);
+      // Plum hat
+      const hatBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.04, 16), new THREE.MeshStandardMaterial({ color: 0x18181b }));
+      hatBrim.position.y = 0.65;
+      group.add(hatBrim);
+      const hatTop = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.26, 0.18, 14), new THREE.MeshStandardMaterial({ color: 0x18181b }));
+      hatTop.position.y = 0.74;
+      group.add(hatTop);
+      // Red flower
+      const flower = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+      flower.position.set(-0.22, 0.69, 0.2);
+      group.add(flower);
+    } else if (charName.toLowerCase().includes('furina')) {
+      // Mini top hat
+      const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.2, 0.28, 12), new THREE.MeshStandardMaterial({ color: 0x1e3a8a }));
+      hat.position.set(0.12, 0.75, 0);
+      hat.rotation.z = -0.22;
+      group.add(hat);
+      const hatRibbon = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.06, 12), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+      hatRibbon.position.set(0.12, 0.66, 0);
+      hatRibbon.rotation.z = -0.22;
+      group.add(hatRibbon);
+    } else if (charName.toLowerCase().includes('kazuha')) {
+      // Crimson streak
+      const streak = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.22, 0.12), new THREE.MeshBasicMaterial({ color: 0xdc2626 }));
+      streak.position.set(-0.16, 0.52, 0.25);
+      group.add(streak);
+    }
+
+    // 3. Cute Anime Eyes (Glowing element tone)
+    const eyeMat = new THREE.MeshBasicMaterial({ color: lightColor });
+    const eye1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.09, 0.04), eyeMat);
+    eye1.position.set(-0.11, 0.42, 0.31);
+    group.add(eye1);
+    const eye2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.09, 0.04), eyeMat);
+    eye2.position.set(0.11, 0.42, 0.31);
+    group.add(eye2);
+
+    // 4. Chibi Robe Body
+    const bodyMat = new THREE.MeshStandardMaterial({ color: robeColor, roughness: 0.6 });
+    const body = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.42, 12), bodyMat);
+    body.position.y = 0.16;
+    group.add(body);
+
+    // Cute Sash / Belt
+    const beltMat = new THREE.MeshBasicMaterial({ color: accentColor });
+    const belt = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.03, 6, 16), beltMat);
+    belt.rotation.x = Math.PI / 2;
+    belt.position.y = 0.22;
+    group.add(belt);
+
+    // 5. Floating Glowing Elemental Halo Ring
+    const haloGeo = new THREE.TorusGeometry(0.55, 0.035, 8, 24);
+    const haloMat = new THREE.MeshBasicMaterial({
+      color: lightColor,
+      transparent: true,
+      opacity: 0.88,
+      side: THREE.DoubleSide
+    });
+    const halo = new THREE.Mesh(haloGeo, haloMat);
+    halo.rotation.x = Math.PI / 3;
+    halo.position.y = 0.38;
+    group.add(halo);
+
+    // 6. Character-Specific Signature Floating Companion Accessory
+    if (charName.toLowerCase().includes('hu tao')) {
+      // Cute floating ghost pet
+      const ghost = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 10), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 }));
+      ghost.position.set(0.48, 0.52, 0.1);
+      group.add(ghost);
+      const ghostTail = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.18, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 }));
+      ghostTail.position.set(0.48, 0.38, 0.1);
+      ghostTail.rotation.x = Math.PI;
+      group.add(ghostTail);
+    } else if (charName.toLowerCase().includes('zhongli')) {
+      // Mini floating rotating Geo Crystal Cube
+      const geoCube = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+      geoCube.position.set(0.46, 0.52, 0.1);
+      group.add(geoCube);
+    } else if (charName.toLowerCase().includes('furina')) {
+      // Mini floating water bubble
+      const bubble = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 12), new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.8 }));
+      bubble.position.set(0.45, 0.55, 0.1);
+      group.add(bubble);
+    }
+
+    // 7. Soft PointLight attached to Companion
+    const pLight = new THREE.PointLight(lightColor, 1.2, 5.0, 2);
+    pLight.position.set(0, 0.45, 0);
+    group.add(pLight);
+
+    group.userData = {
+      charName: charName,
+      element: element,
+      halo: halo,
+      baseScale: 1.0
+    };
+
+    return group;
+  }
+
+  // --- Companion Spawn, Despawn & Follow Helpers ---
+  function spawnCompanionMesh(charName, element = 'Electro') {
+    removeCompanionMesh();
+    myCompanionMesh = createCompanionChibiMesh(charName, element);
+    myCompanionMesh.position.set(myPlayer.x, (myMesh ? myMesh.position.y : 0) + 1.85, myPlayer.z);
+    scene.add(myCompanionMesh);
+  }
+
+  function removeCompanionMesh() {
+    if (myCompanionMesh) {
+      scene.remove(myCompanionMesh);
+      myCompanionMesh = null;
+    }
+  }
+
+  function updateCompanionFollow(delta, now) {
+    if (!myCompanionMesh) return;
+
+    // Follow target: floating over player's right shoulder
+    const shoulderAngle = myPlayer.rot - 0.75;
+    const shoulderDist = 1.35;
+    const bobOffset = Math.sin(now * 0.0035) * 0.14;
+    const targetX = myPlayer.x + Math.sin(shoulderAngle) * shoulderDist;
+    const targetZ = myPlayer.z + Math.cos(shoulderAngle) * shoulderDist;
+    const targetY = (myMesh ? myMesh.position.y : 0) + 1.85 + bobOffset;
+
+    // Smooth Lerp Follow
+    const lerpSpeed = Math.min(1.0, 7.5 * delta);
+    myCompanionMesh.position.x += (targetX - myCompanionMesh.position.x) * lerpSpeed;
+    myCompanionMesh.position.y += (targetY - myCompanionMesh.position.y) * lerpSpeed;
+    myCompanionMesh.position.z += (targetZ - myCompanionMesh.position.z) * lerpSpeed;
+
+    // Tilt dynamically into movement
+    const moveDx = targetX - myCompanionMesh.position.x;
+    const moveDz = targetZ - myCompanionMesh.position.z;
+    myCompanionMesh.rotation.z = -moveDx * 0.22;
+    myCompanionMesh.rotation.x = moveDz * 0.22;
+    myCompanionMesh.rotation.y = myPlayer.rot + 0.15;
+
+    // Spin elemental halo
+    if (myCompanionMesh.userData.halo) {
+      myCompanionMesh.userData.halo.rotation.z += 0.025;
+      myCompanionMesh.userData.halo.rotation.x += 0.012;
+    }
+  }
+
+  // --- Companion Ability VFX & Implementations ---
+  function spawnElectroEye(p) {
+    if (activeElectroEyeMesh) {
+      if (myMesh) myMesh.remove(activeElectroEyeMesh);
+      activeElectroEyeMesh = null;
+    }
+
+    const eyeGroup = new THREE.Group();
+    // Glowing Baleful Omen Eye Crest
+    const eyeRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.48, 0.05, 8, 24),
+      new THREE.MeshBasicMaterial({ color: 0xc084fc, side: THREE.DoubleSide })
+    );
+    eyeRing.rotation.x = Math.PI / 4;
+    eyeGroup.add(eyeRing);
+
+    const eyePupil = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.22, 0),
+      new THREE.MeshBasicMaterial({ color: 0xf0abfc })
+    );
+    eyeGroup.add(eyePupil);
+
+    const eyeLight = new THREE.PointLight(0xc084fc, 1.5, 6, 2);
+    eyeGroup.add(eyeLight);
+
+    eyeGroup.position.set(0, 2.7, 0);
+    if (myMesh) myMesh.add(eyeGroup);
+    activeElectroEyeMesh = eyeGroup;
+    electroEyeEndTime = performance.now() + 15000;
+  }
+
+  function createElectroSlashVFX(x, y, z) {
+    const vfxGroup = new THREE.Group();
+    vfxGroup.position.set(x, y, z);
+
+    // Cross lightning slashes
+    for (let i = 0; i < 2; i++) {
+      const slash = new THREE.Mesh(
+        new THREE.RingGeometry(0.6, 1.4, 8, 1, -Math.PI * 0.4, Math.PI * 0.8),
+        new THREE.MeshBasicMaterial({ color: 0xc084fc, side: THREE.DoubleSide, transparent: true, opacity: 0.95 })
+      );
+      slash.rotation.x = -Math.PI / 2 + (i * 0.4);
+      slash.rotation.z = (i * Math.PI) / 2;
+      vfxGroup.add(slash);
+    }
+
+    const flashLight = new THREE.PointLight(0xd946ef, 1.8, 8, 2);
+    vfxGroup.add(flashLight);
+    worldObjects.add(vfxGroup);
+
+    const birth = performance.now();
+    const anim = () => {
+      const el = performance.now() - birth;
+      if (el > 180) {
+        worldObjects.remove(vfxGroup);
+      } else {
+        const s = 1.0 + (el / 180) * 1.5;
+        vfxGroup.scale.set(s, s, s);
+        requestAnimationFrame(anim);
+      }
+    };
+    requestAnimationFrame(anim);
+  }
+
+  function performMusouSlash(p) {
+    // Colossal Dimensional Rift Cut across forward vector
+    const bladeGroup = new THREE.Group();
+    const fwdX = Math.sin(p.rot);
+    const fwdZ = Math.cos(p.rot);
+    const cx = p.x + fwdX * 5.5;
+    const cz = p.z + fwdZ * 5.5;
+    bladeGroup.position.set(cx, 1.2, cz);
+    bladeGroup.rotation.y = p.rot;
+
+    // Giant Tachi Slash Beam
+    const bladeGeo = new THREE.BoxGeometry(0.2, 0.4, 13.0);
+    const bladeMat = new THREE.MeshBasicMaterial({ color: 0xf5d0fe });
+    const blade = new THREE.Mesh(bladeGeo, bladeMat);
+    bladeGroup.add(blade);
+
+    // Outer Void Purple Aura
+    const auraGeo = new THREE.BoxGeometry(0.6, 0.9, 13.5);
+    const auraMat = new THREE.MeshBasicMaterial({ color: 0x7c3aed, transparent: true, opacity: 0.85 });
+    const aura = new THREE.Mesh(auraGeo, auraMat);
+    bladeGroup.add(aura);
+
+    const bLight = new THREE.PointLight(0xa855f7, 3.5, 18, 2);
+    bladeGroup.add(bLight);
+    worldObjects.add(bladeGroup);
+
+    // Hit detection for 420 AoE Electro DMG in forward cone
+    for (let i = 0; i < activeCombatMobs.length; i++) {
+      const mob = activeCombatMobs[i];
+      if (mob.isDead) continue;
+      const mdx = mob.x - p.x;
+      const mdz = mob.z - p.z;
+      const dist = Math.hypot(mdx, mdz);
+      if (dist <= 13.0) {
+        const angle = Math.atan2(mdx, mdz);
+        let diff = Math.abs(angle - p.rot);
+        while (diff > Math.PI) diff = Math.abs(diff - Math.PI * 2);
+        if (diff < 1.2) {
+          const dmg = 420 + Math.floor(Math.random() * 80);
+          mob.hp = Math.max(0, mob.hp - dmg);
+          if (mob.hpFillMesh) {
+            mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
+          }
+          mob.flashTimer = 0.3;
+          mob.knockbackVx = fwdX * 9.5;
+          mob.knockbackVz = fwdZ * 9.5;
+          showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `⚡ MUSOU TACHI! ${dmg}`, 'crit');
+          createElectroSlashVFX(mob.x, mob.y + 1.0, mob.z);
+          if (mob.hp <= 0) defeatMob(mob);
+        }
+      }
+    }
+
+    const birth = performance.now();
+    const anim = () => {
+      const el = performance.now() - birth;
+      if (el > 420) {
+        worldObjects.remove(bladeGroup);
+      } else {
+        const pProg = el / 420;
+        bladeGroup.scale.x = 1.0 + pProg * 6.0;
+        auraMat.opacity = 0.85 * (1 - pProg);
+        requestAnimationFrame(anim);
+      }
+    };
+    requestAnimationFrame(anim);
+  }
+
+  function spawnGeoStele(p) {
+    if (activeGeoSteleMesh) {
+      worldObjects.remove(activeGeoSteleMesh);
+      activeGeoSteleMesh = null;
+    }
+
+    const sx = p.x + Math.sin(p.rot) * 2.5;
+    const sz = p.z + Math.cos(p.rot) * 2.5;
+    const steleGroup = new THREE.Group();
+    steleGroup.position.set(sx, 0, sz);
+
+    // Towering Geo Pillar with Runes
+    const colMat = new THREE.MeshStandardMaterial({ color: 0x3d271d, roughness: 0.5, metalness: 0.6 });
+    const col = new THREE.Mesh(new THREE.BoxGeometry(0.9, 4.4, 0.9), colMat);
+    col.position.y = 2.2;
+    steleGroup.add(col);
+
+    // Glowing Amber Geo Diamond Crest atop
+    const crest = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.45, 0),
+      new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+    );
+    crest.position.y = 4.8;
+    steleGroup.add(crest);
+
+    const sLight = new THREE.PointLight(0xf59e0b, 1.8, 12, 2);
+    sLight.position.y = 4.5;
+    steleGroup.add(sLight);
+
+    worldObjects.add(steleGroup);
+    activeGeoSteleMesh = steleGroup;
+    activeGeoSteleMesh.userData = {
+      endTime: performance.now() + 15000,
+      lastPulse: performance.now()
+    };
+  }
+
+  function applyJadeShield(amount = 450) {
+    activeJadeShieldHP = amount;
+    if (activeJadeShieldMesh && myMesh) {
+      myMesh.remove(activeJadeShieldMesh);
+      activeJadeShieldMesh = null;
+    }
+
+    const shieldGeo = new THREE.SphereGeometry(1.6, 16, 16);
+    const shieldMat = new THREE.MeshBasicMaterial({
+      color: 0xfacc15,
+      transparent: true,
+      opacity: 0.35,
+      wireframe: true
+    });
+    const shield = new THREE.Mesh(shieldGeo, shieldMat);
+    shield.position.y = 1.0;
+    if (myMesh) myMesh.add(shield);
+    activeJadeShieldMesh = shield;
+  }
+
+  function performPlanetBefall(p) {
+    const targetX = p.x + Math.sin(p.rot) * 4.0;
+    const targetZ = p.z + Math.cos(p.rot) * 4.0;
+
+    // Giant Flaming Geo Star / Meteor plunging from sky
+    const meteorGroup = new THREE.Group();
+    meteorGroup.position.set(targetX, 28, targetZ);
+
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0x27170e, roughness: 0.6 });
+    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(2.2, 1), rockMat);
+    meteorGroup.add(rock);
+
+    const glowCore = new THREE.Mesh(
+      new THREE.DodecahedronGeometry(2.35, 1),
+      new THREE.MeshBasicMaterial({ color: 0xf59e0b, wireframe: true })
+    );
+    meteorGroup.add(glowCore);
+
+    const mLight = new THREE.PointLight(0xfacc15, 3.5, 25, 2);
+    meteorGroup.add(mLight);
+    worldObjects.add(meteorGroup);
+
+    const startY = 28;
+    const endY = 0.5;
+    const startTime = performance.now();
+    const duration = 440;
+
+    const anim = () => {
+      const elapsed = performance.now() - startTime;
+      const progress = Math.min(1.0, elapsed / duration);
+      meteorGroup.position.y = startY - (startY - endY) * (progress * progress);
+      meteorGroup.rotation.x += 0.08;
+      meteorGroup.rotation.y += 0.08;
+
+      if (progress < 1.0) {
+        requestAnimationFrame(anim);
+      } else {
+        // IMPACT!
+        worldObjects.remove(meteorGroup);
+        createMeteorImpact(targetX, targetZ);
+        playMeteorImpactSound();
+        screenShakeTimer = 0.85;
+        screenShakeMagnitude = 0.95;
+
+        // AoE Damage & 3.5s Petrification (Stone Freeze)
+        for (let i = 0; i < activeCombatMobs.length; i++) {
+          const mob = activeCombatMobs[i];
+          if (mob.isDead) continue;
+          const dist = Math.hypot(mob.x - targetX, mob.z - targetZ);
+          if (dist <= 13.5) {
+            const dmg = 480 + Math.floor(Math.random() * 90);
+            mob.hp = Math.max(0, mob.hp - dmg);
+            if (mob.hpFillMesh) {
+              mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
+            }
+            mob.flashTimer = 0.4;
+            // Petrify!
+            mob.isPetrified = true;
+            mob.petrifyUntil = performance.now() + 3500;
+            showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `🪨 TAŞLAŞTI! ${dmg}`, 'crit');
+            if (mob.hp <= 0) defeatMob(mob);
+          }
+        }
+      }
+    };
+    requestAnimationFrame(anim);
+  }
+
+  function spawnHuTaoButterflies(p) {
+    // 8 fluttering crimson butterflies bursting outwards
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const bf = new THREE.Mesh(
+        new THREE.RingGeometry(0.12, 0.35, 6),
+        new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide })
+      );
+      bf.position.set(p.x, 1.2, p.z);
+      worldObjects.add(bf);
+
+      const bStart = performance.now();
+      const bAnim = () => {
+        const el = performance.now() - bStart;
+        if (el > 450) {
+          worldObjects.remove(bf);
+        } else {
+          const dist = (el / 450) * 4.2;
+          bf.position.set(p.x + Math.cos(angle) * dist, 1.2 + Math.sin(el * 0.02) * 0.4, p.z + Math.sin(angle) * dist);
+          bf.rotation.y += 0.2;
+          requestAnimationFrame(bAnim);
+        }
+      };
+      requestAnimationFrame(bAnim);
+    }
+  }
+
+  function performSpiritSoother(p) {
+    // Giant blazing fiery ghost swoops in 360 circle
+    const ghostGroup = new THREE.Group();
+    const gBody = new THREE.Mesh(
+      new THREE.SphereGeometry(1.2, 14, 14),
+      new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.9 })
+    );
+    ghostGroup.add(gBody);
+
+    const gEyes = new THREE.Mesh(
+      new THREE.BoxGeometry(0.2, 0.35, 0.1),
+      new THREE.MeshBasicMaterial({ color: 0x18181b })
+    );
+    gEyes.position.set(-0.35, 0.2, 1.15);
+    ghostGroup.add(gEyes);
+    const gEyes2 = gEyes.clone();
+    gEyes2.position.set(0.35, 0.2, 1.15);
+    ghostGroup.add(gEyes2);
+
+    const gLight = new THREE.PointLight(0xef4444, 3.0, 16, 2);
+    ghostGroup.add(gLight);
+    worldObjects.add(ghostGroup);
+
+    const healAmount = 260;
+    playerHP = Math.min(playerMaxHP, playerHP + healAmount);
+    updateCombatHUD();
+    showDamageNumber({ x: p.x, y: 2.3, z: p.z }, `💚 +${healAmount} HP (Şifa!)`, 'heal');
+
+    const gStart = performance.now();
+    const radius = 5.5;
+    const hitMobsSet = new Set();
+
+    const anim = () => {
+      const el = performance.now() - gStart;
+      const progress = el / 500;
+      if (progress >= 1.0) {
+        worldObjects.remove(ghostGroup);
+      } else {
+        const curAngle = p.rot + progress * Math.PI * 2;
+        const gx = p.x + Math.sin(curAngle) * radius;
+        const gz = p.z + Math.cos(curAngle) * radius;
+        ghostGroup.position.set(gx, 1.4, gz);
+        ghostGroup.rotation.y = curAngle + Math.PI / 2;
+
+        // Hit check
+        for (let i = 0; i < activeCombatMobs.length; i++) {
+          const mob = activeCombatMobs[i];
+          if (mob.isDead || hitMobsSet.has(mob.id)) continue;
+          const dist = Math.hypot(mob.x - gx, mob.z - gz);
+          if (dist <= 3.2) {
+            hitMobsSet.add(mob.id);
+            const dmg = 420 + Math.floor(Math.random() * 70);
+            mob.hp = Math.max(0, mob.hp - dmg);
+            if (mob.hpFillMesh) mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
+            mob.flashTimer = 0.3;
+            showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `🔥 SPIRIT! ${dmg}`, 'crit');
+            if (mob.hp <= 0) defeatMob(mob);
+          }
+        }
+        requestAnimationFrame(anim);
+      }
+    };
+    requestAnimationFrame(anim);
+  }
+
+  function spawnFurinaMinions(p) {
+    // Clear old minions
+    for (const m of activeFurinaMinions) {
+      worldObjects.remove(m.mesh);
+    }
+    activeFurinaMinions = [];
+
+    const minionColors = [0x38bdf8, 0x0284c7, 0x67e8f9];
+    for (let i = 0; i < 3; i++) {
+      const mGroup = new THREE.Group();
+      const col = minionColors[i];
+      const bubble = new THREE.Mesh(
+        new THREE.SphereGeometry(0.35, 12, 12),
+        new THREE.MeshStandardMaterial({ color: col, roughness: 0.2, metalness: 0.8, emissive: col, emissiveIntensity: 0.4 })
+      );
+      bubble.position.y = 0.35;
+      mGroup.add(bubble);
+
+      const mLight = new THREE.PointLight(col, 0.8, 4, 2);
+      mGroup.add(mLight);
+      worldObjects.add(mGroup);
+
+      activeFurinaMinions.push({
+        mesh: mGroup,
+        orbitIndex: i,
+        angleOffset: (i / 3) * Math.PI * 2,
+        lastShot: performance.now()
+      });
+    }
+    furinaMinionsEndTime = performance.now() + 20000;
+  }
+
+  function performFurinaFanfare(p) {
+    // Ocean stage fanfare circles
+    for (let i = 0; i < 3; i++) {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(2.0 + i * 2.5, 2.5 + i * 2.5, 32),
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.8 })
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(p.x, 0.12 + i * 0.05, p.z);
+      worldObjects.add(ring);
+
+      const rStart = performance.now();
+      const rAnim = () => {
+        const el = performance.now() - rStart;
+        if (el > 600) {
+          worldObjects.remove(ring);
+        } else {
+          const prog = el / 600;
+          ring.scale.set(1 + prog * 1.8, 1 + prog * 1.8, 1);
+          ring.material.opacity = 0.8 * (1 - prog);
+          requestAnimationFrame(rAnim);
+        }
+      };
+      requestAnimationFrame(rAnim);
+    }
+    showDamageNumber({ x: p.x, y: 2.2, z: p.z }, '🎭 FANFARE! +%35 Hasar & +%25 Hız', 'heal');
+  }
+
+  function performKazuhaChihayaburu(p) {
+    isKazuhaLeaping = true;
+    kazuhaLeapTimer = performance.now();
+
+    // Whirlwind sucking ring at base
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(1.5, 6.0, 24),
+      new THREE.MeshBasicMaterial({ color: 0x34d399, side: THREE.DoubleSide, transparent: true, opacity: 0.8 })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(p.x, 0.15, p.z);
+    worldObjects.add(ring);
+
+    // Pull nearby mobs to player center
+    for (let i = 0; i < activeCombatMobs.length; i++) {
+      const mob = activeCombatMobs[i];
+      if (mob.isDead) continue;
+      const mdx = p.x - mob.x;
+      const mdz = p.z - mob.z;
+      const dist = Math.hypot(mdx, mdz);
+      if (dist <= 10.5 && dist > 0.5) {
+        mob.knockbackVx = (mdx / dist) * 7.5;
+        mob.knockbackVz = (mdz / dist) * 7.5;
+      }
+    }
+
+    // Player jump upwards
+    if (myMesh) myMesh.position.y += 3.8;
+
+    setTimeout(() => {
+      // Plunge attack down!
+      if (myMesh) myMesh.position.y = 0;
+      isKazuhaLeaping = false;
+      worldObjects.remove(ring);
+      createMeteorImpact(p.x, p.z);
+      playPunchyHitSound(true);
+
+      for (let i = 0; i < activeCombatMobs.length; i++) {
+        const mob = activeCombatMobs[i];
+        if (mob.isDead) continue;
+        const dist = Math.hypot(mob.x - p.x, mob.z - p.z);
+        if (dist <= 7.0) {
+          const dmg = 260 + Math.floor(Math.random() * 50);
+          mob.hp = Math.max(0, mob.hp - dmg);
+          if (mob.hpFillMesh) mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
+          mob.flashTimer = 0.25;
+          showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `🍃 MIDARE RANZAN! ${dmg}`, 'crit');
+          if (mob.hp <= 0) defeatMob(mob);
+        }
+      }
+    }, 320);
+  }
+
+  function performKazuhaAutumnStorm(p) {
+    if (activeKazuhaStormMesh) {
+      worldObjects.remove(activeKazuhaStormMesh);
+      activeKazuhaStormMesh = null;
+    }
+
+    const stormGroup = new THREE.Group();
+    stormGroup.position.set(p.x, 0.15, p.z);
+
+    // 14m Autumn Maple Leaf Wind Circle
+    const field = new THREE.Mesh(
+      new THREE.CircleGeometry(7.0, 32),
+      new THREE.MeshBasicMaterial({ color: 0x34d399, side: THREE.DoubleSide, transparent: true, opacity: 0.35 })
+    );
+    field.rotation.x = -Math.PI / 2;
+    stormGroup.add(field);
+
+    // Autumn Maple Leaf planes
+    const leafMat = new THREE.MeshBasicMaterial({ color: 0xf97316, side: THREE.DoubleSide });
+    for (let l = 0; l < 16; l++) {
+      const leaf = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.4), leafMat);
+      const lAngle = (l / 16) * Math.PI * 2;
+      const lDist = 2.0 + Math.random() * 4.5;
+      leaf.position.set(Math.cos(lAngle) * lDist, 0.6 + Math.random() * 1.5, Math.sin(lAngle) * lDist);
+      leaf.rotation.x = Math.random() * Math.PI;
+      leaf.rotation.y = Math.random() * Math.PI;
+      stormGroup.add(leaf);
+    }
+
+    worldObjects.add(stormGroup);
+    activeKazuhaStormMesh = stormGroup;
+    kazuhaStormEndTime = performance.now() + 10000;
+    kazuhaStormTickTimer = 0;
+  }
+
+  function triggerUniversalElementalSkill(p, elem) {
+    triggerElementalFlash(`flash-${elem.toLowerCase()}`);
+    playPunchyHitSound(true);
+    for (let i = 0; i < activeCombatMobs.length; i++) {
+      const mob = activeCombatMobs[i];
+      if (mob.isDead) continue;
+      const dist = Math.hypot(mob.x - p.x, mob.z - p.z);
+      if (dist <= 6.5) {
+        const dmg = 180 + Math.floor(Math.random() * 40);
+        mob.hp = Math.max(0, mob.hp - dmg);
+        if (mob.hpFillMesh) mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
+        showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `✨ ${elem} Blast! ${dmg}`, 'normal');
+        if (mob.hp <= 0) defeatMob(mob);
+      }
+    }
+  }
+
+  function triggerUniversalElementalBurst(p, elem) {
+    triggerElementalFlash(`flash-${elem.toLowerCase()}`);
+    playBurstExplosion();
+    screenShakeTimer = 0.55;
+    screenShakeMagnitude = 0.65;
+    createMeteorImpact(p.x, p.z);
+    for (let i = 0; i < activeCombatMobs.length; i++) {
+      const mob = activeCombatMobs[i];
+      if (mob.isDead) continue;
+      const dist = Math.hypot(mob.x - p.x, mob.z - p.z);
+      if (dist <= 12.0) {
+        const dmg = 390 + Math.floor(Math.random() * 80);
+        mob.hp = Math.max(0, mob.hp - dmg);
+        if (mob.hpFillMesh) mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
+        showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `🌟 ${elem} SUPERNOVA! ${dmg}`, 'crit');
+        if (mob.hp <= 0) defeatMob(mob);
+      }
+    }
+  }
+
+  // --- Companion Skills Configuration Table ---
+  const COMPANION_SKILLS = {
+    'Raiden Shogun': {
+      element: 'Electro',
+      elementEmoji: '⚡',
+      color: 0xa855f7,
+      slashColors: [0xa855f7, 0xc084fc, 0xe879f9],
+      eName: 'Transcendence: Baleful Omen',
+      eDesc: 'Tepede Şimşek Gözü açar; 15sn boyunca her vuruşta koordineli Electro kesik patlatır (+45 DMG).',
+      eCooldown: 10000,
+      qName: 'Secret Art: Musou Shinsetsu',
+      qDesc: 'Ekran solar, boyutsal uzay yarığı açılarak ileriye devasa mor şimşek tachi kesiği fırlar (420 AoE DMG)!',
+      qCooldown: 18000,
+      onE: (p) => {
+        triggerElementalFlash('flash-electro');
+        playThunderSound(false);
+        screenShakeTimer = 0.25;
+        screenShakeMagnitude = 0.35;
+        spawnElectroEye(p);
+        addChatMessage('⚡ Yoldaş', 'Raiden Shogun: "Tepeden inen şimşek karanlığı dağıtacak!" (Şimşek Gözü Aktif)');
+      },
+      onQ: (p) => {
+        triggerElementalFlash('flash-electro');
+        playThunderSound(true);
+        screenShakeTimer = 0.75;
+        screenShakeMagnitude = 0.85;
+        performMusouSlash(p);
+        addChatMessage('⚡ Musou Shinsetsu', 'Raiden Shogun: "Torn to oblivion! (Hiçliğe gömülün!)"');
+      }
+    },
+    'Zhongli': {
+      element: 'Geo',
+      elementEmoji: '🪨',
+      color: 0xeab308,
+      slashColors: [0xeab308, 0xfacc15, 0xfef08a],
+      eName: 'Dominus Lapidis',
+      eDesc: 'Yere dikilen Geo Taş Sütun rezonans hasarı saçar (1.5sn 45 DMG), oyuncuya 450 HP Yeşim Kalkan verir.',
+      eCooldown: 12000,
+      qName: 'Planet Befall',
+      qDesc: 'Gökten alevli altın Geo Meteor düşer; 480 AoE DMG verir ve canavarları 3.5sn taşlaştırıp dondurur!',
+      qCooldown: 20000,
+      onE: (p) => {
+        triggerElementalFlash('flash-geo');
+        playBeep(320, 'triangle', 0.25);
+        screenShakeTimer = 0.3;
+        screenShakeMagnitude = 0.4;
+        spawnGeoStele(p);
+        applyJadeShield(450);
+        addChatMessage('🪨 Yoldaş', 'Zhongli: "Sağlam bir kalkan huzurun temelidir." (Yeşim Kalkan Kuşanıldı)');
+      },
+      onQ: (p) => {
+        triggerElementalFlash('flash-geo');
+        playMeteorImpactSound();
+        screenShakeTimer = 0.85;
+        screenShakeMagnitude = 0.95;
+        performPlanetBefall(p);
+        addChatMessage('☄️ Planet Befall', 'Zhongli: "I will have order! (Düzeni sağlayacağım!)"');
+      }
+    },
+    'Hu Tao': {
+      element: 'Pyro',
+      elementEmoji: '🔥',
+      color: 0xef4444,
+      slashColors: [0xef4444, 0xf97316, 0xfde047],
+      eName: 'Guide to Afterlife',
+      eDesc: 'Kızıl kelebekler uçar, silah akkor alev kaplanır; 12sn boyunca +%50 ATK ve yakıcı Yanma DoT sağlar.',
+      eCooldown: 12000,
+      qName: 'Spirit Soother',
+      qDesc: 'Devasa alevli hayalet etrafında 360° döner; 420 AoE Pyro DMG verir ve oyuncuyu +260 HP iyileştirir!',
+      qCooldown: 15000,
+      onE: (p) => {
+        triggerElementalFlash('flash-pyro');
+        playFlameBurstSound();
+        screenShakeTimer = 0.22;
+        screenShakeMagnitude = 0.32;
+        spawnHuTaoButterflies(p);
+        companionBuffs = { active: true, timer: 12.0, dmgMult: 1.5, speedMult: 1.15, type: 'hu_tao_fire' };
+        addChatMessage('🔥 Yoldaş', 'Hu Tao: "Ateş dansı başlasın! Kızıl kelebekler yol göstersin!" (+%50 ATK)');
+      },
+      onQ: (p) => {
+        triggerElementalFlash('flash-pyro');
+        playFlameBurstSound();
+        screenShakeTimer = 0.65;
+        screenShakeMagnitude = 0.75;
+        performSpiritSoother(p);
+        addChatMessage('👻 Spirit Soother', 'Hu Tao: "Tüm dertler kül olsun! Şifa ve ateş ruhu!" (+260 HP)');
+      }
+    },
+    'Furina': {
+      element: 'Hydro',
+      elementEmoji: '💧',
+      color: 0x38bdf8,
+      slashColors: [0x38bdf8, 0x67e8f9, 0xa5f3fc],
+      eName: 'Salon Solitaire',
+      eDesc: '3 sevimli su minyonu çağırır; 20sn boyunca en yakın canavarlara periyodik su damlaları fırlatır (35 DMG).',
+      eCooldown: 14000,
+      qName: 'Let the People Rejoice',
+      qDesc: 'Işıltılı okyanus sahne ışıkları ve fanfare dalgaları açar; tüm takıma +%35 Hasar ve Hız güçlendirmesi verir!',
+      qCooldown: 18000,
+      onE: (p) => {
+        triggerElementalFlash('flash-hydro');
+        playHydroSplashSound();
+        screenShakeTimer = 0.2;
+        screenShakeMagnitude = 0.25;
+        spawnFurinaMinions(p);
+        addChatMessage('💧 Yoldaş', 'Furina: "Sahneye gelin minik dostlarım! Gösteri başlasın!" (3 Su Minyonu)');
+      },
+      onQ: (p) => {
+        triggerElementalFlash('flash-hydro');
+        playHydroSplashSound();
+        screenShakeTimer = 0.6;
+        screenShakeMagnitude = 0.65;
+        performFurinaFanfare(p);
+        companionBuffs = { active: true, timer: 15.0, dmgMult: 1.35, speedMult: 1.25, type: 'furina_fanfare' };
+        addChatMessage('🎭 Fanfare', 'Furina: "Alkışlar ve kutlamalar halkım için! (+%35 Hasar & +%25 Hız)"');
+      }
+    },
+    'Kaedehara Kazuha': {
+      element: 'Anemo',
+      elementEmoji: '🍃',
+      color: 0x34d399,
+      slashColors: [0x34d399, 0x6ee7b7, 0xfde047],
+      eName: 'Chihayaburu',
+      eDesc: 'Havaya zıplayarak tüm canavarları ve eşyaları merkeze çeken hortum oluşturur, yere inerken rüzgar darbesi (260 DMG).',
+      eCooldown: 8000,
+      qName: 'Kazuha Slash',
+      qDesc: '14m Akçaağaç Fırtına Alanı açar; 10sn boyunca dönen sonbahar yaprakları ve sürekli Anemo hasarı (40 DMG/0.6sn).',
+      qCooldown: 15000,
+      onE: (p) => {
+        triggerElementalFlash('flash-anemo');
+        playAnemoGustSound();
+        screenShakeTimer = 0.35;
+        screenShakeMagnitude = 0.45;
+        performKazuhaChihayaburu(p);
+        addChatMessage('🍃 Yoldaş', 'Kazuha: "Rüzgar fısıldar, yapraklar yükselir!" (Chihayaburu Çekimi)');
+      },
+      onQ: (p) => {
+        triggerElementalFlash('flash-anemo');
+        playAnemoGustSound();
+        screenShakeTimer = 0.65;
+        screenShakeMagnitude = 0.7;
+        performKazuhaAutumnStorm(p);
+        addChatMessage('🍁 Kazuha Slash', 'Kazuha: "Bulutlar dağılsın, sonbahar rüzgarı essin!" (14m Rüzgar Alanı)');
+      }
+    }
+  };
+
+  function getCompanionConfig(name) {
+    if (!name) return null;
+    if (COMPANION_SKILLS[name]) return COMPANION_SKILLS[name];
+
+    // Check by substring match
+    for (const key of Object.keys(COMPANION_SKILLS)) {
+      if (name.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(name.toLowerCase())) {
+        return COMPANION_SKILLS[key];
+      }
+    }
+
+    // Universal Fallback for any other 5★ character
+    const elem = (myCompanionData && myCompanionData.element) || 'Electro';
+    return {
+      element: elem,
+      elementEmoji: elem === 'Pyro' ? '🔥' : (elem === 'Hydro' ? '💧' : (elem === 'Geo' ? '🪨' : (elem === 'Anemo' ? '🍃' : '⚡'))),
+      color: 0x38bdf8,
+      slashColors: [0x38bdf8, 0x60a5fa, 0x93c5fd],
+      eName: `${elem} Surge`,
+      eDesc: `Bölgesel ${elem} patlaması yaratır (180 DMG).`,
+      eCooldown: 10000,
+      qName: `${elem} Supernova`,
+      qDesc: `Devasa element süpernovası tetikler (400 AoE DMG)!`,
+      qCooldown: 18000,
+      onE: (p) => triggerUniversalElementalSkill(p, elem),
+      onQ: (p) => triggerUniversalElementalBurst(p, elem)
+    };
+  }
+
+  function getCompanionSkillECD() {
+    const cfg = getCompanionConfig(myCompanion);
+    return cfg ? cfg.eCooldown : 6000;
+  }
+
   // --- Combat Actions ---
+
   function performAttack() {
-    if (currentMap !== 'battle_zone') return;
+    if (!isBattleZone(currentMap)) return;
     const now = performance.now();
 
-    // Prevent attack spamming / key-repeat lockups (min 220ms between swings)
-    if (now - lastAttackTime < 220) return;
+    const stats = getPlayerEffectiveStats();
+    const hasteFactor = 1 - Math.min(0.4, (stats.haste / 100) * 0.5);
+    const attackCd = Math.round(220 * hasteFactor);
+
+    // Prevent attack spamming / key-repeat lockups
+    if (now - lastAttackTime < attackCd) return;
 
     if (now - lastAttackTime > 900) {
       attackComboIndex = 0;
@@ -6712,16 +8199,27 @@
       }, 160);
     }
 
-    // Slash Arc Visual
-    createSlashArcMesh(myPlayer.x, myPlayer.z, myPlayer.rot, step);
+    // Elemental Slash Arc Visual with Companion Tint
+    const compCfg = getCompanionConfig(myCompanion);
+    const customSlashColor = compCfg && compCfg.slashColors ? compCfg.slashColors[step - 1] : null;
+    createSlashArcMesh(myPlayer.x, myPlayer.z, myPlayer.rot, step, customSlashColor);
 
-    // Hit Detection scaled with MMORPG Stats
-    const playerAtk = (myRpgProfile && myRpgProfile.stats && myRpgProfile.stats.atk) || 28;
-    const playerCritRate = ((myRpgProfile && myRpgProfile.stats && myRpgProfile.stats.crit) || 12) / 100;
-    const playerCritMult = ((myRpgProfile && myRpgProfile.stats && myRpgProfile.stats.critDmg) || 150) / 100;
-    const baseDmg = Math.round(playerAtk * (step === 1 ? 1.6 : (step === 2 ? 2.3 : 4.0)));
+    // Hit Detection scaled with MMORPG Stats & GearScore penalties
+    const playerAtk = stats.atk;
+    const playerCritRate = stats.crit / 100;
+    const playerCritMult = stats.critDmg / 100;
+    let baseDmg = Math.round(playerAtk * (step === 1 ? 1.6 : (step === 2 ? 2.3 : 4.0)));
+
+    // Companion Attack Buffs
+    if (companionBuffs.active) {
+      baseDmg = Math.round(baseDmg * companionBuffs.dmgMult);
+    }
+
     const hitRadius = step === 3 ? 4.8 : 3.6;
     let hitCount = 0;
+
+    const zoneConf = ZONE_CONFIGS[currentMap] || ZONE_CONFIGS.battle_zone_1;
+    const penalty = getGsDifficultyMultiplier(stats.gearScore, zoneConf.reqGS);
 
     for (let i = 0; i < activeCombatMobs.length; i++) {
       const mob = activeCombatMobs[i];
@@ -6741,6 +8239,15 @@
         hitCount++;
         const isCrit = Math.random() < playerCritRate;
         let finalDmg = isCrit ? Math.round(baseDmg * playerCritMult) : baseDmg;
+
+        // GS Glance check (deflected blow)
+        const isGlance = penalty.glanceChance > 0 && Math.random() < penalty.glanceChance;
+        if (isGlance) {
+          finalDmg = Math.floor(Math.random() * 2) + 1;
+        } else {
+          finalDmg = Math.max(1, Math.round(finalDmg * penalty.damageMult));
+        }
+
         mob.hp = Math.max(0, mob.hp - finalDmg);
 
         if (mob.hpFillMesh) {
@@ -6756,7 +8263,28 @@
         mob.knockbackVz = normZ * kbForce;
         mob.flashTimer = 0.14;
 
-        showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, (isCrit ? '💥 CRIT! ' : '') + finalDmg, isCrit ? 'crit' : 'normal');
+        if (isGlance) {
+          showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `🛡️ SEKTİ! ${finalDmg}`, 'glance');
+          playBeep(180, 'square', 0.08);
+        } else {
+          showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, (isCrit ? '💥 CRIT! ' : '') + finalDmg, isCrit ? 'crit' : 'normal');
+        }
+
+        // Raiden Shogun Coordinated Electro Slash Proc
+        if (activeElectroEyeMesh && now < electroEyeEndTime) {
+          const electroBonus = 45;
+          mob.hp = Math.max(0, mob.hp - electroBonus);
+          createElectroSlashVFX(mob.x, mob.y + 1.0, mob.z);
+          showDamageNumber({ x: mob.x, y: mob.y + mob.height + 0.4, z: mob.z }, `⚡ +${electroBonus} Electro`, 'crit');
+        }
+
+        // Lifesteal heal proc
+        if (stats.lifesteal > 0 && finalDmg > 0 && hitCount === 1) {
+          const healAmount = Math.max(1, Math.round(finalDmg * (stats.lifesteal / 100)));
+          playerHP = Math.min(playerMaxHP, playerHP + healAmount);
+          updateCombatHUD();
+          showDamageNumber({ x: myPlayer.x, y: 2.3, z: myPlayer.z }, `+${healAmount} HP`, 'heal');
+        }
 
         if (mob.hp <= 0) {
           defeatMob(mob);
@@ -6777,11 +8305,13 @@
   }
 
   function performDash() {
-    if (currentMap !== 'battle_zone') return;
+    if (!isBattleZone(currentMap)) return;
     const now = performance.now();
     if (now < dashCooldownEndTime) return;
 
-    dashCooldownEndTime = now + 1200;
+    const stats = getPlayerEffectiveStats();
+    const dashCd = Math.round(1200 * (1 - Math.min(0.35, (stats.haste / 100) * 0.4)));
+    dashCooldownEndTime = now + dashCd;
     isDashing = true;
     playerInvulnerableUntil = now + 320;
     playDashSound();
@@ -6796,11 +8326,25 @@
   }
 
   function performVortexSkill() {
-    if (currentMap !== 'battle_zone') return;
+    if (!isBattleZone(currentMap)) return;
     const now = performance.now();
     if (now < vortexCooldownEndTime) return;
 
-    vortexCooldownEndTime = now + 6000;
+    const stats = getPlayerEffectiveStats();
+    const compCfg = getCompanionConfig(myCompanion);
+
+    if (compCfg) {
+      const baseCd = compCfg.eCooldown || 10000;
+      const vortexCd = Math.round(baseCd * (1 - Math.min(0.35, (stats.haste / 100) * 0.4)));
+      vortexCooldownEndTime = now + vortexCd;
+      compCfg.onE(myPlayer);
+      updateCombatHUD();
+      return;
+    }
+
+    // Default Vortex Skill (No Companion)
+    const vortexCd = Math.round(6000 * (1 - Math.min(0.35, (stats.haste / 100) * 0.4)));
+    vortexCooldownEndTime = now + vortexCd;
     isVortexActive = true;
     vortexEndTime = now + 3600;
 
@@ -6811,10 +8355,11 @@
 
     createVortexMesh(vortexPosition.x, 0, vortexPosition.z);
     playVortexSound();
+    updateCombatHUD();
   }
 
   function performBurstSkill() {
-    if (currentMap !== 'battle_zone') return;
+    if (!isBattleZone(currentMap)) return;
     if (playerEnergy < 100) {
       playBeep(220, 'sawtooth', 0.15);
       showDamageNumber({ x: myPlayer.x, y: 2.2, z: myPlayer.z }, '⚡ ENERJİ YETERSİZ!', 'normal');
@@ -6823,19 +8368,29 @@
 
     playerEnergy = 0;
     updateCombatHUD();
-    playBurstExplosion();
 
+    const compCfg = getCompanionConfig(myCompanion);
+    if (compCfg) {
+      compCfg.onQ(myPlayer);
+      return;
+    }
+
+    // Default Burst Skill (No Companion)
+    playBurstExplosion();
     screenShakeTimer = 0.55;
     screenShakeMagnitude = 0.65;
-
     createMeteorImpact(myPlayer.x, myPlayer.z);
+
+    const playerGs = getMyGearScore();
+    const zoneConf = ZONE_CONFIGS[currentMap] || ZONE_CONFIGS.battle_zone_1;
+    const penalty = getGsDifficultyMultiplier(playerGs, zoneConf.reqGS);
 
     for (let i = 0; i < activeCombatMobs.length; i++) {
       const mob = activeCombatMobs[i];
       if (mob.isDead) continue;
       const dist = Math.hypot(mob.x - myPlayer.x, mob.z - myPlayer.z);
       if (dist <= 12.0) {
-        const burstDmg = Math.round(380 + Math.random() * 120);
+        let burstDmg = Math.round((380 + Math.random() * 120) * penalty.damageMult);
         mob.hp = Math.max(0, mob.hp - burstDmg);
         if (mob.hpFillMesh) {
           const ratio = Math.max(0.001, mob.hp / mob.maxHP);
@@ -6908,6 +8463,7 @@
           type: mob.type,
           level: mob.level || 1,
           isBoss: !!mob.isBoss,
+          zoneId: currentMap,
           bossLootName: droppedItems.find(i => i.rarity === 5)?.name || droppedItems[0]?.name || 'Kadim Kaos Çekirdeği'
         }
       }));
@@ -6915,7 +8471,7 @@
 
     if (mob.isBoss) {
       playVictoryJingle();
-      addChatMessage('⚔️ BOSS YENİLDİ', `👑 Antik Yıkım Muhafızı yere serildi! Çantana nadir materyaller düştü!`);
+      addChatMessage('⚔️ BOSS YENİLDİ', `👑 ${mob.name} yere serildi! Çantana değerli ganimetler saçıldı!`);
       bossRespawnTimer = performance.now() + 25000;
     }
   }
@@ -6932,7 +8488,8 @@
       hpFill.style.width = `${hpPct}%`;
     }
     if (hpText) {
-      hpText.textContent = `HP ${playerHP} / ${playerMaxHP}`;
+      const shieldStr = activeJadeShieldHP > 0 ? ` (+${activeJadeShieldHP} 🛡️)` : '';
+      hpText.textContent = `HP ${playerHP} / ${playerMaxHP}${shieldStr}`;
     }
     if (energyFill) {
       energyFill.style.width = `${Math.min(100, playerEnergy)}%`;
@@ -6961,19 +8518,139 @@
 
     const cdVortex = document.getElementById('cd-vortex');
     if (cdVortex) {
+      const eCdMax = getCompanionSkillECD();
       if (now < vortexCooldownEndTime) {
-        const remaining = ((vortexCooldownEndTime - now) / 6000) * 100;
+        const remaining = ((vortexCooldownEndTime - now) / eCdMax) * 100;
         cdVortex.style.height = `${remaining}%`;
       } else {
         cdVortex.style.height = '0%';
       }
     }
+
+    const cdBurst = document.getElementById('cd-burst');
+    if (cdBurst) {
+      if (playerEnergy < 100) {
+        const remaining = (1 - playerEnergy / 100) * 100;
+        cdBurst.style.height = `${remaining}%`;
+      } else {
+        cdBurst.style.height = '0%';
+      }
+    }
+
+    // Companion HUD Header Badge & Skill Slots
+    const compBadge = document.getElementById('combat-companion-badge');
+    const compAvatar = document.getElementById('companion-hud-avatar');
+    const compElem = document.getElementById('companion-hud-elem');
+    const compName = document.getElementById('companion-hud-name');
+    const nameSlotSkill = document.getElementById('name-slot-skill');
+    const iconSlotSkill = document.getElementById('icon-slot-skill');
+    const nameSlotBurst = document.getElementById('name-slot-burst');
+    const iconSlotBurst = document.getElementById('icon-slot-burst');
+
+    const compCfg = getCompanionConfig(myCompanion);
+
+    if (compBadge && myCompanion) {
+      compBadge.classList.remove('hidden');
+      if (compName) compName.textContent = myCompanion;
+      if (compElem) compElem.textContent = (compCfg && compCfg.elementEmoji) || '✨';
+      if (compAvatar) {
+        if (myCompanionData && myCompanionData.icon) {
+          compAvatar.src = myCompanionData.icon;
+          compAvatar.style.display = 'block';
+        }
+      }
+    } else if (compBadge) {
+      compBadge.classList.remove('hidden');
+      if (compName) compName.textContent = 'Yoldaş Yok [P]';
+      if (compElem) compElem.textContent = '🐾';
+    }
+
+    if (compCfg) {
+      if (nameSlotSkill) nameSlotSkill.textContent = compCfg.eName;
+      if (iconSlotSkill) iconSlotSkill.textContent = compCfg.elementEmoji || '🌀';
+      if (nameSlotBurst) nameSlotBurst.textContent = compCfg.qName;
+      if (iconSlotBurst) iconSlotBurst.textContent = compCfg.elementEmoji === '⚡' ? '⚡' : (compCfg.elementEmoji === '🪨' ? '☄️' : (compCfg.elementEmoji === '🔥' ? '👻' : (compCfg.elementEmoji === '💧' ? '🌊' : '🍁')));
+    } else {
+      if (nameSlotSkill) nameSlotSkill.textContent = 'Girdap';
+      if (iconSlotSkill) iconSlotSkill.textContent = '🌀';
+      if (nameSlotBurst) nameSlotBurst.textContent = 'Kozmik Ulti';
+      if (iconSlotBurst) iconSlotBurst.textContent = '☄️';
+    }
   }
 
-  function updateCombatEngine(delta, now) {
-    if (currentMap !== 'battle_zone') return;
+  function applyMobDamageToPlayer(baseDmg, mobName = 'Düşman') {
+    const now = performance.now();
+    if (now <= playerInvulnerableUntil) {
+      showDamageNumber({ x: myPlayer.x, y: 2.0, z: myPlayer.z }, '⚡ DODGE!', 'normal');
+      return;
+    }
 
-    // 1. Update Slash Trails
+    const stats = getPlayerEffectiveStats();
+    const playerGs = getMyGearScore();
+    const zoneConf = ZONE_CONFIGS[currentMap] || ZONE_CONFIGS.battle_zone_1;
+    const penalty = getGsDifficultyMultiplier(playerGs, zoneConf.reqGS);
+
+    // RPG DEF Mitigation Formula: 100 / (100 + DEF)
+    const defReduction = 100 / (100 + Math.max(0, stats.def));
+    let incomingDmg = Math.max(1, Math.round(baseDmg * penalty.damageTakenMult * defReduction));
+
+    // Zhongli Jade Shield Absorption
+    if (activeJadeShieldHP > 0) {
+      if (activeJadeShieldHP >= incomingDmg) {
+        activeJadeShieldHP -= incomingDmg;
+        showDamageNumber({ x: myPlayer.x, y: 2.2, z: myPlayer.z }, `🛡️ SOĞURULDU! (-${incomingDmg})`, 'shield');
+        playBeep(440, 'triangle', 0.12);
+        updateCombatHUD();
+        return;
+      } else {
+        incomingDmg -= activeJadeShieldHP;
+        showDamageNumber({ x: myPlayer.x, y: 2.2, z: myPlayer.z }, `🛡️ KALKAN KIRILDI! (-${activeJadeShieldHP})`, 'shield');
+        activeJadeShieldHP = 0;
+        if (activeJadeShieldMesh && myMesh) {
+          myMesh.remove(activeJadeShieldMesh);
+          activeJadeShieldMesh = null;
+        }
+        playBeep(220, 'sawtooth', 0.2);
+      }
+    }
+
+    playerHP = Math.max(0, playerHP - incomingDmg);
+    showDamageNumber({ x: myPlayer.x, y: 1.8, z: myPlayer.z }, `-${incomingDmg}`, 'player-hit');
+    screenShakeTimer = 0.16;
+    screenShakeMagnitude = 0.28;
+    playPunchyHitSound(false);
+    updateCombatHUD();
+
+    if (playerHP <= 0) {
+      triggerPlayerDefeat();
+    }
+  }
+
+
+  function updateCombatEngine(delta, now) {
+    if (!isBattleZone(currentMap)) return;
+
+    // 0. Update AoE Danger Telegraphs (Red Warning Zones)
+    for (let i = activeTelegraphs.length - 1; i >= 0; i--) {
+      const tg = activeTelegraphs[i];
+      const elapsed = now - tg.startTime;
+      const progress = Math.min(1.0, elapsed / tg.duration);
+      if (tg.type === 'circle') {
+        tg.fillMesh.scale.set(Math.max(0.01, progress), Math.max(0.01, progress), 1);
+      } else if (tg.type === 'lane') {
+        tg.fillMesh.scale.set(1, Math.max(0.01, progress), 1);
+      }
+      if (progress >= 1.0) {
+        if (tg.onComplete) {
+          tg.onComplete();
+        }
+        if (tg.cleanup) tg.cleanup();
+        else worldObjects.remove(tg.group);
+        activeTelegraphs.splice(i, 1);
+      }
+    }
+
+    // 1. Update Slash Trails & Shockwaves
     for (let i = activeSlashTrails.length - 1; i >= 0; i--) {
       const t = activeSlashTrails[i];
       const elapsed = now - t.birthTime;
@@ -7030,10 +8707,19 @@
       }
     }
 
-    // 3. Update Mobs AI & Behavior
+    // 3. Update Mobs AI & Behavior with Telegraphed Attacks
     for (let i = 0; i < activeCombatMobs.length; i++) {
       const mob = activeCombatMobs[i];
       if (mob.isDead) continue;
+
+      // Zhongli Petrification Check (Frozen in stone!)
+      if (mob.isPetrified) {
+        if (now > mob.petrifyUntil) {
+          mob.isPetrified = false;
+        } else {
+          continue;
+        }
+      }
 
       // Knockback decay
       if (Math.abs(mob.knockbackVx) > 0.01 || Math.abs(mob.knockbackVz) > 0.01) {
@@ -7058,6 +8744,27 @@
         mob.hpBarGroup.quaternion.copy(camera.quaternion);
       }
 
+      // Active Leap Animation Progress
+      if (mob.isLeaping) {
+        const lElapsed = now - mob.leapStart;
+        const lProg = Math.min(1.0, lElapsed / mob.leapDuration);
+        mob.x = mob.leapStartX + (mob.leapTargetX - mob.leapStartX) * lProg;
+        mob.z = mob.leapStartZ + (mob.leapTargetZ - mob.leapStartZ) * lProg;
+        mob.mesh.position.set(mob.x, Math.sin(lProg * Math.PI) * 3.2, mob.z);
+        if (lProg >= 1.0) {
+          mob.isLeaping = false;
+          mob.isAttacking = false;
+          mob.mesh.position.y = 0;
+        }
+        continue;
+      }
+
+      // If mob is attacking / channeling, hold ground position
+      if (mob.isAttacking) {
+        mob.mesh.position.set(mob.x, 0, mob.z);
+        continue;
+      }
+
       // AI State Machine
       const dx = myPlayer.x - mob.x;
       const dz = myPlayer.z - mob.z;
@@ -7067,40 +8774,189 @@
         mob.rot = Math.atan2(dx, dz);
         mob.mesh.rotation.y = mob.rot;
 
-        if (dist > mob.attackRange) {
-          // Chase Player
-          const speed = mob.speed * delta;
-          mob.x += (dx / dist) * speed;
-          mob.z += (dz / dist) * speed;
+        if (mob.attackCooldown > 0) {
+          mob.attackCooldown -= delta;
+        }
 
-          // Slime Hop Animation
-          if (mob.type === 'slime_green' || mob.type === 'slime_pyro') {
+        // --- Attack & Movement Branching by Mob Type ---
+        if (mob.type.startsWith('slime_')) {
+          // SLIMES: Leap slam attack with circle warning
+          if (dist <= 5.5 && mob.attackCooldown <= 0) {
+            mob.isAttacking = true;
+            mob.isLeaping = true;
+            mob.attackCooldown = 2.4 + Math.random() * 0.8;
+            const tx = myPlayer.x;
+            const tz = myPlayer.z;
+            mob.leapStartX = mob.x;
+            mob.leapStartZ = mob.z;
+            mob.leapTargetX = tx;
+            mob.leapTargetZ = tz;
+            mob.leapStart = now;
+            mob.leapDuration = 920;
+
+            const sColor = mob.type === 'slime_pyro' ? 0xef4444 : (mob.type === 'slime_electro' ? 0xa855f7 : 0x22c55e);
+            createTelegraphCircle(tx, tz, 3.2, 920, () => {
+              createShockwaveRing(tx, tz, 3.8, sColor);
+              const pDist = Math.hypot(myPlayer.x - tx, myPlayer.z - tz);
+              if (pDist < 3.2) {
+                applyMobDamageToPlayer(mob.dmg, mob.name);
+              }
+            });
+          } else if (dist > 1.2) {
+            const speed = mob.speed * delta;
+            mob.x += (dx / dist) * speed;
+            mob.z += (dz / dist) * speed;
             mob.mesh.position.y = Math.abs(Math.sin(now * 0.007 + mob.animTime)) * 0.55;
           }
-        } else {
-          // Attack cooldown & trigger
-          mob.attackCooldown -= delta;
-          if (mob.attackCooldown <= 0) {
-            mob.attackCooldown = 1.4 + Math.random() * 0.6;
 
-            // Check if player took damage
-            if (now > playerInvulnerableUntil) {
-              playerHP = Math.max(0, playerHP - mob.dmg);
-              showDamageNumber({ x: myPlayer.x, y: 1.8, z: myPlayer.z }, `-${mob.dmg}`, 'player-hit');
-              screenShakeTimer = 0.12;
-              screenShakeMagnitude = 0.22;
-              playPunchyHitSound(false);
-              updateCombatHUD();
+        } else if (mob.type === 'pyromancer' || mob.type === 'abyss_mage') {
+          // RANGED CASTERS: Ground Trap Rune telegraph under player
+          if (dist <= 15.0 && mob.attackCooldown <= 0) {
+            mob.isAttacking = true;
+            mob.attackCooldown = 2.8 + Math.random() * 0.8;
+            const trapX = myPlayer.x;
+            const trapZ = myPlayer.z;
+            const spellColor = mob.type === 'pyromancer' ? 0xf97316 : 0x8b5cf6;
 
-              if (playerHP <= 0) {
-                // Defeat / safe respawn
-                addChatMessage('Sistem', '💀 Savaş alanında yenildin! Kasaba çeşmesine ışınlandın.');
-                triggerDoorWipe('town');
-                return;
+            createTelegraphCircle(trapX, trapZ, 3.4, 1100, () => {
+              mob.isAttacking = false;
+              createShockwaveRing(trapX, trapZ, 3.8, spellColor);
+              const pDist = Math.hypot(myPlayer.x - trapX, myPlayer.z - trapZ);
+              if (pDist < 3.4) {
+                applyMobDamageToPlayer(mob.dmg, mob.name);
               }
+            });
+          } else if (dist < 4.5) {
+            // Kite backward
+            const backSpeed = 1.6 * delta;
+            mob.x -= (dx / dist) * backSpeed;
+            mob.z -= (dz / dist) * backSpeed;
+          } else if (dist > 10.0) {
+            const speed = mob.speed * delta;
+            mob.x += (dx / dist) * speed;
+            mob.z += (dz / dist) * speed;
+          }
+
+        } else if (mob.type === 'mitachurl_axe') {
+          // MITACHURL AXE ELITE: Charge lane attack or 360 cleave
+          if (dist >= 6.0 && dist <= 18.0 && mob.attackCooldown <= 0) {
+            // Move 1: Blazing Charge Lane
+            mob.isAttacking = true;
+            mob.attackCooldown = 3.6;
+            const chargeAngle = Math.atan2(dx, dz);
+            mob.rot = chargeAngle;
+            mob.mesh.rotation.y = chargeAngle;
+            const laneLen = 15;
+
+            createTelegraphLane(mob.x, mob.z, 3.8, laneLen, chargeAngle, 1150, () => {
+              const endX = mob.x + Math.sin(chargeAngle) * (laneLen - 2);
+              const endZ = mob.z + Math.cos(chargeAngle) * (laneLen - 2);
+              createShockwaveRing(endX, endZ, 4.2, 0xf97316);
+              mob.x = endX;
+              mob.z = endZ;
+              mob.mesh.position.set(mob.x, 0, mob.z);
+              mob.isAttacking = false;
+              const pDist = Math.hypot(myPlayer.x - endX, myPlayer.z - endZ);
+              if (pDist < 4.2) {
+                applyMobDamageToPlayer(Math.round(mob.dmg * 1.3), mob.name);
+              }
+            });
+          } else if (dist < 4.2 && mob.attackCooldown <= 0) {
+            // Move 2: 360 Cleave Circle
+            mob.isAttacking = true;
+            mob.attackCooldown = 2.8;
+            createTelegraphCircle(mob.x, mob.z, 5.2, 950, () => {
+              mob.isAttacking = false;
+              createShockwaveRing(mob.x, mob.z, 5.5, 0xef4444);
+              const pDist = Math.hypot(myPlayer.x - mob.x, myPlayer.z - mob.z);
+              if (pDist < 5.2) {
+                applyMobDamageToPlayer(Math.round(mob.dmg * 1.2), mob.name);
+              }
+            });
+          } else if (dist > 3.0) {
+            const speed = mob.speed * delta;
+            mob.x += (dx / dist) * speed;
+            mob.z += (dz / dist) * speed;
+          }
+
+        } else if (mob.type === 'ruin_golem') {
+          // RUIN GOLEM WORLD BOSS: Triple Ground Slam or Orbital Void Bombardment
+          if (mob.attackCooldown <= 0) {
+            mob.isAttacking = true;
+            mob.attackCooldown = 4.2;
+            const useBombardment = Math.random() < 0.5;
+
+            if (useBombardment) {
+              // Orbital Void Bombardment (3 circles)
+              const targets = [
+                { x: myPlayer.x, z: myPlayer.z },
+                { x: myPlayer.x + (Math.random() - 0.5) * 6, z: myPlayer.z + (Math.random() - 0.5) * 6 },
+                { x: myPlayer.x + (Math.random() - 0.5) * 6, z: myPlayer.z + (Math.random() - 0.5) * 6 }
+              ];
+              let completed = 0;
+              targets.forEach(tgt => {
+                createTelegraphCircle(tgt.x, tgt.z, 3.2, 1050, () => {
+                  createShockwaveRing(tgt.x, tgt.z, 3.6, 0xa855f7);
+                  if (Math.hypot(myPlayer.x - tgt.x, myPlayer.z - tgt.z) < 3.2) {
+                    applyMobDamageToPlayer(mob.dmg, mob.name);
+                  }
+                  completed++;
+                  if (completed >= targets.length) {
+                    mob.isAttacking = false;
+                  }
+                });
+              });
             } else {
-              showDamageNumber({ x: myPlayer.x, y: 2.0, z: myPlayer.z }, '⚡ DODGE!', 'normal');
+              // Triple Expanding Seismic Ground Stomp
+              createTelegraphCircle(mob.x, mob.z, 6.0, 750, () => {
+                createShockwaveRing(mob.x, mob.z, 6.2, 0xa855f7);
+                screenShakeTimer = 0.2; screenShakeMagnitude = 0.35;
+                if (Math.hypot(myPlayer.x - mob.x, myPlayer.z - mob.z) < 6.0) {
+                  applyMobDamageToPlayer(mob.dmg, mob.name);
+                }
+                createTelegraphCircle(mob.x, mob.z, 12.0, 550, () => {
+                  createShockwaveRing(mob.x, mob.z, 12.2, 0x6366f1);
+                  screenShakeTimer = 0.25; screenShakeMagnitude = 0.4;
+                  if (Math.hypot(myPlayer.x - mob.x, myPlayer.z - mob.z) < 12.0) {
+                    applyMobDamageToPlayer(mob.dmg, mob.name);
+                  }
+                  createTelegraphCircle(mob.x, mob.z, 18.0, 550, () => {
+                    mob.isAttacking = false;
+                    createShockwaveRing(mob.x, mob.z, 18.2, 0x3b82f6);
+                    screenShakeTimer = 0.3; screenShakeMagnitude = 0.5;
+                    if (Math.hypot(myPlayer.x - mob.x, myPlayer.z - mob.z) < 18.0) {
+                      applyMobDamageToPlayer(mob.dmg, mob.name);
+                    }
+                  });
+                });
+              });
             }
+          } else if (dist > 3.0) {
+            const speed = mob.speed * delta;
+            mob.x += (dx / dist) * speed;
+            mob.z += (dz / dist) * speed;
+          }
+
+        } else {
+          // Hilichurls & Sentinels: Frontal Cleave Circle
+          if (dist <= 2.2 && mob.attackCooldown <= 0) {
+            mob.isAttacking = true;
+            mob.attackCooldown = 1.9 + Math.random() * 0.5;
+            const fx = mob.x + Math.sin(mob.rot) * 1.4;
+            const fz = mob.z + Math.cos(mob.rot) * 1.4;
+
+            createTelegraphCircle(fx, fz, 2.7, 850, () => {
+              mob.isAttacking = false;
+              createShockwaveRing(fx, fz, 2.9, 0xef4444);
+              const pDist = Math.hypot(myPlayer.x - fx, myPlayer.z - fz);
+              if (pDist < 2.7) {
+                applyMobDamageToPlayer(mob.dmg, mob.name);
+              }
+            });
+          } else if (dist > 1.8) {
+            const speed = mob.speed * delta;
+            mob.x += (dx / dist) * speed;
+            mob.z += (dz / dist) * speed;
           }
         }
       }
@@ -7158,7 +9014,12 @@
       mobSpawnTimer += delta;
       if (mobSpawnTimer >= 5.0) {
         mobSpawnTimer = 0;
-        const types = ['slime_green', 'slime_pyro', 'hilichurl'];
+        let types = ['slime_green', 'slime_electro', 'hilichurl_recruit'];
+        if (currentMap === 'battle_zone_2') {
+          types = ['slime_pyro', 'hilichurl_warrior', 'pyromancer'];
+        } else if (currentMap === 'battle_zone_3') {
+          types = ['abyss_sentinel', 'abyss_mage'];
+        }
         const chosen = types[Math.floor(Math.random() * types.length)];
         const angle = Math.random() * Math.PI * 2;
         const rx = Math.cos(angle) * 22;
@@ -7170,20 +9031,224 @@
     // Boss Respawn Check
     if (bossRespawnTimer > 0 && now >= bossRespawnTimer) {
       bossRespawnTimer = 0;
-      spawnCombatMob('ruin_golem', 0, 14);
-      addChatMessage('⚔️ BOSS DOĞDU', '⚠️ Antik Yıkım Muhafızı kuzey sunağında yeniden belirdi!');
+      let bossType = 'hilichurl_recruit';
+      let bossTitle = 'Kuzey Lideri';
+      if (currentMap === 'battle_zone_2') {
+        bossType = 'mitachurl_axe';
+        bossTitle = 'Alev Baltalı Mitachurl';
+      } else if (currentMap === 'battle_zone_3') {
+        bossType = 'ruin_golem';
+        bossTitle = 'Antik Yıkım Muhafızı (DÜNYA BOSSU)';
+      }
+      spawnCombatMob(bossType, 0, 14);
+      addChatMessage('⚔️ BOSS DOĞDU', `⚠️ ${bossTitle} kuzey sunağında yeniden belirdi!`);
       screenShakeTimer = 0.35;
       screenShakeMagnitude = 0.45;
+    }
+
+    // 6. Companion Active Systems Runtime Updates
+    // Geo Stele Resonating Shockwaves
+    if (activeGeoSteleMesh) {
+      if (now > activeGeoSteleMesh.userData.endTime) {
+        worldObjects.remove(activeGeoSteleMesh);
+        activeGeoSteleMesh = null;
+      } else if (now - activeGeoSteleMesh.userData.lastPulse >= 1500) {
+        activeGeoSteleMesh.userData.lastPulse = now;
+        const spx = activeGeoSteleMesh.position.x;
+        const spz = activeGeoSteleMesh.position.z;
+        createMeteorImpact(spx, spz);
+        playPunchyHitSound(false);
+        for (let i = 0; i < activeCombatMobs.length; i++) {
+          const mob = activeCombatMobs[i];
+          if (mob.isDead) continue;
+          const dist = Math.hypot(mob.x - spx, mob.z - spz);
+          if (dist <= 6.5) {
+            mob.hp = Math.max(0, mob.hp - 45);
+            if (mob.hpFillMesh) mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
+            mob.flashTimer = 0.12;
+            showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `🪨 Rezonans! 45`, 'normal');
+            if (mob.hp <= 0) defeatMob(mob);
+          }
+        }
+      }
+    }
+
+    // Furina Salon Solitaire Water Minions
+    if (activeFurinaMinions.length > 0) {
+      if (now > furinaMinionsEndTime) {
+        for (const m of activeFurinaMinions) worldObjects.remove(m.mesh);
+        activeFurinaMinions = [];
+      } else {
+        for (let i = 0; i < activeFurinaMinions.length; i++) {
+          const minion = activeFurinaMinions[i];
+          const orbitAngle = now * 0.002 + minion.angleOffset;
+          const ox = myPlayer.x + Math.sin(orbitAngle) * 2.2;
+          const oz = myPlayer.z + Math.cos(orbitAngle) * 2.2;
+          minion.mesh.position.set(ox, 1.4 + Math.sin(now * 0.005 + i) * 0.2, oz);
+
+          if (now - minion.lastShot >= 1800) {
+            minion.lastShot = now;
+            let nearestMob = null;
+            let nearestDist = 999;
+            for (const mob of activeCombatMobs) {
+              if (mob.isDead) continue;
+              const d = Math.hypot(mob.x - ox, mob.z - oz);
+              if (d < nearestDist && d < 12.0) {
+                nearestDist = d;
+                nearestMob = mob;
+              }
+            }
+            if (nearestMob) {
+              nearestMob.hp = Math.max(0, nearestMob.hp - 35);
+              if (nearestMob.hpFillMesh) nearestMob.hpFillMesh.scale.x = Math.max(0.001, nearestMob.hp / nearestMob.maxHP);
+              nearestMob.flashTimer = 0.1;
+              showDamageNumber({ x: nearestMob.x, y: nearestMob.y + nearestMob.height, z: nearestMob.z }, `💧 35`, 'normal');
+              playHydroSplashSound();
+              if (nearestMob.hp <= 0) defeatMob(nearestMob);
+            }
+          }
+        }
+      }
+    }
+
+    // Kazuha Autumn Storm Ticks
+    if (activeKazuhaStormMesh) {
+      activeKazuhaStormMesh.rotation.y += 0.02;
+      if (now > kazuhaStormEndTime) {
+        worldObjects.remove(activeKazuhaStormMesh);
+        activeKazuhaStormMesh = null;
+      } else {
+        kazuhaStormTickTimer += delta;
+        if (kazuhaStormTickTimer >= 0.6) {
+          kazuhaStormTickTimer = 0;
+          const kx = activeKazuhaStormMesh.position.x;
+          const kz = activeKazuhaStormMesh.position.z;
+          for (let i = 0; i < activeCombatMobs.length; i++) {
+            const mob = activeCombatMobs[i];
+            if (mob.isDead) continue;
+            const dist = Math.hypot(mob.x - kx, mob.z - kz);
+            if (dist <= 7.0) {
+              mob.hp = Math.max(0, mob.hp - 40);
+              if (mob.hpFillMesh) mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
+              mob.flashTimer = 0.08;
+              showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `🍃 40`, 'normal');
+              if (mob.hp <= 0) defeatMob(mob);
+            }
+          }
+        }
+      }
+    }
+
+    // Jade Shield Spin
+    if (activeJadeShieldMesh) {
+      activeJadeShieldMesh.rotation.y += 0.015;
+      activeJadeShieldMesh.rotation.x += 0.008;
+    }
+
+    // Electro Eye Lifetime
+    if (activeElectroEyeMesh) {
+      if (now > electroEyeEndTime) {
+        if (myMesh) myMesh.remove(activeElectroEyeMesh);
+        activeElectroEyeMesh = null;
+      } else {
+        activeElectroEyeMesh.rotation.y += 0.04;
+      }
+    }
+
+    // Companion Buffs Expiration
+    if (companionBuffs.active) {
+      companionBuffs.timer -= delta;
+      if (companionBuffs.timer <= 0) {
+        companionBuffs.active = false;
+        companionBuffs.dmgMult = 1.0;
+        companionBuffs.speedMult = 1.0;
+        companionBuffs.type = '';
+      }
     }
 
     // Update HUD cooldowns
     updateCombatHUD();
   }
 
-  function buildBattleZoneMap() {
-    currentMap = 'battle_zone';
-    scene.background = new THREE.Color(0x0a0c16);
-    scene.fog = new THREE.FogExp2(0x0a0c16, 0.015);
+  function triggerPlayerDefeat() {
+    if (isPlayerDefeated) return;
+    isPlayerDefeated = true;
+    playBeep(130, 'sawtooth', 0.45);
+
+    const defeatOverlay = document.getElementById('player-defeat-overlay');
+    if (defeatOverlay) {
+      defeatOverlay.classList.remove('hidden');
+    }
+
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: 'WORLD_PLAYER_DEFEAT' }));
+    }
+
+    setTimeout(() => {
+      if (defeatOverlay) {
+        defeatOverlay.classList.add('hidden');
+      }
+      isPlayerDefeated = false;
+      const stats = getPlayerEffectiveStats();
+      playerMaxHP = stats.hp;
+      playerHP = playerMaxHP;
+      updateCombatHUD();
+      triggerDoorWipe('town');
+      addChatMessage('Sistem', '💀 Savaş alanında yenildin! Kasaba çeşmesinde yeniden canlandın.');
+    }, 2200);
+  }
+
+  function openPortalZoneModal() {
+    const currentGS = getMyGearScore();
+    const gsEl = document.getElementById('portal-player-gs');
+    if (gsEl) gsEl.textContent = `${currentGS} GS`;
+
+    // Zone 1 (Slime Vadisi - Req 100 GS)
+    const p1 = getGsDifficultyMultiplier(currentGS, 100);
+    const badge1 = document.getElementById('badge-zone-1');
+    const hint1 = document.getElementById('hint-zone-1');
+    if (badge1) {
+      badge1.className = `zone-card-badge status-${p1.status}`;
+      badge1.textContent = p1.status === 'safe' ? '🟢 Güvenli' : (p1.status === 'challenging' ? '🟡 Zorlu' : '🔴 Ölümcül');
+    }
+    if (hint1) {
+      hint1.textContent = p1.status === 'safe' ? 'Ceza Yok (Tam Hasar) - Güvenli Bölge' : `Hasar Çarpanı: x${p1.damageMult}`;
+    }
+
+    // Zone 2 (Kızıl Hilichurl Harabeleri - Req 350 GS)
+    const p2 = getGsDifficultyMultiplier(currentGS, 350);
+    const badge2 = document.getElementById('badge-zone-2');
+    const hint2 = document.getElementById('hint-zone-2');
+    if (badge2) {
+      badge2.className = `zone-card-badge status-${p2.status}`;
+      badge2.textContent = p2.status === 'safe' ? '🟢 Güvenli' : (p2.status === 'challenging' ? '🟡 Zorlu' : '🔴 Ölümcül Risk');
+    }
+    if (hint2) {
+      if (p2.status === 'safe') hint2.textContent = 'Ceza Yok (Tam Hasar & Normal Ganimet)';
+      else if (p2.status === 'challenging') hint2.textContent = `Zorlu: Hasar x${p2.damageMult} | Alınan Hasar x${p2.damageTakenMult}`;
+      else hint2.textContent = `Ölümcül Risk: Hasar x${p2.damageMult}, Sektirme: %${Math.round(p2.glanceChance * 100)}`;
+    }
+
+    // Zone 3 (Kadim Uçurum Arenası - Req 750 GS)
+    const p3 = getGsDifficultyMultiplier(currentGS, 750);
+    const badge3 = document.getElementById('badge-zone-3');
+    const hint3 = document.getElementById('hint-zone-3');
+    if (badge3) {
+      badge3.className = `zone-card-badge status-${p3.status}`;
+      badge3.textContent = p3.status === 'safe' ? '🟢 Güvenli' : (p3.status === 'challenging' ? '🟡 Zorlu' : '🔴 Ölümcül Risk');
+    }
+    if (hint3) {
+      if (p3.status === 'safe') hint3.textContent = 'Hazırsın! Ceza Yok (Tam Hasar & Efsanevi Ganimet)';
+      else if (p3.status === 'challenging') hint3.textContent = `Hasar: x${p3.damageMult} | Alınan: x${p3.damageTakenMult} | Sektirme: %${Math.round(p3.glanceChance * 100)}`;
+      else hint3.textContent = `Ölümcül Risk: Hasar x${p3.damageMult}, Alınan x${p3.damageTakenMult}, %35 Vuruş Seker!`;
+    }
+
+    openModal('modal-portal-zones');
+  }
+
+  function buildBattleZoneMap(zoneId = 'battle_zone_1') {
+    currentMap = zoneId;
+    const zone = ZONE_CONFIGS[zoneId] || ZONE_CONFIGS.battle_zone_1;
 
     while (worldObjects.children.length > 0) {
       worldObjects.remove(worldObjects.children[0]);
@@ -7196,120 +9261,545 @@
     vortexMesh = null;
     isVortexActive = false;
 
-    // 1. Arena Dark Stone Ground
-    const floorGeo = new THREE.CircleGeometry(42, 32);
-    const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x0f172a,
-      roughness: 0.85,
-      metalness: 0.2
-    });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
-    worldObjects.add(floor);
+    // Clear any pending danger telegraphs
+    for (let tg of activeTelegraphs) {
+      if (tg.cleanup) tg.cleanup();
+      else worldObjects.remove(tg.group);
+    }
+    activeTelegraphs = [];
 
-    // Outer rim
-    const rim = new THREE.Mesh(
-      new THREE.RingGeometry(40, 44, 32),
-      new THREE.MeshLambertMaterial({ color: 0x1e293b })
-    );
-    rim.rotation.x = -Math.PI / 2;
-    rim.position.y = 0.04;
-    worldObjects.add(rim);
+    // Location name HUD
+    const locEl = document.getElementById('ui-location');
+    if (locEl) locEl.textContent = `${zone.name} [GS ${zone.reqGS}]`;
 
-    // Arcane Rings
-    const ring1 = new THREE.Mesh(
-      new THREE.RingGeometry(9.5, 10.2, 32),
-      new THREE.MeshBasicMaterial({ color: 0x6366f1, side: THREE.DoubleSide, opacity: 0.45, transparent: true })
-    );
-    ring1.rotation.x = -Math.PI / 2;
-    ring1.position.y = 0.02;
-    worldObjects.add(ring1);
+    if (zoneId === 'battle_zone_1') {
+      // 🌿 Zone 1: Kadim Sarmaşıklı Orman (Ancient Enchanted Forest)
+      scene.background = new THREE.Color(0x041b12);
+      scene.fog = new THREE.FogExp2(0x041b12, 0.016);
 
-    const ring2 = new THREE.Mesh(
-      new THREE.RingGeometry(21.5, 22.2, 32),
-      new THREE.MeshBasicMaterial({ color: 0xa855f7, side: THREE.DoubleSide, opacity: 0.35, transparent: true })
-    );
-    ring2.rotation.x = -Math.PI / 2;
-    ring2.position.y = 0.02;
-    worldObjects.add(ring2);
+      // Lush Organic Moss Floor
+      const floorGeo = new THREE.CircleGeometry(42, 48);
+      const floorMat = new THREE.MeshLambertMaterial({
+        color: 0x14532d,
+        roughness: 0.95
+      });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      worldObjects.add(floor);
 
-    // 2. Ruin Perimeter Columns with Burning Torches (16 columns)
-    for (let i = 0; i < 16; i++) {
-      const angle = (i / 16) * Math.PI * 2;
-      const px = Math.cos(angle) * 39;
-      const pz = Math.sin(angle) * 39;
-
-      const col = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.85, 1.05, 6.5, 8),
-        new THREE.MeshLambertMaterial({ color: 0x1e293b })
+      // Outer organic forest moss rim
+      const rim = new THREE.Mesh(
+        new THREE.RingGeometry(39, 45, 48),
+        new THREE.MeshLambertMaterial({ color: 0x052e16 })
       );
-      col.position.set(px, 3.25, pz);
-      col.castShadow = true;
-      worldObjects.add(col);
+      rim.rotation.x = -Math.PI / 2;
+      rim.position.y = 0.02;
+      worldObjects.add(rim);
 
-      const bowl = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.2, 0.6, 0.8, 8),
-        new THREE.MeshLambertMaterial({ color: 0x0f172a })
+      // Ancient Druid Runic Circles on Floor
+      const runeCircle = new THREE.Mesh(
+        new THREE.RingGeometry(9.5, 10.4, 32),
+        new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide, opacity: 0.45, transparent: true })
       );
-      bowl.position.set(px, 6.8, pz);
-      worldObjects.add(bowl);
+      runeCircle.rotation.x = -Math.PI / 2;
+      runeCircle.position.y = 0.03;
+      worldObjects.add(runeCircle);
 
-      const flame = new THREE.Mesh(
-        new THREE.DodecahedronGeometry(0.5),
-        new THREE.MeshBasicMaterial({ color: 0xf97316 })
+      // 22 Giant Ancient Twisted Trees with sprawling roots and multi-tier canopies
+      const trunkMat = new THREE.MeshLambertMaterial({ color: 0x271911 });
+      const foliageMat1 = new THREE.MeshLambertMaterial({ color: 0x064e3b });
+      const foliageMat2 = new THREE.MeshLambertMaterial({ color: 0x047857 });
+      const foliageMat3 = new THREE.MeshLambertMaterial({ color: 0x15803d });
+
+      for (let i = 0; i < 22; i++) {
+        const angle = (i / 22) * Math.PI * 2;
+        const dist = 36 + (i % 3) * 2.5;
+        const px = Math.cos(angle) * dist;
+        const pz = Math.sin(angle) * dist;
+
+        const tree = new THREE.Group();
+        // Gnarled thick trunk
+        const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.3, 5.0, 7), trunkMat);
+        tr.position.y = 2.5;
+        tr.castShadow = true;
+        tree.add(tr);
+
+        // 3 Surface roots protruding onto ground
+        for (let r = 0; r < 3; r++) {
+          const rAngle = (r / 3) * Math.PI * 2 + angle;
+          const rootMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.45, 2.4, 5), trunkMat);
+          rootMesh.rotation.z = Math.PI / 2.8;
+          rootMesh.rotation.y = rAngle;
+          rootMesh.position.set(Math.cos(rAngle) * 1.1, 0.25, Math.sin(rAngle) * 1.1);
+          tree.add(rootMesh);
+        }
+
+        // Multi-tiered dense canopies
+        const c1 = new THREE.Mesh(new THREE.ConeGeometry(3.6, 4.5, 7), foliageMat1);
+        c1.position.y = 5.6;
+        c1.castShadow = true;
+        tree.add(c1);
+
+        const c2 = new THREE.Mesh(new THREE.ConeGeometry(2.8, 4.0, 7), foliageMat2);
+        c2.position.y = 7.6;
+        c2.castShadow = true;
+        tree.add(c2);
+
+        const c3 = new THREE.Mesh(new THREE.ConeGeometry(1.8, 3.2, 6), foliageMat3);
+        c3.position.y = 9.4;
+        c3.castShadow = true;
+        tree.add(c3);
+
+        tree.position.set(px, 0, pz);
+        worldObjects.add(tree);
+      }
+
+      // 8 Giant Bioluminescent Glowing Mushrooms
+      const mushColors = [0x06b6d4, 0xa855f7, 0xf59e0b, 0x10b981];
+      const mushPositions = [
+        { x: -16, z: -10, scale: 1.4, cIdx: 0 },
+        { x: 18, z: -12, scale: 1.2, cIdx: 1 },
+        { x: -22, z: 8, scale: 1.5, cIdx: 2 },
+        { x: 20, z: 12, scale: 1.3, cIdx: 0 },
+        { x: -8, z: 22, scale: 1.6, cIdx: 1 },
+        { x: 12, z: 24, scale: 1.4, cIdx: 3 },
+        { x: -25, z: -20, scale: 1.7, cIdx: 2 },
+        { x: 24, z: -22, scale: 1.5, cIdx: 0 }
+      ];
+
+      for (let m of mushPositions) {
+        const mGroup = new THREE.Group();
+        const mColor = mushColors[m.cIdx];
+
+        // Stem
+        const stem = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.25 * m.scale, 0.45 * m.scale, 2.2 * m.scale, 8),
+          new THREE.MeshLambertMaterial({ color: 0xd1fae5 })
+        );
+        stem.position.y = 1.1 * m.scale;
+        mGroup.add(stem);
+
+        // Cap (Hemisphere with emissive glow)
+        const cap = new THREE.Mesh(
+          new THREE.SphereGeometry(1.3 * m.scale, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+          new THREE.MeshStandardMaterial({
+            color: mColor,
+            emissive: mColor,
+            emissiveIntensity: 0.6,
+            roughness: 0.3
+          })
+        );
+        cap.position.y = 2.1 * m.scale;
+        mGroup.add(cap);
+
+        // Soft Point Light
+        const pLight = new THREE.PointLight(mColor, 0.85, 12, 2);
+        pLight.position.set(0, 2.3 * m.scale, 0);
+        mGroup.add(pLight);
+
+        mGroup.position.set(m.x, 0, m.z);
+        worldObjects.add(mGroup);
+      }
+
+      // 6 Ancient Druid Menhirs (Standing runestones)
+      for (let s = 0; s < 6; s++) {
+        const sAngle = (s / 6) * Math.PI * 2 + 0.3;
+        const sx = Math.cos(sAngle) * 20;
+        const sz = Math.sin(sAngle) * 20;
+
+        const menhir = new THREE.Group();
+        const stone = new THREE.Mesh(
+          new THREE.BoxGeometry(1.4, 4.2, 0.9),
+          new THREE.MeshLambertMaterial({ color: 0x334155 })
+        );
+        stone.position.y = 2.1;
+        stone.rotation.y = sAngle;
+        stone.rotation.z = 0.06;
+        stone.castShadow = true;
+        menhir.add(stone);
+
+        // Glowing cyan rune band
+        const runeBand = new THREE.Mesh(
+          new THREE.BoxGeometry(1.46, 0.35, 0.96),
+          new THREE.MeshBasicMaterial({ color: 0x14b8a6, transparent: true, opacity: 0.85 })
+        );
+        runeBand.position.y = 2.4;
+        runeBand.rotation.y = sAngle;
+        menhir.add(runeBand);
+
+        menhir.position.set(sx, 0, sz);
+        worldObjects.add(menhir);
+      }
+
+      // Mossy Stone Dais at z = 14
+      const dais = new THREE.Mesh(
+        new THREE.CylinderGeometry(9.5, 11.0, 0.7, 24),
+        new THREE.MeshLambertMaterial({ color: 0x166534 })
       );
-      flame.position.set(px, 7.3, pz);
-      worldObjects.add(flame);
+      dais.position.set(0, 0.35, 14);
+      dais.receiveShadow = true;
+      worldObjects.add(dais);
 
-      const bLight = new THREE.PointLight(0xf97316, 0.7, 12, 2);
-      bLight.position.set(px, 7.4, pz);
-      worldObjects.add(bLight);
+      const daisRune = new THREE.Mesh(
+        new THREE.RingGeometry(6.5, 7.4, 24),
+        new THREE.MeshBasicMaterial({ color: 0x34d399, side: THREE.DoubleSide, opacity: 0.65, transparent: true })
+      );
+      daisRune.rotation.x = -Math.PI / 2;
+      daisRune.position.set(0, 0.72, 14);
+      worldObjects.add(daisRune);
+
+      // Warm Meadow & Canopy Lighting
+      const dirLight = new THREE.DirectionalLight(0xfef08a, 0.95);
+      dirLight.position.set(20, 35, 15);
+      dirLight.castShadow = true;
+      worldObjects.add(dirLight);
+
+      const ambLight = new THREE.AmbientLight(0x064e3b, 0.85);
+      worldObjects.add(ambLight);
+
+    } else if (zoneId === 'battle_zone_2') {
+      // 🌋 Zone 2: Kızıl Lav Harabeleri (Scorched Volcanic Ruins)
+      scene.background = new THREE.Color(0x180505);
+      scene.fog = new THREE.FogExp2(0x180505, 0.02);
+
+      // Scorched Cracked Basalt Floor
+      const floorGeo = new THREE.CircleGeometry(42, 48);
+      const floorMat = new THREE.MeshStandardMaterial({
+        color: 0x1c1917,
+        roughness: 0.85,
+        metalness: 0.35
+      });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      worldObjects.add(floor);
+
+      // Outer blackened rim
+      const rim = new THREE.Mesh(
+        new THREE.RingGeometry(39, 45, 48),
+        new THREE.MeshLambertMaterial({ color: 0x0c0a09 })
+      );
+      rim.rotation.x = -Math.PI / 2;
+      rim.position.y = 0.02;
+      worldObjects.add(rim);
+
+      // 4 Glowing Molten Lava Fissures / Channels Cutting Through Floor
+      const lavaMat = new THREE.MeshStandardMaterial({
+        color: 0xef4444,
+        emissive: 0xf97316,
+        emissiveIntensity: 0.95,
+        roughness: 0.2
+      });
+
+      // Channel 1: Left Fissure
+      const f1 = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 32), lavaMat);
+      f1.rotation.x = -Math.PI / 2;
+      f1.rotation.z = 0.28;
+      f1.position.set(-16, 0.04, 2);
+      worldObjects.add(f1);
+
+      // Channel 2: Right Fissure
+      const f2 = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 28), lavaMat);
+      f2.rotation.x = -Math.PI / 2;
+      f2.rotation.z = -0.35;
+      f2.position.set(15, 0.04, -4);
+      worldObjects.add(f2);
+
+      // Channel 3: Cross Fissure
+      const f3 = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 22), lavaMat);
+      f3.rotation.x = -Math.PI / 2;
+      f3.rotation.z = Math.PI / 2.3;
+      f3.position.set(0, 0.04, -14);
+      worldObjects.add(f3);
+
+      // Glowing Point Lights illuminating the lava fissures
+      const lavaLights = [
+        { x: -16, y: 1.2, z: 2 },
+        { x: 15, y: 1.2, z: -4 },
+        { x: 0, y: 1.2, z: -14 },
+        { x: 0, y: 1.2, z: 14 }
+      ];
+      for (let ll of lavaLights) {
+        const pl = new THREE.PointLight(0xf97316, 1.1, 16, 2);
+        pl.position.set(ll.x, ll.y, ll.z);
+        worldObjects.add(pl);
+      }
+
+      // Crumbling Fortress Walls & Battlements around perimeter (14 bastions)
+      const wallMat = new THREE.MeshLambertMaterial({ color: 0x292524 });
+      for (let i = 0; i < 14; i++) {
+        const angle = (i / 14) * Math.PI * 2;
+        const px = Math.cos(angle) * 38;
+        const pz = Math.sin(angle) * 38;
+
+        const wallGroup = new THREE.Group();
+        // Main ruined battlement
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(4.8, 5.0, 1.8), wallMat);
+        wall.position.y = 2.5;
+        wall.castShadow = true;
+        wallGroup.add(wall);
+
+        // Crenelation teeth
+        const tooth1 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.85), wallMat);
+        tooth1.position.set(-1.4, 5.5, 0);
+        wallGroup.add(tooth1);
+        const tooth2 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.85), wallMat);
+        tooth2.position.set(1.4, 5.5, 0);
+        wallGroup.add(tooth2);
+
+        wallGroup.position.set(px, 0, pz);
+        wallGroup.rotation.y = angle + Math.PI / 2;
+        worldObjects.add(wallGroup);
+      }
+
+      // 10 Flaming Iron Braziers with roaring fires
+      for (let b = 0; b < 10; b++) {
+        const bAngle = (b / 10) * Math.PI * 2;
+        const bx = Math.cos(bAngle) * 26;
+        const bz = Math.sin(bAngle) * 26;
+
+        const brazier = new THREE.Group();
+        // Iron tripod pedestal
+        const ped = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.9, 0.5, 1.8, 6),
+          new THREE.MeshLambertMaterial({ color: 0x1c1917 })
+        );
+        ped.position.y = 0.9;
+        ped.castShadow = true;
+        brazier.add(ped);
+
+        // Roaring fire crystal
+        const flame = new THREE.Mesh(
+          new THREE.DodecahedronGeometry(0.65),
+          new THREE.MeshBasicMaterial({ color: 0xf97316 })
+        );
+        flame.position.y = 2.1;
+        brazier.add(flame);
+
+        const bLight = new THREE.PointLight(0xf97316, 0.85, 14, 2);
+        bLight.position.y = 2.3;
+        brazier.add(bLight);
+
+        brazier.position.set(bx, 0, bz);
+        worldObjects.add(brazier);
+      }
+
+      // Volcanic Ember Particles (Rising orange sparks)
+      for (let ep = 0; ep < 18; ep++) {
+        const ember = new THREE.Mesh(
+          new THREE.BoxGeometry(0.16, 0.16, 0.16),
+          new THREE.MeshBasicMaterial({ color: 0xfbbf24 })
+        );
+        ember.position.set((Math.random() - 0.5) * 50, 0.5 + Math.random() * 6, (Math.random() - 0.5) * 50);
+        worldObjects.add(ember);
+      }
+
+      // Burning Ruin Altar Dais at z = 14
+      const dais = new THREE.Mesh(
+        new THREE.CylinderGeometry(9.8, 11.2, 0.8, 24),
+        new THREE.MeshStandardMaterial({ color: 0x292524, roughness: 0.8, metalness: 0.3 })
+      );
+      dais.position.set(0, 0.4, 14);
+      dais.receiveShadow = true;
+      worldObjects.add(dais);
+
+      const daisRune = new THREE.Mesh(
+        new THREE.RingGeometry(6.5, 7.4, 24),
+        new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide, opacity: 0.75, transparent: true })
+      );
+      daisRune.rotation.x = -Math.PI / 2;
+      daisRune.position.set(0, 0.82, 14);
+      worldObjects.add(daisRune);
+
+      // Crimson Lighting
+      const dirLight = new THREE.DirectionalLight(0xf97316, 0.95);
+      dirLight.position.set(15, 35, 15);
+      dirLight.castShadow = true;
+      worldObjects.add(dirLight);
+
+      const ambLight = new THREE.AmbientLight(0x450a0a, 0.8);
+      worldObjects.add(ambLight);
+
+    } else {
+      // 🌌 Zone 3: Kadim Uçurum Boşluğu (Floating Shattered Island over Cosmic Void)
+      scene.background = new THREE.Color(0x020617);
+      scene.fog = new THREE.FogExp2(0x020617, 0.015);
+
+      // FLOATING SHATTERED ISLAND PLATE
+      const floorGeo = new THREE.CircleGeometry(39, 48);
+      const floorMat = new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        roughness: 0.5,
+        metalness: 0.5
+      });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      worldObjects.add(floor);
+
+      // Cosmic Arcane Void Rim
+      const rim = new THREE.Mesh(
+        new THREE.RingGeometry(37, 40, 48),
+        new THREE.MeshBasicMaterial({ color: 0x8b5cf6, side: THREE.DoubleSide, opacity: 0.65, transparent: true })
+      );
+      rim.rotation.x = -Math.PI / 2;
+      rim.position.y = 0.03;
+      worldObjects.add(rim);
+
+      // INVERTED STALACTITES HANGING UNDERNEATH INTO INFINITE VOID (y < 0)
+      const stalactiteMat = new THREE.MeshStandardMaterial({
+        color: 0x090d16,
+        roughness: 0.8,
+        metalness: 0.3
+      });
+      for (let s = 0; s < 16; s++) {
+        const sAngle = (s / 16) * Math.PI * 2;
+        const sDist = 12 + (s % 4) * 6;
+        const sx = Math.cos(sAngle) * sDist;
+        const sz = Math.sin(sAngle) * sDist;
+        const sHeight = 12 + (s % 3) * 6;
+
+        const stal = new THREE.Mesh(
+          new THREE.ConeGeometry(2.2 + (s % 3) * 0.8, sHeight, 6),
+          stalactiteMat
+        );
+        stal.rotation.x = Math.PI; // Invert downwards
+        stal.position.set(sx, -sHeight / 2, sz);
+        worldObjects.add(stal);
+      }
+
+      // 14 ZERO-GRAVITY FLOATING ASTEROIDS / SHATTERED CHUNKS
+      const asteroidMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7, metalness: 0.4 });
+      for (let a = 0; a < 14; a++) {
+        const aAngle = (a / 14) * Math.PI * 2 + 0.2;
+        const aDist = 44 + (a % 3) * 6;
+        const ax = Math.cos(aAngle) * aDist;
+        const az = Math.sin(aAngle) * aDist;
+        const ay = -4 + (a % 5) * 3.5;
+
+        const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(1.6 + (a % 3) * 0.8), asteroidMat);
+        rock.position.set(ax, ay, az);
+        rock.rotation.set(a * 0.4, a * 0.7, a * 0.2);
+        worldObjects.add(rock);
+
+        // Hovering Pulsing Crystal atop some asteroids
+        if (a % 2 === 0) {
+          const crystal = new THREE.Mesh(
+            new THREE.OctahedronGeometry(0.65, 0),
+            new THREE.MeshBasicMaterial({ color: a % 4 === 0 ? 0x38bdf8 : 0xc084fc })
+          );
+          crystal.position.set(ax, ay + 2.0, az);
+          worldObjects.add(crystal);
+        }
+      }
+
+      // COLOSSAL COSMIC VOID STARGATE ARCH behind Boss Dais (at z = 25)
+      const gateGroup = new THREE.Group();
+      const archMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.4, metalness: 0.7 });
+
+      // Left Pillar
+      const leftCol = new THREE.Mesh(new THREE.BoxGeometry(2.4, 16.0, 2.4), archMat);
+      leftCol.position.set(-7.5, 8.0, 0);
+      gateGroup.add(leftCol);
+
+      // Right Pillar
+      const rightCol = new THREE.Mesh(new THREE.BoxGeometry(2.4, 16.0, 2.4), archMat);
+      rightCol.position.set(7.5, 8.0, 0);
+      gateGroup.add(rightCol);
+
+      // Top Crossbeam Lintel
+      const lintel = new THREE.Mesh(new THREE.BoxGeometry(17.4, 2.6, 2.6), archMat);
+      lintel.position.set(0, 16.0, 0);
+      gateGroup.add(lintel);
+
+      // Celestial Ring Arch
+      const ringArch = new THREE.Mesh(
+        new THREE.TorusGeometry(6.8, 0.75, 16, 32),
+        new THREE.MeshStandardMaterial({ color: 0x7c3aed, emissive: 0x6366f1, emissiveIntensity: 0.6 })
+      );
+      ringArch.position.set(0, 8.5, 0);
+      gateGroup.add(ringArch);
+
+      // Swirling Cosmic Event Horizon Portal Disk
+      const eventHorizon = new THREE.Mesh(
+        new THREE.CircleGeometry(6.2, 32),
+        new THREE.MeshBasicMaterial({ color: 0x312e81, side: THREE.DoubleSide, opacity: 0.88, transparent: true })
+      );
+      eventHorizon.position.set(0, 8.5, 0.05);
+      gateGroup.add(eventHorizon);
+
+      const gateLight = new THREE.PointLight(0x818cf8, 1.8, 30, 2);
+      gateLight.position.set(0, 8.5, 1.5);
+      gateGroup.add(gateLight);
+
+      gateGroup.position.set(0, 0, 25);
+      worldObjects.add(gateGroup);
+
+      // World Boss Dais at z = 14
+      const dais = new THREE.Mesh(
+        new THREE.CylinderGeometry(10.0, 11.5, 0.9, 32),
+        new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.5, metalness: 0.5 })
+      );
+      dais.position.set(0, 0.45, 14);
+      dais.receiveShadow = true;
+      worldObjects.add(dais);
+
+      const daisRune1 = new THREE.Mesh(
+        new THREE.RingGeometry(6.5, 7.4, 32),
+        new THREE.MeshBasicMaterial({ color: 0x818cf8, side: THREE.DoubleSide, opacity: 0.85, transparent: true })
+      );
+      daisRune1.rotation.x = -Math.PI / 2;
+      daisRune1.position.set(0, 0.92, 14);
+      worldObjects.add(daisRune1);
+
+      const daisRune2 = new THREE.Mesh(
+        new THREE.RingGeometry(3.2, 3.8, 24),
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, opacity: 0.85, transparent: true })
+      );
+      daisRune2.rotation.x = -Math.PI / 2;
+      daisRune2.position.set(0, 0.93, 14);
+      worldObjects.add(daisRune2);
+
+      // Deep Cosmic Indigo Light
+      const dirLight = new THREE.DirectionalLight(0x818cf8, 0.85);
+      dirLight.position.set(15, 35, 15);
+      dirLight.castShadow = true;
+      worldObjects.add(dirLight);
+
+      const ambLight = new THREE.AmbientLight(0x0f172a, 0.85);
+      worldObjects.add(ambLight);
     }
 
-    // 3. North Boss Dais (at z = 14)
-    const dais = new THREE.Mesh(
-      new THREE.CylinderGeometry(9.5, 10.5, 0.7, 16),
-      new THREE.MeshLambertMaterial({ color: 0x1e293b })
-    );
-    dais.position.set(0, 0.35, 14);
-    dais.receiveShadow = true;
-    worldObjects.add(dais);
-
-    const daisRune = new THREE.Mesh(
-      new THREE.RingGeometry(6.5, 7.2, 16),
-      new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide, opacity: 0.6, transparent: true })
-    );
-    daisRune.rotation.x = -Math.PI / 2;
-    daisRune.position.set(0, 0.72, 14);
-    worldObjects.add(daisRune);
-
-    // 4. Return Portal Gate back to Town at (0, -32)
+    // Return Portal Gate back to Town at (0, -32) (Present in all zones)
     const returnPortal = createBattlePortalGate(0, -32, 'Kasabaya Dön');
     returnPortal.rotation.y = Math.PI;
     worldObjects.add(returnPortal);
 
-    // 5. Lighting
-    const dirLight = new THREE.DirectionalLight(0x818cf8, 0.75);
-    dirLight.position.set(15, 35, 15);
-    dirLight.castShadow = true;
-    worldObjects.add(dirLight);
-
-    const ambLight = new THREE.AmbientLight(0x1e1b4b, 0.65);
-    worldObjects.add(ambLight);
-
-    // 6. Equip player weapon and show combat HUD
+    // Equip player weapon and show combat HUD
     attachCombatWeapon();
     document.getElementById('combat-hud')?.classList.remove('hidden');
 
-    playerHP = playerMaxHP = 500;
+    // Use RPG Effective Stats for real Max HP
+    const stats = getPlayerEffectiveStats();
+    playerMaxHP = stats.hp;
+    playerHP = playerMaxHP;
     playerEnergy = 35;
     updateCombatHUD();
 
-    // 7. Spawn Initial Mob Wave
-    spawnInitialMobs();
+    // Spawn Initial Mob Wave according to zone
+    spawnInitialMobs(zoneId);
 
-    addChatMessage('⚔️ Zindan', '🔥 Canavarları kes, fırlayan Primogemleri topla! [F / Sol Tık: Kılıç Kombosu, Shift: Takla, E: Girdap, Q: Ulti]');
+    // Check Player GS vs Zone reqGS for warning notification
+    const playerGS = getMyGearScore();
+    const penalty = getGsDifficultyMultiplier(playerGS, zone.reqGS);
+    if (penalty.status === 'deadly') {
+      addChatMessage('⚠️ Tehlike', `🔴 ${zone.name} bölgesindesin! GearScore'un yetersiz (${playerGS}/${zone.reqGS} GS). Vuruşların sekebilir ve yaratıklar ölümcül hasar verir!`);
+    } else if (penalty.status === 'challenging') {
+      addChatMessage('⚠️ Dikkat', `🟡 ${zone.name} zorlu bir bölge (${playerGS}/${zone.reqGS} GS). Hasarında hafif düşüş olacak.`);
+    } else {
+      addChatMessage('⚔️ Zindan', `🟢 ${zone.name} haritasına hoş geldin! [GS ${playerGS}/${zone.reqGS} - Tam Hasar]`);
+    }
   }
 
   // --- 13. Event Listeners ---
@@ -7372,7 +9862,7 @@
       }
 
       // Combat Interception (Battle Zone)
-      if (currentMap === 'battle_zone') {
+      if (isBattleZone(currentMap)) {
         if (k === 'f') {
           if (e.repeat) return;
           e.preventDefault();
@@ -7403,9 +9893,14 @@
         }
       }
 
-      if (k === 'c' || k === 'p') {
+      if (k === 'c') {
         e.preventDefault();
         toggleCharacterSheet();
+        return;
+      }
+      if (k === 'p') {
+        e.preventDefault();
+        toggleCompanionModal();
         return;
       }
       if (k === 'escape') {
@@ -7413,6 +9908,8 @@
         closePlayerInteractMenu();
         closeModal('modal-character-sheet');
         closeModal('modal-inspect-player');
+        closeModal('modal-portal-zones');
+        closeModal('modal-companion-selector');
       }
 
       if (k === 'w' || k === 'arrowup') keys.w = true;
@@ -7682,7 +10179,7 @@
 
     // Battle Zone Canvas Left-Click Attack
     window.addEventListener('mousedown', (e) => {
-      if (currentMap === 'battle_zone' && e.button === 0) {
+      if (isBattleZone(currentMap) && e.button === 0) {
         const tag = e.target.tagName.toLowerCase();
         if (tag === 'button' || tag === 'input' || tag === 'textarea' || e.target.closest('#chat-container') || e.target.closest('#nav-controls') || e.target.closest('#combat-hud')) return;
         performAttack();
@@ -7698,6 +10195,34 @@
     // Monster Material Market Actions
     document.getElementById('btn-market-sell-all')?.addEventListener('click', async () => {
       await sellMaterialItem(null, null, true);
+    });
+
+    // Portal Zone Selection Modal Enter Buttons
+    document.querySelectorAll('.btn-zone-enter').forEach(btn => {
+      btn.onclick = () => {
+        const zoneId = btn.getAttribute('data-zone-id');
+        if (!zoneId) return;
+        closeModal('modal-portal-zones');
+        playBeep(520, 'triangle', 0.15);
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: 'WORLD_SELECT_ZONE', zoneId }));
+        }
+      };
+    });
+
+    // Companion Selector Modal Trigger Buttons
+    document.getElementById('btn-open-companion')?.addEventListener('click', () => openCompanionModal());
+    document.getElementById('btn-hud-companion-open')?.addEventListener('click', () => toggleCompanionModal());
+    document.getElementById('btn-equip-companion')?.addEventListener('click', () => equipSelectedCompanion());
+    document.getElementById('btn-unequip-companion')?.addEventListener('click', () => unequipCompanion());
+
+    document.querySelectorAll('.btn-filter-elem').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.btn-filter-elem').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const elem = btn.getAttribute('data-elem') || 'all';
+        renderCompanionModal(elem);
+      };
     });
 
     // Spectator Mode Check
@@ -7773,6 +10298,22 @@
     // 1. Animate local player rig
     if (myMesh && myMesh.userData && myMesh.userData.rig) {
       animateRig(myMesh.userData.rig, myPlayer.anim === 'walk', delta, now);
+    }
+
+    // 1.5 Animate 5★ Companion Pet Follow (Local & Multiplayer)
+    updateCompanionFollow(delta, now);
+
+    for (const [id, pet] of otherPlayerCompanions.entries()) {
+      const otherEntry = otherPlayers.get(id);
+      if (otherEntry) {
+        const ox = otherEntry.mesh.position.x + Math.sin(otherEntry.mesh.rotation.y - 0.75) * 1.35;
+        const oz = otherEntry.mesh.position.z + Math.cos(otherEntry.mesh.rotation.y - 0.75) * 1.35;
+        const oy = otherEntry.mesh.position.y + 1.85 + Math.sin(now * 0.0035 + (id.charCodeAt(0) || 0)) * 0.14;
+        pet.position.x += (ox - pet.position.x) * Math.min(1.0, 7.5 * delta);
+        pet.position.y += (oy - pet.position.y) * Math.min(1.0, 7.5 * delta);
+        pet.position.z += (oz - pet.position.z) * Math.min(1.0, 7.5 * delta);
+        pet.rotation.y = otherEntry.mesh.rotation.y + 0.15;
+      }
     }
 
     // 2. Interpolate and animate other players
@@ -7911,7 +10452,7 @@
     }
 
     // 11. Update Combat & Battle Zone Engine
-    if (currentMap === 'battle_zone') {
+    if (isBattleZone(currentMap)) {
       updateCombatEngine(delta, now);
     }
 
@@ -8478,11 +11019,188 @@
     }, 3200);
   }
 
+  // --- 5★ Character Companion (Pet) Management & UI ---
+  async function fetchUserCompanions() {
+    try {
+      const res = await fetch(`/api/companions/${encodeURIComponent(myPlayer.username || 'Misafir')}`);
+      const data = await res.json();
+      if (data && data.ok) {
+        unlockedCompanionsList = data.companions || [];
+        if (data.activeCompanion && !myCompanion) {
+          myCompanion = data.activeCompanion;
+          const found = unlockedCompanionsList.find(c => c.name === myCompanion);
+          myCompanionData = found || { name: myCompanion, element: 'Electro' };
+          spawnCompanionMesh(myCompanion, myCompanionData.element);
+          updateCombatHUD();
+        }
+      }
+    } catch (e) {
+      console.error('[Companion] Yoldaş listesi getirme hatası:', e);
+    }
+  }
+
+  function toggleCompanionModal() {
+    const modal = document.getElementById('modal-companion-selector');
+    if (!modal) return;
+    if (modal.classList.contains('hidden')) {
+      openCompanionModal();
+    } else {
+      closeCompanionModal();
+    }
+  }
+
+  function openCompanionModal() {
+    openModal('modal-companion-selector');
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: 'WORLD_GET_COMPANIONS' }));
+    }
+    fetchUserCompanions().then(() => {
+      renderCompanionModal(currentCompanionFilter);
+    });
+  }
+
+  function closeCompanionModal() {
+    closeModal('modal-companion-selector');
+  }
+
+  let currentCompanionFilter = 'all';
+
+  function renderCompanionModal(filterElem = 'all') {
+    currentCompanionFilter = filterElem;
+    const grid = document.getElementById('companion-cards-grid');
+    const countBadge = document.getElementById('companion-unlocked-count');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    const filtered = (unlockedCompanionsList || []).filter(c => {
+      if (filterElem === 'all') return true;
+      return (c.element || '').toLowerCase() === filterElem.toLowerCase();
+    });
+
+    if (countBadge) {
+      countBadge.textContent = `${unlockedCompanionsList.length} Yoldaş Mevcut`;
+    }
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #94a3b8; padding: 30px;">Bu elementte henüz bir 5★ karakter yoldaşın yok. Dilek çekerek yeni karakterler kazanabilirsin!</div>';
+    } else {
+      filtered.forEach(c => {
+        const card = document.createElement('div');
+        const isEquipped = myCompanion && myCompanion.toLowerCase() === c.name.toLowerCase();
+        const isSelected = selectedCompanionInModal && selectedCompanionInModal.toLowerCase() === c.name.toLowerCase();
+
+        card.className = `companion-card ${isEquipped ? 'equipped' : ''} ${isSelected ? 'selected' : ''}`;
+        card.innerHTML = `
+          ${isEquipped ? '<span class="companion-card-equipped-badge">KUŞANILDI</span>' : ''}
+          <div class="companion-card-img-wrap">
+            <img src="${c.icon || c.splashArt || '/assets/characters/placeholder.png'}" alt="${c.name}" onerror="this.src='/assets/avatars/avatar_1.svg'">
+            <span class="companion-card-elem-badge">${c.element === 'Electro' ? '⚡' : (c.element === 'Geo' ? '🪨' : (c.element === 'Pyro' ? '🔥' : (c.element === 'Hydro' ? '💧' : (c.element === 'Anemo' ? '🍃' : '✨'))))}</span>
+          </div>
+          <div class="companion-card-info">
+            <span class="companion-card-name">${c.name}</span>
+            <span class="companion-card-stars">★★★★★</span>
+          </div>
+        `;
+
+        card.addEventListener('click', () => {
+          selectCompanionInModal(c.name);
+        });
+
+        grid.appendChild(card);
+      });
+    }
+
+    // Default select first or active companion
+    const toSelect = selectedCompanionInModal || myCompanion || (filtered[0] && filtered[0].name) || 'Raiden Shogun';
+    selectCompanionInModal(toSelect);
+  }
+
+  function selectCompanionInModal(charName) {
+    selectedCompanionInModal = charName;
+    const found = (unlockedCompanionsList || []).find(c => c.name.toLowerCase() === charName.toLowerCase());
+
+    const previewImg = document.getElementById('companion-preview-img');
+    const previewName = document.getElementById('companion-preview-name');
+    const previewTitle = document.getElementById('companion-preview-title');
+    const previewElem = document.getElementById('companion-preview-element');
+    const skillEName = document.getElementById('companion-skill-e-name');
+    const skillEDesc = document.getElementById('companion-skill-e-desc');
+    const skillQName = document.getElementById('companion-skill-q-name');
+    const skillQDesc = document.getElementById('companion-skill-q-desc');
+    const btnEquip = document.getElementById('btn-equip-companion');
+
+    const cfg = getCompanionConfig(charName);
+    const element = (found && found.element) || (cfg && cfg.element) || 'Electro';
+
+    if (previewImg) {
+      previewImg.src = (found && (found.splashArt || found.icon)) || '/assets/characters/placeholder.png';
+      previewImg.onerror = () => { previewImg.src = '/assets/avatars/avatar_1.svg'; };
+    }
+    if (previewName) previewName.textContent = charName;
+    if (previewTitle) previewTitle.textContent = (found && found.title) || '5★ Yıldızlı Genshin Karakteri';
+    if (previewElem) previewElem.textContent = `${(cfg && cfg.elementEmoji) || '✨'} ${element}`;
+
+    if (cfg) {
+      if (skillEName) skillEName.textContent = cfg.eName;
+      if (skillEDesc) skillEDesc.textContent = cfg.eDesc;
+      if (skillQName) skillQName.textContent = cfg.qName;
+      if (skillQDesc) skillQDesc.textContent = cfg.qDesc;
+    }
+
+    if (btnEquip) {
+      const isEquipped = myCompanion && myCompanion.toLowerCase() === charName.toLowerCase();
+      if (isEquipped) {
+        btnEquip.textContent = '✅ Zaten Kuşanıldı';
+        btnEquip.style.opacity = '0.65';
+      } else {
+        btnEquip.textContent = '🐾 Yoldaş Olarak Kuşan';
+        btnEquip.style.opacity = '1.0';
+      }
+    }
+
+    // Update active highlight in grid
+    document.querySelectorAll('.companion-card').forEach(card => {
+      const nameEl = card.querySelector('.companion-card-name');
+      if (nameEl && nameEl.textContent.trim().toLowerCase() === charName.toLowerCase()) {
+        card.classList.add('selected');
+      } else {
+        card.classList.remove('selected');
+      }
+    });
+  }
+
+  function equipSelectedCompanion() {
+    if (!selectedCompanionInModal) return;
+    if (myCompanion && myCompanion.toLowerCase() === selectedCompanionInModal.toLowerCase()) {
+      addChatMessage('🐾 Yoldaş', `@${myPlayer.username}, ${myCompanion} zaten senin yoldaşın olarak yanında süzülüyor!`);
+      return;
+    }
+
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({
+        type: 'WORLD_SELECT_COMPANION',
+        companion: selectedCompanionInModal
+      }));
+    }
+  }
+
+  function unequipCompanion() {
+    if (!myCompanion) return;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({
+        type: 'WORLD_SELECT_COMPANION',
+        companion: 'none'
+      }));
+    }
+  }
+
   // --- Bootstrap ---
   window.openRPGDialogue = openRPGDialogue;
   window.closeRPGDialogue = closeRPGDialogue;
   window.openCharacterSheet = openCharacterSheet;
   window.openInspectModal = openInspectModal;
+  window.toggleCompanionModal = toggleCompanionModal;
+  window.openCompanionModal = openCompanionModal;
 
   window.addEventListener('DOMContentLoaded', () => {
     initThree();

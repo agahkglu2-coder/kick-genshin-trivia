@@ -886,12 +886,44 @@ wss.on('connection', (ws) => {
           isGuest: data.isGuest,
           profilePic: data.profilePic
         });
+        const companions5Stars = worldEngine.getUser5Stars(player.username);
         ws.send(JSON.stringify({
           type: 'WORLD_INIT',
           self: player,
           maps: worldEngine.maps,
-          states: worldEngine.getMapStates()
+          states: worldEngine.getMapStates(),
+          unlockedCompanions: companions5Stars,
+          activeCompanion: player.companion || null
         }));
+      } else if (data.type === 'WORLD_SELECT_COMPANION') {
+        const targetComp = data.companionName || data.companion;
+        const res = worldEngine.selectCompanion(socketId, targetComp);
+        ws.send(JSON.stringify({
+          type: 'WORLD_COMPANION_RESULT',
+          success: res.success,
+          companion: res.companion,
+          companionData: res.companionData,
+          message: res.message
+        }));
+        if (res.success) {
+          broadcast({
+            type: 'WORLD_PLAYER_COMPANION_UPDATE',
+            socketId: socketId,
+            username: res.username,
+            companion: res.companion,
+            companionData: res.companionData
+          });
+        }
+      } else if (data.type === 'WORLD_GET_COMPANIONS') {
+        const me = worldEngine.getPlayer(socketId);
+        if (me) {
+          const comps = worldEngine.getUser5Stars(me.username);
+          ws.send(JSON.stringify({
+            type: 'WORLD_COMPANIONS_LIST',
+            companions: comps,
+            activeCompanion: me.companion || null
+          }));
+        }
       } else if (data.type === 'WORLD_MOVE') {
         worldEngine.updateMovement(socketId, data);
       } else if (data.type === 'WORLD_DOOR_INTERACT') {
@@ -942,11 +974,18 @@ wss.on('connection', (ws) => {
         const me = worldEngine.getPlayer(socketId);
         if (me && data.mob) {
           const mobType = data.mob.type || (data.mob.isBoss ? 'ruin_golem' : 'slime_green');
+          const zoneId = data.mob.zoneId || me.mapId || 'battle_zone_1';
           const killRes = rpgEngine.handleKill(me.username, {
             mobType,
             level: data.mob.level || 1,
-            elite: !!data.mob.elite
+            elite: !!data.mob.elite,
+            zoneId
           }, { persist: !me.isGuest });
+
+          if (killRes && killRes.primoGain > 0) {
+            const newTotal = worldEngine.awardPrimogems(socketId, killRes.primoGain);
+            ws.send(JSON.stringify({ type: 'WORLD_PRIMO_UPDATE', primogems: newTotal }));
+          }
 
           ws.send(JSON.stringify({
             type: 'RPG_KILL_RESULT',
@@ -967,6 +1006,27 @@ wss.on('connection', (ws) => {
             });
             worldEngine.addChatBubble(socketId, `⚔️ 👑 ${data.mob.name} yenildi! Nadir ganimetler düştü!`);
           }
+        }
+      } else if (data.type === 'WORLD_SELECT_ZONE') {
+        const zoneRes = worldEngine.switchZone(socketId, data.zoneId);
+        if (zoneRes.success) {
+          ws.send(JSON.stringify({
+            type: 'WORLD_DOOR_RESULT',
+            success: true,
+            newMap: data.zoneId,
+            spawnPos: zoneRes.spawnPos
+          }));
+        }
+      } else if (data.type === 'WORLD_PLAYER_DEFEAT') {
+        const respawned = worldEngine.respawnPlayer(socketId);
+        if (respawned) {
+          ws.send(JSON.stringify({
+            type: 'WORLD_DOOR_RESULT',
+            success: true,
+            newMap: 'town',
+            spawnPos: { x: 0, z: 2 }
+          }));
+          worldEngine.addChatBubble(socketId, `💀 Kasaba meydanında dinleniyor.`);
         }
       } else if (data.type === 'RPG_GET_PROFILE') {
         const me = worldEngine.getPlayer(socketId);
@@ -1493,6 +1553,18 @@ app.get(['/data/banners.json', '/api/gacha/banners-list'], (req, res) => {
 
 app.get(['/data/weapons.json', '/api/gacha/weapons', '/api/weapons'], (req, res) => {
   res.json(gachaEngine.weapons);
+});
+
+// 🐾 5-Star Character Companions Endpoint
+app.get('/api/companions/:username', (req, res) => {
+  const username = req.params.username || '';
+  const list = worldEngine.getUser5Stars(username);
+  const u = gachaEngine ? gachaEngine.getOrCreateUser(username) : null;
+  res.json({
+    username,
+    companions: list,
+    activeCompanion: u ? (u.activeCompanion || null) : null
+  });
 });
 
 app.post('/api/gacha/banner/set', (req, res) => {
