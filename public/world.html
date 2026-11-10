@@ -105,6 +105,17 @@
     </div>
   </footer>
 
+  <!-- 🛡️ Top-Left Party HUD -->
+  <div id="party-hud" class="party-hud hidden">
+    <div class="party-hud-header">
+      <span class="party-hud-title">🛡️ Parti (<span id="party-count-num">1</span>/4)</span>
+      <button type="button" class="btn-party-leave" id="btn-party-leave" title="Partiden Ayrıl">✕</button>
+    </div>
+    <div class="party-hud-members" id="party-hud-members">
+      <!-- Member rows populated by JS -->
+    </div>
+  </div>
+
   <!-- Mobile Touch Virtual Controls -->
   <div id="mobile-controls" class="mobile-controls">
     <div id="joystick-zone" class="joystick-zone">
@@ -822,7 +833,57 @@
             <small>Eşya ve Primogem takası başlat</small>
           </div>
         </button>
+        <button type="button" class="btn-menu-action btn-menu-party" id="btn-menu-party-invite">
+          <span class="btn-menu-icon">🛡️</span>
+          <div class="btn-menu-text">
+            <strong>Partiye Davet Et</strong>
+            <small>4 kişilik zindan partisine çağır</small>
+          </div>
+        </button>
         <button type="button" class="btn-menu-cancel" id="btn-menu-cancel">Vazgeç</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 14B. Party Invite Modal (Anime Style) -->
+  <div id="modal-party-invite" class="party-invite-popup hidden">
+    <div class="party-invite-box">
+      <div class="party-invite-header">
+        <span class="party-invite-icon">🛡️</span>
+        <div class="party-invite-text-wrap">
+          <h4 class="party-invite-title">Parti Daveti!</h4>
+          <p class="party-invite-desc"><strong id="party-invite-sender">@Oyuncu</strong> seni zindan partisine davet ediyor!</p>
+        </div>
+      </div>
+      <div class="party-invite-timer-bar-wrap">
+        <div class="party-invite-timer-bar" id="party-invite-timer-bar"></div>
+      </div>
+      <div class="party-invite-actions">
+        <button type="button" class="btn-party-accept" id="btn-party-accept">✓ Kabul Et</button>
+        <button type="button" class="btn-party-decline" id="btn-party-decline">✕ Reddet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 14C. Dungeon Ready Check Modal -->
+  <div id="modal-dungeon-ready-check" class="ready-check-popup hidden">
+    <div class="ready-check-box">
+      <div class="ready-check-header">
+        <span class="ready-check-icon">⚔️</span>
+        <div class="ready-check-text-wrap">
+          <h4 id="ready-check-dungeon-name">Zindan Seferi Başlatılıyor!</h4>
+          <span class="ready-check-sub" id="ready-check-sub">Lider zindanı başlatıyor. Hazır mısın? (15s)</span>
+        </div>
+      </div>
+      <div class="ready-check-timer-bar-wrap">
+        <div class="ready-check-timer-bar" id="ready-check-timer-bar"></div>
+      </div>
+      <div class="ready-check-members" id="ready-check-members-list">
+        <!-- Ready check members dynamically populated -->
+      </div>
+      <div class="ready-check-actions">
+        <button type="button" class="btn-ready-accept" id="btn-ready-accept">⚔️ Hazırım!</button>
+        <button type="button" class="btn-ready-decline" id="btn-ready-decline">Vazgeç</button>
       </div>
     </div>
   </div>
@@ -1030,8 +1091,8 @@
   <div id="player-defeat-overlay" class="player-defeat-overlay hidden">
     <div class="defeat-card">
       <span class="defeat-icon">💀</span>
-      <h2>YENİLDİN!</h2>
-      <p>Yaratıklar seni alt etti. Kasaba meydanına geri taşınıyorsun...</p>
+      <h2 id="defeat-title">YENİLDİN!</h2>
+      <p id="defeat-text">Yaratıklar seni alt etti. Kasaba meydanına geri taşınıyorsun...</p>
       <div class="defeat-spinner"></div>
     </div>
   </div>

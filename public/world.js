@@ -122,6 +122,15 @@
   let vortexTickTimer = 0;
   let isPlayerDefeated = false;
 
+  // --- 🛡️ 4-Player Party & Dungeon Instance State ---
+  let myParty = null;
+  let isPartyLeader = false;
+  let currentPartyInviteId = null;
+  let currentReadyCheckId = null;
+  let readyCheckTimerInterval = null;
+  let partyInviteTimerInterval = null;
+  let lastSyncedHP = -1;
+
   // --- 5★ Character Companion (Pet) & Ability System State ---
   let myCompanion = null; // e.g. "Raiden Shogun"
   let myCompanionData = null; // meta { name, element, weapon, icon, splashArt, title }
@@ -213,7 +222,16 @@
   };
 
   function isDungeonMap(map) {
-    return map === 'dungeon_tier_1' || map === 'dungeon_tier_2' || map === 'dungeon_tier_3';
+    if (!map || typeof map !== 'string') return false;
+    return map.startsWith('dungeon_tier_') || map.includes('_inst_');
+  }
+
+  function getDungeonBaseTier(map) {
+    if (!map || typeof map !== 'string') return 'dungeon_tier_1';
+    if (map.startsWith('dungeon_tier_3')) return 'dungeon_tier_3';
+    if (map.startsWith('dungeon_tier_2')) return 'dungeon_tier_2';
+    if (map.startsWith('dungeon_tier_1')) return 'dungeon_tier_1';
+    return 'dungeon_tier_1';
   }
 
   function isBattleZone(map) {
@@ -5266,13 +5284,15 @@
         dungeonState.viewerBuffMesh = aura;
       }
     } else if (msg.type === 'DUNGEON_CHEST_CLAIM_RESULT') {
-      if (msg.success) {
+      if (msg.success || msg.ok) {
         playVictoryJingle();
-        myPlayer.primogems = msg.newTotalPrimo;
-        updateUIProfile();
+        if (typeof msg.newTotalPrimo === 'number') {
+          myPlayer.primogems = msg.newTotalPrimo;
+          updateUIProfile();
+        }
         fetchRpgProfile();
         fetchInventory();
-        const chest = activeDungeonChests.find(c => c.id === msg.chestId) || activeDungeonChests.find(c => !c.claimed);
+        const chest = activeDungeonChests.find(c => c.id === msg.chestId) || activeDungeonChests.find(c => !c.claimed) || activeDungeonChests[0];
         if (chest) {
           chest.claimed = true;
           if (chest.lidMesh) {
@@ -5280,18 +5300,224 @@
           }
           createShockwaveRing(chest.x, chest.z, 3.5, chest.isBonusChest ? 0xfacc15 : 0x38bdf8);
         }
-        showDamageNumber({ x: myPlayer.x, y: 2.3, z: myPlayer.z }, `🎁 +${msg.primoGain} 💎 +${msg.wishes} Dilek!`, 'crit');
+        showDamageNumber({ x: myPlayer.x, y: 2.3, z: myPlayer.z }, `🎁 +${msg.primoGain} 💎 +${msg.wishes || 1} Dilek!`, 'crit');
         if (msg.equipment) {
           showRpgDropToast(msg.equipment);
         }
         addChatMessage('🎁 Zindan Sandığı', `✨ ${msg.message || 'Zindan hazinesi açıldı!'}`);
       } else {
-        alert(msg.message || 'Sandık açılamadı.');
+        addChatMessage('⚠️ Zindan Sandığı', msg.message || 'Sandık açılamadı veya zaten açıldı.');
       }
+    } else if (msg.type === 'PARTY_UPDATE') {
+      myParty = msg.party;
+      isPartyLeader = (myParty && myParty.leaderId === (myPlayer.id || socketId));
+      updatePartyHUD(myParty);
+      if (myParty && Array.isArray(myParty.members)) {
+        addChatMessage('🛡️ Parti', `Parti güncellendi (${myParty.members.length}/4 üye).`);
+      }
+    } else if (msg.type === 'PARTY_INVITE_PROMPT') {
+      currentPartyInviteId = msg.inviteId;
+      const modal = document.getElementById('modal-party-invite');
+      if (modal) {
+        document.getElementById('party-invite-sender').textContent = `@${msg.leaderName}`;
+        modal.classList.remove('hidden');
+        const timerBar = document.getElementById('party-invite-timer-bar');
+        if (timerBar) {
+          timerBar.style.width = '100%';
+          const startTime = Date.now();
+          if (partyInviteTimerInterval) clearInterval(partyInviteTimerInterval);
+          partyInviteTimerInterval = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const pct = Math.max(0, 100 - (elapsed / 15000) * 100);
+            timerBar.style.width = pct + '%';
+            if (pct <= 0) {
+              clearInterval(partyInviteTimerInterval);
+              modal.classList.add('hidden');
+              currentPartyInviteId = null;
+            }
+          }, 100);
+        }
+      }
+    } else if (msg.type === 'PARTY_INVITE_SENT') {
+      addChatMessage('🛡️ Parti', `✉️ @${msg.targetName} oyuncusuna parti daveti gönderildi.`);
+    } else if (msg.type === 'PARTY_LEFT') {
+      myParty = null;
+      isPartyLeader = false;
+      updatePartyHUD(null);
+      addChatMessage('🛡️ Parti', 'Partiden ayrıldın.');
+    } else if (msg.type === 'PARTY_KICKED') {
+      myParty = null;
+      isPartyLeader = false;
+      updatePartyHUD(null);
+      addChatMessage('🛡️ Parti', 'Partiden çıkarıldın.');
+    } else if (msg.type === 'PARTY_DECLINED') {
+      addChatMessage('🛡️ Parti', `❌ @${msg.username} parti davetini reddetti.`);
+    } else if (msg.type === 'PARTY_ERROR') {
+      addChatMessage('⚠️ Parti', msg.error || 'İşlem gerçekleştirilemedi.');
+    } else if (msg.type === 'PARTY_MEMBER_HP_UPDATE') {
+      updatePartyMemberHpUI(msg.socketId, msg.hp, msg.maxHp);
+    } else if (msg.type === 'PARTY_READY_CHECK_START') {
+      currentReadyCheckId = msg.readyCheckId;
+      const rcModal = document.getElementById('modal-dungeon-ready-check');
+      if (rcModal) {
+        rcModal.classList.remove('hidden');
+        const nameEl = document.getElementById('ready-check-dungeon-name');
+        const baseTier = getDungeonBaseTier(msg.tierId);
+        if (nameEl) nameEl.textContent = (ZONE_CONFIGS[baseTier] || {}).name || 'Aion 2 Zindanı';
+        const subEl = document.getElementById('ready-check-sub');
+        if (subEl) subEl.textContent = `@${msg.leaderName} zindan seferini başlatıyor. Hazır mısın? (15s)`;
+
+        const memList = document.getElementById('ready-check-members-list');
+        if (memList && myParty && Array.isArray(myParty.members)) {
+          memList.innerHTML = myParty.members.map(m => `
+            <div class="ready-member-row" data-rc-user="${m.id}">
+              <span>${m.id === socketId ? 'Sen' : '@' + m.username}</span>
+              <span class="ready-member-status ${m.isLeader ? 'ready' : 'pending'}">${m.isLeader ? '✓ Hazır (Lider)' : '⏳ Bekliyor...'}</span>
+            </div>
+          `).join('');
+        }
+
+        const tBar = document.getElementById('ready-check-timer-bar');
+        if (tBar) {
+          tBar.style.width = '100%';
+          const startTime = Date.now();
+          if (readyCheckTimerInterval) clearInterval(readyCheckTimerInterval);
+          readyCheckTimerInterval = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const pct = Math.max(0, 100 - (elapsed / 15000) * 100);
+            tBar.style.width = pct + '%';
+            if (pct <= 0) {
+              clearInterval(readyCheckTimerInterval);
+              rcModal.classList.add('hidden');
+            }
+          }, 100);
+        }
+      }
+    } else if (msg.type === 'PARTY_READY_CHECK_UPDATE') {
+      const row = document.querySelector(`.ready-member-row[data-rc-user="${msg.socketId}"]`);
+      if (row) {
+        const stat = row.querySelector('.ready-member-status');
+        if (stat) {
+          if (msg.accept) {
+            stat.className = 'ready-member-status ready';
+            stat.textContent = '✓ Hazır!';
+          } else {
+            stat.className = 'ready-member-status declined';
+            stat.textContent = '✕ Reddetti';
+          }
+        }
+      }
+    } else if (msg.type === 'PARTY_READY_CHECK_CANCELLED') {
+      if (readyCheckTimerInterval) clearInterval(readyCheckTimerInterval);
+      const rcModal = document.getElementById('modal-dungeon-ready-check');
+      if (rcModal) rcModal.classList.add('hidden');
+      addChatMessage('⚠️ Zindan', msg.reason || 'Zindan hazır olma kontrolü iptal edildi.');
+    } else if (msg.type === 'DUNGEON_INSTANCE_INFO') {
+      dungeonState.active = true;
+      dungeonState.tierId = msg.tierId || getDungeonBaseTier(currentMap);
+      dungeonState.stage = msg.stage || 1;
+      dungeonState.stage1Cleared = Boolean(msg.stage1Cleared);
+      dungeonState.stage2Cleared = Boolean(msg.stage2Cleared);
+      dungeonState.bossDefeated = Boolean(msg.bossDefeated);
+      dungeonState.phase2ShieldActive = Boolean(msg.phase2ShieldActive);
+
+      if (dungeonState.stage1Cleared && dungeonState.barrier1Mesh) {
+        worldObjects.remove(dungeonState.barrier1Mesh);
+        dungeonState.barrier1Mesh = null;
+      }
+      if (dungeonState.stage2Cleared && dungeonState.barrier2Mesh) {
+        worldObjects.remove(dungeonState.barrier2Mesh);
+        dungeonState.barrier2Mesh = null;
+      }
+
+      if (Array.isArray(msg.mobs)) {
+        for (const m of activeCombatMobs) {
+          if (m.mesh) worldObjects.remove(m.mesh);
+          if (m.hpBarGroup) worldObjects.remove(m.hpBarGroup);
+        }
+        activeCombatMobs = [];
+        for (const sm of msg.mobs) {
+          if (!sm.isDead) spawnServerSyncedMob(sm);
+        }
+      }
+    } else if (msg.type === 'DUNGEON_MOB_DAMAGED') {
+      if (msg.attackerName !== myPlayer.username) {
+        const mob = activeCombatMobs.find(m => m.id === msg.mobId);
+        if (mob) {
+          mob.hp = msg.newHp;
+          if (mob.hpFillMesh) {
+            const ratio = Math.max(0.001, mob.hp / mob.maxHP);
+            mob.hpFillMesh.scale.x = ratio;
+          }
+          showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `${msg.isCrit ? '💥 CRIT! ' : ''}${msg.dmg} (${msg.attackerName})`, msg.isCrit ? 'crit' : 'normal');
+          mob.flashTimer = 0.14;
+          if (msg.isDead || mob.hp <= 0) {
+            defeatMob(mob);
+          }
+        }
+      }
+    } else if (msg.type === 'DUNGEON_STAGE_CLEAR') {
+      if (msg.stage === 1) {
+        dungeonState.stage1Cleared = true;
+        dungeonState.stage = 2;
+        if (dungeonState.barrier1Mesh) {
+          worldObjects.remove(dungeonState.barrier1Mesh);
+          dungeonState.barrier1Mesh = null;
+        }
+        createShockwaveRing(0, -28.2, 12.0, 0x38bdf8);
+        playVictoryJingle();
+        showDungeonMechanicBanner('✨ AŞAMA 1 TAMAMLANDI! Rüzgar Akıntısına (Windstream) gir ve uç!', 4000);
+      } else if (msg.stage === 2) {
+        dungeonState.stage2Cleared = true;
+        dungeonState.stage = 3;
+        if (dungeonState.barrier2Mesh) {
+          worldObjects.remove(dungeonState.barrier2Mesh);
+          dungeonState.barrier2Mesh = null;
+        }
+        createShockwaveRing(0, 21.8, 12.0, 0xc084fc);
+        playVictoryJingle();
+        showDungeonMechanicBanner('✨ AŞAMA 2 TAMAMLANDI! 2. Rüzgar Akıntısına girerek patron sunağına uç!', 4000);
+      }
+    } else if (msg.type === 'DUNGEON_BOSS_PHASE') {
+      if (msg.phase === 2) {
+        dungeonState.phase2Triggered = true;
+        dungeonState.phase2ShieldActive = true;
+        if (Array.isArray(msg.newMobs)) {
+          for (const m of msg.newMobs) {
+            if (!activeCombatMobs.find(c => c.id === m.id)) {
+              spawnServerSyncedMob(m);
+            }
+          }
+        }
+        showDungeonMechanicBanner('🔮 AETHER KALKANI ETKİNLEŞTİ! 3 Rezonans Kristalini Yok Et!', 4500);
+      } else if (msg.phase === 3) {
+        dungeonState.phase3Triggered = true;
+        dungeonState.phase3SafeZoneActive = true;
+        showDungeonMechanicBanner('⚠️ UÇURUM KIYAMETİ! Yeşil Güvenli Alana Koş! (4.5s)', 4500);
+      }
+    } else if (msg.type === 'DUNGEON_SHIELD_DOWN') {
+      dungeonState.phase2ShieldActive = false;
+      if (dungeonState.bossShieldMesh) {
+        worldObjects.remove(dungeonState.bossShieldMesh);
+        dungeonState.bossShieldMesh = null;
+      }
+      const b = activeCombatMobs.find(m => m.isBoss && !m.isDead);
+      if (b) {
+        b.staggeredUntil = performance.now() + 6000;
+        createShockwaveRing(b.x, b.z, 6.0, 0x38bdf8);
+      }
+      showDungeonMechanicBanner('💥 REZONANS KALKANI PARÇALANDI! Patron 6 saniye sersemletildi (+%50 Hasar)!', 4000);
+      playVictoryJingle();
+    } else if (msg.type === 'DUNGEON_VICTORY') {
+      dungeonState.score = msg.score || dungeonState.score;
+      dungeonState.rank = msg.rank || dungeonState.rank;
+      dungeonState.elapsedSec = msg.elapsed || dungeonState.elapsedSec;
+      dungeonState.bossDefeated = true;
+      handleDungeonVictory();
     } else if (msg.type === 'WORLD_DUNGEON_ANNOUNCE') {
       if (msg.username !== myPlayer.username) {
         const chestType = msg.isBonusChest ? '🌟 Efsanevi S-Rank Abyss Sandığını' : '🎁 Aion Zindan Hazinesini';
-        addChatMessage('👑 ZİNDAN ZAFERİ', `@${msg.username} ${msg.tierId} zindanını [${msg.rank}-Rank] dereceyle tamamladı ve ${chestType} açtı!`);
+        addChatMessage('👑 ZİNDAN ZAFERİ', `@${msg.username} ${msg.zoneName || 'Aion'} zindanını [${msg.rank}-Rank] dereceyle tamamladı ve ${chestType} açtı!`);
       }
     }
   }
@@ -7206,6 +7432,79 @@
     }
   }
 
+  // --- 🛡️ Party HUD Rendering & Realtime HP Bar Sync ---
+  function updatePartyHUD(party) {
+    const hud = document.getElementById('party-hud');
+    if (!hud) return;
+
+    if (!party || !Array.isArray(party.members) || party.members.length === 0) {
+      hud.classList.add('hidden');
+      return;
+    }
+
+    hud.classList.remove('hidden');
+    const countEl = document.getElementById('party-count-num');
+    if (countEl) countEl.textContent = party.members.length;
+
+    const listEl = document.getElementById('party-hud-members');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    for (const m of party.members) {
+      const isLeader = m.isLeader || m.id === party.leaderId;
+      const isMe = m.id === (myPlayer.id || socketId);
+      const curHp = typeof m.hp === 'number' ? m.hp : 100;
+      const maxHp = typeof m.maxHp === 'number' ? m.maxHp : 100;
+      const hpPct = Math.min(100, Math.max(0, Math.round((curHp / maxHp) * 100)));
+
+      const row = document.createElement('div');
+      row.className = `party-member-row ${isLeader ? 'is-leader' : ''}`;
+      row.setAttribute('data-member-id', m.id);
+
+      row.innerHTML = `
+        <div class="party-member-avatar-box">
+          ${isLeader ? '<span class="party-member-crown">👑</span>' : ''}
+          <canvas width="28" height="28" class="party-av-canvas"></canvas>
+        </div>
+        <div class="party-member-info">
+          <div class="party-member-name-row">
+            <span class="party-member-name" title="${m.username}">${isMe ? 'Sen' : '@' + m.username}</span>
+            <span class="party-member-gs">${m.gearScore ? m.gearScore + ' GS' : '0 GS'}</span>
+          </div>
+          <div class="party-member-hp-bar">
+            <div class="party-member-hp-fill ${hpPct < 25 ? 'danger' : ''}" style="width: ${hpPct}%;"></div>
+          </div>
+        </div>
+      `;
+      listEl.appendChild(row);
+
+      const cvs = row.querySelector('.party-av-canvas');
+      if (cvs && typeof drawAvatarPreviewPortrait === 'function') {
+        const avIdx = Math.abs(parseInt(m.avatarIndex, 10) || 0) % AVATAR_PRESETS.length;
+        drawAvatarPreviewPortrait(cvs, AVATAR_PRESETS[avIdx]);
+      }
+    }
+  }
+
+  function updatePartyMemberHpUI(memberId, hp, maxHp) {
+    if (!myParty || !Array.isArray(myParty.members)) return;
+    const mem = myParty.members.find(m => m.id === memberId);
+    if (mem) {
+      mem.hp = hp;
+      mem.maxHp = maxHp;
+    }
+    const row = document.querySelector(`.party-member-row[data-member-id="${memberId}"]`);
+    if (row) {
+      const fill = row.querySelector('.party-member-hp-fill');
+      if (fill) {
+        const pct = Math.min(100, Math.max(0, Math.round((hp / (maxHp || 100)) * 100)));
+        fill.style.width = pct + '%';
+        if (pct < 25) fill.classList.add('danger');
+        else fill.classList.remove('danger');
+      }
+    }
+  }
+
   // --- 12. UI Updates & Modal Helpers ---
   function updateUIProfile() {
     document.getElementById('ui-username').textContent = myPlayer.username;
@@ -8441,7 +8740,12 @@
 
     const hpScale = customScale && customScale.hpMult ? customScale.hpMult : 1.0;
     const dmgScale = customScale && customScale.dmgMult ? customScale.dmgMult : 1.0;
-    const scaledHp = Math.max(10, Math.round(cfg.hp * hpScale));
+    const scaledHp = (customScale && typeof customScale.hp === 'number')
+      ? customScale.hp
+      : Math.max(10, Math.round(cfg.hp * hpScale));
+    const scaledMaxHp = (customScale && typeof customScale.maxHP === 'number')
+      ? customScale.maxHP
+      : scaledHp;
     const scaledDmg = Math.round(cfg.dmg * dmgScale);
 
     const maxPoise = cfg.isBoss ? 120 : (cfg.isElite ? 65 : (cfg.isCrystal ? 9999 : 30));
@@ -8450,11 +8754,11 @@
       : (type === 'slime_electro' ? { element: 'Electro', expiresAt: Infinity } : null);
 
     const mob = {
-      id: 'mob_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      id: (customScale && customScale.customId) ? customScale.customId : ('mob_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)),
       type: type,
       name: (customScale && customScale.customName) || cfg.name,
       hp: scaledHp,
-      maxHP: scaledHp,
+      maxHP: scaledMaxHp,
       poise: maxPoise,
       maxPoise: maxPoise,
       staggeredUntil: 0,
@@ -8487,6 +8791,15 @@
     createMobHPBar(mob);
     activeCombatMobs.push(mob);
     return mob;
+  }
+
+  function spawnServerSyncedMob(sm) {
+    return spawnCombatMob(sm.type, sm.x, sm.z, {
+      customId: sm.id,
+      hp: sm.hp,
+      maxHP: sm.maxHP || sm.hp,
+      dungeonStage: sm.stage
+    });
   }
 
   function spawnInitialMobs(zoneId = currentMap) {
@@ -10959,6 +11272,16 @@
         }
 
         mob.hp = Math.max(0, mob.hp - finalDmg);
+        if (isDungeonMap(currentMap) && socket && socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({
+            type: 'DUNGEON_MOB_HIT',
+            instanceId: currentMap,
+            mobId: mob.id,
+            dmg: finalDmg,
+            isCrit: Boolean(isCrit),
+            element: step === 4 ? playerElem : null
+          }));
+        }
         if (mob.hpFillMesh) {
           const ratio = Math.max(0.001, mob.hp / mob.maxHP);
           mob.hpFillMesh.scale.x = ratio;
@@ -11329,6 +11652,18 @@
     const energyFill = document.getElementById('combat-energy-fill');
     const energyText = document.getElementById('combat-energy-text');
     const slotBurst = document.getElementById('slot-burst');
+
+    if (myParty && socket && socket.readyState === WebSocket.OPEN) {
+      if (typeof lastSyncedHP === 'undefined' || lastSyncedHP !== playerHP) {
+        lastSyncedHP = playerHP;
+        socket.send(JSON.stringify({
+          type: 'PARTY_UPDATE_HP',
+          hp: playerHP,
+          maxHp: playerMaxHP
+        }));
+      }
+      updatePartyMemberHpUI(myPlayer.id || socketId, playerHP, playerMaxHP);
+    }
 
     if (hpFill) {
       const hpPct = Math.max(0, Math.min(100, (playerHP / playerMaxHP) * 100));
@@ -12397,9 +12732,42 @@
     playBeep(130, 'sawtooth', 0.45);
 
     const defeatOverlay = document.getElementById('player-defeat-overlay');
-    if (defeatOverlay) {
-      defeatOverlay.classList.remove('hidden');
+    const defeatTitle = document.getElementById('defeat-title');
+    const defeatText = document.getElementById('defeat-text');
+
+    if (isDungeonMap(currentMap)) {
+      if (defeatTitle) defeatTitle.textContent = '💀 CANIN TÜKENDİ!';
+      if (defeatText) defeatText.textContent = '5 saniye içinde aşama kapısında doğacaksın... (-200 Puan)';
+      if (defeatOverlay) defeatOverlay.classList.remove('hidden');
+
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'WORLD_PLAYER_DEFEAT' }));
+      }
+
+      setTimeout(() => {
+        if (defeatOverlay) defeatOverlay.classList.add('hidden');
+        isPlayerDefeated = false;
+        const stats = getPlayerEffectiveStats();
+        playerMaxHP = stats.hp;
+        playerHP = Math.round(playerMaxHP * 0.5);
+        playerStamina = playerMaxStamina;
+        updateCombatHUD();
+
+        let cpZ = -60;
+        if (dungeonState.stage === 2) cpZ = -6;
+        else if (dungeonState.stage === 3) cpZ = 42;
+        myPlayer.x = 0;
+        myPlayer.z = cpZ;
+        if (myMesh) myMesh.position.set(0, 0, cpZ);
+
+        addChatMessage('💀 Zindan', 'Aşama kapısında %50 can ile yeniden doğdun! Savaş devam ediyor.');
+      }, 5000);
+      return;
     }
+
+    if (defeatTitle) defeatTitle.textContent = 'YENİLDİN!';
+    if (defeatText) defeatText.textContent = 'Yaratıklar seni alt etti. Kasaba meydanına geri taşınıyorsun...';
+    if (defeatOverlay) defeatOverlay.classList.remove('hidden');
 
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify({ type: 'WORLD_PLAYER_DEFEAT' }));
@@ -13689,7 +14057,7 @@
     exitPortal.rotation.y = Math.PI;
     worldObjects.add(exitPortal);
 
-    addChatMessage('👑 ZİNDAN TAMAMLANDI', `🎉 ${ZONE_CONFIGS[dungeonState.tierId].name} zindanı [${finalRank}-Rank] ile tamamlandı! Meydandaki sandıkları açabilirsin!`);
+    addChatMessage('👑 ZİNDAN TAMAMLANDI', `🎉 ${(ZONE_CONFIGS[getDungeonBaseTier(dungeonState.tierId)] || ZONE_CONFIGS.dungeon_tier_1).name} zindanı [${finalRank}-Rank] ile tamamlandı! Meydandaki sandıkları açabilirsin!`);
   }
 
   function spawnDungeonTreasureChests() {
@@ -13708,14 +14076,14 @@
 
   function claimDungeonChestFromWorld(chest) {
     if (!chest || chest.claimed) return;
-    chest.claimed = true;
 
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify({
         type: 'WORLD_DUNGEON_CHEST_CLAIM',
-        tierId: chest.tierId,
-        rank: chest.rank,
-        isBonusChest: chest.isBonusChest,
+        instanceId: currentMap,
+        tierId: getDungeonBaseTier(dungeonState.tierId),
+        rank: dungeonState.rank,
+        isBonusChest: Boolean(chest.isBonusChest),
         chestId: chest.id
       }));
     } else {
@@ -13725,20 +14093,23 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: myPlayer.username,
-          tierId: chest.tierId,
-          rank: chest.rank,
-          isBonusChest: chest.isBonusChest
+          tierId: getDungeonBaseTier(dungeonState.tierId),
+          rank: dungeonState.rank,
+          isBonusChest: Boolean(chest.isBonusChest)
         })
       }).then(r => r.json()).then(data => {
-        if (data && data.success) {
+        if (data && (data.success || data.ok)) {
+          chest.claimed = true;
           playVictoryJingle();
-          myPlayer.primogems = data.newTotalPrimo;
-          updateUIProfile();
+          if (typeof data.newTotalPrimo === 'number') {
+            myPlayer.primogems = data.newTotalPrimo;
+            updateUIProfile();
+          }
           fetchRpgProfile();
           fetchInventory();
           if (chest.lidMesh) chest.lidMesh.rotation.x = -Math.PI / 2.6;
           createShockwaveRing(chest.x, chest.z, 3.5, chest.isBonusChest ? 0xfacc15 : 0x38bdf8);
-          showDamageNumber({ x: myPlayer.x, y: 2.3, z: myPlayer.z }, `🎁 +${data.primoGain} 💎 +${data.wishes} Dilek!`, 'crit');
+          showDamageNumber({ x: myPlayer.x, y: 2.3, z: myPlayer.z }, `🎁 +${data.primoGain} 💎 +${data.wishes || 1} Dilek!`, 'crit');
           if (data.equipment) showRpgDropToast(data.equipment);
           addChatMessage('🎁 Zindan Sandığı', `✨ ${data.message || 'Zindan hazinesi açıldı!'}`);
         } else {
@@ -13750,7 +14121,8 @@
 
   function buildAionDungeonMap(tierId = 'dungeon_tier_1') {
     currentMap = tierId;
-    const zone = ZONE_CONFIGS[tierId] || ZONE_CONFIGS.dungeon_tier_1;
+    const baseTier = getDungeonBaseTier(tierId);
+    const zone = ZONE_CONFIGS[baseTier] || ZONE_CONFIGS.dungeon_tier_1;
 
     while (worldObjects.children.length > 0) {
       worldObjects.remove(worldObjects.children[0]);
@@ -13926,27 +14298,31 @@
     }
 
     // ---------------------------------------------------------
-    // SPAWN DUNGEON MOBS BY STAGE
+    // SPAWN DUNGEON MOBS (Synchronized via Server Instance)
     // ---------------------------------------------------------
-    const diff = zone.tier || 1;
-    const hpMult = diff === 3 ? 1.45 : (diff === 2 ? 1.2 : 1.0);
-    const dmgMult = diff === 3 ? 1.35 : (diff === 2 ? 1.15 : 1.0);
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: 'DUNGEON_REQUEST_MOBS', instanceId: tierId }));
+    } else {
+      const diff = zone.tier || 1;
+      const hpMult = diff === 3 ? 1.45 : (diff === 2 ? 1.2 : 1.0);
+      const dmgMult = diff === 3 ? 1.35 : (diff === 2 ? 1.15 : 1.0);
 
-    // STAGE 1: 2 Aether Crystals (Must Destroy to clear stage) + 4 Guardians
-    spawnCombatMob('aether_crystal', -8, -44, { hpMult, dmgMult, dungeonStage: 1 });
-    spawnCombatMob('aether_crystal', 8, -44, { hpMult, dmgMult, dungeonStage: 1 });
-    spawnCombatMob('aether_guardian', -12, -50, { hpMult, dmgMult, dungeonStage: 1 });
-    spawnCombatMob('aether_guardian', 12, -50, { hpMult, dmgMult, dungeonStage: 1 });
-    spawnCombatMob('aether_guardian', -6, -36, { hpMult, dmgMult, dungeonStage: 1 });
-    spawnCombatMob('aether_guardian', 6, -36, { hpMult, dmgMult, dungeonStage: 1 });
+      // STAGE 1: 2 Aether Crystals + 4 Guardians
+      spawnCombatMob('aether_crystal', -8, -44, { hpMult, dmgMult, dungeonStage: 1 });
+      spawnCombatMob('aether_crystal', 8, -44, { hpMult, dmgMult, dungeonStage: 1 });
+      spawnCombatMob('aether_guardian', -12, -50, { hpMult, dmgMult, dungeonStage: 1 });
+      spawnCombatMob('aether_guardian', 12, -50, { hpMult, dmgMult, dungeonStage: 1 });
+      spawnCombatMob('aether_guardian', -6, -36, { hpMult, dmgMult, dungeonStage: 1 });
+      spawnCombatMob('aether_guardian', 6, -36, { hpMult, dmgMult, dungeonStage: 1 });
 
-    // STAGE 2: 1 Archon Mini-Boss + 2 Void Mages
-    spawnCombatMob('abyss_archon_mini', 0, 8, { hpMult, dmgMult, dungeonStage: 2 });
-    spawnCombatMob('abyss_mage', -10, 10, { hpMult, dmgMult, dungeonStage: 2 });
-    spawnCombatMob('abyss_mage', 10, 10, { hpMult, dmgMult, dungeonStage: 2 });
+      // STAGE 2: 1 Archon Mini-Boss + 2 Void Mages
+      spawnCombatMob('abyss_archon_mini', 0, 8, { hpMult, dmgMult, dungeonStage: 2 });
+      spawnCombatMob('abyss_mage', -10, 10, { hpMult, dmgMult, dungeonStage: 2 });
+      spawnCombatMob('abyss_mage', 10, 10, { hpMult, dmgMult, dungeonStage: 2 });
 
-    // STAGE 3: Final Boss Tahabata Lord
-    spawnCombatMob('tahabata_lord', 0, 58, { hpMult, dmgMult, dungeonStage: 3 });
+      // STAGE 3: Final Boss Tahabata Lord
+      spawnCombatMob('tahabata_lord', 0, 58, { hpMult, dmgMult, dungeonStage: 3 });
+    }
 
     // Check Player GS
     const playerGS = getMyGearScore();
@@ -14143,6 +14519,42 @@
       if (!text) return;
 
       input.value = '';
+
+      // Intercept Party Chat Commands
+      if (text.startsWith('/p ') || text.startsWith('/party ')) {
+        const parts = text.split(/\s+/);
+        const cmd = parts[1] ? parts[1].toLowerCase() : '';
+        const target = parts[2] ? parts[2].replace(/^@/, '') : '';
+
+        if (cmd === 'davet' || cmd === 'invite') {
+          if (!target) {
+            addChatMessage('🛡️ Parti', 'Kullanım: /p davet @kullanici');
+          } else if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'PARTY_INVITE', targetUsername: target }));
+          }
+          return;
+        } else if (cmd === 'cik' || cmd === 'leave' || cmd === 'ayril') {
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'PARTY_LEAVE' }));
+          }
+          return;
+        } else if (cmd === 'at' || cmd === 'kick') {
+          if (!target) {
+            addChatMessage('🛡️ Parti', 'Kullanım: /p at @kullanici');
+          } else {
+            const mem = myParty && Array.isArray(myParty.members)
+              ? myParty.members.find(m => m.username.toLowerCase() === target.toLowerCase())
+              : null;
+            if (mem && socket && socket.readyState === WebSocket.OPEN) {
+              socket.send(JSON.stringify({ type: 'PARTY_KICK', targetSocketId: mem.id }));
+            } else {
+              addChatMessage('🛡️ Parti', `@${target} partinde bulunamadı.`);
+            }
+          }
+          return;
+        }
+      }
+
       if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({ type: 'WORLD_CHAT', text }));
       }
@@ -14269,6 +14681,66 @@
       const targetUser = activeInteractPlayer ? activeInteractPlayer.username : null;
       closePlayerInteractMenu();
       if (targetUser) sendTradeRequest(targetUser);
+    };
+
+    const btnMenuParty = document.getElementById('btn-menu-party-invite');
+    if (btnMenuParty) btnMenuParty.onclick = () => {
+      const targetUser = activeInteractPlayer ? activeInteractPlayer.username : null;
+      closePlayerInteractMenu();
+      if (targetUser && socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'PARTY_INVITE', targetUsername: targetUser }));
+      }
+    };
+
+    const btnPartyLeave = document.getElementById('btn-party-leave');
+    if (btnPartyLeave) btnPartyLeave.onclick = () => {
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'PARTY_LEAVE' }));
+      }
+    };
+
+    // Party Invite Modal Controls
+    const btnPartyAccept = document.getElementById('btn-party-accept');
+    if (btnPartyAccept) btnPartyAccept.onclick = () => {
+      if (partyInviteTimerInterval) clearInterval(partyInviteTimerInterval);
+      const modal = document.getElementById('modal-party-invite');
+      if (modal) modal.classList.add('hidden');
+      if (currentPartyInviteId && socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'PARTY_ACCEPT', inviteId: currentPartyInviteId }));
+      }
+      currentPartyInviteId = null;
+    };
+
+    const btnPartyDecline = document.getElementById('btn-party-decline');
+    if (btnPartyDecline) btnPartyDecline.onclick = () => {
+      if (partyInviteTimerInterval) clearInterval(partyInviteTimerInterval);
+      const modal = document.getElementById('modal-party-invite');
+      if (modal) modal.classList.add('hidden');
+      if (currentPartyInviteId && socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'PARTY_DECLINE', inviteId: currentPartyInviteId }));
+      }
+      currentPartyInviteId = null;
+    };
+
+    // Dungeon Ready Check Controls
+    const btnReadyAccept = document.getElementById('btn-ready-accept');
+    if (btnReadyAccept) btnReadyAccept.onclick = () => {
+      if (currentReadyCheckId && socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'PARTY_READY_CHECK_VOTE', readyCheckId: currentReadyCheckId, accept: true }));
+      }
+      btnReadyAccept.disabled = true;
+      btnReadyAccept.textContent = '✓ Kabul Edildi';
+    };
+
+    const btnReadyDecline = document.getElementById('btn-ready-decline');
+    if (btnReadyDecline) btnReadyDecline.onclick = () => {
+      if (readyCheckTimerInterval) clearInterval(readyCheckTimerInterval);
+      const rcModal = document.getElementById('modal-dungeon-ready-check');
+      if (rcModal) rcModal.classList.add('hidden');
+      if (currentReadyCheckId && socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'PARTY_READY_CHECK_VOTE', readyCheckId: currentReadyCheckId, accept: false }));
+      }
+      currentReadyCheckId = null;
     };
 
     const btnMenuCancel = document.getElementById('btn-menu-cancel');
@@ -14487,6 +14959,13 @@
       btn.onclick = () => {
         const zoneId = btn.getAttribute('data-zone-id');
         if (!zoneId) return;
+
+        const isDungeon = zoneId.startsWith('dungeon_tier_');
+        if (isDungeon && myParty && myParty.leaderId !== (myPlayer.id || socketId)) {
+          addChatMessage('⚠️ Zindan', 'Yalnızca parti lideri zindan seferini başlatabilir!');
+          return;
+        }
+
         closeModal('modal-portal-zones');
         playBeep(520, 'triangle', 0.15);
         if (socket && socket.readyState === WebSocket.OPEN) {

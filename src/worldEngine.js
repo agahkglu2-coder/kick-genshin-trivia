@@ -1,8 +1,199 @@
 const EventEmitter = require('events');
 
 /**
+ * DungeonInstance - Server-Authoritative Aion 2 Instance Dungeon Session
+ * Manages synchronized mobs, HP, Boss phases, and stage barriers for a party or solo player.
+ */
+class DungeonInstance {
+  constructor(instanceId, tierId, partyId = null) {
+    this.id = instanceId;
+    this.tierId = tierId;
+    this.partyId = partyId;
+    this.stage = 1;
+    this.stage1Cleared = false;
+    this.stage2Cleared = false;
+    this.bossDefeated = false;
+    this.phase2Triggered = false;
+    this.phase2ShieldActive = false;
+    this.phase3Triggered = false;
+    this.phase3SafeZoneActive = false;
+    this.score = 0;
+    this.startTime = Date.now();
+    this.mobs = new Map();
+    this.chestsClaimed = new Map(); // chestId -> Set(username)
+    this.spawnInitialMobs();
+  }
+
+  spawnInitialMobs() {
+    const isTier3 = this.tierId === 'dungeon_tier_3';
+    const isTier2 = this.tierId === 'dungeon_tier_2';
+    const hpMult = isTier3 ? 1.45 : (isTier2 ? 1.2 : 1.0);
+    const dmgMult = isTier3 ? 1.35 : (isTier2 ? 1.15 : 1.0);
+
+    // STAGE 1: 2 Aether Crystals (210 HP) + 4 Guardians (240 HP)
+    this.addMob({ id: 'm_c1', type: 'aether_crystal', x: -8, z: -44, hp: Math.round(210 * hpMult), maxHP: Math.round(210 * hpMult), stage: 1, isCrystal: true });
+    this.addMob({ id: 'm_c2', type: 'aether_crystal', x: 8, z: -44, hp: Math.round(210 * hpMult), maxHP: Math.round(210 * hpMult), stage: 1, isCrystal: true });
+    this.addMob({ id: 'm_g1', type: 'aether_guardian', x: -12, z: -50, hp: Math.round(240 * hpMult), maxHP: Math.round(240 * hpMult), stage: 1 });
+    this.addMob({ id: 'm_g2', type: 'aether_guardian', x: 12, z: -50, hp: Math.round(240 * hpMult), maxHP: Math.round(240 * hpMult), stage: 1 });
+    this.addMob({ id: 'm_g3', type: 'aether_guardian', x: -6, z: -36, hp: Math.round(240 * hpMult), maxHP: Math.round(240 * hpMult), stage: 1 });
+    this.addMob({ id: 'm_g4', type: 'aether_guardian', x: 6, z: -36, hp: Math.round(240 * hpMult), maxHP: Math.round(240 * hpMult), stage: 1 });
+
+    // STAGE 2: 1 Archon Mini-Boss (1050 HP) + 2 Void Mages (480 HP)
+    this.addMob({ id: 'm_archon', type: 'abyss_archon_mini', x: 0, z: 8, hp: Math.round(1050 * hpMult), maxHP: Math.round(1050 * hpMult), stage: 2, isElite: true });
+    this.addMob({ id: 'm_mage1', type: 'abyss_mage', x: -10, z: 10, hp: Math.round(480 * hpMult), maxHP: Math.round(480 * hpMult), stage: 2, isRanged: true });
+    this.addMob({ id: 'm_mage2', type: 'abyss_mage', x: 10, z: 10, hp: Math.round(480 * hpMult), maxHP: Math.round(480 * hpMult), stage: 2, isRanged: true });
+
+    // STAGE 3: Tahabata Final Boss (3100 HP)
+    this.addMob({ id: 'm_boss', type: 'tahabata_lord', x: 0, z: 58, hp: Math.round(3100 * hpMult), maxHP: Math.round(3100 * hpMult), stage: 3, isBoss: true });
+  }
+
+  addMob(mobData) {
+    this.mobs.set(mobData.id, {
+      ...mobData,
+      isDead: false,
+      elementalAura: null
+    });
+  }
+
+  getMobList() {
+    return Array.from(this.mobs.values()).map(m => ({
+      id: m.id,
+      type: m.type,
+      x: m.x,
+      z: m.z,
+      hp: m.hp,
+      maxHP: m.maxHP,
+      stage: m.stage,
+      isCrystal: !!m.isCrystal,
+      isResonanceCrystal: !!m.isResonanceCrystal,
+      isElite: !!m.isElite,
+      isBoss: !!m.isBoss,
+      isRanged: !!m.isRanged,
+      isDead: m.isDead
+    }));
+  }
+
+  applyHit(mobId, dmg, attackerName, isCrit = false, element = null) {
+    const mob = this.mobs.get(mobId);
+    if (!mob || mob.isDead) return null;
+
+    let finalDmg = Math.max(1, parseInt(dmg, 10) || 1);
+    // Boss Phase 2 Aether Shield (-90% damage)
+    if (mob.isBoss && this.phase2ShieldActive) {
+      finalDmg = Math.max(1, Math.round(finalDmg * 0.1));
+    }
+
+    mob.hp = Math.max(0, mob.hp - finalDmg);
+    if (mob.hp <= 0) {
+      mob.isDead = true;
+    }
+
+    const events = [];
+
+    // Boss Phase 2 Check (60% HP)
+    if (mob.isBoss && !this.phase2Triggered && (mob.hp / mob.maxHP) <= 0.60) {
+      this.phase2Triggered = true;
+      this.phase2ShieldActive = true;
+      const isTier3 = this.tierId === 'dungeon_tier_3';
+      const isTier2 = this.tierId === 'dungeon_tier_2';
+      const hpMult = isTier3 ? 1.45 : (isTier2 ? 1.2 : 1.0);
+      const resCrystals = [
+        { id: 'm_res_1', type: 'resonance_crystal', x: -10, z: 53, hp: Math.round(180 * hpMult), maxHP: Math.round(180 * hpMult), stage: 3, isResonanceCrystal: true },
+        { id: 'm_res_2', type: 'resonance_crystal', x: 10, z: 53, hp: Math.round(180 * hpMult), maxHP: Math.round(180 * hpMult), stage: 3, isResonanceCrystal: true },
+        { id: 'm_res_3', type: 'resonance_crystal', x: 0, z: 66, hp: Math.round(180 * hpMult), maxHP: Math.round(180 * hpMult), stage: 3, isResonanceCrystal: true }
+      ];
+      for (const rc of resCrystals) {
+        this.addMob(rc);
+      }
+      events.push({ type: 'BOSS_PHASE_2', newMobs: resCrystals });
+    }
+
+    // Resonance Crystal Shatter Check
+    if (mob.isResonanceCrystal && mob.isDead && this.phase2ShieldActive) {
+      const remaining = Array.from(this.mobs.values()).filter(m => m.isResonanceCrystal && !m.isDead);
+      if (remaining.length === 0) {
+        this.phase2ShieldActive = false;
+        this.score += 600;
+        events.push({ type: 'SHIELD_DOWN' });
+      }
+    }
+
+    // Boss Phase 3 Check (25% HP)
+    if (mob.isBoss && !this.phase3Triggered && (mob.hp / mob.maxHP) <= 0.25) {
+      this.phase3Triggered = true;
+      this.phase3SafeZoneActive = true;
+      events.push({ type: 'BOSS_PHASE_3', safeZone: { x: 0, z: 58, radius: 4.5 } });
+    }
+
+    // Score on kill
+    if (mob.isDead) {
+      if (mob.isCrystal) this.score += 150;
+      else if (mob.isResonanceCrystal) this.score += 200;
+      else if (mob.isElite) this.score += 400;
+      else if (mob.isBoss) this.score += 1000;
+      else this.score += 80;
+    }
+
+    // Stage 1 Clear Check (Crystals & Guardians)
+    if (!this.stage1Cleared) {
+      const s1Left = Array.from(this.mobs.values()).filter(m => m.stage === 1 && !m.isDead);
+      if (s1Left.length === 0) {
+        this.stage1Cleared = true;
+        this.stage = 2;
+        events.push({ type: 'STAGE_CLEAR', stage: 1 });
+      }
+    }
+
+    // Stage 2 Clear Check (Archon Mini-Boss)
+    if (this.stage1Cleared && !this.stage2Cleared) {
+      const s2Left = Array.from(this.mobs.values()).filter(m => m.stage === 2 && m.type === 'abyss_archon_mini' && !m.isDead);
+      if (s2Left.length === 0) {
+        this.stage2Cleared = true;
+        this.stage = 3;
+        events.push({ type: 'STAGE_CLEAR', stage: 2 });
+      }
+    }
+
+    // Boss Defeat Check
+    if (mob.isBoss && mob.isDead && !this.bossDefeated) {
+      this.bossDefeated = true;
+      const elapsed = Math.round((Date.now() - this.startTime) / 1000);
+      let rank = 'C';
+      if (this.score >= 2400 && elapsed <= 160) rank = 'S';
+      else if (this.score >= 1800 && elapsed <= 240) rank = 'A';
+      else if (this.score >= 1200 && elapsed <= 320) rank = 'B';
+      events.push({ type: 'VICTORY', rank, elapsed, score: this.score });
+    }
+
+    return {
+      mob,
+      dmg: finalDmg,
+      newHp: mob.hp,
+      maxHp: mob.maxHP,
+      isDead: mob.isDead,
+      isCrit,
+      element,
+      attackerName,
+      events
+    };
+  }
+
+  claimChest(chestId, username) {
+    if (!this.chestsClaimed.has(chestId)) {
+      this.chestsClaimed.set(chestId, new Set());
+    }
+    const claimedUsers = this.chestsClaimed.get(chestId);
+    if (claimedUsers.has(username.toLowerCase())) {
+      return { ok: false, alreadyClaimed: true };
+    }
+    claimedUsers.add(username.toLowerCase());
+    return { ok: true, chestId, username };
+  }
+}
+
+/**
  * WorldEngine - 3D Pixel MMO Multi-Zone World Coordinator
- * Manages player positions, building transitions, chat bubbles, and Kick auth PINs.
+ * Manages player positions, building transitions, chat bubbles, parties and Kick auth PINs.
  */
 class WorldEngine extends EventEmitter {
   constructor(options = {}) {
@@ -14,6 +205,13 @@ class WorldEngine extends EventEmitter {
     this.players = new Map(); // socketId -> Player
     this.pendingPins = new Map(); // pinCode -> { socketId, username, expiresAt }
     this.userSockets = new Map(); // username.toLowerCase() -> socketId
+
+    // 🛡️ Party & Instance Management
+    this.parties = new Map(); // partyId -> { id, leaderId, members: [socketId], createdAt }
+    this.playerParties = new Map(); // socketId -> partyId
+    this.pendingPartyInvites = new Map(); // inviteId -> { id, partyId, leaderId, leaderName, targetSocketId, targetName, expiresAt }
+    this.pendingReadyChecks = new Map(); // readyCheckId -> { id, partyId, tierId, votes: Map(socketId -> bool), expiresAt, timer }
+    this.instances = new Map(); // instanceId -> DungeonInstance
 
     // Map definition & building entrance definitions
     this.maps = {
@@ -215,6 +413,9 @@ class WorldEngine extends EventEmitter {
     const player = this.players.get(socketId);
     if (!player) return null;
 
+    // Remove from party if present
+    const partyRes = this.leaveParty(socketId);
+
     this.players.delete(socketId);
     this.userSockets.delete(player.username.toLowerCase());
 
@@ -224,8 +425,17 @@ class WorldEngine extends EventEmitter {
     }
 
     console.log(`[WorldEngine] 🚪 Oyuncu ayrıldı: @${player.username}`);
-    this.emit('player_left', { socketId, username: player.username, mapId: player.mapId });
+    this.emit('player_left', { socketId, username: player.username, mapId: player.mapId, partyRes });
     return player;
+  }
+
+  getMapConfig(mapId) {
+    if (this.maps[mapId]) return this.maps[mapId];
+    if (mapId && mapId.startsWith('dungeon_tier_')) {
+      const baseTier = mapId.split('_inst_')[0];
+      return this.maps[baseTier] || this.maps.dungeon_tier_1;
+    }
+    return this.maps.town;
   }
 
   getPlayer(socketId) {
@@ -333,8 +543,8 @@ class WorldEngine extends EventEmitter {
     const player = this.players.get(socketId);
     if (!player) return null;
 
-    const map = this.maps[player.mapId] || this.maps.town;
-    const b = map.bounds;
+    const map = this.getMapConfig(player.mapId);
+    const b = map.bounds || { minX: -45, maxX: 45, minZ: -72, maxZ: 82 };
 
     // Boundary clamp
     player.x = Math.max(b.minX, Math.min(b.maxX, typeof x === 'number' ? x : player.x));
@@ -406,9 +616,11 @@ class WorldEngine extends EventEmitter {
 
   switchZone(socketId, targetMap) {
     const player = this.players.get(socketId);
-    if (!player || !this.maps[targetMap]) return { success: false, error: 'Geçersiz bölge.' };
+    if (!player) return { success: false, error: 'Geçersiz oyuncu.' };
+    const mapCfg = this.getMapConfig(targetMap);
+    if (!mapCfg) return { success: false, error: 'Geçersiz bölge.' };
     const oldMap = player.mapId;
-    const isDungeon = Boolean(this.maps[targetMap].isDungeon);
+    const isDungeon = Boolean(mapCfg.isDungeon || targetMap.startsWith('dungeon_tier_'));
     const spawnZ = isDungeon ? -60 : -28;
     player.mapId = targetMap;
     player.x = 0;
@@ -578,6 +790,259 @@ class WorldEngine extends EventEmitter {
     }
   }
 
+  // ==========================================
+  // 🛡️ 4-PLAYER PARTY ENGINE
+  // ==========================================
+
+  createParty(leaderSocketId) {
+    const leader = this.players.get(leaderSocketId);
+    if (!leader) return { ok: false, error: 'Oyuncu bulunamadı.' };
+
+    if (this.playerParties.has(leaderSocketId)) {
+      const existingId = this.playerParties.get(leaderSocketId);
+      return { ok: true, party: this.getPartyState(existingId) };
+    }
+
+    const partyId = 'party_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+    const party = {
+      id: partyId,
+      leaderId: leaderSocketId,
+      members: [leaderSocketId],
+      createdAt: Date.now()
+    };
+
+    this.parties.set(partyId, party);
+    this.playerParties.set(leaderSocketId, partyId);
+    console.log(`[WorldEngine] 🛡️ Yeni parti kuruldu: ${partyId} (Lider: @${leader.username})`);
+
+    return { ok: true, party: this.getPartyState(partyId) };
+  }
+
+  inviteToParty(leaderSocketId, targetUsername) {
+    const leader = this.players.get(leaderSocketId);
+    if (!leader) return { ok: false, error: 'Lider bulunamadı.' };
+
+    let partyId = this.playerParties.get(leaderSocketId);
+    if (!partyId) {
+      const pRes = this.createParty(leaderSocketId);
+      partyId = pRes.party.id;
+    }
+
+    const party = this.parties.get(partyId);
+    if (!party) return { ok: false, error: 'Parti bulunamadı.' };
+
+    if (party.members.length >= 4) {
+      return { ok: false, error: 'Parti dolu! (Maksimum 4 kişi)' };
+    }
+
+    const cleanTarget = (targetUsername || '').trim().replace(/^@/, '');
+    const target = this.getPlayerByName(cleanTarget);
+    if (!target) {
+      return { ok: false, error: `@${cleanTarget} bulunamadı veya çevrimdışı.` };
+    }
+
+    if (target.id === leaderSocketId) {
+      return { ok: false, error: 'Kendini partiye davet edemezsin!' };
+    }
+
+    if (this.playerParties.has(target.id)) {
+      return { ok: false, error: `@${target.username} zaten bir partide yer alıyor.` };
+    }
+
+    const inviteId = 'inv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+    this.pendingPartyInvites.set(inviteId, {
+      id: inviteId,
+      partyId: party.id,
+      leaderId: leaderSocketId,
+      leaderName: leader.username,
+      targetSocketId: target.id,
+      targetName: target.username,
+      expiresAt: Date.now() + 15000
+    });
+
+    console.log(`[WorldEngine] ✉️ Parti daveti: @${leader.username} -> @${target.username} (${inviteId})`);
+    return {
+      ok: true,
+      inviteId,
+      partyId: party.id,
+      leaderName: leader.username,
+      targetSocketId: target.id,
+      targetName: target.username
+    };
+  }
+
+  acceptPartyInvite(targetSocketId, inviteId) {
+    const inv = this.pendingPartyInvites.get(inviteId);
+    if (!inv || inv.targetSocketId !== targetSocketId || Date.now() > inv.expiresAt) {
+      return { ok: false, error: 'Parti daveti geçersiz veya süresi dolmuş.' };
+    }
+
+    const party = this.parties.get(inv.partyId);
+    if (!party) {
+      this.pendingPartyInvites.delete(inviteId);
+      return { ok: false, error: 'Parti artık mevcut değil.' };
+    }
+
+    if (party.members.length >= 4) {
+      this.pendingPartyInvites.delete(inviteId);
+      return { ok: false, error: 'Parti dolu! (Maksimum 4 kişi)' };
+    }
+
+    this.pendingPartyInvites.delete(inviteId);
+    if (!party.members.includes(targetSocketId)) {
+      party.members.push(targetSocketId);
+    }
+    this.playerParties.set(targetSocketId, party.id);
+
+    const targetPlayer = this.players.get(targetSocketId);
+    console.log(`[WorldEngine] 🛡️ @${targetPlayer ? targetPlayer.username : targetSocketId} partiye katıldı: ${party.id}`);
+
+    return {
+      ok: true,
+      partyId: party.id,
+      party: this.getPartyState(party.id)
+    };
+  }
+
+  declinePartyInvite(targetSocketId, inviteId) {
+    const inv = this.pendingPartyInvites.get(inviteId);
+    if (inv && inv.targetSocketId === targetSocketId) {
+      this.pendingPartyInvites.delete(inviteId);
+      return { ok: true, leaderSocketId: inv.leaderId, inviteId };
+    }
+    return { ok: false, error: 'Davet bulunamadı.' };
+  }
+
+  leaveParty(socketId) {
+    const partyId = this.playerParties.get(socketId);
+    if (!partyId) return { ok: false, error: 'Bir partide değilsin.' };
+
+    const party = this.parties.get(partyId);
+    this.playerParties.delete(socketId);
+
+    if (!party) return { ok: true, disbanded: true, partyId };
+
+    party.members = party.members.filter(id => id !== socketId);
+    if (party.members.length === 0) {
+      this.parties.delete(partyId);
+      console.log(`[WorldEngine] 🛡️ Parti dağıldı: ${partyId}`);
+      return { ok: true, disbanded: true, partyId };
+    }
+
+    let newLeaderId = party.leaderId;
+    if (party.leaderId === socketId) {
+      party.leaderId = party.members[0];
+      newLeaderId = party.leaderId;
+      console.log(`[WorldEngine] 👑 Yeni parti lideri atandı: [${newLeaderId}]`);
+    }
+
+    return {
+      ok: true,
+      disbanded: false,
+      partyId,
+      remainingMembers: [...party.members],
+      newLeaderId,
+      party: this.getPartyState(partyId)
+    };
+  }
+
+  kickMember(leaderSocketId, targetSocketId) {
+    const partyId = this.playerParties.get(leaderSocketId);
+    if (!partyId) return { ok: false, error: 'Parti bulunamadı.' };
+
+    const party = this.parties.get(partyId);
+    if (!party || party.leaderId !== leaderSocketId) {
+      return { ok: false, error: 'Yalnızca parti lideri üye atabilir.' };
+    }
+
+    if (leaderSocketId === targetSocketId) {
+      return { ok: false, error: 'Lider kendini partiden atamaz (Ayrılmayı kullanın).' };
+    }
+
+    if (!party.members.includes(targetSocketId)) {
+      return { ok: false, error: 'Oyuncu partide değil.' };
+    }
+
+    party.members = party.members.filter(id => id !== targetSocketId);
+    this.playerParties.delete(targetSocketId);
+
+    return {
+      ok: true,
+      partyId,
+      kickedSocketId: targetSocketId,
+      party: this.getPartyState(partyId)
+    };
+  }
+
+  getPartyBySocket(socketId) {
+    const partyId = this.playerParties.get(socketId);
+    return partyId ? (this.parties.get(partyId) || null) : null;
+  }
+
+  getPartyState(partyId) {
+    const party = this.parties.get(partyId);
+    if (!party) return null;
+
+    const members = [];
+    for (const sid of party.members) {
+      const p = this.players.get(sid);
+      if (!p) continue;
+      const rpgProf = this.rpgEngine ? this.rpgEngine.getProfile(p.username) : null;
+      const gs = this.rpgEngine ? this.rpgEngine.gearScore(p.username) : 0;
+      const effectiveMaxHp = (rpgProf && rpgProf.stats && rpgProf.stats.hp) ? rpgProf.stats.hp : 100;
+      members.push({
+        id: sid,
+        username: p.username,
+        avatarIndex: p.avatarIndex,
+        isLeader: sid === party.leaderId,
+        gearScore: gs,
+        level: rpgProf ? rpgProf.level : 1,
+        hp: typeof p.hp === 'number' ? p.hp : effectiveMaxHp,
+        maxHp: typeof p.maxHp === 'number' ? p.maxHp : effectiveMaxHp,
+        mapId: p.mapId
+      });
+    }
+
+    return {
+      id: party.id,
+      leaderId: party.leaderId,
+      members
+    };
+  }
+
+  updatePlayerCombatHp(socketId, hp, maxHp) {
+    const p = this.players.get(socketId);
+    if (!p) return null;
+
+    p.hp = Math.max(0, parseInt(hp, 10) || 0);
+    p.maxHp = Math.max(1, parseInt(maxHp, 10) || 100);
+
+    const party = this.getPartyBySocket(socketId);
+    return party ? { partyId: party.id, members: party.members, hp: p.hp, maxHp: p.maxHp, socketId, username: p.username } : null;
+  }
+
+  // ==========================================
+  // ⚔️ DUNGEON INSTANCE ENGINE
+  // ==========================================
+
+  getOrCreateDungeonInstance(partyId, tierId, socketId = null) {
+    const instId = partyId
+      ? `${tierId}_inst_${partyId}`
+      : `${tierId}_inst_solo_${socketId || Date.now()}`;
+
+    let inst = this.instances.get(instId);
+    if (!inst) {
+      inst = new DungeonInstance(instId, tierId, partyId);
+      this.instances.set(instId, inst);
+      console.log(`[WorldEngine] ⚔️ Yeni zindan örneği (Instance) hazırlandı: ${instId} (${tierId})`);
+    }
+    return inst;
+  }
+
+  getDungeonInstance(instanceId) {
+    return this.instances.get(instanceId) || null;
+  }
+
   /**
    * Get all players grouped by mapId for state broadcasting
    */
@@ -595,7 +1060,10 @@ class WorldEngine extends EventEmitter {
         p.speechBubble = null;
       }
 
-      const mapList = states[p.mapId] || states.town;
+      if (!states[p.mapId]) {
+        states[p.mapId] = [];
+      }
+      const mapList = states[p.mapId];
       const rpgProf = this.rpgEngine ? this.rpgEngine.getProfile(p.username) : null;
       mapList.push({
         id: p.id,

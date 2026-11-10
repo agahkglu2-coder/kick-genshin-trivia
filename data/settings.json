@@ -1,6 +1,6 @@
 {
-  "jackpot_pool": 8495.75,
-  "jackpot_total_accumulated": 8829.45,
+  "jackpot_pool": 8969.75,
+  "jackpot_total_accumulated": 9303.45,
   "active_banner_id": "capitano",
   "jackpot_recent_winners": [
     {
@@ -404,7 +404,16 @@
         "plus": 0,
         "affixes": []
       }
-    ]
+    ],
+    "dailyQuests": {
+      "date": "2026-11-10",
+      "progress": {
+        "kick_chat_10": 2
+      },
+      "claimed": {},
+      "bonusClaimed": false,
+      "lastChatTs": 1794346661055
+    }
   },
   "rpg:gezgin_1654": {
     "level": 2,
@@ -1144,6 +1153,203 @@
       "claimed": {},
       "bonusClaimed": false,
       "lastChatTs": 0
+    }
+  },
+  "rpg:verzagtheit": {
+    "level": 1,
+    "xp": 0,
+    "dust": 0,
+    "kills": 0,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwb5yxxb_5sp",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [],
+    "dailyQuests": {
+      "date": "2026-11-10",
+      "progress": {
+        "kick_chat_10": 10,
+        "kick_stream_event": 1
+      },
+      "claimed": {},
+      "bonusClaimed": false,
+      "lastChatTs": 1794346926459
+    }
+  },
+  "rpg:bnyasheer": {
+    "level": 1,
+    "xp": 0,
+    "dust": 0,
+    "kills": 0,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwb5z3am_6j8",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [],
+    "dailyQuests": {
+      "date": "2026-11-10",
+      "progress": {
+        "kick_chat_10": 3
+      },
+      "claimed": {},
+      "bonusClaimed": false,
+      "lastChatTs": 1794346543552
+    }
+  },
+  "rpg:mylune": {
+    "level": 1,
+    "xp": 0,
+    "dust": 0,
+    "kills": 0,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwb5zib1_7nb",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [],
+    "dailyQuests": {
+      "date": "2026-11-10",
+      "progress": {
+        "kick_chat_10": 1
+      },
+      "claimed": {},
+      "bonusClaimed": false,
+      "lastChatTs": 1794343827565
+    }
+  },
+  "rpg:burak1206": {
+    "level": 1,
+    "xp": 0,
+    "dust": 0,
+    "kills": 0,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwb5zljb_81",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [],
+    "dailyQuests": {
+      "date": "2026-11-10",
+      "progress": {
+        "kick_chat_10": 7
+      },
+      "claimed": {},
+      "bonusClaimed": false,
+      "lastChatTs": 1794345774127
+    }
+  },
+  "rpg:shadowdream232": {
+    "level": 1,
+    "xp": 0,
+    "dust": 0,
+    "kills": 0,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwb6c3jn_9fj",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [],
+    "dailyQuests": {
+      "date": "2026-11-10",
+      "progress": {
+        "kick_chat_10": 10
+      },
+      "claimed": {},
+      "bonusClaimed": false,
+      "lastChatTs": 1794346370759
+    }
+  },
+  "rpg:milkabot": {
+    "level": 1,
+    "xp": 0,
+    "dust": 0,
+    "kills": 0,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwb6v3gb_apv",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [],
+    "dailyQuests": {
+      "date": "2026-11-10",
+      "progress": {
+        "kick_chat_10": 2
+      },
+      "claimed": {},
+      "bonusClaimed": false,
+      "lastChatTs": 1794345774627
+    }
+  },
+  "rpg:nizipli_cavus": {
+    "level": 1,
+    "xp": 0,
+    "dust": 0,
+    "kills": 0,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwb7rjxf_bg",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [],
+    "dailyQuests": {
+      "date": "2026-11-10",
+      "progress": {
+        "kick_chat_10": 1
+      },
+      "claimed": {},
+      "bonusClaimed": false,
+      "lastChatTs": 1794346815651
     }
   }
 }

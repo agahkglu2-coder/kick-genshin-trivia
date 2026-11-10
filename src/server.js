@@ -344,6 +344,37 @@ function broadcast(payload) {
   });
 }
 
+function sendToSocket(socketId, payload) {
+  const str = JSON.stringify(payload);
+  wss.clients.forEach((client) => {
+    if (client.socketId === socketId && client.readyState === WebSocket.OPEN) {
+      client.send(str);
+    }
+  });
+}
+
+function broadcastToSockets(socketIds, payload) {
+  if (!Array.isArray(socketIds) || socketIds.length === 0) return;
+  const sSet = new Set(socketIds);
+  const str = JSON.stringify(payload);
+  wss.clients.forEach((client) => {
+    if (sSet.has(client.socketId) && client.readyState === WebSocket.OPEN) {
+      client.send(str);
+    }
+  });
+}
+
+function broadcastToMap(mapId, payload) {
+  if (!mapId) return;
+  const str = JSON.stringify(payload);
+  wss.clients.forEach((client) => {
+    const p = worldEngine.getPlayer(client.socketId);
+    if (p && p.mapId === mapId && client.readyState === WebSocket.OPEN) {
+      client.send(str);
+    }
+  });
+}
+
 function awardUserPrimogemsByName(username, amount) {
   if (!username || !amount) return 0;
   const user = gachaEngine.getOrCreateUser(username);
@@ -911,6 +942,12 @@ worldEngine.on('player_joined', (player) => {
 
 worldEngine.on('player_left', (info) => {
   broadcast({ type: 'WORLD_PLAYER_LEFT', ...info });
+  if (info.partyRes && !info.partyRes.disbanded && info.partyRes.remainingMembers) {
+    broadcastToSockets(info.partyRes.remainingMembers, {
+      type: 'PARTY_UPDATE',
+      party: info.partyRes.party
+    });
+  }
 });
 
 worldEngine.on('player_changed_map', (info) => {
@@ -1205,9 +1242,28 @@ wss.on('connection', (ws) => {
       } else if (data.type === 'WORLD_DUNGEON_CHEST_CLAIM') {
         const me = worldEngine.getPlayer(socketId);
         if (me) {
+          const instId = data.instanceId || me.mapId;
+          const inst = worldEngine.getDungeonInstance(instId);
+          if (inst) {
+            const claimCheck = inst.claimChest(data.chestId || 'chest_normal', me.username);
+            if (!claimCheck.ok) {
+              ws.send(JSON.stringify({
+                type: 'DUNGEON_CHEST_CLAIM_RESULT',
+                success: false,
+                ok: false,
+                message: 'Bu sandığı zaten açtın!'
+              }));
+              return;
+            }
+          }
+
           const persistOpt = { persist: !me.isGuest };
+          const baseTier = (me.mapId && me.mapId.startsWith('dungeon_tier_'))
+            ? me.mapId.split('_inst_')[0]
+            : (data.tierId || 'dungeon_tier_1');
+
           const chestRes = rpgEngine.claimDungeonChest(me.username, {
-            tierId: data.tierId || me.mapId || 'dungeon_tier_1',
+            tierId: baseTier,
             rank: data.rank || 'B',
             isBonusChest: Boolean(data.isBonusChest)
           }, persistOpt);
@@ -1223,6 +1279,9 @@ wss.on('connection', (ws) => {
 
             ws.send(JSON.stringify({
               type: 'DUNGEON_CHEST_CLAIM_RESULT',
+              success: true,
+              ok: true,
+              chestId: data.chestId,
               ...chestRes,
               newTotalPrimo: newTotal
             }));
@@ -1241,6 +1300,81 @@ wss.on('connection', (ws) => {
           }
         }
       } else if (data.type === 'WORLD_SELECT_ZONE') {
+        const zoneId = data.zoneId;
+        const isDungeon = zoneId && zoneId.startsWith('dungeon_tier_');
+        const party = worldEngine.getPartyBySocket(socketId);
+        const me = worldEngine.getPlayer(socketId);
+
+        if (isDungeon) {
+          if (party) {
+            if (party.leaderId !== socketId) {
+              ws.send(JSON.stringify({ type: 'PARTY_ERROR', error: 'Yalnızca parti lideri zindanı başlatabilir!' }));
+              return;
+            }
+            // Start Ready Check for all party members (15s)
+            const rcId = 'rc_' + Date.now();
+            const rc = {
+              id: rcId,
+              partyId: party.id,
+              tierId: zoneId,
+              votes: new Map([[socketId, true]]),
+              members: [...party.members],
+              timeout: setTimeout(() => {
+                worldEngine.pendingReadyChecks.delete(rcId);
+                const inst = worldEngine.getOrCreateDungeonInstance(party.id, zoneId);
+                for (const memberSocketId of party.members) {
+                  const zRes = worldEngine.switchZone(memberSocketId, inst.id);
+                  if (zRes.success) {
+                    sendToSocket(memberSocketId, {
+                      type: 'WORLD_DOOR_RESULT',
+                      success: true,
+                      newMap: inst.id,
+                      spawnPos: zRes.spawnPos
+                    });
+                    sendToSocket(memberSocketId, {
+                      type: 'DUNGEON_INSTANCE_INFO',
+                      instanceId: inst.id,
+                      tierId: inst.tierId,
+                      stage: inst.stage,
+                      mobs: inst.getMobList()
+                    });
+                  }
+                }
+              }, 15000)
+            };
+            worldEngine.pendingReadyChecks.set(rcId, rc);
+            broadcastToSockets(party.members, {
+              type: 'PARTY_READY_CHECK_START',
+              readyCheckId: rcId,
+              tierId: zoneId,
+              leaderName: me ? me.username : 'Lider',
+              timeoutSec: 15
+            });
+            return;
+          }
+
+          // Solo Player Dungeon Entry: Create solo private instance
+          const soloInst = worldEngine.getOrCreateDungeonInstance(null, zoneId, socketId);
+          const zoneRes = worldEngine.switchZone(socketId, soloInst.id);
+          if (zoneRes.success) {
+            ws.send(JSON.stringify({
+              type: 'WORLD_DOOR_RESULT',
+              success: true,
+              newMap: soloInst.id,
+              spawnPos: zoneRes.spawnPos
+            }));
+            ws.send(JSON.stringify({
+              type: 'DUNGEON_INSTANCE_INFO',
+              instanceId: soloInst.id,
+              tierId: soloInst.tierId,
+              stage: soloInst.stage,
+              mobs: soloInst.getMobList()
+            }));
+          }
+          return;
+        }
+
+        // Open Grinding Zones & Town
         const zoneRes = worldEngine.switchZone(socketId, data.zoneId);
         if (zoneRes.success) {
           ws.send(JSON.stringify({
@@ -1250,16 +1384,214 @@ wss.on('connection', (ws) => {
             spawnPos: zoneRes.spawnPos
           }));
         }
+      } else if (data.type === 'PARTY_READY_CHECK_VOTE') {
+        const rc = worldEngine.pendingReadyChecks.get(data.readyCheckId);
+        if (rc) {
+          rc.votes.set(socketId, Boolean(data.accept));
+          const me = worldEngine.getPlayer(socketId);
+          broadcastToSockets(rc.members, {
+            type: 'PARTY_READY_CHECK_UPDATE',
+            readyCheckId: rc.id,
+            socketId,
+            username: me ? me.username : 'Oyuncu',
+            accept: Boolean(data.accept)
+          });
+
+          if (!data.accept) {
+            clearTimeout(rc.timeout);
+            worldEngine.pendingReadyChecks.delete(data.readyCheckId);
+            broadcastToSockets(rc.members, {
+              type: 'PARTY_READY_CHECK_CANCELLED',
+              reason: `@${me ? me.username : 'Bir üye'} zindan girişini reddetti.`
+            });
+            return;
+          }
+
+          const allAccepted = rc.members.every(sid => rc.votes.get(sid) === true);
+          if (allAccepted) {
+            clearTimeout(rc.timeout);
+            worldEngine.pendingReadyChecks.delete(data.readyCheckId);
+            const inst = worldEngine.getOrCreateDungeonInstance(rc.partyId, rc.tierId);
+            for (const memberSocketId of rc.members) {
+              const zRes = worldEngine.switchZone(memberSocketId, inst.id);
+              if (zRes.success) {
+                sendToSocket(memberSocketId, {
+                  type: 'WORLD_DOOR_RESULT',
+                  success: true,
+                  newMap: inst.id,
+                  spawnPos: zRes.spawnPos
+                });
+                sendToSocket(memberSocketId, {
+                  type: 'DUNGEON_INSTANCE_INFO',
+                  instanceId: inst.id,
+                  tierId: inst.tierId,
+                  stage: inst.stage,
+                  mobs: inst.getMobList()
+                });
+              }
+            }
+          }
+        }
+      } else if (data.type === 'PARTY_CREATE') {
+        const pRes = worldEngine.createParty(socketId);
+        if (pRes.ok) {
+          ws.send(JSON.stringify({ type: 'PARTY_UPDATE', party: pRes.party }));
+        } else {
+          ws.send(JSON.stringify({ type: 'PARTY_ERROR', error: pRes.error }));
+        }
+      } else if (data.type === 'PARTY_INVITE') {
+        const pRes = worldEngine.inviteToParty(socketId, data.targetUsername);
+        if (pRes.ok) {
+          sendToSocket(pRes.targetSocketId, {
+            type: 'PARTY_INVITE_PROMPT',
+            inviteId: pRes.inviteId,
+            leaderName: pRes.leaderName,
+            partyId: pRes.partyId
+          });
+          ws.send(JSON.stringify({
+            type: 'PARTY_INVITE_SENT',
+            targetName: pRes.targetName
+          }));
+        } else {
+          ws.send(JSON.stringify({ type: 'PARTY_ERROR', error: pRes.error }));
+        }
+      } else if (data.type === 'PARTY_ACCEPT') {
+        const pRes = worldEngine.acceptPartyInvite(socketId, data.inviteId);
+        if (pRes.ok) {
+          broadcastToSockets(pRes.party.members.map(m => m.id), {
+            type: 'PARTY_UPDATE',
+            party: pRes.party
+          });
+        } else {
+          ws.send(JSON.stringify({ type: 'PARTY_ERROR', error: pRes.error }));
+        }
+      } else if (data.type === 'PARTY_DECLINE') {
+        const pRes = worldEngine.declinePartyInvite(socketId, data.inviteId);
+        if (pRes.ok && pRes.leaderSocketId) {
+          const me = worldEngine.getPlayer(socketId);
+          sendToSocket(pRes.leaderSocketId, {
+            type: 'PARTY_DECLINED',
+            username: me ? me.username : 'Oyuncu'
+          });
+        }
+      } else if (data.type === 'PARTY_LEAVE') {
+        const pRes = worldEngine.leaveParty(socketId);
+        ws.send(JSON.stringify({ type: 'PARTY_LEFT' }));
+        if (pRes.ok && !pRes.disbanded && pRes.remainingMembers) {
+          broadcastToSockets(pRes.remainingMembers, {
+            type: 'PARTY_UPDATE',
+            party: pRes.party
+          });
+        }
+      } else if (data.type === 'PARTY_KICK') {
+        const pRes = worldEngine.kickMember(socketId, data.targetSocketId);
+        if (pRes.ok) {
+          sendToSocket(pRes.kickedSocketId, { type: 'PARTY_KICKED' });
+          broadcastToSockets(pRes.party.members.map(m => m.id), {
+            type: 'PARTY_UPDATE',
+            party: pRes.party
+          });
+        } else {
+          ws.send(JSON.stringify({ type: 'PARTY_ERROR', error: pRes.error }));
+        }
+      } else if (data.type === 'PARTY_UPDATE_HP') {
+        const hpRes = worldEngine.updatePlayerCombatHp(socketId, data.hp, data.maxHp);
+        if (hpRes && hpRes.members) {
+          broadcastToSockets(hpRes.members, {
+            type: 'PARTY_MEMBER_HP_UPDATE',
+            socketId,
+            username: hpRes.username,
+            hp: hpRes.hp,
+            maxHp: hpRes.maxHp
+          });
+        }
+      } else if (data.type === 'DUNGEON_MOB_HIT') {
+        const me = worldEngine.getPlayer(socketId);
+        if (me) {
+          const instId = data.instanceId || me.mapId;
+          const inst = worldEngine.getDungeonInstance(instId);
+          if (inst) {
+            const hitRes = inst.applyHit(data.mobId, data.dmg, me.username, data.isCrit, data.element);
+            if (hitRes) {
+              broadcastToMap(instId, {
+                type: 'DUNGEON_MOB_DAMAGED',
+                instanceId: instId,
+                mobId: data.mobId,
+                dmg: hitRes.dmg,
+                newHp: hitRes.newHp,
+                maxHp: hitRes.maxHp,
+                isDead: hitRes.isDead,
+                isCrit: Boolean(data.isCrit),
+                element: data.element,
+                attackerName: me.username
+              });
+
+              for (const ev of hitRes.events) {
+                if (ev.type === 'STAGE_CLEAR') {
+                  broadcastToMap(instId, { type: 'DUNGEON_STAGE_CLEAR', stage: ev.stage });
+                } else if (ev.type === 'BOSS_PHASE_2') {
+                  broadcastToMap(instId, { type: 'DUNGEON_BOSS_PHASE', phase: 2, newMobs: ev.newMobs });
+                } else if (ev.type === 'SHIELD_DOWN') {
+                  broadcastToMap(instId, { type: 'DUNGEON_SHIELD_DOWN' });
+                } else if (ev.type === 'BOSS_PHASE_3') {
+                  broadcastToMap(instId, { type: 'DUNGEON_BOSS_PHASE', phase: 3, safeZone: ev.safeZone });
+                } else if (ev.type === 'VICTORY') {
+                  broadcastToMap(instId, { type: 'DUNGEON_VICTORY', ...ev });
+                }
+              }
+            }
+          }
+        }
+      } else if (data.type === 'DUNGEON_REQUEST_MOBS') {
+        const me = worldEngine.getPlayer(socketId);
+        if (me) {
+          const instId = data.instanceId || me.mapId;
+          const inst = worldEngine.getDungeonInstance(instId);
+          if (inst) {
+            ws.send(JSON.stringify({
+              type: 'DUNGEON_INSTANCE_INFO',
+              instanceId: inst.id,
+              tierId: inst.tierId,
+              stage: inst.stage,
+              stage1Cleared: inst.stage1Cleared,
+              stage2Cleared: inst.stage2Cleared,
+              bossDefeated: inst.bossDefeated,
+              phase2ShieldActive: inst.phase2ShieldActive,
+              mobs: inst.getMobList()
+            }));
+          }
+        }
       } else if (data.type === 'WORLD_PLAYER_DEFEAT') {
-        const respawned = worldEngine.respawnPlayer(socketId);
-        if (respawned) {
+        const me = worldEngine.getPlayer(socketId);
+        if (me && me.mapId && me.mapId.startsWith('dungeon_tier_')) {
+          const inst = worldEngine.getDungeonInstance(me.mapId);
+          let spawnPos = { x: 0, z: -60 };
+          if (inst) {
+            if (inst.stage === 2) spawnPos = { x: 0, z: -6 };
+            else if (inst.stage === 3) spawnPos = { x: 0, z: 42 };
+            inst.score = Math.max(0, inst.score - 200);
+          }
+          me.x = spawnPos.x;
+          me.y = 0;
+          me.z = spawnPos.z;
+          me.anim = 'idle';
           ws.send(JSON.stringify({
             type: 'WORLD_DOOR_RESULT',
             success: true,
-            newMap: 'town',
-            spawnPos: { x: 0, z: 2 }
+            newMap: me.mapId,
+            spawnPos
           }));
-          worldEngine.addChatBubble(socketId, `💀 Kasaba meydanında dinleniyor.`);
+        } else {
+          const respawned = worldEngine.respawnPlayer(socketId);
+          if (respawned) {
+            ws.send(JSON.stringify({
+              type: 'WORLD_DOOR_RESULT',
+              success: true,
+              newMap: 'town',
+              spawnPos: { x: 0, z: 2 }
+            }));
+            worldEngine.addChatBubble(socketId, `💀 Kasaba meydanında dinleniyor.`);
+          }
         }
       } else if (data.type === 'RPG_GET_PROFILE') {
         const me = worldEngine.getPlayer(socketId);

@@ -246,6 +246,132 @@ assert(serverJsUpdated.includes('DUNGEON_VIEWER_BUFF'), 'Kick !buff / !kutsama c
 assert(serverJsUpdated.includes('/api/world/dungeon/claim-chest'), 'REST endpoint for dungeon chest claim must exist');
 console.log('✅ Aion 2 3-Kademeli Zindan, Rüzgar Akıntısı (Windstream), Daeva Kanatları, Patron Fazları, Sandıklar ve Kick Yayını Kutsaması %100 doğrulandı!');
 
+// ==========================================
+// 10. TEST: 4-Player Party System & Synchronized Dungeon Instance
+// ==========================================
+console.log('=== TEST: 4-Player Party System & Synchronized Dungeon Instance ===');
+
+// 10a. Add 4 test players
+const pLeader = worldEngine.addPlayer('sock_leader', { username: 'LumineLeader', isGuest: false });
+const pMember1 = worldEngine.addPlayer('sock_m1', { username: 'AetherKnight', isGuest: false });
+const pMember2 = worldEngine.addPlayer('sock_m2', { username: 'PaimonHealer', isGuest: false });
+const pMember3 = worldEngine.addPlayer('sock_m3', { username: 'ZhongliShield', isGuest: false });
+const pExtra = worldEngine.addPlayer('sock_extra', { username: 'VentiBard', isGuest: false });
+
+// 10b. Create Party
+const partyRes = worldEngine.createParty('sock_leader');
+assert.strictEqual(partyRes.ok, true, 'Party creation should succeed');
+assert.strictEqual(partyRes.party.members.length, 1, 'Party should initially have 1 member');
+assert.strictEqual(partyRes.party.leaderId, 'sock_leader', 'Party leader should be sock_leader');
+console.log('✅ 4 Kişilik Parti Oluşturma başarıyla doğrulandı.');
+
+// 10c. Invite & Accept Members
+const inv1 = worldEngine.inviteToParty('sock_leader', 'AetherKnight');
+assert.strictEqual(inv1.ok, true, 'Invite to AetherKnight should succeed');
+const acc1 = worldEngine.acceptPartyInvite('sock_m1', inv1.inviteId);
+assert.strictEqual(acc1.ok, true, 'Accepting invite by AetherKnight should succeed');
+assert.strictEqual(acc1.party.members.length, 2, 'Party should have 2 members');
+
+const inv2 = worldEngine.inviteToParty('sock_leader', 'PaimonHealer');
+worldEngine.acceptPartyInvite('sock_m2', inv2.inviteId);
+
+const inv3 = worldEngine.inviteToParty('sock_leader', 'ZhongliShield');
+worldEngine.acceptPartyInvite('sock_m3', inv3.inviteId);
+
+const pState = worldEngine.getPartyState(partyRes.party.id);
+assert.strictEqual(pState.members.length, 4, 'Party should now be full at 4 members');
+
+// 10d. Max 4 member constraint check
+const invFull = worldEngine.inviteToParty('sock_leader', 'VentiBard');
+assert.strictEqual(invFull.ok, false, 'Inviting 5th player should fail');
+assert(invFull.error.includes('dolu'), 'Error should state party is full');
+console.log('✅ 4 Kişilik Maksimum Parti Sınırı başarıyla doğrulandı.');
+
+// 10e. Realtime HP Sync
+const hpSyncRes = worldEngine.updatePlayerCombatHp('sock_m1', 450, 600);
+assert(hpSyncRes, 'Combat HP update should return party member notification');
+assert.strictEqual(hpSyncRes.hp, 450);
+console.log('✅ Canlı Parti Can (HP) Senkronizasyonu doğrulandı.');
+
+// 10f. Create Shared Dungeon Instance for Party
+const inst = worldEngine.getOrCreateDungeonInstance(partyRes.party.id, 'dungeon_tier_1');
+assert(inst, 'Dungeon instance must be created');
+assert.strictEqual(inst.tierId, 'dungeon_tier_1');
+assert.strictEqual(inst.stage, 1);
+const mobList = inst.getMobList();
+assert(mobList.length >= 7, 'Instance should spawn Stage 1, 2, and 3 mobs');
+console.log(`✅ Sunucu Tarafı Eşzamanlı Zindan Örneği (Instance) doğrulandı: ${mobList.length} canavar.`);
+
+// 10g. Shared Mob Damage & Stage 1 Clear Sync
+// Hit Stage 1 crystal
+const c1Hit = inst.applyHit('m_c1', 300, 'LumineLeader');
+assert.strictEqual(c1Hit.isDead, true, 'Crystal 1 should be destroyed');
+
+// Destroy other stage 1 mobs
+inst.applyHit('m_c2', 300, 'AetherKnight');
+inst.applyHit('m_g1', 300, 'LumineLeader');
+inst.applyHit('m_g2', 300, 'LumineLeader');
+inst.applyHit('m_g3', 300, 'LumineLeader');
+const s1FinalHit = inst.applyHit('m_g4', 300, 'LumineLeader');
+assert.strictEqual(inst.stage1Cleared, true, 'Stage 1 must be cleared when all crystals & guardians dead');
+assert.strictEqual(inst.stage, 2, 'Dungeon stage should now be 2');
+assert(s1FinalHit.events.some(e => e.type === 'STAGE_CLEAR' && e.stage === 1), 'Stage clear event must fire');
+console.log('✅ Ortak Yaratık Hasarı ve 1. Aşama Bariyer Kaldırma Senkronizasyonu doğrulandı!');
+
+// 10h. Boss Phase 2 (60% HP) & Aether Shield
+const bossMob = inst.mobs.get('m_boss');
+assert(bossMob, 'Tahabata Boss must exist');
+const bossStartHp = bossMob.hp;
+// Deal damage to drop Boss below 60%
+inst.applyHit('m_boss', Math.round(bossStartHp * 0.45), 'LumineLeader');
+assert.strictEqual(inst.phase2Triggered, true, 'Boss Phase 2 should be triggered at 60% HP');
+assert.strictEqual(inst.phase2ShieldActive, true, 'Boss Aether Shield must be active');
+const resCrystals = Array.from(inst.mobs.values()).filter(m => m.isResonanceCrystal);
+assert.strictEqual(resCrystals.length, 3, '3 Resonance Crystals must spawn in Phase 2');
+console.log('✅ Boss %60 Can Fazı (Mor Aether Kalkanı + 3 Rezonans Kristali) doğrulandı.');
+
+// 10i. Destroy Resonance Crystals -> Shatter Shield
+inst.applyHit('m_res_1', 300, 'LumineLeader');
+inst.applyHit('m_res_2', 300, 'AetherKnight');
+const lastCrystal = inst.applyHit('m_res_3', 300, 'ZhongliShield');
+assert.strictEqual(inst.phase2ShieldActive, false, 'Boss Aether Shield must deactivate when crystals broken');
+assert(lastCrystal.events.some(e => e.type === 'SHIELD_DOWN'), 'SHIELD_DOWN event must be generated');
+console.log('✅ 3 Rezonans Kristali Kırıldığında Kalkan Parçalanma ve Sersemletme doğrulandı.');
+
+// 10j. Boss Defeat -> Victory & Individual Chest Claims
+const killBoss = inst.applyHit('m_boss', 5000, 'LumineLeader');
+assert.strictEqual(inst.bossDefeated, true, 'Boss must be defeated');
+assert(killBoss.events.some(e => e.type === 'VICTORY'), 'VICTORY event must be generated');
+
+// Test Individual Chest Claims: Both Lumine and Aether can open the normal chest without conflict!
+const claimLumine = inst.claimChest('chest_normal', 'LumineLeader');
+assert.strictEqual(claimLumine.ok, true, 'Lumine should claim chest_normal');
+const claimLumineRepeat = inst.claimChest('chest_normal', 'LumineLeader');
+assert.strictEqual(claimLumineRepeat.ok, false, 'Lumine cannot claim same chest twice');
+
+const claimAether = inst.claimChest('chest_normal', 'AetherKnight');
+assert.strictEqual(claimAether.ok, true, 'Aether should claim their own chest_normal in the same instance');
+console.log('✅ Bireysel Sandık Modeli (Her oyuncu kendi sandığını açabilir) %100 doğrulandı.');
+
+// 10k. Verify Frontend & Server integration files
+assert(worldHtmlUpdated.includes('id="party-hud"'), 'party-hud must exist in world.html');
+assert(worldHtmlUpdated.includes('id="modal-party-invite"'), 'modal-party-invite must exist in world.html');
+assert(worldHtmlUpdated.includes('id="modal-dungeon-ready-check"'), 'modal-dungeon-ready-check must exist in world.html');
+assert(worldHtmlUpdated.includes('id="btn-menu-party-invite"'), 'btn-menu-party-invite must exist in world.html');
+
+assert(worldJsUpdated.includes('function updatePartyHUD'), 'updatePartyHUD must exist in world.js');
+assert(worldJsUpdated.includes('PARTY_UPDATE'), 'PARTY_UPDATE WS handler must exist in world.js');
+assert(worldJsUpdated.includes('PARTY_INVITE_PROMPT'), 'PARTY_INVITE_PROMPT handler must exist in world.js');
+assert(worldJsUpdated.includes('PARTY_READY_CHECK_START'), 'PARTY_READY_CHECK_START handler must exist in world.js');
+assert(worldJsUpdated.includes('DUNGEON_INSTANCE_INFO'), 'DUNGEON_INSTANCE_INFO sync handler must exist in world.js');
+assert(worldJsUpdated.includes('DUNGEON_MOB_DAMAGED'), 'DUNGEON_MOB_DAMAGED sync handler must exist in world.js');
+
+assert(serverJsUpdated.includes('PARTY_CREATE'), 'Server must handle PARTY_CREATE');
+assert(serverJsUpdated.includes('PARTY_INVITE'), 'Server must handle PARTY_INVITE');
+assert(serverJsUpdated.includes('PARTY_READY_CHECK_VOTE'), 'Server must handle PARTY_READY_CHECK_VOTE');
+assert(serverJsUpdated.includes('DUNGEON_MOB_HIT'), 'Server must handle DUNGEON_MOB_HIT');
+console.log('✅ Parti Sistemi ve Zindan Eşzamanlama İstemci/Sunucu Entegrasyonu %100 doğrulandı!');
+
 console.log('=================================================================');
 console.log('🎉 CANAVAR MATERYAL DÜŞME, COMBAT 2.0 VE GÖRSEL MOTOR TESTLERİ %100 GEÇTİ!');
 console.log('=================================================================');

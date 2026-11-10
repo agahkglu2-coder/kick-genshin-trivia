@@ -1,7 +1,7 @@
 {
   "zerkacy": {
     "username": "zerkacy",
-    "primogems": 4637,
+    "primogems": 4977,
     "pity4": 0,
     "pity5": 13,
     "totalWishes": 13,
@@ -714,8 +714,8 @@
         "obtainedAt": "2026-11-10T11:29:50.460Z"
       }
     ],
-    "lastChatAwardTime": 1794310063103,
-    "lastActiveTime": 1794310291236,
+    "lastChatAwardTime": 1794346661034,
+    "lastActiveTime": 1794348394900,
     "createdAt": "2026-09-22T17:16:56.235Z",
     "isGuaranteed": false,
     "isGuaranteed4": false,
@@ -782,7 +782,7 @@
   },
   "burak1206": {
     "username": "Burak1206",
-    "primogems": 1615,
+    "primogems": 1975,
     "pity4": 0,
     "pity5": 0,
     "isGuaranteed": false,
@@ -794,8 +794,8 @@
     "fourStarsCount": 0,
     "threeStarsCount": 0,
     "inventory": [],
-    "lastChatAwardTime": 1794257473407,
-    "lastActiveTime": 1794274640891,
+    "lastChatAwardTime": 1794345774107,
+    "lastActiveTime": 1794348394925,
     "createdAt": "2026-11-09T19:46:56.790Z"
   },
   "gezgin_1556": {
@@ -854,7 +854,7 @@
   },
   "milkabot": {
     "username": "MilkaBot",
-    "primogems": 1500,
+    "primogems": 1740,
     "pity4": 0,
     "pity5": 0,
     "isGuaranteed": false,
@@ -866,8 +866,8 @@
     "fourStarsCount": 0,
     "threeStarsCount": 0,
     "inventory": [],
-    "lastChatAwardTime": 1794257443608,
-    "lastActiveTime": 1794274641384,
+    "lastChatAwardTime": 1794345774607,
+    "lastActiveTime": 1794348394950,
     "createdAt": "2026-11-09T19:47:46.889Z"
   },
   "maestro_20": {
@@ -1170,25 +1170,45 @@
   },
   "verzagtheit": {
     "username": "verzagtheit",
-    "primogems": 1260,
-    "pity4": 0,
-    "pity5": 0,
+    "primogems": 1500,
+    "pity4": 1,
+    "pity5": 1,
     "isGuaranteed": false,
     "isGuaranteed4": false,
     "standardPity5": 0,
     "standardPity4": 0,
-    "totalWishes": 0,
+    "totalWishes": 1,
     "fiveStarsCount": 0,
     "fourStarsCount": 0,
-    "threeStarsCount": 0,
-    "inventory": [],
-    "lastChatAwardTime": 1794257549910,
-    "lastActiveTime": 1794274643426,
+    "threeStarsCount": 1,
+    "inventory": [
+      {
+        "name": "Cool Steel",
+        "rarity": 3,
+        "type": "weapon",
+        "element": null,
+        "weaponType": "Sword",
+        "region": null,
+        "title": null,
+        "icon": null,
+        "remoteIcon": "https://genshin.jmp.blue/weapons/cool-steel/icon",
+        "remoteIconDev": null,
+        "splashArt": "https://genshin.jmp.blue/weapons/cool-steel/icon",
+        "splashArtDev": null,
+        "portrait": null,
+        "internalName": null,
+        "slug": "cool-steel",
+        "isCapturingRadiance": false,
+        "pulledAt": "2026-11-10T21:15:01.012Z"
+      }
+    ],
+    "lastChatAwardTime": 1794346926440,
+    "lastActiveTime": 1794348394994,
     "createdAt": "2026-11-09T20:50:43.308Z"
   },
   "shadowdream232": {
     "username": "ShadowDream232",
-    "primogems": 1250,
+    "primogems": 1590,
     "pity4": 0,
     "pity5": 0,
     "isGuaranteed": false,
@@ -1200,13 +1220,13 @@
     "fourStarsCount": 0,
     "threeStarsCount": 0,
     "inventory": [],
-    "lastChatAwardTime": 1794257504406,
-    "lastActiveTime": 1794274643465,
+    "lastChatAwardTime": 1794346370738,
+    "lastActiveTime": 1794348395020,
     "createdAt": "2026-11-09T20:51:44.405Z"
   },
   "bnyasheer": {
     "username": "Bnyasheer",
-    "primogems": 1250,
+    "primogems": 1590,
     "pity4": 0,
     "pity5": 0,
     "isGuaranteed": false,
@@ -1218,8 +1238,8 @@
     "fourStarsCount": 0,
     "threeStarsCount": 0,
     "inventory": [],
-    "lastChatAwardTime": 1794257505105,
-    "lastActiveTime": 1794274643470,
+    "lastChatAwardTime": 1794346543533,
+    "lastActiveTime": 1794348395058,
     "createdAt": "2026-11-09T20:51:45.104Z"
   },
   "gezgin_3509": {
@@ -3852,7 +3872,7 @@
   },
   "gezgin_4136": {
     "username": "Gezgin_4136",
-    "primogems": 949,
+    "primogems": 1289,
     "pity4": 0,
     "pity5": 0,
     "isGuaranteed": false,
@@ -3865,12 +3885,12 @@
     "threeStarsCount": 0,
     "inventory": [],
     "lastChatAwardTime": 0,
-    "lastActiveTime": 1794343294734,
+    "lastActiveTime": 1794348395089,
     "createdAt": "2026-11-10T18:47:56.514Z"
   },
   "gezgin_6161": {
     "username": "Gezgin_6161",
-    "primogems": 263,
+    "primogems": 603,
     "pity4": 0,
     "pity5": 0,
     "isGuaranteed": false,
@@ -3883,7 +3903,43 @@
     "threeStarsCount": 0,
     "inventory": [],
     "lastChatAwardTime": 0,
-    "lastActiveTime": 1794343294745,
+    "lastActiveTime": 1794348395117,
     "createdAt": "2026-11-10T20:32:15.840Z"
+  },
+  "mylune": {
+    "username": "mylune",
+    "primogems": 50320,
+    "pity4": 0,
+    "pity5": 0,
+    "isGuaranteed": false,
+    "isGuaranteed4": false,
+    "standardPity5": 0,
+    "standardPity4": 0,
+    "totalWishes": 0,
+    "fiveStarsCount": 0,
+    "fourStarsCount": 0,
+    "threeStarsCount": 0,
+    "inventory": [],
+    "lastChatAwardTime": 1794343827535,
+    "lastActiveTime": 1794348395141,
+    "createdAt": "2026-11-10T20:50:27.532Z"
+  },
+  "nizipli_cavus": {
+    "username": "Nizipli_Cavus",
+    "primogems": 290,
+    "pity4": 0,
+    "pity5": 0,
+    "isGuaranteed": false,
+    "isGuaranteed4": false,
+    "standardPity5": 0,
+    "standardPity4": 0,
+    "totalWishes": 0,
+    "fiveStarsCount": 0,
+    "fourStarsCount": 0,
+    "threeStarsCount": 0,
+    "inventory": [],
+    "lastChatAwardTime": 1794346815637,
+    "lastActiveTime": 1794348395169,
+    "createdAt": "2026-11-10T21:40:15.635Z"
   }
 }
