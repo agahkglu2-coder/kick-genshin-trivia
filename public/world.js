@@ -1172,31 +1172,39 @@
   }
 
   // --- 2. 3D Overhead Billboard Helpers (Nametag & Speech Bubble) ---
-  function createNametagCanvas(username, isGuest, primogems = 0) {
+  function createNametagCanvas(username, isGuest, primogems = 0, gearScore = 0, level = 1) {
     const cvs = document.createElement('canvas');
-    cvs.width = 256;
+    cvs.width = 280;
     cvs.height = 64;
     const ctx = cvs.getContext('2d');
     ctx.imageSmoothingEnabled = true;
 
     // Background capsule
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
     ctx.beginPath();
-    ctx.roundRect(10, 10, 236, 44, 14);
+    ctx.roundRect(8, 8, 264, 48, 14);
     ctx.fill();
 
-    // Border
+    // Border: Tier colored based on GearScore
+    let borderCol = isGuest ? '#64748b' : '#53fc18';
+    if (gearScore >= 2000) borderCol = '#eab308'; // Legendary Gold
+    else if (gearScore >= 1000) borderCol = '#a855f7'; // Epic Purple
+    else if (gearScore >= 500) borderCol = '#38bdf8'; // Rare Blue
+    else if (gearScore >= 200) borderCol = '#22c55e'; // Uncommon Green
+
     ctx.lineWidth = 3;
-    ctx.strokeStyle = isGuest ? '#64748b' : '#53fc18';
+    ctx.strokeStyle = borderCol;
     ctx.stroke();
 
-    // Text
-    ctx.font = 'bold 22px Nunito, sans-serif';
-    ctx.fillStyle = '#ffffff';
+    // Text: [GS XXX] Name
+    ctx.font = 'bold 20px Nunito, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const tag = isGuest ? username : `⚡ ${username}`;
-    ctx.fillText(tag, 128, 32);
+    ctx.fillStyle = '#ffffff';
+
+    const gsTag = gearScore > 0 ? `[GS ${gearScore}] ` : '';
+    const nameStr = isGuest ? username : `⚡ ${username}`;
+    ctx.fillText(`${gsTag}${nameStr}`, 140, 32);
 
     const texture = new THREE.CanvasTexture(cvs);
     texture.magFilter = THREE.LinearFilter;
@@ -3726,20 +3734,22 @@
   }
 
   // --- 6. Character 3D Mesh Creation & Bubbles ---
-  function createPlayerMesh(avatarIndex, username, isGuest, primogems) {
+  function createPlayerMesh(avatarIndex, username, isGuest, primogems, gearScore = 0, level = 1) {
     const group = create3DChibiCharacter(avatarIndex);
 
     // Overhead Nametag Billboard
-    const nameTex = createNametagCanvas(username, isGuest, primogems);
+    const nameTex = createNametagCanvas(username, isGuest, primogems, gearScore, level);
     const nameMat = new THREE.SpriteMaterial({ map: nameTex });
     const nameSprite = new THREE.Sprite(nameMat);
-    nameSprite.scale.set(3.2, 0.8, 1);
+    nameSprite.scale.set(3.4, 0.8, 1);
     nameSprite.position.y = 2.45;
     group.add(nameSprite);
 
     group.userData.nameSprite = nameSprite;
     group.userData.avatarIndex = avatarIndex;
     group.userData.username = username;
+    group.userData.gearScore = gearScore;
+    group.userData.level = level;
     group.userData.bubbleMesh = null;
 
     return group;
@@ -3851,6 +3861,17 @@
       }
     } else if (msg.type === 'WORLD_BOSS_ANNOUNCE') {
       addChatMessage('⚔️ BOSS YENİLDİ', `👑 @${msg.username} antik zindandaki ${msg.mobName} canavarını alt etti ve +${msg.primo} Primogem kazandı!`);
+    } else if (msg.type === 'RPG_PROFILE_STATE') {
+      myRpgProfile = msg.state;
+      updateUIProfile();
+      const sheetModal = document.getElementById('modal-character-sheet');
+      if (sheetModal && !sheetModal.classList.contains('hidden')) {
+        renderCharacterSheet();
+      }
+    } else if (msg.type === 'RPG_KILL_RESULT') {
+      handleRpgKillResult(msg);
+    } else if (msg.type === 'RPG_INSPECT_DATA') {
+      renderInspectModal(msg);
     }
     // Trade Messages
     else if (msg.type === 'TRADE_INVITE') {
@@ -3894,7 +3915,7 @@
 
       if (!otherPlayers.has(p.id)) {
         // New player spawned
-        const mesh = createPlayerMesh(p.avatarIndex, p.username, p.isGuest, p.primogems);
+        const mesh = createPlayerMesh(p.avatarIndex, p.username, p.isGuest, p.primogems, p.gearScore || 0, p.level || 1);
         mesh.position.set(p.x, p.y, p.z);
         scene.add(mesh);
 
@@ -3911,10 +3932,18 @@
         const entry = otherPlayers.get(p.id);
         if (entry.mesh.userData && entry.mesh.userData.avatarIndex !== p.avatarIndex) {
           scene.remove(entry.mesh);
-          entry.mesh = createPlayerMesh(p.avatarIndex, p.username, p.isGuest, p.primogems);
+          entry.mesh = createPlayerMesh(p.avatarIndex, p.username, p.isGuest, p.primogems, p.gearScore || 0, p.level || 1);
           entry.mesh.position.set(entry.targetX, p.y || 0, entry.targetZ);
           entry.mesh.rotation.y = entry.targetRot;
           scene.add(entry.mesh);
+        } else if (entry.mesh.userData && entry.mesh.userData.gearScore !== (p.gearScore || 0)) {
+          // GearScore updated -> refresh overhead billboard
+          entry.mesh.userData.gearScore = p.gearScore || 0;
+          entry.mesh.userData.level = p.level || 1;
+          if (entry.mesh.userData.nameSprite) {
+            entry.mesh.userData.nameSprite.material.map = createNametagCanvas(p.username, p.isGuest, p.primogems, p.gearScore || 0, p.level || 1);
+            entry.mesh.userData.nameSprite.material.needsUpdate = true;
+          }
         }
         entry.targetX = p.x;
         entry.targetZ = p.z;
@@ -3944,7 +3973,9 @@
   let myMesh = null;
   function updateMyMesh() {
     if (myMesh) scene.remove(myMesh);
-    myMesh = createPlayerMesh(myPlayer.avatarIndex, myPlayer.username, myPlayer.isGuest, myPlayer.primogems);
+    const myGs = (myRpgProfile && myRpgProfile.stats && myRpgProfile.stats.gearScore) || 0;
+    const myLvl = (myRpgProfile && myRpgProfile.level) || 1;
+    myMesh = createPlayerMesh(myPlayer.avatarIndex, myPlayer.username, myPlayer.isGuest, myPlayer.primogems, myGs, myLvl);
     myMesh.position.set(myPlayer.x, myPlayer.y, myPlayer.z);
     scene.add(myMesh);
   }
@@ -4172,12 +4203,13 @@
       }
     }
 
-    // Check Nearby Players for Trade
+    // Check Nearby Players for Interaction (Inspect & Trade)
     for (const [id, entry] of otherPlayers.entries()) {
       const dist = Math.hypot(myPlayer.x - entry.mesh.position.x, myPlayer.z - entry.mesh.position.z);
       if (dist < 2.8) {
         nearbyInteractable = { type: 'player', data: entry.data };
-        promptText.textContent = `[E] @${entry.data.username} ile Takas Yap`;
+        const gsStr = entry.data.gearScore ? ` [GS ${entry.data.gearScore}]` : '';
+        promptText.textContent = `[E] @${entry.data.username}${gsStr} İncele / Takas`;
         prompt.classList.remove('hidden');
         return;
       }
@@ -4201,7 +4233,7 @@
       }
     } else if (nearbyInteractable.type === 'player') {
       playBeep(659, 'sine', 0.15);
-      sendTradeRequest(nearbyInteractable.data.username);
+      openPlayerInteractMenu(nearbyInteractable.data);
     } else if (nearbyInteractable.type && nearbyInteractable.type.startsWith('npc_')) {
       playBeep(659, 'sine', 0.15);
       openRPGDialogue(nearbyInteractable.type);
@@ -5670,6 +5702,13 @@
     if (previewCvs) {
       drawAvatarPreviewPortrait(previewCvs, AVATAR_PRESETS[myPlayer.avatarIndex % AVATAR_PRESETS.length]);
     }
+
+    // MMORPG GearScore Pill in Top Bar
+    const gsVal = document.getElementById('ui-gs-value');
+    if (gsVal) {
+      const gs = (myRpgProfile && myRpgProfile.stats && myRpgProfile.stats.gearScore) || 0;
+      gsVal.textContent = gs;
+    }
   }
 
   function addChatMessage(user, text) {
@@ -6676,8 +6715,11 @@
     // Slash Arc Visual
     createSlashArcMesh(myPlayer.x, myPlayer.z, myPlayer.rot, step);
 
-    // Hit Detection
-    const baseDmg = step === 1 ? 45 : (step === 2 ? 65 : 115);
+    // Hit Detection scaled with MMORPG Stats
+    const playerAtk = (myRpgProfile && myRpgProfile.stats && myRpgProfile.stats.atk) || 28;
+    const playerCritRate = ((myRpgProfile && myRpgProfile.stats && myRpgProfile.stats.crit) || 12) / 100;
+    const playerCritMult = ((myRpgProfile && myRpgProfile.stats && myRpgProfile.stats.critDmg) || 150) / 100;
+    const baseDmg = Math.round(playerAtk * (step === 1 ? 1.6 : (step === 2 ? 2.3 : 4.0)));
     const hitRadius = step === 3 ? 4.8 : 3.6;
     let hitCount = 0;
 
@@ -6697,8 +6739,8 @@
         }
 
         hitCount++;
-        const isCrit = Math.random() < 0.25;
-        let finalDmg = isCrit ? Math.round(baseDmg * 1.85) : baseDmg;
+        const isCrit = Math.random() < playerCritRate;
+        let finalDmg = isCrit ? Math.round(baseDmg * playerCritMult) : baseDmg;
         mob.hp = Math.max(0, mob.hp - finalDmg);
 
         if (mob.hpFillMesh) {
@@ -6857,22 +6899,24 @@
       });
     });
 
+    // Notify server of mob defeat for MMORPG XP & Equipment drops
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({
+        type: 'WORLD_MOB_DEFEAT',
+        mob: {
+          name: mob.name,
+          type: mob.type,
+          level: mob.level || 1,
+          isBoss: !!mob.isBoss,
+          bossLootName: droppedItems.find(i => i.rarity === 5)?.name || droppedItems[0]?.name || 'Kadim Kaos Çekirdeği'
+        }
+      }));
+    }
+
     if (mob.isBoss) {
       playVictoryJingle();
-      const bossLootName = droppedItems.find(i => i.rarity === 5)?.name || droppedItems[0]?.name || 'Kadim Kaos Çekirdeği';
       addChatMessage('⚔️ BOSS YENİLDİ', `👑 Antik Yıkım Muhafızı yere serildi! Çantana nadir materyaller düştü!`);
       bossRespawnTimer = performance.now() + 25000;
-
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({
-          type: 'WORLD_MOB_DEFEAT',
-          mob: {
-            name: mob.name,
-            isBoss: true,
-            bossLootName: bossLootName
-          }
-        }));
-      }
     }
   }
 
@@ -7359,6 +7403,18 @@
         }
       }
 
+      if (k === 'c' || k === 'p') {
+        e.preventDefault();
+        toggleCharacterSheet();
+        return;
+      }
+      if (k === 'escape') {
+        closeItemPopover();
+        closePlayerInteractMenu();
+        closeModal('modal-character-sheet');
+        closeModal('modal-inspect-player');
+      }
+
       if (k === 'w' || k === 'arrowup') keys.w = true;
       if (k === 's' || k === 'arrowdown') keys.s = true;
       if (k === 'a' || k === 'arrowleft') keys.a = true;
@@ -7418,8 +7474,72 @@
       fetchInventory();
       document.getElementById('inventory-drawer').classList.toggle('hidden');
     };
+    document.getElementById('btn-open-character').onclick = () => openCharacterSheet();
     document.getElementById('btn-open-auth').onclick = () => openModal('modal-auth');
     document.getElementById('btn-change-avatar').onclick = () => openModal('modal-avatar');
+
+    // Profile Card & GS Badge Open Character Sheet
+    const profileCard = document.getElementById('profile-card');
+    if (profileCard) profileCard.onclick = () => openCharacterSheet();
+    const gsBadge = document.getElementById('ui-gs-badge');
+    if (gsBadge) gsBadge.onclick = (e) => { e.stopPropagation(); openCharacterSheet(); };
+
+    // RPG Bag & Popover Action Buttons
+    const btnSalvageJunk = document.getElementById('btn-salvage-junk');
+    if (btnSalvageJunk) btnSalvageJunk.onclick = () => salvageJunk();
+
+    const popoverBackdrop = document.getElementById('popover-backdrop');
+    if (popoverBackdrop) popoverBackdrop.onclick = () => closeItemPopover();
+
+    const btnPopoverEquip = document.getElementById('btn-popover-equip');
+    if (btnPopoverEquip) btnPopoverEquip.onclick = () => {
+      if (!selectedPopoverItem) return;
+      if (selectedPopoverIsEquipped) {
+        unequipItem(selectedPopoverItem.slot);
+      } else {
+        equipItem(selectedPopoverItem.uid);
+      }
+      closeItemPopover();
+    };
+
+    const btnPopoverUpgrade = document.getElementById('btn-popover-upgrade');
+    if (btnPopoverUpgrade) btnPopoverUpgrade.onclick = () => {
+      if (!selectedPopoverItem) return;
+      upgradeItem(selectedPopoverItem.uid);
+    };
+
+    const btnPopoverSalvage = document.getElementById('btn-popover-salvage');
+    if (btnPopoverSalvage) btnPopoverSalvage.onclick = () => {
+      if (!selectedPopoverItem) return;
+      salvageItem(selectedPopoverItem.uid);
+      closeItemPopover();
+    };
+
+    // Player Proximity Menu Buttons
+    const btnMenuInspect = document.getElementById('btn-menu-inspect');
+    if (btnMenuInspect) btnMenuInspect.onclick = () => {
+      const targetUser = activeInteractPlayer ? activeInteractPlayer.username : null;
+      closePlayerInteractMenu();
+      if (targetUser) openInspectModal(targetUser);
+    };
+
+    const btnMenuTrade = document.getElementById('btn-menu-trade');
+    if (btnMenuTrade) btnMenuTrade.onclick = () => {
+      const targetUser = activeInteractPlayer ? activeInteractPlayer.username : null;
+      closePlayerInteractMenu();
+      if (targetUser) sendTradeRequest(targetUser);
+    };
+
+    const btnMenuCancel = document.getElementById('btn-menu-cancel');
+    if (btnMenuCancel) btnMenuCancel.onclick = () => closePlayerInteractMenu();
+
+    const btnInspectTrade = document.getElementById('btn-inspect-send-trade');
+    if (btnInspectTrade) btnInspectTrade.onclick = () => {
+      closeModal('modal-inspect-player');
+      if (activeInspectProfile && activeInspectProfile.target) {
+        sendTradeRequest(activeInspectProfile.target);
+      }
+    };
 
     // Close Modals
     document.querySelectorAll('[data-close]').forEach(btn => {
@@ -7811,9 +7931,558 @@
     renderer.render(scene, camera);
   }
 
+  // --- 13. MMORPG Item & GearScore (GS) Client Engine ---
+  let myRpgProfile = null;
+  let activeInspectProfile = null;
+  let activeInteractPlayer = null;
+  let selectedPopoverItem = null;
+  let selectedPopoverIsEquipped = false;
+
+  const RPG_SLOTS = ['weapon', 'helmet', 'chest', 'gloves', 'boots', 'ring', 'amulet'];
+  const RPG_SLOT_ICONS = {
+    weapon: '🗡️',
+    helmet: '👑',
+    chest: '🛡️',
+    gloves: '🧤',
+    boots: '👢',
+    ring: '💍',
+    amulet: '📿'
+  };
+  const RPG_SLOT_LABELS = {
+    weapon: 'Silah',
+    helmet: 'Miğfer',
+    chest: 'Zırh',
+    gloves: 'Eldiven',
+    boots: 'Çizme',
+    ring: 'Yüzük',
+    amulet: 'Kolye'
+  };
+  const RPG_RARITY_LABELS = {
+    1: 'Sıradan',
+    2: 'Sıradışı',
+    3: 'Nadir',
+    4: 'Destansı',
+    5: 'Efsanevi'
+  };
+  const RPG_STAT_LABELS = {
+    atk: 'Saldırı',
+    hp: 'Can',
+    def: 'Savunma',
+    crit: 'Kritik Şansı',
+    critDmg: 'Kritik Hasarı',
+    haste: 'Hız / CDR',
+    lifesteal: 'Can Çalma'
+  };
+  const RPG_PERCENT_STATS = new Set(['crit', 'critDmg', 'haste', 'lifesteal']);
+
+  function getGearScoreTier(gs) {
+    if (gs >= 2000) return { name: 'Kadim Efsane', color: '#f59e0b', tag: 'Efsane' };
+    if (gs >= 1000) return { name: 'Kahraman', color: '#a855f7', tag: 'Destansı' };
+    if (gs >= 500) return { name: 'Usta Savaşçı', color: '#38bdf8', tag: 'Nadir' };
+    if (gs >= 200) return { name: 'Maceracı', color: '#22c55e', tag: 'Sıradışı' };
+    return { name: 'Çaylak Gezgin', color: '#94a3b8', tag: 'Sıradan' };
+  }
+
+  async function fetchRpgProfile() {
+    if (!myPlayer || !myPlayer.username) return;
+    try {
+      const res = await fetch(`/api/rpg/profile?username=${encodeURIComponent(myPlayer.username)}`);
+      const data = await res.json();
+      if (data && data.ok && data.state) {
+        myRpgProfile = data.state;
+        updateUIProfile();
+        // Update local mesh nametag
+        if (myMesh && myMesh.userData && myMesh.userData.nameSprite) {
+          myMesh.userData.gearScore = (myRpgProfile.stats && myRpgProfile.stats.gearScore) || 0;
+          myMesh.userData.level = myRpgProfile.level || 1;
+          myMesh.userData.nameSprite.material.map = createNametagCanvas(
+            myPlayer.username,
+            myPlayer.isGuest,
+            myPlayer.primogems,
+            myMesh.userData.gearScore,
+            myMesh.userData.level
+          );
+          myMesh.userData.nameSprite.material.needsUpdate = true;
+        }
+        const sheet = document.getElementById('modal-character-sheet');
+        if (sheet && !sheet.classList.contains('hidden')) {
+          renderCharacterSheet();
+        }
+      }
+    } catch (e) {
+      console.error('[RPG] Profil getirme hatası:', e);
+    }
+  }
+
+  function toggleCharacterSheet() {
+    const sheet = document.getElementById('modal-character-sheet');
+    if (!sheet) return;
+    if (sheet.classList.contains('hidden')) {
+      openCharacterSheet();
+    } else {
+      closeModal('modal-character-sheet');
+      closeItemPopover();
+    }
+  }
+
+  function openCharacterSheet() {
+    openModal('modal-character-sheet');
+    const cvs = document.getElementById('sheet-avatar-canvas');
+    if (cvs) {
+      drawAvatarPreviewPortrait(cvs, AVATAR_PRESETS[myPlayer.avatarIndex % AVATAR_PRESETS.length]);
+    }
+    fetchRpgProfile().then(() => {
+      renderCharacterSheet();
+    });
+  }
+
+  function renderCharacterSheet() {
+    if (!myRpgProfile) return;
+    const p = myRpgProfile;
+    const stats = p.stats || {};
+    const gs = stats.gearScore || 0;
+    const tier = getGearScoreTier(gs);
+
+    document.getElementById('sheet-player-name').textContent = myPlayer.username;
+    document.getElementById('sheet-player-title').textContent = tier.name;
+    document.getElementById('sheet-dust-val').textContent = p.dust || 0;
+    document.getElementById('sheet-level-badge').textContent = `Lv.${p.level}`;
+    document.getElementById('sheet-gs-number').textContent = gs;
+    const tierTag = document.getElementById('sheet-gs-tier');
+    if (tierTag) {
+      tierTag.textContent = tier.tag;
+      tierTag.style.color = tier.color;
+      tierTag.style.borderColor = tier.color;
+    }
+
+    // XP Bar
+    const xpFill = document.getElementById('sheet-xp-fill');
+    const xpText = document.getElementById('sheet-xp-text');
+    if (p.level >= p.maxLevel) {
+      if (xpFill) xpFill.style.width = '100%';
+      if (xpText) xpText.textContent = 'MAKSİMUM SEVİYE (Lv.50)';
+    } else {
+      const pct = Math.max(0, Math.min(100, (p.xp / (p.xpNeeded || 1)) * 100));
+      if (xpFill) xpFill.style.width = `${pct}%`;
+      if (xpText) xpText.textContent = `${p.xp} / ${p.xpNeeded} XP (%${Math.round(pct)})`;
+    }
+
+    // Stats Grid
+    document.getElementById('stat-val-atk').textContent = stats.atk || 18;
+    document.getElementById('stat-val-def').textContent = stats.def || 4;
+    document.getElementById('stat-val-hp').textContent = stats.hp || 420;
+    document.getElementById('stat-val-crit').textContent = `%${stats.crit || 5}`;
+    document.getElementById('stat-val-critDmg').textContent = `%${stats.critDmg || 150}`;
+    document.getElementById('stat-val-haste').textContent = `%${stats.haste || 0}`;
+
+    // Summary counts
+    const killsEl = document.getElementById('sheet-kills-count');
+    if (killsEl) killsEl.textContent = p.kills || 0;
+    const bossEl = document.getElementById('sheet-boss-count');
+    if (bossEl) bossEl.textContent = p.bossKills || 0;
+
+    // 7 Equipped Slots
+    const eq = p.equipment || {};
+    for (const slot of RPG_SLOTS) {
+      const item = eq[slot];
+      const card = document.getElementById(`slot-card-${slot}`);
+      const nameEl = document.getElementById(`slot-name-${slot}`);
+      const scoreEl = document.getElementById(`slot-score-${slot}`);
+      if (!card || !nameEl) continue;
+
+      card.className = 'equip-slot-card';
+      if (item) {
+        card.classList.add(`rarity-${item.rarity}`);
+        const plusStr = (item.plus > 0) ? `+${item.plus} ` : '';
+        nameEl.textContent = `${plusStr}${item.name}`;
+        if (scoreEl) scoreEl.textContent = `GS +${item.score || 0}`;
+        card.onclick = () => showItemPopover(item, true);
+      } else {
+        nameEl.textContent = 'Boş Yuva';
+        if (scoreEl) scoreEl.textContent = '';
+        card.onclick = null;
+      }
+    }
+
+    // 40 Bag Slots
+    const bagGrid = document.getElementById('sheet-bag-grid');
+    const bagCount = document.getElementById('sheet-bag-count');
+    if (bagCount) bagCount.textContent = p.bag.length;
+    if (bagGrid) {
+      bagGrid.innerHTML = '';
+      const totalSlots = p.bagSize || 40;
+      for (let i = 0; i < totalSlots; i++) {
+        const item = p.bag[i] || null;
+        const cell = document.createElement('div');
+        if (item) {
+          cell.className = `bag-slot-cell rarity-${item.rarity}`;
+          cell.innerHTML = `
+            <span class="bag-item-icon">${RPG_SLOT_ICONS[item.slot] || '📦'}</span>
+            ${item.plus > 0 ? `<span class="bag-item-plus">+${item.plus}</span>` : ''}
+            <span class="bag-item-ilvl">i${item.ilvl}</span>
+          `;
+          cell.onclick = () => showItemPopover(item, false);
+          cell.title = `${item.plus > 0 ? '+' + item.plus + ' ' : ''}${item.name} (${RPG_RARITY_LABELS[item.rarity]} | GS ${item.score})`;
+        } else {
+          cell.className = 'bag-slot-cell empty';
+        }
+        bagGrid.appendChild(cell);
+      }
+    }
+  }
+
+  function showItemPopover(item, isEquipped, isInspect = false) {
+    selectedPopoverItem = item;
+    selectedPopoverIsEquipped = isEquipped;
+
+    const popover = document.getElementById('rpg-item-popover');
+    if (!popover) return;
+
+    const nameEl = document.getElementById('popover-item-name');
+    const plusEl = document.getElementById('popover-plus-badge');
+    const rarityEl = document.getElementById('popover-rarity');
+    const slotEl = document.getElementById('popover-slot');
+    const ilvlEl = document.getElementById('popover-ilvl');
+    const gsVal = document.getElementById('popover-gs-val');
+    const statsBox = document.getElementById('popover-stats');
+    const affixesBox = document.getElementById('popover-affixes');
+    const actionsBox = document.getElementById('popover-actions');
+
+    const header = document.getElementById('popover-header');
+    if (header) {
+      header.className = `popover-header rarity-${item.rarity}`;
+    }
+
+    nameEl.textContent = item.name;
+    plusEl.textContent = item.plus > 0 ? `+${item.plus}` : '';
+    rarityEl.textContent = item.rarityLabel || RPG_RARITY_LABELS[item.rarity];
+    slotEl.textContent = item.slotLabel || RPG_SLOT_LABELS[item.slot];
+    ilvlEl.textContent = `ilvl ${item.ilvl}`;
+    gsVal.textContent = `+${item.score} GS`;
+
+    // Stats
+    statsBox.innerHTML = '';
+    if (item.stats) {
+      for (const [k, v] of Object.entries(item.stats)) {
+        const isPct = RPG_PERCENT_STATS.has(k);
+        const line = document.createElement('div');
+        line.className = 'popover-stat-line';
+        line.innerHTML = `<span>${RPG_STAT_LABELS[k] || k}:</span> <strong>+${v}${isPct ? '%' : ''}</strong>`;
+        statsBox.appendChild(line);
+      }
+    }
+
+    // Affixes
+    affixesBox.innerHTML = '';
+    if (item.affixes && item.affixes.length > 0) {
+      item.affixes.forEach(aff => {
+        const isPct = RPG_PERCENT_STATS.has(aff.stat);
+        const line = document.createElement('div');
+        line.className = 'popover-affix-line';
+        line.innerHTML = `✦ ${RPG_STAT_LABELS[aff.stat] || aff.stat} (Kalite: %${Math.round(aff.roll * 100)})`;
+        affixesBox.appendChild(line);
+      });
+    }
+
+    // Actions
+    if (isInspect) {
+      actionsBox.style.display = 'none';
+    } else {
+      actionsBox.style.display = 'flex';
+      const btnEquip = document.getElementById('btn-popover-equip');
+      const btnUpgrade = document.getElementById('btn-popover-upgrade');
+      const btnSalvage = document.getElementById('btn-popover-salvage');
+
+      if (btnEquip) {
+        btnEquip.textContent = isEquipped ? 'Çıkar' : 'Kuşan';
+      }
+      if (btnUpgrade) {
+        if (item.plus >= 10) {
+          btnUpgrade.textContent = 'Maks (+10)';
+          btnUpgrade.disabled = true;
+        } else {
+          btnUpgrade.textContent = `✨ Güçlendir (+${item.plus + 1}) [${item.upgradeCost || 0} Toz]`;
+          btnUpgrade.disabled = Boolean(myRpgProfile && myRpgProfile.dust < (item.upgradeCost || 0));
+        }
+      }
+      if (btnSalvage) {
+        if (isEquipped) {
+          btnSalvage.style.display = 'none';
+        } else {
+          btnSalvage.style.display = 'block';
+          btnSalvage.textContent = `♻️ Parçala (+${item.salvage || 1} Toz)`;
+        }
+      }
+    }
+
+    popover.classList.remove('hidden');
+  }
+
+  function closeItemPopover() {
+    const popover = document.getElementById('rpg-item-popover');
+    if (popover) popover.classList.add('hidden');
+    selectedPopoverItem = null;
+  }
+
+  async function equipItem(uid) {
+    try {
+      const res = await fetch('/api/rpg/equip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: myPlayer.username, uid })
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        playBeep(784, 'triangle', 0.12);
+        myRpgProfile = data.state;
+        updateUIProfile();
+        renderCharacterSheet();
+        addChatMessage('Ekipman', `⚔️ "${data.result.item.name}" başarıyla kuşandı! (+${data.result.item.score} GS)`);
+      } else {
+        alert(data.error || 'Eşya kuşanılamadı.');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function unequipItem(slot) {
+    try {
+      const res = await fetch('/api/rpg/unequip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: myPlayer.username, slot })
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        playBeep(523, 'sine', 0.12);
+        myRpgProfile = data.state;
+        updateUIProfile();
+        renderCharacterSheet();
+      } else {
+        alert(data.error || 'Eşya çıkarılamadı.');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function upgradeItem(uid) {
+    try {
+      const res = await fetch('/api/rpg/upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: myPlayer.username, uid })
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        playBeep(1046, 'triangle', 0.2);
+        myRpgProfile = data.state;
+        updateUIProfile();
+        renderCharacterSheet();
+        showItemPopover(data.result.item, selectedPopoverIsEquipped);
+        addChatMessage('Demirci', `✨ Güçlendirme Başarılı! "${data.result.item.name}" seviyesi +${data.result.item.plus} oldu! (${data.result.item.score} GS)`);
+      } else {
+        alert(data.error || 'Güçlendirme başarısız.');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function salvageItem(uid) {
+    try {
+      const res = await fetch('/api/rpg/salvage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: myPlayer.username, uid })
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        playBeep(440, 'sawtooth', 0.15);
+        myRpgProfile = data.state;
+        updateUIProfile();
+        renderCharacterSheet();
+        addChatMessage('Rün Tozu', `♻️ Eşya parçalandı, +${data.result.dust} Rün Tozu elde edildi.`);
+      } else {
+        alert(data.error || 'Parçalama yapılamadı.');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function salvageJunk() {
+    if (!confirm('Çantandaki tüm Sıradan ve Sıradışı eşyaları Rün Tozu için parçalamak istediğine emin misin?')) return;
+    try {
+      const res = await fetch('/api/rpg/salvage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: myPlayer.username, maxRarity: 2 })
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        playBeep(587, 'triangle', 0.2);
+        myRpgProfile = data.state;
+        updateUIProfile();
+        renderCharacterSheet();
+        addChatMessage('Rün Tozu', `♻️ Toplu Parçalama: ${data.result.count} adet eşya parçalandı, +${data.result.dust} Rün Tozu kazanıldı!`);
+      } else {
+        alert(data.error || 'Parçalanacak eşya bulunamadı.');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // --- Inspect Other Players Engine ---
+  async function openInspectModal(targetUsername) {
+    try {
+      const res = await fetch(`/api/rpg/inspect?target=${encodeURIComponent(targetUsername)}`);
+      const data = await res.json();
+      if (data && data.ok && data.profile) {
+        renderInspectModal(data);
+      } else {
+        alert(data.error || 'Oyuncu profili bulunamadı.');
+      }
+    } catch (e) {
+      console.error('[Inspect] Hata:', e);
+    }
+  }
+
+  function renderInspectModal(data) {
+    activeInspectProfile = data;
+    const p = data.profile;
+    const stats = p.stats || {};
+    const gs = stats.gearScore || 0;
+    const tier = getGearScoreTier(gs);
+
+    document.getElementById('inspect-player-name').textContent = `@${data.target}`;
+    document.getElementById('inspect-player-badge').textContent = data.isGuest ? 'Misafir Maceracı' : '⚡ Kick Savaşçısı';
+    document.getElementById('inspect-level-badge').textContent = `Lv.${p.level}`;
+    document.getElementById('inspect-gs-number').textContent = gs;
+
+    const tierEl = document.getElementById('inspect-gs-tier');
+    if (tierEl) {
+      tierEl.textContent = tier.tag;
+      tierEl.style.color = tier.color;
+      tierEl.style.borderColor = tier.color;
+    }
+
+    const cvs = document.getElementById('inspect-avatar-canvas');
+    if (cvs) {
+      const avIdx = Math.abs(parseInt(data.avatarIndex, 10) || 0) % AVATAR_PRESETS.length;
+      drawAvatarPreviewPortrait(cvs, AVATAR_PRESETS[avIdx]);
+    }
+
+    // Target Stats
+    document.getElementById('ins-stat-atk').textContent = stats.atk || 0;
+    document.getElementById('ins-stat-def').textContent = stats.def || 0;
+    document.getElementById('ins-stat-hp').textContent = stats.hp || 0;
+    document.getElementById('ins-stat-crit').textContent = `%${stats.crit || 0}`;
+    document.getElementById('ins-stat-critDmg').textContent = `%${stats.critDmg || 0}`;
+    document.getElementById('ins-stat-haste').textContent = `%${stats.haste || 0}`;
+
+    // Target 7 Slots
+    const eq = p.equipment || {};
+    for (const slot of RPG_SLOTS) {
+      const item = eq[slot];
+      const slotCard = document.getElementById(`inspect-slot-${slot}`);
+      const nameEl = document.getElementById(`ins-name-${slot}`);
+      const scoreEl = document.getElementById(`ins-score-${slot}`);
+      if (!slotCard || !nameEl) continue;
+
+      slotCard.className = 'equip-slot-card inspect-slot';
+      if (item) {
+        slotCard.classList.add(`rarity-${item.rarity}`);
+        const plusStr = item.plus > 0 ? `+${item.plus} ` : '';
+        nameEl.textContent = `${plusStr}${item.name}`;
+        if (scoreEl) scoreEl.textContent = `GS +${item.score || 0}`;
+        slotCard.onclick = () => showItemPopover(item, true, true);
+      } else {
+        nameEl.textContent = 'Boş';
+        if (scoreEl) scoreEl.textContent = '';
+        slotCard.onclick = null;
+      }
+    }
+
+    openModal('modal-inspect-player');
+  }
+
+  // --- Player Proximity Menu (Inspect / Trade) ---
+  function openPlayerInteractMenu(playerData) {
+    activeInteractPlayer = playerData;
+    const modal = document.getElementById('player-interact-modal');
+    if (!modal) return;
+    document.getElementById('interact-target-name').textContent = `@${playerData.username}`;
+    document.getElementById('interact-target-gs').textContent = playerData.gearScore ? `[GS ${playerData.gearScore}]` : '[GS 0]';
+    modal.classList.remove('hidden');
+  }
+
+  function closePlayerInteractMenu() {
+    const modal = document.getElementById('player-interact-modal');
+    if (modal) modal.classList.add('hidden');
+    activeInteractPlayer = null;
+  }
+
+  // --- RPG Kill Result Toast & Level Up FX ---
+  function handleRpgKillResult(msg) {
+    const res = msg.result;
+    if (!res) return;
+
+    // Show floating XP
+    if (res.xp) {
+      showDamageNumber({ x: myPlayer.x, y: 2.2, z: myPlayer.z }, `+${res.xp} XP`, 'primo');
+    }
+
+    // Leveled up?
+    if (res.leveledUp) {
+      playVictoryJingle();
+      showLevelUpBanner(res.level);
+    }
+
+    // Equipment drops
+    if (res.drops && res.drops.length > 0) {
+      res.drops.forEach(item => {
+        showRpgDropToast(item);
+      });
+    }
+
+    // Refresh profile state
+    fetchRpgProfile();
+  }
+
+  function showLevelUpBanner(level) {
+    addChatMessage('🌟 TEBRİKLER', `LEVEL UP! Tebrikler, Seviye ${level} oldun!`);
+    showDamageNumber({ x: myPlayer.x, y: 2.6, z: myPlayer.z }, `⭐ LEVEL UP! Lv.${level}`, 'crit');
+  }
+
+  function showRpgDropToast(item) {
+    const container = document.getElementById('loot-toast-container');
+    if (!container) return;
+
+    playBeep(880, 'sine', 0.2);
+    const pill = document.createElement('div');
+    pill.className = `loot-toast-pill rarity-${item.rarity}`;
+    pill.innerHTML = `
+      <span style="font-size: 1.4rem;">${RPG_SLOT_ICONS[item.slot] || '⚔️'}</span>
+      <div>
+        <span class="loot-toast-name">${item.plus > 0 ? '+' + item.plus + ' ' : ''}${item.name}</span>
+        <span class="loot-toast-rarity">${item.rarityLabel || 'Nadir'} (ilvl ${item.ilvl} | +${item.score} GS)</span>
+      </div>
+    `;
+
+    container.appendChild(pill);
+    setTimeout(() => {
+      pill.remove();
+    }, 3200);
+  }
+
   // --- Bootstrap ---
   window.openRPGDialogue = openRPGDialogue;
   window.closeRPGDialogue = closeRPGDialogue;
+  window.openCharacterSheet = openCharacterSheet;
+  window.openInspectModal = openInspectModal;
 
   window.addEventListener('DOMContentLoaded', () => {
     initThree();
@@ -7821,6 +8490,7 @@
     updateUIProfile();
     initWebSocket();
     initEvents();
+    fetchRpgProfile();
     animate();
   });
 })();

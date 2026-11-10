@@ -34,6 +34,7 @@
         </div>
         <div class="profile-stats-row">
           <span class="primo-pill">💎 <span id="ui-primogems">0</span></span>
+          <span class="gs-pill" id="ui-gs-badge" title="GearScore (Ekipman Puanı)">⚔️ <span id="ui-gs-value">0</span> GS</span>
           <span class="location-pill" id="ui-location">Meydan</span>
         </div>
       </div>
@@ -78,6 +79,7 @@
 
     <!-- Quick Action Bar -->
     <div class="quick-nav-bar">
+      <button class="btn-mmo-nav btn-nav-character" id="btn-open-character">⚔️ Ekipman & GS</button>
       <button class="btn-mmo-nav" id="btn-open-inventory">🎒 Envanter</button>
       <button class="btn-mmo-nav" id="btn-open-auth">🛡️ Kick Girişi</button>
       <button class="btn-mmo-nav" id="btn-change-avatar">🎭 Karakter</button>
@@ -450,6 +452,295 @@
           <button type="button" class="btn-market-cancel" data-close="modal-monster-market">Kapat</button>
           <button type="button" class="btn-market-sell-all" id="btn-market-sell-all">💰 Tümünü Sat</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 11. MMORPG Character Sheet & Equipment Modal -->
+  <div id="modal-character-sheet" class="mmo-modal-overlay hidden">
+    <div class="mmo-modal-container character-sheet-container">
+      <div class="mmo-modal-header">
+        <div class="sheet-title-group">
+          <span class="sheet-icon">⚔️</span>
+          <div>
+            <h3 id="sheet-player-name">Gezgin</h3>
+            <span class="sheet-subtitle" id="sheet-player-title">Kadim Maceracı</span>
+          </div>
+        </div>
+        <div class="sheet-header-actions">
+          <div class="sheet-dust-pill" title="Rün Tozu (Eşyaları güçlendirmek için kullanılır)">
+            <span>✨ Rün Tozu:</span>
+            <strong id="sheet-dust-val">0</strong>
+          </div>
+          <button type="button" class="btn-modal-close" data-close="modal-character-sheet">✕</button>
+        </div>
+      </div>
+
+      <div class="character-sheet-body">
+        <!-- Top Half: Equipment Slots & Center Avatar + Stats -->
+        <div class="sheet-equipment-layout">
+          <!-- Left Slots: Weapon, Helmet, Chest, Gloves -->
+          <div class="equip-column equip-column-left">
+            <div class="equip-slot-card" data-slot="weapon" id="slot-card-weapon">
+              <div class="slot-icon-box">🗡️</div>
+              <div class="slot-info">
+                <span class="slot-label">Silah</span>
+                <span class="slot-item-name" id="slot-name-weapon">Boş</span>
+                <span class="slot-item-score" id="slot-score-weapon"></span>
+              </div>
+            </div>
+            <div class="equip-slot-card" data-slot="helmet" id="slot-card-helmet">
+              <div class="slot-icon-box">👑</div>
+              <div class="slot-info">
+                <span class="slot-label">Miğfer</span>
+                <span class="slot-item-name" id="slot-name-helmet">Boş</span>
+                <span class="slot-item-score" id="slot-score-helmet"></span>
+              </div>
+            </div>
+            <div class="equip-slot-card" data-slot="chest" id="slot-card-chest">
+              <div class="slot-icon-box">🛡️</div>
+              <div class="slot-info">
+                <span class="slot-label">Zırh</span>
+                <span class="slot-item-name" id="slot-name-chest">Boş</span>
+                <span class="slot-item-score" id="slot-score-chest"></span>
+              </div>
+            </div>
+            <div class="equip-slot-card" data-slot="gloves" id="slot-card-gloves">
+              <div class="slot-icon-box">🧤</div>
+              <div class="slot-info">
+                <span class="slot-label">Eldiven</span>
+                <span class="slot-item-name" id="slot-name-gloves">Boş</span>
+                <span class="slot-item-score" id="slot-score-gloves"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Center Stage: Avatar, Level/XP, GearScore Banner, Stats Breakdown -->
+          <div class="sheet-center-stage">
+            <div class="sheet-avatar-wrap">
+              <canvas id="sheet-avatar-canvas" width="80" height="80"></canvas>
+              <div class="sheet-level-badge" id="sheet-level-badge">Lv.1</div>
+            </div>
+
+            <!-- Total GearScore Banner -->
+            <div class="sheet-gearscore-banner" id="sheet-gs-banner">
+              <span class="gs-banner-label">TOPLAM GEARSCORE</span>
+              <div class="gs-banner-value-row">
+                <span class="gs-icon">⚡</span>
+                <span class="gs-banner-number" id="sheet-gs-number">0</span>
+                <span class="gs-tier-tag" id="sheet-gs-tier">Çaylak</span>
+              </div>
+            </div>
+
+            <!-- XP Progress Bar -->
+            <div class="sheet-xp-row">
+              <div class="sheet-xp-bar">
+                <div class="sheet-xp-fill" id="sheet-xp-fill" style="width: 0%"></div>
+              </div>
+              <span class="sheet-xp-text" id="sheet-xp-text">0 / 100 XP</span>
+            </div>
+
+            <!-- Combat Stats Breakdown Grid -->
+            <div class="sheet-stats-grid">
+              <div class="stat-pill"><span class="stat-name">⚔️ Saldırı:</span> <strong id="stat-val-atk">18</strong></div>
+              <div class="stat-pill"><span class="stat-name">🛡️ Savunma:</span> <strong id="stat-val-def">5</strong></div>
+              <div class="stat-pill"><span class="stat-name">❤️ Can:</span> <strong id="stat-val-hp">450</strong></div>
+              <div class="stat-pill"><span class="stat-name">⚡ Kritik:</span> <strong id="stat-val-crit">%5.0</strong></div>
+              <div class="stat-pill"><span class="stat-name">💥 Krit Hasarı:</span> <strong id="stat-val-critDmg">%150</strong></div>
+              <div class="stat-pill"><span class="stat-name">⏳ Hız / CDR:</span> <strong id="stat-val-haste">%0</strong></div>
+            </div>
+          </div>
+
+          <!-- Right Slots: Boots, Ring, Amulet -->
+          <div class="equip-column equip-column-right">
+            <div class="equip-slot-card" data-slot="boots" id="slot-card-boots">
+              <div class="slot-icon-box">👢</div>
+              <div class="slot-info">
+                <span class="slot-label">Çizme</span>
+                <span class="slot-item-name" id="slot-name-boots">Boş</span>
+                <span class="slot-item-score" id="slot-score-boots"></span>
+              </div>
+            </div>
+            <div class="equip-slot-card" data-slot="ring" id="slot-card-ring">
+              <div class="slot-icon-box">💍</div>
+              <div class="slot-info">
+                <span class="slot-label">Yüzük</span>
+                <span class="slot-item-name" id="slot-name-ring">Boş</span>
+                <span class="slot-item-score" id="slot-score-ring"></span>
+              </div>
+            </div>
+            <div class="equip-slot-card" data-slot="amulet" id="slot-card-amulet">
+              <div class="slot-icon-box">📿</div>
+              <div class="slot-info">
+                <span class="slot-label">Kolye</span>
+                <span class="slot-item-name" id="slot-name-amulet">Boş</span>
+                <span class="slot-item-score" id="slot-score-amulet"></span>
+              </div>
+            </div>
+            <!-- Quick Bag Stats / Kills Box -->
+            <div class="sheet-summary-box">
+              <div class="summary-line"><span>👾 Canavar:</span> <strong id="sheet-kills-count">0</strong></div>
+              <div class="summary-line"><span>👑 Boss:</span> <strong id="sheet-boss-count">0</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Half: Adventurer Bag (40 Slots) & Action Toolbar -->
+        <div class="sheet-bag-section">
+          <div class="bag-toolbar">
+            <div class="bag-title-row">
+              <span class="bag-title">🎒 Maceracı Çantası (<span id="sheet-bag-count">0</span>/40)</span>
+            </div>
+            <div class="bag-actions">
+              <button type="button" class="btn-bag-action" id="btn-salvage-junk" title="Sıradan ve Sıradışı eşyaları parçalar">♻️ Düşükleri Parçala</button>
+            </div>
+          </div>
+          <div class="sheet-bag-grid" id="sheet-bag-grid">
+            <!-- 40 item slots dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 12. MMORPG Inspect Other Player Modal -->
+  <div id="modal-inspect-player" class="mmo-modal-overlay hidden">
+    <div class="mmo-modal-container inspect-modal-container">
+      <div class="mmo-modal-header">
+        <div class="sheet-title-group">
+          <span class="sheet-icon">🔍</span>
+          <div>
+            <h3 id="inspect-player-name">Gezgin</h3>
+            <span class="sheet-subtitle" id="inspect-player-badge">İncelenen Oyuncu</span>
+          </div>
+        </div>
+        <button type="button" class="btn-modal-close" data-close="modal-inspect-player">✕</button>
+      </div>
+
+      <div class="character-sheet-body">
+        <div class="sheet-equipment-layout">
+          <!-- Left Slots -->
+          <div class="equip-column equip-column-left">
+            <div class="equip-slot-card inspect-slot" id="inspect-slot-weapon">
+              <div class="slot-icon-box">🗡️</div>
+              <div class="slot-info"><span class="slot-label">Silah</span><span class="slot-item-name" id="ins-name-weapon">Boş</span><span class="slot-item-score" id="ins-score-weapon"></span></div>
+            </div>
+            <div class="equip-slot-card inspect-slot" id="inspect-slot-helmet">
+              <div class="slot-icon-box">👑</div>
+              <div class="slot-info"><span class="slot-label">Miğfer</span><span class="slot-item-name" id="ins-name-helmet">Boş</span><span class="slot-item-score" id="ins-score-helmet"></span></div>
+            </div>
+            <div class="equip-slot-card inspect-slot" id="inspect-slot-chest">
+              <div class="slot-icon-box">🛡️</div>
+              <div class="slot-info"><span class="slot-label">Zırh</span><span class="slot-item-name" id="ins-name-chest">Boş</span><span class="slot-item-score" id="ins-score-chest"></span></div>
+            </div>
+            <div class="equip-slot-card inspect-slot" id="inspect-slot-gloves">
+              <div class="slot-icon-box">🧤</div>
+              <div class="slot-info"><span class="slot-label">Eldiven</span><span class="slot-item-name" id="ins-name-gloves">Boş</span><span class="slot-item-score" id="ins-score-gloves"></span></div>
+            </div>
+          </div>
+
+          <!-- Center Stage -->
+          <div class="sheet-center-stage">
+            <div class="sheet-avatar-wrap">
+              <canvas id="inspect-avatar-canvas" width="80" height="80"></canvas>
+              <div class="sheet-level-badge" id="inspect-level-badge">Lv.1</div>
+            </div>
+
+            <div class="sheet-gearscore-banner" id="inspect-gs-banner">
+              <span class="gs-banner-label">TOPLAM GEARSCORE</span>
+              <div class="gs-banner-value-row">
+                <span class="gs-icon">⚡</span>
+                <span class="gs-banner-number" id="inspect-gs-number">0</span>
+                <span class="gs-tier-tag" id="inspect-gs-tier">Çaylak</span>
+              </div>
+            </div>
+
+            <div class="sheet-stats-grid">
+              <div class="stat-pill"><span class="stat-name">⚔️ Saldırı:</span> <strong id="ins-stat-atk">0</strong></div>
+              <div class="stat-pill"><span class="stat-name">🛡️ Savunma:</span> <strong id="ins-stat-def">0</strong></div>
+              <div class="stat-pill"><span class="stat-name">❤️ Can:</span> <strong id="ins-stat-hp">0</strong></div>
+              <div class="stat-pill"><span class="stat-name">⚡ Kritik:</span> <strong id="ins-stat-crit">%0</strong></div>
+              <div class="stat-pill"><span class="stat-name">💥 Krit Hasarı:</span> <strong id="ins-stat-critDmg">%0</strong></div>
+              <div class="stat-pill"><span class="stat-name">⏳ Hız / CDR:</span> <strong id="ins-stat-haste">%0</strong></div>
+            </div>
+          </div>
+
+          <!-- Right Slots -->
+          <div class="equip-column equip-column-right">
+            <div class="equip-slot-card inspect-slot" id="inspect-slot-boots">
+              <div class="slot-icon-box">👢</div>
+              <div class="slot-info"><span class="slot-label">Çizme</span><span class="slot-item-name" id="ins-name-boots">Boş</span><span class="slot-item-score" id="ins-score-boots"></span></div>
+            </div>
+            <div class="equip-slot-card inspect-slot" id="inspect-slot-ring">
+              <div class="slot-icon-box">💍</div>
+              <div class="slot-info"><span class="slot-label">Yüzük</span><span class="slot-item-name" id="ins-name-ring">Boş</span><span class="slot-item-score" id="ins-score-ring"></span></div>
+            </div>
+            <div class="equip-slot-card inspect-slot" id="inspect-slot-amulet">
+              <div class="slot-icon-box">📿</div>
+              <div class="slot-info"><span class="slot-label">Kolye</span><span class="slot-item-name" id="ins-name-amulet">Boş</span><span class="slot-item-score" id="ins-score-amulet"></span></div>
+            </div>
+            <div class="sheet-summary-box">
+              <button type="button" class="btn-inspect-trade" id="btn-inspect-send-trade">🤝 Takas Teklif Et</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 13. RPG Item Detail & Actions Popover -->
+  <div id="rpg-item-popover" class="rpg-item-popover hidden">
+    <div class="popover-backdrop" id="popover-backdrop"></div>
+    <div class="popover-card">
+      <div class="popover-header" id="popover-header">
+        <div class="popover-title-row">
+          <span class="popover-item-name" id="popover-item-name">Paslı Kılıç</span>
+          <span class="popover-plus-badge" id="popover-plus-badge">+0</span>
+        </div>
+        <div class="popover-meta-row">
+          <span class="popover-rarity" id="popover-rarity">Sıradan</span>
+          <span class="popover-slot" id="popover-slot">Silah</span>
+          <span class="popover-ilvl" id="popover-ilvl">ilvl 1</span>
+        </div>
+      </div>
+      <div class="popover-gs-row">
+        <span>GearScore Katkısı:</span>
+        <strong id="popover-gs-val">+10 GS</strong>
+      </div>
+      <div class="popover-stats" id="popover-stats"></div>
+      <div class="popover-affixes" id="popover-affixes"></div>
+      <div class="popover-actions" id="popover-actions">
+        <button type="button" class="btn-popover-equip" id="btn-popover-equip">Kuşan</button>
+        <button type="button" class="btn-popover-upgrade" id="btn-popover-upgrade">✨ Güçlendir</button>
+        <button type="button" class="btn-popover-salvage" id="btn-popover-salvage">♻️ Parçala</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 14. Player Proximity Action Menu -->
+  <div id="player-interact-modal" class="player-interact-modal hidden">
+    <div class="interact-menu-card">
+      <div class="interact-menu-header">
+        <span class="interact-avatar-dot">⚡</span>
+        <span id="interact-target-name">@Oyuncu</span>
+        <span class="interact-target-gs" id="interact-target-gs">[GS 0]</span>
+      </div>
+      <div class="interact-menu-buttons">
+        <button type="button" class="btn-menu-action btn-menu-inspect" id="btn-menu-inspect">
+          <span class="btn-menu-icon">🔍</span>
+          <div class="btn-menu-text">
+            <strong>Karakteri İncele</strong>
+            <small>Ekipmanları, GearScore ve statları gör</small>
+          </div>
+        </button>
+        <button type="button" class="btn-menu-action btn-menu-trade" id="btn-menu-trade">
+          <span class="btn-menu-icon">🤝</span>
+          <div class="btn-menu-text">
+            <strong>Takas Teklif Et</strong>
+            <small>Eşya ve Primogem takası başlat</small>
+          </div>
+        </button>
+        <button type="button" class="btn-menu-cancel" id="btn-menu-cancel">Vazgeç</button>
       </div>
     </div>
   </div>

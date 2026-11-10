@@ -9,6 +9,7 @@ class WorldEngine extends EventEmitter {
     super();
     this.gachaEngine = options.gachaEngine || null;
     this.tradeEngine = options.tradeEngine || null;
+    this.rpgEngine = options.rpgEngine || null;
 
     this.players = new Map(); // socketId -> Player
     this.pendingPins = new Map(); // pinCode -> { socketId, username, expiresAt }
@@ -99,9 +100,10 @@ class WorldEngine extends EventEmitter {
     setInterval(() => this.cleanupExpiredPins(), 60000);
   }
 
-  setEngines(gachaEngine, tradeEngine) {
+  setEngines(gachaEngine, tradeEngine, rpgEngine) {
     this.gachaEngine = gachaEngine;
     this.tradeEngine = tradeEngine;
+    if (rpgEngine) this.rpgEngine = rpgEngine;
   }
 
   /**
@@ -353,8 +355,14 @@ class WorldEngine extends EventEmitter {
     this.pendingPins.delete(pin);
     const player = this.players.get(pending.socketId);
     if (player) {
+      const oldName = player.username;
       player.username = senderUsername;
       player.isGuest = false;
+
+      // Migrate guest RPG gear to Kick account
+      if (this.rpgEngine && oldName && oldName.toLowerCase() !== senderUsername.toLowerCase()) {
+        this.rpgEngine.adoptGuestProfile(oldName, senderUsername);
+      }
 
       // Sync stats from gacha
       if (this.gachaEngine) {
@@ -399,6 +407,7 @@ class WorldEngine extends EventEmitter {
       }
 
       const mapList = states[p.mapId] || states.town;
+      const rpgProf = this.rpgEngine ? this.rpgEngine.getProfile(p.username) : null;
       mapList.push({
         id: p.id,
         username: p.username,
@@ -411,6 +420,8 @@ class WorldEngine extends EventEmitter {
         rot: Number(p.rot.toFixed(2)),
         anim: p.anim,
         primogems: p.primogems,
+        gearScore: this.rpgEngine ? this.rpgEngine.gearScore(p.username) : 0,
+        level: rpgProf ? rpgProf.level : 1,
         bubble: p.speechBubble ? p.speechBubble.text : null
       });
     }

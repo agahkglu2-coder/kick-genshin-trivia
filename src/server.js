@@ -216,8 +216,10 @@ const { ExpeditionEngine } = require('./expeditionEngine');
 const expeditionEngine = new ExpeditionEngine({ gachaEngine, kickBot });
 const { TradeEngine } = require('./tradeEngine');
 const tradeEngine = new TradeEngine({ gachaEngine });
+const { RpgEngine } = require('./rpgEngine');
+const rpgEngine = new RpgEngine({ db });
 const { WorldEngine } = require('./worldEngine');
-const worldEngine = new WorldEngine({ gachaEngine, tradeEngine });
+const worldEngine = new WorldEngine({ gachaEngine, tradeEngine, rpgEngine });
 
 // Initialize persistent database (PostgreSQL or local fallback)
 db.init(process.env.DATABASE_URL || config.databaseUrl).then(async () => {
@@ -939,6 +941,23 @@ wss.on('connection', (ws) => {
       } else if (data.type === 'WORLD_MOB_DEFEAT') {
         const me = worldEngine.getPlayer(socketId);
         if (me && data.mob) {
+          const mobType = data.mob.type || (data.mob.isBoss ? 'ruin_golem' : 'slime_green');
+          const killRes = rpgEngine.handleKill(me.username, {
+            mobType,
+            level: data.mob.level || 1,
+            elite: !!data.mob.elite
+          }, { persist: !me.isGuest });
+
+          ws.send(JSON.stringify({
+            type: 'RPG_KILL_RESULT',
+            result: killRes,
+            gearScore: rpgEngine.gearScore(me.username)
+          }));
+
+          if (killRes && killRes.leveledUp) {
+            worldEngine.addChatBubble(socketId, `✨ LEVEL UP! Seviye ${killRes.level}!`);
+          }
+
           if (data.mob.isBoss) {
             broadcast({
               type: 'WORLD_BOSS_ANNOUNCE',
@@ -947,6 +966,59 @@ wss.on('connection', (ws) => {
               item: data.mob.bossLootName || 'Kadim Kaos Çekirdeği'
             });
             worldEngine.addChatBubble(socketId, `⚔️ 👑 ${data.mob.name} yenildi! Nadir ganimetler düştü!`);
+          }
+        }
+      } else if (data.type === 'RPG_GET_PROFILE') {
+        const me = worldEngine.getPlayer(socketId);
+        const target = data.username || (me ? me.username : null);
+        if (target) {
+          const state = rpgEngine.getState(target, { persist: me ? !me.isGuest : false });
+          ws.send(JSON.stringify({ type: 'RPG_PROFILE_STATE', state }));
+        }
+      } else if (data.type === 'RPG_EQUIP') {
+        const me = worldEngine.getPlayer(socketId);
+        if (me && data.uid) {
+          const res = rpgEngine.equip(me.username, data.uid);
+          const state = rpgEngine.getState(me.username);
+          ws.send(JSON.stringify({ type: 'RPG_PROFILE_STATE', state, equipResult: res }));
+        }
+      } else if (data.type === 'RPG_UNEQUIP') {
+        const me = worldEngine.getPlayer(socketId);
+        if (me && data.slot) {
+          const res = rpgEngine.unequip(me.username, data.slot);
+          const state = rpgEngine.getState(me.username);
+          ws.send(JSON.stringify({ type: 'RPG_PROFILE_STATE', state, unequipResult: res }));
+        }
+      } else if (data.type === 'RPG_UPGRADE') {
+        const me = worldEngine.getPlayer(socketId);
+        if (me && data.uid) {
+          const res = rpgEngine.upgrade(me.username, data.uid);
+          const state = rpgEngine.getState(me.username);
+          ws.send(JSON.stringify({ type: 'RPG_PROFILE_STATE', state, upgradeResult: res }));
+        }
+      } else if (data.type === 'RPG_SALVAGE') {
+        const me = worldEngine.getPlayer(socketId);
+        if (me) {
+          const res = rpgEngine.salvage(me.username, { uid: data.uid, maxRarity: data.maxRarity });
+          const state = rpgEngine.getState(me.username);
+          ws.send(JSON.stringify({ type: 'RPG_PROFILE_STATE', state, salvageResult: res }));
+        }
+      } else if (data.type === 'RPG_INSPECT_REQ') {
+        const target = (data.targetUser || '').trim();
+        if (target) {
+          const targetPlayer = worldEngine.getPlayerByName(target);
+          const profile = rpgEngine.getState(target, { persist: targetPlayer ? !targetPlayer.isGuest : true });
+          if (profile) {
+            ws.send(JSON.stringify({
+              type: 'RPG_INSPECT_DATA',
+              target: target,
+              isGuest: targetPlayer ? targetPlayer.isGuest : false,
+              avatarIndex: targetPlayer ? targetPlayer.avatarIndex : 0,
+              profilePic: targetPlayer ? targetPlayer.profilePic : '',
+              profile
+            }));
+          } else {
+            ws.send(JSON.stringify({ type: 'RPG_INSPECT_DATA', error: 'Oyuncu bulunamadı.' }));
           }
         }
       }
@@ -1122,6 +1194,73 @@ app.post('/api/world/sell-materials', express.json(), (req, res) => {
     soldCount: soldItems.length,
     remainingMaterials: remaining.filter(i => i.type === 'material')
   });
+});
+
+// --- MMORPG Item & GearScore (GS) REST Endpoints ---
+app.get('/api/rpg/profile', (req, res) => {
+  const username = (req.query.username || req.query.user || '').trim();
+  if (!username) return res.status(400).json({ ok: false, error: 'Kullanıcı adı gerekli.' });
+  const onlinePlayer = worldEngine.getPlayerByName(username);
+  const state = rpgEngine.getState(username, { persist: onlinePlayer ? !onlinePlayer.isGuest : true });
+  res.json({ ok: true, state });
+});
+
+app.post('/api/rpg/equip', express.json(), (req, res) => {
+  const { username, uid } = req.body || {};
+  if (!username || !uid) return res.status(400).json({ ok: false, error: 'Eksik parametre.' });
+  const result = rpgEngine.equip(username, uid);
+  const onlinePlayer = worldEngine.getPlayerByName(username);
+  const state = rpgEngine.getState(username, { persist: onlinePlayer ? !onlinePlayer.isGuest : true });
+  res.json({ ok: result.ok, error: result.error, result, state });
+});
+
+app.post('/api/rpg/unequip', express.json(), (req, res) => {
+  const { username, slot } = req.body || {};
+  if (!username || !slot) return res.status(400).json({ ok: false, error: 'Eksik parametre.' });
+  const result = rpgEngine.unequip(username, slot);
+  const onlinePlayer = worldEngine.getPlayerByName(username);
+  const state = rpgEngine.getState(username, { persist: onlinePlayer ? !onlinePlayer.isGuest : true });
+  res.json({ ok: result.ok, error: result.error, result, state });
+});
+
+app.post('/api/rpg/upgrade', express.json(), (req, res) => {
+  const { username, uid } = req.body || {};
+  if (!username || !uid) return res.status(400).json({ ok: false, error: 'Eksik parametre.' });
+  const result = rpgEngine.upgrade(username, uid);
+  const onlinePlayer = worldEngine.getPlayerByName(username);
+  const state = rpgEngine.getState(username, { persist: onlinePlayer ? !onlinePlayer.isGuest : true });
+  res.json({ ok: result.ok, error: result.error, result, state });
+});
+
+app.post('/api/rpg/salvage', express.json(), (req, res) => {
+  const { username, uid, maxRarity } = req.body || {};
+  if (!username) return res.status(400).json({ ok: false, error: 'Eksik parametre.' });
+  const result = rpgEngine.salvage(username, { uid, maxRarity });
+  const onlinePlayer = worldEngine.getPlayerByName(username);
+  const state = rpgEngine.getState(username, { persist: onlinePlayer ? !onlinePlayer.isGuest : true });
+  res.json({ ok: result.ok, error: result.error, result, state });
+});
+
+app.get('/api/rpg/inspect', (req, res) => {
+  const target = (req.query.target || req.query.username || req.query.user || '').trim();
+  if (!target) return res.status(400).json({ ok: false, error: 'Hedef kullanıcı adı gerekli.' });
+  const targetPlayer = worldEngine.getPlayerByName(target);
+  const state = rpgEngine.getState(target, { persist: targetPlayer ? !targetPlayer.isGuest : true });
+  if (!state) return res.status(404).json({ ok: false, error: 'Profil bulunamadı.' });
+  res.json({
+    ok: true,
+    target,
+    isGuest: targetPlayer ? targetPlayer.isGuest : false,
+    avatarIndex: targetPlayer ? targetPlayer.avatarIndex : 0,
+    profilePic: targetPlayer ? targetPlayer.profilePic : '',
+    profile: state
+  });
+});
+
+app.get('/api/rpg/leaderboard', (req, res) => {
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 10));
+  const leaderboard = rpgEngine.getLeaderboard(limit);
+  res.json({ ok: true, leaderboard });
 });
 
 app.post('/api/chatter/action', express.json(), (req, res) => {
