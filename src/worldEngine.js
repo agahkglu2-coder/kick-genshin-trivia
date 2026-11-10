@@ -115,6 +115,33 @@ class WorldEngine extends EventEmitter {
         reqGS: 750,
         bounds: { minX: -42, maxX: 42, minZ: -42, maxZ: 42 },
         exitDoor: { pos: { x: 0, z: -32 }, radius: 3.5, targetMap: 'town', spawnPos: { x: 0, z: 28 } }
+      },
+      dungeon_tier_1: {
+        id: 'dungeon_tier_1',
+        name: 'Mühürlü Aether Tapınağı (Normal)',
+        reqGS: 150,
+        isDungeon: true,
+        bounds: { minX: -32, maxX: 32, minZ: -72, maxZ: 82 },
+        spawn: { x: 0, z: -60 },
+        exitDoor: { pos: { x: 0, z: -66 }, radius: 4.5, targetMap: 'town', spawnPos: { x: 0, z: 28 } }
+      },
+      dungeon_tier_2: {
+        id: 'dungeon_tier_2',
+        name: 'Kızıl Aether Kalesi (Kahraman)',
+        reqGS: 450,
+        isDungeon: true,
+        bounds: { minX: -32, maxX: 32, minZ: -72, maxZ: 82 },
+        spawn: { x: 0, z: -60 },
+        exitDoor: { pos: { x: 0, z: -66 }, radius: 4.5, targetMap: 'town', spawnPos: { x: 0, z: 28 } }
+      },
+      dungeon_tier_3: {
+        id: 'dungeon_tier_3',
+        name: "Tahabata'nın Uçurum Kalbi (Abyss)",
+        reqGS: 800,
+        isDungeon: true,
+        bounds: { minX: -32, maxX: 32, minZ: -72, maxZ: 82 },
+        spawn: { x: 0, z: -60 },
+        exitDoor: { pos: { x: 0, z: -66 }, radius: 4.5, targetMap: 'town', spawnPos: { x: 0, z: 28 } }
       }
     };
 
@@ -137,7 +164,6 @@ class WorldEngine extends EventEmitter {
       cleanName = 'Gezgin_' + Math.floor(1000 + Math.random() * 9000);
     }
 
-    // Check if player has gacha profile
     let primogems = 160;
     let fiveStarsCount = 0;
     let activeCompanion = null;
@@ -145,7 +171,15 @@ class WorldEngine extends EventEmitter {
       const u = this.gachaEngine.getOrCreateUser(cleanName);
       primogems = u.primogems || 0;
       fiveStarsCount = u.fiveStarsCount || 0;
-      activeCompanion = u.activeCompanion || null;
+      if (u.activeCompanion) {
+        const owned5 = this.getUser5Stars(cleanName);
+        if (owned5.some(c => c.name.toLowerCase() === u.activeCompanion.toLowerCase())) {
+          activeCompanion = u.activeCompanion;
+        } else {
+          u.activeCompanion = null;
+          this.gachaEngine.saveUsers();
+        }
+      }
     }
 
     const player = {
@@ -205,7 +239,8 @@ class WorldEngine extends EventEmitter {
   }
 
   /**
-   * Get all unlocked 5-star characters owned by user
+   * Get all unlocked 5-star characters strictly owned by user.
+   * No 4-star characters, and strictly NO demo/starter characters!
    */
   getUser5Stars(username) {
     if (!this.gachaEngine) return [];
@@ -215,52 +250,44 @@ class WorldEngine extends EventEmitter {
     const fiveStarsMap = new Map();
 
     for (const item of userInventory) {
-      if (item && item.type === 'character' && (item.rarity === 5 || item.rarity === '5')) {
-        const charName = item.name;
-        if (!fiveStarsMap.has(charName)) {
-          const meta = (this.gachaEngine.characters || []).find(
-            c => c.name.toLowerCase() === charName.toLowerCase() || (c.slug && c.slug.toLowerCase() === charName.toLowerCase())
-          );
-          fiveStarsMap.set(charName, {
-            name: charName,
-            rarity: 5,
-            element: meta ? meta.element : (item.element || 'Electro'),
-            weaponType: meta ? meta.weaponType : (item.weaponType || 'Sword'),
-            region: meta ? meta.region : (item.region || 'Teyvat'),
-            title: meta ? meta.title : '',
-            icon: meta ? (meta.remoteIcon || meta.icon) : (item.remoteIcon || item.icon || ''),
-            splashArt: meta ? (meta.splashArt || meta.splashArtDev) : ''
-          });
+      if (item && item.type === 'character') {
+        const rarityNum = parseInt(item.rarity, 10);
+        if (rarityNum === 5) {
+          const charName = item.name;
+          if (!fiveStarsMap.has(charName)) {
+            const meta = (this.gachaEngine.characters || []).find(
+              c => c.name.toLowerCase() === charName.toLowerCase() || (c.slug && c.slug.toLowerCase() === charName.toLowerCase())
+            );
+            fiveStarsMap.set(charName, {
+              name: charName,
+              rarity: 5,
+              element: meta ? meta.element : (item.element || 'Electro'),
+              weaponType: meta ? meta.weaponType : (item.weaponType || 'Sword'),
+              region: meta ? meta.region : (item.region || 'Teyvat'),
+              title: meta ? meta.title : '',
+              icon: meta ? (meta.remoteIcon || meta.icon) : (item.remoteIcon || item.icon || ''),
+              splashArt: meta ? (meta.splashArt || meta.splashArtDev) : '',
+              isOwned: true
+            });
+          }
         }
       }
     }
 
-    // Starter companion pool for testing/new players if empty
-    if (fiveStarsMap.size === 0 && this.gachaEngine.characters) {
-      const demoNames = ['Raiden Shogun', 'Zhongli', 'Hu Tao', 'Furina', 'Kaedehara Kazuha'];
-      for (const dName of demoNames) {
-        const meta = this.gachaEngine.characters.find(c => c.name.toLowerCase().includes(dName.toLowerCase()) || dName.toLowerCase().includes(c.name.toLowerCase()));
-        if (meta) {
-          fiveStarsMap.set(meta.name, {
-            name: meta.name,
-            rarity: 5,
-            element: meta.element,
-            weaponType: meta.weaponType,
-            region: meta.region,
-            title: meta.title,
-            icon: meta.remoteIcon || meta.icon,
-            splashArt: meta.splashArt,
-            isDemoStarter: true
-          });
-        }
-      }
-    }
-
-    return Array.from(fiveStarsMap.values());
+    const list = Array.from(fiveStarsMap.values());
+    list.sort((a, b) => a.name.localeCompare(b.name));
+    return list;
   }
 
   /**
-   * Set player active 5-star companion
+   * Alias for backward compatibility
+   */
+  getUserCompanions(username) {
+    return this.getUser5Stars(username);
+  }
+
+  /**
+   * Set player active 5-star companion. Strictly requires ownership.
    */
   selectCompanion(socketId, companionName) {
     const player = this.players.get(socketId);
@@ -277,28 +304,10 @@ class WorldEngine extends EventEmitter {
     }
 
     const user5Stars = this.getUser5Stars(player.username);
-    let matched = user5Stars.find(c => c.name.toLowerCase() === companionName.toLowerCase());
-
-    if (!matched && this.gachaEngine && this.gachaEngine.characters) {
-      const meta = this.gachaEngine.characters.find(
-        c => c.name.toLowerCase() === companionName.toLowerCase() && c.rarity === 5
-      );
-      if (meta) {
-        matched = {
-          name: meta.name,
-          rarity: 5,
-          element: meta.element,
-          weaponType: meta.weaponType,
-          region: meta.region,
-          title: meta.title,
-          icon: meta.remoteIcon || meta.icon,
-          splashArt: meta.splashArt
-        };
-      }
-    }
+    const matched = user5Stars.find(c => c.name.toLowerCase() === companionName.toLowerCase());
 
     if (!matched) {
-      return { success: false, message: 'Bu karaktere sahip değilsin' };
+      return { success: false, message: 'Bu 5★ karaktere sahip değilsin. Yalnızca dilek havuzundan çıkardığın 5★ karakterleri yoldaş olarak kuşanabilirsin!' };
     }
 
     player.companion = matched.name;
@@ -308,7 +317,7 @@ class WorldEngine extends EventEmitter {
       this.gachaEngine.saveUsers();
     }
 
-    console.log(`[WorldEngine] 🐾 @${player.username} yoldaş seçti: ${matched.name} (${matched.element})`);
+    console.log(`[WorldEngine] 🐾 @${player.username} 5★ yoldaş seçti: ${matched.name} (${matched.element})`);
     return {
       success: true,
       companion: matched.name,
@@ -399,14 +408,16 @@ class WorldEngine extends EventEmitter {
     const player = this.players.get(socketId);
     if (!player || !this.maps[targetMap]) return { success: false, error: 'Geçersiz bölge.' };
     const oldMap = player.mapId;
+    const isDungeon = Boolean(this.maps[targetMap].isDungeon);
+    const spawnZ = isDungeon ? -60 : -28;
     player.mapId = targetMap;
     player.x = 0;
     player.y = 0;
-    player.z = -28;
+    player.z = spawnZ;
     player.rot = 0;
     player.anim = 'idle';
     this.emit('player_changed_map', { player, oldMap, newMap: targetMap });
-    return { success: true, player, newMap: targetMap, spawnPos: { x: 0, z: -28 } };
+    return { success: true, player, newMap: targetMap, spawnPos: { x: 0, z: spawnZ } };
   }
 
   respawnPlayer(socketId) {
@@ -529,17 +540,30 @@ class WorldEngine extends EventEmitter {
         this.rpgEngine.adoptGuestProfile(oldName, senderUsername);
       }
 
-      // Sync stats from gacha
+      // Sync stats and active companion from gacha
       if (this.gachaEngine) {
         const u = this.gachaEngine.getOrCreateUser(senderUsername);
         player.primogems = u.primogems || 0;
         player.fiveStarsCount = u.fiveStarsCount || 0;
+        const owned5 = this.getUser5Stars(senderUsername);
+        const validComp = owned5.some(c => c.name.toLowerCase() === (u.activeCompanion || '').toLowerCase());
+        player.companion = validComp ? u.activeCompanion : null;
+        if (!validComp && u.activeCompanion) {
+          u.activeCompanion = null;
+          this.gachaEngine.saveUsers();
+        }
       }
 
       this.userSockets.set(senderUsername.toLowerCase(), pending.socketId);
       console.log(`[WorldEngine] 🛡️ Kick Kimliği Doğrulandı: @${senderUsername} -> [${pending.socketId}]`);
-      this.emit('player_authenticated', { socketId: pending.socketId, player });
-      return { success: true, player };
+      const companions = this.getUserCompanions(senderUsername);
+      this.emit('player_authenticated', {
+        socketId: pending.socketId,
+        player,
+        unlockedCompanions: companions,
+        activeCompanion: player.companion || null
+      });
+      return { success: true, player, unlockedCompanions: companions, activeCompanion: player.companion || null };
     }
 
     return null;
@@ -587,6 +611,8 @@ class WorldEngine extends EventEmitter {
         primogems: p.primogems,
         gearScore: this.rpgEngine ? this.rpgEngine.gearScore(p.username) : 0,
         level: rpgProf ? rpgProf.level : 1,
+        companion: p.companion || null,
+        weaponRarity: (rpgProf && rpgProf.equipment && rpgProf.equipment.weapon) ? rpgProf.equipment.weapon.rarity : 0,
         bubble: p.speechBubble ? p.speechBubble.text : null
       });
     }

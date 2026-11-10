@@ -1,13 +1,13 @@
 services:
   - type: web
-    name: kick-genshin-trivia
-    env: node
+    name: kick-genshin-mmo
+    runtime: node
     plan: free
+    region: frankfurt
     buildCommand: npm install
     startCommand: node src/server.js
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: DATABASE_URL
-        sync: false
-
+      - key: NODE_VERSION
+        value: 20.11.0
+      - key: KICK_CHANNEL
+        value: mylune

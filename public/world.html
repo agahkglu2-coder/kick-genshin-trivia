@@ -45,7 +45,7 @@
       <span class="pulse-dot"></span> CANLI YAYIN KAMERASI - TEYVAT PİKSEL ŞEHRİ
     </div>
 
-    <!-- Right: Minimap & Online Count -->
+    <!-- Right: Minimap & Online Count + Daily Quest Mini Tracker -->
     <div class="top-right-group">
       <div class="online-pill">
         <span class="live-dot"></span>
@@ -54,6 +54,20 @@
       <div class="minimap-wrap">
         <canvas id="minimap-canvas" width="130" height="130"></canvas>
         <div class="minimap-compass">K</div>
+      </div>
+
+      <!-- Mini Daily Quest Tracker HUD -->
+      <div id="daily-quest-tracker" class="daily-quest-tracker">
+        <div class="dq-tracker-header" id="dq-tracker-header" title="Günlük Görevleri Aç / Küçült [J]">
+          <span class="dq-tracker-title">📜 Günlük Görevler <small id="dq-tracker-count">(0/5)</small></span>
+          <div class="dq-tracker-actions">
+            <span id="dq-tracker-badge" class="dq-tracker-claim-dot hidden">!</span>
+            <button type="button" class="btn-dq-expand" id="btn-dq-open-modal" title="Detaylı Görev Penceresi [J]">Aç</button>
+          </div>
+        </div>
+        <div class="dq-tracker-list" id="dq-tracker-list">
+          <!-- Dynamically populated compact quest rows -->
+        </div>
       </div>
     </div>
   </header>
@@ -79,9 +93,13 @@
 
     <!-- Quick Action Bar -->
     <div class="quick-nav-bar">
+      <button class="btn-mmo-nav btn-nav-daily" id="btn-open-daily-quests" title="Mylune Günlük Görevler [J]">
+        📜 Günlük Görev [J]
+        <span id="nav-daily-badge" class="nav-alert-dot hidden">!</span>
+      </button>
       <button class="btn-mmo-nav btn-nav-companion" id="btn-open-companion" title="5★ Yoldaş Seçimi [P]">🐾 5★ Yoldaş [P]</button>
-      <button class="btn-mmo-nav btn-nav-character" id="btn-open-character">⚔️ Ekipman & GS</button>
-      <button class="btn-mmo-nav" id="btn-open-inventory">🎒 Envanter</button>
+      <button class="btn-mmo-nav btn-nav-character" id="btn-open-character" title="Ekipman & GearScore [C]">⚔️ Ekipman & GS [C]</button>
+      <button class="btn-mmo-nav btn-nav-inventory" id="btn-open-inventory" title="Envanter & Koleksiyon Çantası [I]">🎒 Envanter [I]</button>
       <button class="btn-mmo-nav" id="btn-open-auth">🛡️ Kick Girişi</button>
       <button class="btn-mmo-nav" id="btn-change-avatar">🎭 Karakter</button>
     </div>
@@ -288,6 +306,7 @@
     <div class="modal-card modal-card-fish">
       <div class="fish-catch-icon" id="fish-catch-icon">🐟</div>
       <h2 class="fish-catch-name" id="fish-catch-name">Nehir Sazanı</h2>
+      <div class="fish-catch-stars" id="fish-catch-stars">★★★☆☆</div>
       <div class="fish-catch-rarity" id="fish-catch-rarity">★★☆☆☆ Nadir Nehir Balığı</div>
       
       <div class="fish-primo-reward" id="fish-primo-reward">
@@ -300,7 +319,7 @@
       </p>
 
       <div class="fish-catch-actions">
-        <button class="btn-fish-claim" id="btn-fish-claim">Tamam</button>
+        <button class="btn-fish-claim" id="btn-fish-claim">Tamam (Space / E)</button>
       </div>
     </div>
   </div>
@@ -360,6 +379,38 @@
 
   <!-- 9. Combat HUD (Visible in Battle Zone) -->
   <div id="combat-hud" class="combat-hud hidden">
+    <!-- Top Center Cinematic Boss HP & Stagger Bar -->
+    <div id="combat-boss-hud" class="combat-boss-hud hidden">
+      <div class="boss-hud-header">
+        <div class="boss-hud-title-row">
+          <span class="boss-hud-skull">💀</span>
+          <strong id="boss-hud-name" class="boss-hud-name">HARABE MUHAFIZI</strong>
+          <span id="boss-hud-aura" class="boss-hud-aura hidden" title="Aktif Element Aurası"></span>
+        </div>
+        <span id="boss-hud-status" class="boss-hud-status">SAVAŞTA</span>
+      </div>
+      <div class="boss-hp-bar-outer">
+        <div id="boss-hud-hp-fill" class="boss-hp-bar-fill" style="width: 100%;"></div>
+        <span id="boss-hud-hp-text" class="boss-hp-bar-text">2800 / 2800</span>
+      </div>
+      <div class="boss-poise-bar-outer" title="Boss Denge (Stagger) Barı - Ağır Saldırı ve Reaksiyonlarla Kırılır!">
+        <div id="boss-hud-poise-fill" class="boss-poise-bar-fill" style="width: 100%;"></div>
+        <span id="boss-hud-poise-text" class="boss-poise-bar-text">🛡️ DENGE: %100</span>
+      </div>
+    </div>
+
+    <!-- Right-Side Dynamic Combo Counter & Elemental Reaction Banner -->
+    <div id="combat-combo-hud" class="combat-combo-hud hidden">
+      <div class="combo-hud-main">
+        <span id="combo-hud-count" class="combo-hud-count">0</span>
+        <div class="combo-hud-meta">
+          <span id="combo-hud-rank" class="combo-hud-rank">C</span>
+          <span class="combo-hud-label">KOMBO</span>
+        </div>
+      </div>
+      <div id="combo-hud-reaction" class="combo-hud-reaction hidden">⚡ REAKSİYON!</div>
+    </div>
+
     <!-- Active 5★ Companion Widget -->
     <div class="combat-companion-badge" id="combat-companion-badge" title="Yoldaş Değiştir [P]">
       <div class="companion-avatar-circle" id="hud-companion-circle">
@@ -380,6 +431,10 @@
         <div class="combat-hp-bar-fill" id="combat-hp-fill" style="width: 100%;"></div>
         <span class="combat-hp-text" id="combat-hp-text">HP 500 / 500</span>
       </div>
+      <div class="combat-stamina-bar-outer">
+        <div class="combat-stamina-bar-fill" id="combat-stamina-fill" style="width: 100%;"></div>
+        <span class="combat-stamina-text" id="combat-stamina-text">STAMINA: 100 / 100</span>
+      </div>
       <div class="combat-energy-bar-outer">
         <div class="combat-energy-bar-fill" id="combat-energy-fill" style="width: 0%;"></div>
         <span class="combat-energy-text" id="combat-energy-text">ULTİ: %0</span>
@@ -388,26 +443,32 @@
 
     <!-- Bottom Center Skill Bar -->
     <div class="combat-skill-bar">
-      <div class="skill-slot active" id="slot-attack" title="Normal Saldırı [Sol Tık / F]">
-        <span class="skill-key">F / TIK</span>
-        <span class="skill-icon" id="icon-slot-attack">⚔️</span>
-        <span class="skill-name" id="name-slot-attack">Saldırı</span>
+      <div class="skill-slot active" id="slot-attack" title="4'lü Kombo Saldırı [Sol Tık / F] (Fare İmlecine Nişan Alır)">
+        <span class="skill-key">SOL TIK / F</span>
+        <span class="skill-icon" id="icon-slot-attack"><span class="rpg-sprite-icon sprite-skill" style="background-position: 20.00% 33.33%;"></span></span>
+        <span class="skill-name" id="name-slot-attack">Kombo</span>
       </div>
-      <div class="skill-slot" id="slot-dash" title="Hızlı Kaçış / Takla [Shift]">
+      <div class="skill-slot" id="slot-heavy" title="Ağır Zırh Kıran Darbe [Sağ Tık / R] (25 Stamina)">
+        <span class="skill-key">SAĞ TIK / R</span>
+        <span class="skill-icon" id="icon-slot-heavy"><span class="rpg-sprite-icon sprite-skill" style="background-position: 40.00% 33.33%;"></span></span>
+        <span class="skill-name" id="name-slot-heavy">Ağır Darbe</span>
+        <div class="skill-cd-overlay" id="cd-heavy"></div>
+      </div>
+      <div class="skill-slot" id="slot-dash" title="Hızlı Kaçış / Mükemmel Dodge [Shift]">
         <span class="skill-key">SHIFT</span>
-        <span class="skill-icon">⚡</span>
+        <span class="skill-icon"><span class="rpg-sprite-icon sprite-skill" style="background-position: 60.00% 33.33%;"></span></span>
         <span class="skill-name">Takla</span>
         <div class="skill-cd-overlay" id="cd-dash"></div>
       </div>
       <div class="skill-slot" id="slot-vortex" title="Elemental Beceri [E]">
         <span class="skill-key">E</span>
-        <span class="skill-icon" id="icon-slot-skill">🌀</span>
+        <span class="skill-icon" id="icon-slot-skill"><span class="rpg-sprite-icon sprite-skill" style="background-position: 80.00% 33.33%;"></span></span>
         <span class="skill-name" id="name-slot-skill">Beceri</span>
         <div class="skill-cd-overlay" id="cd-vortex"></div>
       </div>
       <div class="skill-slot" id="slot-burst" title="Elemental Patlama (Nihai) [Q]">
         <span class="skill-key">Q</span>
-        <span class="skill-icon" id="icon-slot-burst">☄️</span>
+        <span class="skill-icon" id="icon-slot-burst"><span class="rpg-sprite-icon sprite-skill" style="background-position: 100.00% 33.33%;"></span></span>
         <span class="skill-name" id="name-slot-burst">Ulti</span>
         <div class="skill-cd-overlay" id="cd-burst"></div>
       </div>
@@ -418,6 +479,7 @@
       <button type="button" class="btn-combat-action btn-combat-dash" id="btn-combat-dash">⚡ Takla</button>
       <button type="button" class="btn-combat-action btn-combat-skill" id="btn-combat-skill">🌀 Beceri</button>
       <button type="button" class="btn-combat-action btn-combat-burst" id="btn-combat-burst">☄️ Ulti</button>
+      <button type="button" class="btn-combat-action btn-combat-heavy" id="btn-combat-heavy">🔨 Ağır</button>
       <button type="button" class="btn-combat-action btn-combat-atk" id="btn-combat-atk">⚔️ Saldır</button>
     </div>
   </div>
@@ -497,7 +559,7 @@
           <!-- Left Slots: Weapon, Helmet, Chest, Gloves -->
           <div class="equip-column equip-column-left">
             <div class="equip-slot-card" data-slot="weapon" id="slot-card-weapon">
-              <div class="slot-icon-box">🗡️</div>
+              <div class="slot-icon-box"><span class="rpg-sprite-icon sprite-empty-slot" style="background-position: 0% 0%;"></span></div>
               <div class="slot-info">
                 <span class="slot-label">Silah</span>
                 <span class="slot-item-name" id="slot-name-weapon">Boş</span>
@@ -505,7 +567,7 @@
               </div>
             </div>
             <div class="equip-slot-card" data-slot="helmet" id="slot-card-helmet">
-              <div class="slot-icon-box">👑</div>
+              <div class="slot-icon-box"><span class="rpg-sprite-icon sprite-empty-slot" style="background-position: 20% 0%;"></span></div>
               <div class="slot-info">
                 <span class="slot-label">Miğfer</span>
                 <span class="slot-item-name" id="slot-name-helmet">Boş</span>
@@ -513,7 +575,7 @@
               </div>
             </div>
             <div class="equip-slot-card" data-slot="chest" id="slot-card-chest">
-              <div class="slot-icon-box">🛡️</div>
+              <div class="slot-icon-box"><span class="rpg-sprite-icon sprite-empty-slot" style="background-position: 40% 0%;"></span></div>
               <div class="slot-info">
                 <span class="slot-label">Zırh</span>
                 <span class="slot-item-name" id="slot-name-chest">Boş</span>
@@ -521,7 +583,7 @@
               </div>
             </div>
             <div class="equip-slot-card" data-slot="gloves" id="slot-card-gloves">
-              <div class="slot-icon-box">🧤</div>
+              <div class="slot-icon-box"><span class="rpg-sprite-icon sprite-empty-slot" style="background-position: 60% 0%;"></span></div>
               <div class="slot-info">
                 <span class="slot-label">Eldiven</span>
                 <span class="slot-item-name" id="slot-name-gloves">Boş</span>
@@ -569,7 +631,7 @@
           <!-- Right Slots: Boots, Ring, Amulet -->
           <div class="equip-column equip-column-right">
             <div class="equip-slot-card" data-slot="boots" id="slot-card-boots">
-              <div class="slot-icon-box">👢</div>
+              <div class="slot-icon-box"><span class="rpg-sprite-icon sprite-empty-slot" style="background-position: 80% 0%;"></span></div>
               <div class="slot-info">
                 <span class="slot-label">Çizme</span>
                 <span class="slot-item-name" id="slot-name-boots">Boş</span>
@@ -577,7 +639,7 @@
               </div>
             </div>
             <div class="equip-slot-card" data-slot="ring" id="slot-card-ring">
-              <div class="slot-icon-box">💍</div>
+              <div class="slot-icon-box"><span class="rpg-sprite-icon sprite-empty-slot" style="background-position: 100% 0%;"></span></div>
               <div class="slot-info">
                 <span class="slot-label">Yüzük</span>
                 <span class="slot-item-name" id="slot-name-ring">Boş</span>
@@ -585,7 +647,7 @@
               </div>
             </div>
             <div class="equip-slot-card" data-slot="amulet" id="slot-card-amulet">
-              <div class="slot-icon-box">📿</div>
+              <div class="slot-icon-box"><span class="rpg-sprite-icon sprite-empty-slot" style="background-position: 0% 33.33%;"></span></div>
               <div class="slot-info">
                 <span class="slot-label">Kolye</span>
                 <span class="slot-item-name" id="slot-name-amulet">Boş</span>
@@ -708,14 +770,19 @@
     <div class="popover-backdrop" id="popover-backdrop"></div>
     <div class="popover-card">
       <div class="popover-header" id="popover-header">
-        <div class="popover-title-row">
-          <span class="popover-item-name" id="popover-item-name">Paslı Kılıç</span>
-          <span class="popover-plus-badge" id="popover-plus-badge">+0</span>
-        </div>
-        <div class="popover-meta-row">
-          <span class="popover-rarity" id="popover-rarity">Sıradan</span>
-          <span class="popover-slot" id="popover-slot">Silah</span>
-          <span class="popover-ilvl" id="popover-ilvl">ilvl 1</span>
+        <div class="popover-header-top">
+          <div class="popover-icon-frame" id="popover-icon-frame"></div>
+          <div class="popover-header-titles">
+            <div class="popover-title-row">
+              <span class="popover-item-name" id="popover-item-name">Paslı Kılıç</span>
+              <span class="popover-plus-badge" id="popover-plus-badge">+0</span>
+            </div>
+            <div class="popover-meta-row">
+              <span class="popover-rarity" id="popover-rarity">Sıradan</span>
+              <span class="popover-slot" id="popover-slot">Silah</span>
+              <span class="popover-ilvl" id="popover-ilvl">ilvl 1</span>
+            </div>
+          </div>
         </div>
       </div>
       <div class="popover-gs-row">
@@ -760,15 +827,15 @@
     </div>
   </div>
 
-  <!-- 15. Ancient Portal Zone Selection Modal -->
+  <!-- 15. Ancient Portal Zone & Aion 2 Dungeon Selection Modal -->
   <div id="modal-portal-zones" class="mmo-modal-overlay hidden">
     <div class="mmo-modal-container portal-zones-container">
       <div class="mmo-modal-header">
         <div class="sheet-title-group">
           <span class="sheet-icon">🌀</span>
           <div>
-            <h3>Kadim Zindan Portalı</h3>
-            <span class="sheet-subtitle">Zorluk Seviyesi ve Bölge Seçimi</span>
+            <h3>Kadim Zindan & Aether Portalı</h3>
+            <span class="sheet-subtitle">Aion 2 Aşamalı Zindan Seferleri veya Açık Avlanma Bölgeleri</span>
           </div>
         </div>
         <div class="sheet-header-actions">
@@ -780,7 +847,78 @@
         </div>
       </div>
 
-      <div class="portal-zones-body">
+      <!-- Portal Mode Tabs -->
+      <div class="portal-tabs-bar">
+        <button type="button" class="btn-portal-tab active" data-portal-tab="dungeons">
+          🪽 Aion 2 Aether Zindanları (3 Aşamalı & S-Rank Sandıklı)
+        </button>
+        <button type="button" class="btn-portal-tab" data-portal-tab="open_zones">
+          🌲 Açık Avlanma Bölgeleri (Serbest Grind)
+        </button>
+      </div>
+
+      <!-- TAB 1: Aion 2 3-Stage Instance Dungeons -->
+      <div class="portal-zones-body" id="portal-panel-dungeons">
+        <!-- Dungeon Tier 1 -->
+        <div class="zone-card dungeon-tier-card" id="card-dungeon-1">
+          <div class="zone-card-badge status-safe" id="badge-dungeon-1">🟢 Güvenli</div>
+          <div class="zone-card-header">
+            <span class="zone-card-icon">🪽</span>
+            <div>
+              <h4 class="zone-card-title">Mühürlü Aether Tapınağı</h4>
+              <span class="zone-card-desc">3 Aşama • Rüzgar Akımı Uçuşu • Aether Muhafızı</span>
+            </div>
+          </div>
+          <div class="zone-card-meta">
+            <div class="meta-row"><span>Önerilen GearScore:</span> <strong>150 GS</strong></div>
+            <div class="meta-row"><span>Mekanikler:</span> <strong>Mühür Kristali + Kristal Kalkan + Kubbe</strong></div>
+            <div class="meta-row"><span>S-Rank Sandığı:</span> <strong>+60 💎 & 4★ Epik Ekipman</strong></div>
+          </div>
+          <div class="zone-card-penalty-hint" id="hint-dungeon-1">Ceza Yok (Tam Hasar)</div>
+          <button type="button" class="btn-zone-enter btn-dungeon-enter" data-zone-id="dungeon_tier_1">🪽 Tapınağa Gir (Normal)</button>
+        </div>
+
+        <!-- Dungeon Tier 2 -->
+        <div class="zone-card dungeon-tier-card" id="card-dungeon-2">
+          <div class="zone-card-badge status-challenging" id="badge-dungeon-2">🟡 Zorlu</div>
+          <div class="zone-card-header">
+            <span class="zone-card-icon">🔥</span>
+            <div>
+              <h4 class="zone-card-title">Kızıl Aether Kalesi</h4>
+              <span class="zone-card-desc">3 Aşama • Daeva Kanat Köprüsü • Kızıl Archon</span>
+            </div>
+          </div>
+          <div class="zone-card-meta">
+            <div class="meta-row"><span>Önerilen GearScore:</span> <strong>450 GS</strong></div>
+            <div class="meta-row"><span>Mekanikler:</span> <strong>3x Rezonans Kristali + Kıyamet Dalgası</strong></div>
+            <div class="meta-row"><span>S-Rank Sandığı:</span> <strong>+110 💎 & 4★/5★ Efsanevi Şansı</strong></div>
+          </div>
+          <div class="zone-card-penalty-hint" id="hint-dungeon-2">Düşük GS'de hafif hasar cezası</div>
+          <button type="button" class="btn-zone-enter btn-dungeon-enter" data-zone-id="dungeon_tier_2">🔥 Kaleye Gir (Kahraman)</button>
+        </div>
+
+        <!-- Dungeon Tier 3 -->
+        <div class="zone-card dungeon-tier-card" id="card-dungeon-3">
+          <div class="zone-card-badge status-deadly" id="badge-dungeon-3">🔴 Ölümcül Risk</div>
+          <div class="zone-card-header">
+            <span class="zone-card-icon">🐉</span>
+            <div>
+              <h4 class="zone-card-title">Tahabata'nın Uçurum Kalbi</h4>
+              <span class="zone-card-desc">3 Aşama • Dark Poeta Zaman Yarışı • Uçurum Hükümdarı</span>
+            </div>
+          </div>
+          <div class="zone-card-meta">
+            <div class="meta-row"><span>Önerilen GearScore:</span> <strong>800 GS</strong></div>
+            <div class="meta-row"><span>Mekanikler:</span> <strong>Tam Aion 2 Boss Fazları & S-Rank Yarışı</strong></div>
+            <div class="meta-row"><span>S-Rank Sandığı:</span> <strong>+160 💎 (1 Wish) & Garanti 5★ Efsanevi!</strong></div>
+          </div>
+          <div class="zone-card-penalty-hint" id="hint-dungeon-3">Düşük GS'de vuruşlar seker (%35)!</div>
+          <button type="button" class="btn-zone-enter btn-dungeon-enter" data-zone-id="dungeon_tier_3">🐉 Uçurum Kalbine Gir (Abyss)</button>
+        </div>
+      </div>
+
+      <!-- TAB 2: Open Grinding Battle Zones -->
+      <div class="portal-zones-body hidden" id="portal-panel-open-zones">
         <!-- Zone 1 Card -->
         <div class="zone-card" id="card-zone-1">
           <div class="zone-card-badge status-safe" id="badge-zone-1">🟢 Güvenli</div>
@@ -841,6 +979,53 @@
     </div>
   </div>
 
+  <!-- 15.5 Aion 2 Live Dungeon Scoreboard, Stage Tracker & Mechanic Alert HUD -->
+  <div id="dungeon-hud" class="dungeon-hud hidden">
+    <div class="dungeon-hud-top">
+      <span class="dungeon-tier-badge" id="dungeon-hud-tier">🪽 AETHER TAPINAĞI</span>
+      <span class="dungeon-rank-badge rank-S" id="dungeon-hud-rank">S</span>
+    </div>
+    <div class="dungeon-hud-stage" id="dungeon-hud-stage">AŞAMA 1 / 3: Mühürlü Giriş</div>
+    <div class="dungeon-hud-objective" id="dungeon-hud-objective">🎯 2 Aether Mühür Kristalini ve Muhafızları Yok Et (0/6)</div>
+    <div class="dungeon-hud-stats">
+      <div class="dh-stat">
+        <span>⏱️ Süre</span>
+        <strong id="dungeon-hud-time">00:00</strong>
+      </div>
+      <div class="dh-stat">
+        <span>🏆 Puan</span>
+        <strong id="dungeon-hud-score">0</strong>
+      </div>
+      <div class="dh-stat">
+        <span>🎯 S-Rank Hedefi</span>
+        <strong>3500+ Puan</strong>
+      </div>
+    </div>
+    <div class="dungeon-hud-buff hidden" id="dungeon-hud-buff">
+      🪽 Kick Aether Kutsaması Aktif (+%25 Hasar & Hız)
+    </div>
+  </div>
+
+  <!-- Center-Screen Boss Phase Mechanic Alert Banner -->
+  <div id="dungeon-mechanic-banner" class="dungeon-mechanic-banner hidden">
+    <div class="dm-icon" id="dm-banner-icon">⚠️</div>
+    <div class="dm-text">
+      <strong id="dm-banner-title">AETHER KRİSTAL KALKANI AKTİF!</strong>
+      <span id="dm-banner-sub">Boss dokunulmaz oldu! Arenadaki 3 Rezonans Kristalini kırarak Boss'u sersemlet!</span>
+    </div>
+  </div>
+
+  <!-- Aion 2 Dungeon Clear & S/A/B/C Rank Summary Banner -->
+  <div id="dungeon-victory-banner" class="dungeon-victory-banner hidden">
+    <div class="dv-rank-circle rank-S" id="dv-rank-circle">S</div>
+    <div class="dv-info">
+      <div class="dv-tag">🪽 AETHER ZİNDANI TAMAMLANDI!</div>
+      <h3 id="dv-title">Tahabata'nın Uçurum Kalbi Fethedildi!</h3>
+      <p id="dv-summary">Süre: 01:42 • Toplam Puan: 4,450 • Sunaktaki Hazine Sandıklarını [E] ile Aç!</p>
+    </div>
+    <button type="button" class="btn-dv-close" id="btn-dv-close">Tamam</button>
+  </div>
+
   <!-- 16. Player Defeat Fullscreen Overlay -->
   <div id="player-defeat-overlay" class="player-defeat-overlay hidden">
     <div class="defeat-card">
@@ -863,7 +1048,7 @@
           </div>
         </div>
         <div class="sheet-header-actions">
-          <span class="companion-count-badge" id="companion-unlocked-count">5 Yoldaş Mevcut</span>
+          <span class="companion-count-badge" id="companion-unlocked-count">0 Adet 5★ Yoldaş</span>
           <button type="button" class="btn-modal-close" data-close="modal-companion-selector">✕</button>
         </div>
       </div>
@@ -874,11 +1059,13 @@
           <div class="companion-filter-row">
             <span class="filter-label">Element:</span>
             <button type="button" class="btn-filter-elem active" data-elem="all">Tümü</button>
-            <button type="button" class="btn-filter-elem" data-elem="Electro">⚡</button>
-            <button type="button" class="btn-filter-elem" data-elem="Geo">🪨</button>
-            <button type="button" class="btn-filter-elem" data-elem="Pyro">🔥</button>
-            <button type="button" class="btn-filter-elem" data-elem="Hydro">💧</button>
-            <button type="button" class="btn-filter-elem" data-elem="Anemo">🍃</button>
+            <button type="button" class="btn-filter-elem" data-elem="Electro" title="Electro">⚡</button>
+            <button type="button" class="btn-filter-elem" data-elem="Geo" title="Geo">🪨</button>
+            <button type="button" class="btn-filter-elem" data-elem="Pyro" title="Pyro">🔥</button>
+            <button type="button" class="btn-filter-elem" data-elem="Hydro" title="Hydro">💧</button>
+            <button type="button" class="btn-filter-elem" data-elem="Anemo" title="Anemo">🍃</button>
+            <button type="button" class="btn-filter-elem" data-elem="Cryo" title="Cryo">❄️</button>
+            <button type="button" class="btn-filter-elem" data-elem="Dendro" title="Dendro">🌿</button>
           </div>
           <div class="companion-cards-grid" id="companion-cards-grid">
             <!-- Populated dynamically with 5-star character cards -->
@@ -930,6 +1117,124 @@
 
   <!-- 18. Cinematic Elemental Flash Screen Overlay -->
   <div id="elemental-flash-overlay" class="elemental-flash-overlay"></div>
+
+  <!-- 19. Standalone Player Inventory & Collection Modal -->
+  <div id="modal-inventory-bag" class="modal-overlay hidden">
+    <div class="modal-card modal-card-inventory">
+      <div class="modal-header inv-header">
+        <div class="inv-header-title">
+          <h2>🎒 Maceracı Envanteri & Koleksiyonu</h2>
+          <p class="inv-subtitle">RPG ekipmanların, zindan materyallerin ve Gacha dilek koleksiyonun</p>
+        </div>
+        <div class="inv-header-balances">
+          <span class="inv-balance-pill">💎 <b id="inv-primo-val">0</b> Primogem</span>
+          <span class="inv-balance-pill inv-dust-pill">✨ <b id="inv-dust-val">0</b> Rün Tozu</span>
+          <span class="inv-balance-pill inv-gs-pill">⚔️ <b id="inv-gs-val">0</b> GS</span>
+        </div>
+        <button class="btn-modal-close" id="btn-close-inventory-bag" data-close="modal-inventory-bag">✕</button>
+      </div>
+
+      <div class="inv-tabs-bar">
+        <button type="button" class="btn-inv-tab active" data-inv-tab="rpg">⚔️ RPG Ekipman (<span id="inv-tab-count-rpg">0</span>)</button>
+        <button type="button" class="btn-inv-tab" data-inv-tab="materials">🧪 Canavar Materyalleri (<span id="inv-tab-count-mat">0</span>)</button>
+        <button type="button" class="btn-inv-tab" data-inv-tab="gacha">🌟 Gacha Koleksiyonu (<span id="inv-tab-count-gacha">0</span>)</button>
+        <button type="button" class="btn-inv-open-char" id="btn-inv-goto-character">⚙️ Ekipman Geliştir & Parçala [C]</button>
+      </div>
+
+      <div class="modal-body inv-modal-body">
+        <!-- Tab 1: RPG Equipment Bag -->
+        <div id="inv-panel-rpg" class="inv-tab-panel">
+          <div class="inv-rpg-grid" id="inv-rpg-grid">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Tab 2: Monster Materials -->
+        <div id="inv-panel-materials" class="inv-tab-panel hidden">
+          <div class="inv-mat-summary">
+            <span>Zindanlardan toplanan materyalleri Kasaba Tüccarı'nda veya doğrudan buradan Primogem karşılığı satabilirsin.</span>
+            <button type="button" class="btn-inv-sell-all" id="btn-inv-sell-all-mat">💎 Tüm Materyalleri Sat</button>
+          </div>
+          <div class="inv-mat-grid" id="inv-mat-grid">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Tab 3: Gacha Collection (4★ & 5★) -->
+        <div id="inv-panel-gacha" class="inv-tab-panel hidden">
+          <div class="inv-gacha-grid" id="inv-gacha-grid">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 20. Mylune Daily Quests Modal (Kick Stream + 3D MMO Hybrid) -->
+  <div id="modal-daily-quests" class="modal-overlay hidden">
+    <div class="modal-card modal-card-daily-quests">
+      <div class="modal-header dq-modal-header">
+        <div class="dq-header-left">
+          <div class="dq-header-badge">📜 MYLUNE MACERACILAR LONCASI</div>
+          <h2>🌟 Günlük Yayın & Dünya Görevleri</h2>
+          <p class="dq-subtitle">Mylune Kick yayınını izle, sohbete katıl ve 3D dünyada görevleri tamamlayarak her gün Primogem + Efsanevi Ekipman kazan!</p>
+        </div>
+        <div class="dq-header-right">
+          <a href="https://kick.com/mylune" target="_blank" rel="noopener noreferrer" class="btn-kick-stream-link">
+            🟢 kick.com/mylune Canlı Yayını Aç ↗
+          </a>
+          <button class="btn-modal-close" id="btn-close-daily-quests" data-close="modal-daily-quests">✕</button>
+        </div>
+      </div>
+
+      <div class="modal-body dq-modal-body">
+        <!-- Top Overview & Kick Command Info Banner -->
+        <div class="dq-overview-bar">
+          <div class="dq-overview-progress">
+            <span class="dq-overview-label">Bugünkü İlerleme (<span id="dq-date-label">Bugün</span>):</span>
+            <strong id="dq-completed-summary">0 / 5 Görev Tamamlandı</strong>
+            <div class="dq-master-bar">
+              <div class="dq-master-fill" id="dq-master-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+          <div class="dq-overview-chat-hint">
+            <span>💬 Kick Sohbet Komutu:</span>
+            <code>!gunluk</code> veya <code>!gorevler</code>
+          </div>
+          <button type="button" class="btn-dq-claim-all" id="btn-dq-claim-all" disabled>
+            🎁 Hazır Ödülleri Topla
+          </button>
+        </div>
+
+        <!-- 5 Daily Quest Cards List -->
+        <div class="dq-quests-grid" id="daily-quests-list">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Grand Bonus Chest (5/5 Completion) -->
+        <div class="dq-bonus-chest-card" id="daily-bonus-chest-card">
+          <div class="dq-chest-icon" id="dq-chest-icon">🎁</div>
+          <div class="dq-chest-info">
+            <div class="dq-chest-title-row">
+              <h3 id="dq-chest-title">Mylune Günlük Lonca Sandığı (5/5 Tamamlama Ödülü)</h3>
+              <span class="dq-chest-status" id="dq-chest-status">0 / 5 Görev</span>
+            </div>
+            <p id="dq-chest-desc">5 günlük görevin tamamını bitirerek +160 💎 Primogem (1 Dilek), +150 RPG XP ve 1x Rastgele 4★/5★ Epik/Efsanevi RPG Ekipmanı kazan!</p>
+            <div class="dq-chest-rewards">
+              <span class="dq-reward-pill primo">💎 +160 Primogem (1 Dilek)</span>
+              <span class="dq-reward-pill xp">✨ +150 RPG XP</span>
+              <span class="dq-reward-pill epic">🗡️ 1x 4★ Epik / 5★ Efsanevi Ekipman</span>
+            </div>
+          </div>
+          <div class="dq-chest-action">
+            <button type="button" class="btn-dq-claim-chest" id="btn-dq-claim-chest" disabled>
+              🔒 5 Görevi Tamamla
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Scripts -->
   <script src="/world.js"></script>

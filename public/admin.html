@@ -704,6 +704,42 @@
             <div id="gift-feedback" class="field-hint" style="margin-top: 4px; font-weight: 600;"></div>
           </div>
 
+          <!-- 5-Star Character Assignment Card -->
+          <div class="panel-card" style="margin-top: 16px; border: 1.5px solid rgba(234, 179, 8, 0.4); background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(67, 40, 14, 0.4) 100%); border-radius: 12px; padding: 14px;">
+            <div class="panel-title" style="color: #ffd700; display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+              <span style="font-weight: 800;">🌟 Gezgine 5★ Karakter Tanımla (Envanter & Yoldaş Pet)</span>
+              <span class="badge-mini" style="background: rgba(234, 179, 8, 0.25); color: #ffd700; border: 1px solid #eab308;">Otomatik Canlı Senkron</span>
+            </div>
+            <div style="font-size: 0.78rem; color: #cbd5e1; margin-bottom: 10px;">
+              Gezginin hesabına kalıcı 5★ Genshin karakteri ekleyin. Kullanıcı oyuna girdiğinde veya oyundayken 5★ yoldaş listesinde <strong>anında</strong> gözükür ve kuşanabilir!
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <input type="text" id="gift-char-username" placeholder="Kick Kullanıcı Adı (örn: zerkacy)" style="flex: 1; min-width: 140px; padding: 6px 10px; border-radius: 6px; background: rgba(0,0,0,0.4); border: 1px solid #334155; color: #fff;">
+              <select id="gift-char-select" style="flex: 1.6; min-width: 190px; padding: 6px 10px; border-radius: 6px; background: rgba(0,0,0,0.4); border: 1px solid #eab308; color: #ffd700; font-weight: 600;">
+                <option value="Raiden Shogun">Raiden Shogun (5★ Electro) ⚡</option>
+                <option value="Zhongli">Zhongli (5★ Geo) 🛡️</option>
+                <option value="Furina">Furina (5★ Hydro) 💧</option>
+                <option value="Hu Tao">Hu Tao (5★ Pyro) 🔥</option>
+                <option value="Kaedehara Kazuha">Kaedehara Kazuha (5★ Anemo) 🌪️</option>
+                <option value="Nahida">Nahida (5★ Dendro) 🌿</option>
+                <option value="Neuvillette">Neuvillette (5★ Hydro) 🌊</option>
+                <option value="Capitano">Capitano (5★ Cryo) ❄️</option>
+                <option value="Mavuika">Mavuika (5★ Pyro) 🔥</option>
+                <option value="Diluc">Diluc (5★ Pyro) 🦅</option>
+                <option value="Yelan">Yelan (5★ Hydro) 🎲</option>
+                <option value="Xianyun">Xianyun (5★ Anemo) 🕊️</option>
+                <option value="Arlecchino">Arlecchino (5★ Pyro) 🩸</option>
+                <option value="Xiao">Xiao (5★ Anemo) 👺</option>
+                <option value="Kamisato Ayaka">Kamisato Ayaka (5★ Cryo) 🌸</option>
+                <option value="Ganyu">Ganyu (5★ Cryo) ❄️</option>
+                <option value="Navia">Navia (5★ Geo) ☂️</option>
+                <option value="Clorinde">Clorinde (5★ Electro) ⚡</option>
+              </select>
+              <button type="button" id="btn-gift-char" class="btn btn-warning btn-sm" style="font-weight: 700; padding: 6px 14px;">★ 5★ Karakter Ekle</button>
+            </div>
+            <div id="gift-char-feedback" class="field-hint" style="margin-top: 6px; font-weight: 600; min-height: 18px;"></div>
+          </div>
+
           <!-- Community Jackpot / Primogem Pool Card -->
           <div class="panel-card jackpot-admin-card" style="margin-top: 16px; border: 1.5px solid rgba(254, 240, 138, 0.4); background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 27, 75, 0.7) 100%); border-radius: 12px; padding: 14px;">
             <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -776,7 +812,7 @@
                   <th>🎲 50/50 Durumu</th>
                   <th>🌌 Standart Pity</th>
                   <th>🗡️ 3★ Silah</th>
-                  <th>5★ Karakter</th>
+                  <th>5★ Karakterler</th>
                   <th>Toplam Çekiş</th>
                   <th>Hızlı İşlem</th>
                 </tr>

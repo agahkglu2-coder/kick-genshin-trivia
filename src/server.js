@@ -145,6 +145,10 @@ app.use(express.static(path.join(__dirname, '..', 'public'), {
   lastModified: false
 }));
 
+app.get('/', (req, res) => {
+  res.redirect('/world.html');
+});
+
 // Initialize Services
 const kickClient = new KickClient();
 const kickBot = new KickBotService({
@@ -340,6 +344,37 @@ function broadcast(payload) {
   });
 }
 
+function awardUserPrimogemsByName(username, amount) {
+  if (!username || !amount) return 0;
+  const user = gachaEngine.getOrCreateUser(username);
+  user.primogems = (user.primogems || 0) + (amount | 0);
+  gachaEngine.saveUsers();
+  const onlineP = worldEngine.getPlayerByName(username);
+  if (onlineP) {
+    onlineP.primogems = user.primogems;
+  }
+  broadcast({
+    type: 'WORLD_PRIMO_UPDATE_USER',
+    username: user.username || username,
+    primogems: user.primogems
+  });
+  return user.primogems;
+}
+
+function notifyDailyQuestProgress(username, res) {
+  if (!username || !res || !res.updated) return;
+  broadcast({
+    type: 'DAILY_QUEST_UPDATE',
+    username,
+    questId: res.quest ? res.quest.id : null,
+    questTitle: res.quest ? res.quest.title : null,
+    justCompleted: Boolean(res.justCompleted),
+    progress: res.progress,
+    target: res.target,
+    state: res.state
+  });
+}
+
 // Kick Client Events
 kickClient.on('status', (status) => {
   kickStatus = { ...kickStatus, ...status };
@@ -453,6 +488,77 @@ kickClient.on('message', async (chatMsg) => {
           const cl = expeditionEngine.claimExpedition(rawUser);
           if (kickBot && kickBot.enabled && cl.message) {
             kickBot.sendMessage(cl.message);
+          }
+        }
+      }
+
+      // --- Mylune Günlük Görev Sistemi (Kick Canlı Yayın Etkileşimi) ---
+      const textLowerQuest = (chatMsg.content || '').trim().toLowerCase();
+      if (rawUser && rawUser !== 'Viewer') {
+        // 1) Her Kick sohbet mesajı (5sn anti-spam korumalı)
+        const chatProg = rpgEngine.recordDailyQuestProgress(rawUser, 'kick_chat_10', 1, { persist: true });
+        notifyDailyQuestProgress(rawUser, chatProg);
+
+        // 2) Yayın etkileşimi (!wish, !katil, !balik, !maden, !buff)
+        if (
+          textLowerQuest.startsWith('!wish') ||
+          textLowerQuest.startsWith('!dilek') ||
+          textLowerQuest.startsWith('!katil') ||
+          textLowerQuest.startsWith('!katıl') ||
+          textLowerQuest === '!join' ||
+          textLowerQuest === '!balik' ||
+          textLowerQuest === '!balık' ||
+          textLowerQuest === '!fish' ||
+          textLowerQuest === '!maden' ||
+          textLowerQuest === '!mine' ||
+          textLowerQuest.startsWith('!buff') ||
+          textLowerQuest.startsWith('!kutsama')
+        ) {
+          const evProg = rpgEngine.recordDailyQuestProgress(rawUser, 'kick_stream_event', 1, { persist: true });
+          notifyDailyQuestProgress(rawUser, evProg);
+        }
+
+        // 2.5) !buff / !kutsama (Aion 2 Zindan Aether Kutsaması)
+        if (textLowerQuest.startsWith('!buff') || textLowerQuest.startsWith('!kutsama')) {
+          const buffMatch = textLowerQuest.match(/^!(?:buff|kutsama)(?:\s+@?([a-zA-Z0-9_\u00C0-\u017F]+))?/);
+          const targetUser = (buffMatch && buffMatch[1]) ? buffMatch[1] : null;
+          broadcast({
+            type: 'DUNGEON_VIEWER_BUFF',
+            viewer: rawUser,
+            targetUser
+          });
+          if (kickBot && kickBot.enabled && kickBot.checkCooldown(rawUser)) {
+            kickBot.sendMessage(`🪽 @${rawUser} Aether Tapınağı Zindanındaki savaşçılara [+25% Saldırı & Hız Aether Kutsaması] gönderdi! ✨`);
+          }
+        }
+
+        // 3) !gunluk / !günlük / !gorevler komutu (İlerleme göster ve tamamlananları otomatik topla)
+        if (
+          textLowerQuest === '!gunluk' ||
+          textLowerQuest === '!günlük' ||
+          textLowerQuest === '!gorevler' ||
+          textLowerQuest === '!görevler' ||
+          textLowerQuest === '!daily'
+        ) {
+          const claimAll = rpgEngine.claimAllAvailableDailyQuests(rawUser, { persist: true });
+          if (claimAll.ok && claimAll.primoGain > 0) {
+            const newTotal = awardUserPrimogemsByName(rawUser, claimAll.primoGain);
+            const itemTxt = claimAll.bonusItem ? ` + [${claimAll.bonusItem.rarity}★ ${claimAll.bonusItem.name}]` : '';
+            const msg = `📜 @${rawUser} Günlük Görev Ödüllerin Toplandı: ${claimAll.claimedTitles.join(', ')}! ➡️ +${claimAll.primoGain} 💎, +${claimAll.xpGain} RPG XP${itemTxt} (Bakiye: ${newTotal} 💎)`;
+            if (kickBot && kickBot.enabled) kickBot.sendMessage(msg);
+            broadcast({
+              type: 'DAILY_QUEST_UPDATE',
+              username: rawUser,
+              state: claimAll.state
+            });
+          } else {
+            const st = claimAll.state || rpgEngine.getDailyQuestsState(rawUser, { persist: true });
+            if (st && Array.isArray(st.quests)) {
+              const parts = st.quests.map(q => `${q.icon}${q.progress}/${q.target}${q.claimed ? '☑️' : (q.completed ? '✅' : '')}`);
+              const chestTxt = st.bonusChest?.claimed ? '🎁Sandık:☑️' : (st.bonusChest?.unlocked ? '🎁Sandık:HAZIR!' : `🎁Sandık:${st.completedCount}/${st.totalCount}`);
+              const msg = `📜 @${rawUser} Mylune Günlük Görevler (${st.completedCount}/${st.totalCount}): ${parts.join(' | ')} | ${chestTxt}`;
+              if (kickBot && kickBot.enabled) kickBot.sendMessage(msg);
+            }
           }
         }
       }
@@ -576,6 +682,12 @@ gameEngine.on('winner_declared', (winData) => {
     const modeName = winData.triviaMode === 'general' ? 'Genel Kültür' : 'Genshin';
     kickBot.sendMessage(`🎉 Tebrikler @${winnerUser}! ${modeName} sorusunu doğru bilerek +60 Primogem kazandın!`);
 
+    // Record daily quest progress for Trivia win
+    try {
+      const evProg = rpgEngine.recordDailyQuestProgress(winnerUser, 'kick_stream_event', 1, { persist: true });
+      notifyDailyQuestProgress(winnerUser, evProg);
+    } catch (e) {}
+
     // Award Crown of Wisdom on Pixel Chatter overlay!
     broadcast({
       type: 'CHATTER_CROWN',
@@ -647,6 +759,23 @@ gachaEngine.on('wish_result', (wishData) => {
     }
   } catch (e) {
     console.error('[Server] Dilek chat duyurusu hatası:', e.message);
+  }
+
+  // Sync MMO Player stats & companion list if online
+  if (wishData.username && worldEngine) {
+    const p = worldEngine.getPlayerByName(wishData.username);
+    if (p) {
+      if (wishData.stats && wishData.stats.primogems !== undefined) {
+        p.primogems = wishData.stats.primogems;
+      }
+      const comps = worldEngine.getUserCompanions(wishData.username);
+      broadcast({
+        type: 'WORLD_COMPANIONS_LIST',
+        username: wishData.username,
+        companions: comps,
+        activeCompanion: p.companion || null
+      });
+    }
   }
 });
 
@@ -887,13 +1016,15 @@ wss.on('connection', (ws) => {
           profilePic: data.profilePic
         });
         const companions5Stars = worldEngine.getUser5Stars(player.username);
+        const dailyQuests = rpgEngine.getDailyQuestsState(player.username, { persist: !player.isGuest });
         ws.send(JSON.stringify({
           type: 'WORLD_INIT',
           self: player,
           maps: worldEngine.maps,
           states: worldEngine.getMapStates(),
           unlockedCompanions: companions5Stars,
-          activeCompanion: player.companion || null
+          activeCompanion: player.companion || null,
+          dailyQuests
         }));
       } else if (data.type === 'WORLD_SELECT_COMPANION') {
         const targetComp = data.companionName || data.companion;
@@ -926,6 +1057,22 @@ wss.on('connection', (ws) => {
         }
       } else if (data.type === 'WORLD_MOVE') {
         worldEngine.updateMovement(socketId, data);
+      } else if (data.type === 'WORLD_COMBAT_VFX') {
+        const me = worldEngine.getPlayer(socketId);
+        if (me) {
+          broadcast({
+            type: 'WORLD_COMBAT_VFX',
+            socketId: socketId,
+            username: me.username,
+            mapId: me.mapId,
+            action: data.action || 'attack',
+            combo: data.combo || 1,
+            element: data.element || 'Pyro',
+            x: typeof data.x === 'number' ? data.x : me.x,
+            z: typeof data.z === 'number' ? data.z : me.z,
+            rot: typeof data.rot === 'number' ? data.rot : me.rot
+          });
+        }
       } else if (data.type === 'WORLD_DOOR_INTERACT') {
         const res = worldEngine.interactDoor(socketId);
         ws.send(JSON.stringify({ type: 'WORLD_DOOR_RESULT', ...res }));
@@ -947,6 +1094,10 @@ wss.on('connection', (ws) => {
             mapId: me.mapId
           });
           worldEngine.addChatBubble(socketId, `🎣 ${data.fish.emoji || '🐟'} ${data.fish.name}! (+${rewardPrimo}💎)`);
+
+          // Günlük görev: Nehir Balıkçısı (mmo_fish_3)
+          const qFish = rpgEngine.recordDailyQuestProgress(me.username, 'mmo_fish_3', 1, { persist: !me.isGuest });
+          notifyDailyQuestProgress(me.username, qFish);
         }
       } else if (data.type === 'WORLD_ITEM_LOOT') {
         const me = worldEngine.getPlayer(socketId);
@@ -1005,6 +1156,88 @@ wss.on('connection', (ws) => {
               item: data.mob.bossLootName || 'Kadim Kaos Çekirdeği'
             });
             worldEngine.addChatBubble(socketId, `⚔️ 👑 ${data.mob.name} yenildi! Nadir ganimetler düştü!`);
+          }
+
+          // Günlük görev: Zindan Avcısı (mmo_kill_10) & Boss Seferi (mmo_boss_or_guild)
+          const qKill = rpgEngine.recordDailyQuestProgress(me.username, 'mmo_kill_10', 1, { persist: !me.isGuest });
+          notifyDailyQuestProgress(me.username, qKill);
+          if (data.mob.isBoss) {
+            const qBoss = rpgEngine.recordDailyQuestProgress(me.username, 'mmo_boss_or_guild', 1, { persist: !me.isGuest });
+            notifyDailyQuestProgress(me.username, qBoss);
+          }
+        }
+      } else if (data.type === 'WORLD_GET_DAILY_QUESTS') {
+        const me = worldEngine.getPlayer(socketId);
+        const target = data.username || (me ? me.username : null);
+        if (target) {
+          const state = rpgEngine.getDailyQuestsState(target, { persist: me ? !me.isGuest : true });
+          ws.send(JSON.stringify({ type: 'DAILY_QUEST_STATE', state }));
+        }
+      } else if (data.type === 'WORLD_VISIT_GUILD') {
+        const me = worldEngine.getPlayer(socketId);
+        if (me) {
+          const qGuild = rpgEngine.recordDailyQuestProgress(me.username, 'mmo_boss_or_guild', 1, { persist: !me.isGuest });
+          notifyDailyQuestProgress(me.username, qGuild);
+          ws.send(JSON.stringify({
+            type: 'DAILY_QUEST_STATE',
+            state: qGuild.state || rpgEngine.getDailyQuestsState(me.username, { persist: !me.isGuest })
+          }));
+        }
+      } else if (data.type === 'WORLD_CLAIM_DAILY_QUEST') {
+        const me = worldEngine.getPlayer(socketId);
+        if (me) {
+          const persistOpt = { persist: !me.isGuest };
+          const res = data.questId === 'all'
+            ? rpgEngine.claimAllAvailableDailyQuests(me.username, persistOpt)
+            : rpgEngine.claimDailyQuest(me.username, data.questId, persistOpt);
+          if (res.ok && res.primoGain > 0) {
+            const newTotal = worldEngine.awardPrimogems(socketId, res.primoGain);
+            ws.send(JSON.stringify({ type: 'WORLD_PRIMO_UPDATE', primogems: newTotal }));
+          }
+          if (res.rpgState) {
+            ws.send(JSON.stringify({ type: 'RPG_PROFILE_STATE', state: res.rpgState }));
+          }
+          ws.send(JSON.stringify({
+            type: 'DAILY_QUEST_CLAIM_RESULT',
+            ...res
+          }));
+        }
+      } else if (data.type === 'WORLD_DUNGEON_CHEST_CLAIM') {
+        const me = worldEngine.getPlayer(socketId);
+        if (me) {
+          const persistOpt = { persist: !me.isGuest };
+          const chestRes = rpgEngine.claimDungeonChest(me.username, {
+            tierId: data.tierId || me.mapId || 'dungeon_tier_1',
+            rank: data.rank || 'B',
+            isBonusChest: Boolean(data.isBonusChest)
+          }, persistOpt);
+
+          if (chestRes.ok) {
+            const newTotal = worldEngine.awardPrimogems(socketId, chestRes.primoGain);
+            ws.send(JSON.stringify({ type: 'WORLD_PRIMO_UPDATE', primogems: newTotal }));
+            if (chestRes.rpgState) {
+              ws.send(JSON.stringify({ type: 'RPG_PROFILE_STATE', state: chestRes.rpgState }));
+            }
+            const qBoss = rpgEngine.recordDailyQuestProgress(me.username, 'mmo_boss_or_guild', 1, persistOpt);
+            notifyDailyQuestProgress(me.username, qBoss);
+
+            ws.send(JSON.stringify({
+              type: 'DUNGEON_CHEST_CLAIM_RESULT',
+              ...chestRes,
+              newTotalPrimo: newTotal
+            }));
+
+            if (chestRes.isBonusChest || chestRes.rank === 'S') {
+              broadcast({
+                type: 'WORLD_DUNGEON_ANNOUNCE',
+                username: me.username,
+                zoneName: chestRes.zoneName,
+                rank: chestRes.rank,
+                isBonusChest: chestRes.isBonusChest,
+                item: chestRes.item,
+                primoGain: chestRes.primoGain
+              });
+            }
           }
         }
       } else if (data.type === 'WORLD_SELECT_ZONE') {
@@ -1257,6 +1490,59 @@ app.post('/api/world/sell-materials', express.json(), (req, res) => {
 });
 
 // --- MMORPG Item & GearScore (GS) REST Endpoints ---
+app.get('/api/world/daily-quests', (req, res) => {
+  const username = (req.query.username || req.query.user || '').trim();
+  if (!username) return res.status(400).json({ ok: false, error: 'Kullanıcı adı gerekli.' });
+  const onlinePlayer = worldEngine.getPlayerByName(username);
+  const state = rpgEngine.getDailyQuestsState(username, { persist: onlinePlayer ? !onlinePlayer.isGuest : true });
+  res.json({ ok: true, state });
+});
+
+app.post('/api/world/daily-quests/visit-guild', express.json(), (req, res) => {
+  const { username } = req.body || {};
+  if (!username) return res.status(400).json({ ok: false, error: 'Kullanıcı adı gerekli.' });
+  const onlinePlayer = worldEngine.getPlayerByName(username);
+  const qGuild = rpgEngine.recordDailyQuestProgress(username, 'mmo_boss_or_guild', 1, { persist: onlinePlayer ? !onlinePlayer.isGuest : true });
+  notifyDailyQuestProgress(username, qGuild);
+  res.json({ ok: true, updated: qGuild.updated, state: qGuild.state });
+});
+
+app.post('/api/world/daily-quests/claim', express.json(), (req, res) => {
+  const { username, questId } = req.body || {};
+  if (!username || !questId) return res.status(400).json({ ok: false, error: 'Eksik parametre.' });
+  const onlinePlayer = worldEngine.getPlayerByName(username);
+  const persistOpt = { persist: onlinePlayer ? !onlinePlayer.isGuest : true };
+  const result = questId === 'all'
+    ? rpgEngine.claimAllAvailableDailyQuests(username, persistOpt)
+    : rpgEngine.claimDailyQuest(username, questId, persistOpt);
+  let newTotalPrimo = null;
+  if (result.ok && result.primoGain > 0) {
+    newTotalPrimo = awardUserPrimogemsByName(username, result.primoGain);
+  }
+  res.json({
+    ...result,
+    newTotalPrimo
+  });
+});
+
+app.post('/api/world/dungeon/claim-chest', express.json(), (req, res) => {
+  const { username, tierId, rank, isBonusChest } = req.body || {};
+  if (!username) return res.status(400).json({ ok: false, error: 'Kullanıcı adı gerekli.' });
+  const onlinePlayer = worldEngine.getPlayerByName(username);
+  const persistOpt = { persist: onlinePlayer ? !onlinePlayer.isGuest : true };
+  const chestRes = rpgEngine.claimDungeonChest(username, { tierId, rank, isBonusChest: Boolean(isBonusChest) }, persistOpt);
+  let newTotalPrimo = null;
+  if (chestRes.ok && chestRes.primoGain > 0) {
+    newTotalPrimo = awardUserPrimogemsByName(username, chestRes.primoGain);
+  }
+  const qBoss = rpgEngine.recordDailyQuestProgress(username, 'mmo_boss_or_guild', 1, persistOpt);
+  notifyDailyQuestProgress(username, qBoss);
+  res.json({
+    ...chestRes,
+    newTotalPrimo
+  });
+});
+
 app.get('/api/rpg/profile', (req, res) => {
   const username = (req.query.username || req.query.user || '').trim();
   if (!username) return res.status(400).json({ ok: false, error: 'Kullanıcı adı gerekli.' });
@@ -1555,15 +1841,18 @@ app.get(['/data/weapons.json', '/api/gacha/weapons', '/api/weapons'], (req, res)
   res.json(gachaEngine.weapons);
 });
 
-// 🐾 5-Star Character Companions Endpoint
+// 🐾 5-Star Character Companions Endpoint (Strict 5★, Owned Only)
 app.get('/api/companions/:username', (req, res) => {
   const username = req.params.username || '';
   const list = worldEngine.getUser5Stars(username);
   const u = gachaEngine ? gachaEngine.getOrCreateUser(username) : null;
+  const isCompanionValid = list.some(c => c.name.toLowerCase() === (u?.activeCompanion || '').toLowerCase());
   res.json({
+    ok: true,
+    success: true,
     username,
     companions: list,
-    activeCompanion: u ? (u.activeCompanion || null) : null
+    activeCompanion: isCompanionValid ? u.activeCompanion : null
   });
 });
 
@@ -1588,6 +1877,75 @@ app.post('/api/gacha/add-primo', (req, res) => {
   if (!username) return res.status(400).json({ error: 'Kullanıcı adı gerekli.' });
   const user = gachaEngine.addPrimogems(username, parseInt(amount, 10) || 0);
   res.json({ success: true, user });
+});
+
+app.get('/api/gacha/user/:username/inventory', (req, res) => {
+  const username = (req.params.username || '').trim();
+  const user = gachaEngine ? gachaEngine.getOrCreateUser(username) : null;
+  if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
+  res.json({
+    ok: true,
+    username: user.username,
+    primogems: user.primogems,
+    inventory: user.inventory || [],
+    fiveStars: (user.inventory || []).filter(i => i.rarity === 5),
+    fourStars: (user.inventory || []).filter(i => i.rarity === 4)
+  });
+});
+
+app.post('/api/gacha/user/add-character', (req, res) => {
+  const { username, characterName } = req.body || {};
+  if (!username || !characterName) return res.status(400).json({ error: 'Kullanıcı adı ve karakter adı gerekli.' });
+  const meta = gachaEngine.characters.find(
+    c => c.name.toLowerCase() === characterName.trim().toLowerCase() ||
+         (c.slug && c.slug.toLowerCase() === characterName.trim().toLowerCase())
+  );
+  if (!meta) return res.status(404).json({ error: `'${characterName}' adlı karakter Genshin havuzunda bulunamadı.` });
+  const user = gachaEngine.getOrCreateUser(username.trim());
+  if (!Array.isArray(user.inventory)) user.inventory = [];
+  const alreadyHas = user.inventory.some(i => i.name.toLowerCase() === meta.name.toLowerCase());
+  if (!alreadyHas) {
+    user.inventory.push({
+      name: meta.name,
+      rarity: meta.rarity,
+      type: 'character',
+      element: meta.element,
+      weaponType: meta.weaponType,
+      region: meta.region,
+      title: meta.title,
+      icon: meta.icon,
+      remoteIcon: meta.remoteIcon,
+      splashArt: meta.splashArt,
+      pulledAt: new Date().toISOString()
+    });
+    if (meta.rarity === 5) {
+      user.fiveStarsCount = (user.fiveStarsCount || 0) + 1;
+    } else if (meta.rarity === 4) {
+      user.fourStarsCount = (user.fourStarsCount || 0) + 1;
+    }
+    gachaEngine.saveUsers();
+  }
+
+  // Live Broadcast to MMO World
+  if (worldEngine) {
+    const p = worldEngine.getPlayerByName(username.trim());
+    if (p) {
+      const comps = worldEngine.getUser5Stars(username.trim());
+      broadcast({
+        type: 'WORLD_COMPANIONS_LIST',
+        username: p.username,
+        companions: comps,
+        activeCompanion: p.companion || null
+      });
+    }
+  }
+
+  res.json({
+    success: true,
+    message: `✨ ${meta.name} (${meta.rarity}★ ${meta.element}) başarıyla @${user.username} envanterine eklendi!`,
+    character: meta,
+    user
+  });
 });
 
 app.post('/api/gacha/rain', (req, res) => {

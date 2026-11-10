@@ -70,7 +70,11 @@ const MOB_TABLE = {
   mitachurl_axe: { xp: 60, gearChance: 0.65, elite: true },
   abyss_sentinel: { xp: 45, gearChance: 0.42 },
   abyss_mage: { xp: 55, gearChance: 0.48 },
-  ruin_golem: { xp: 180, gearChance: 1.0, boss: true }
+  ruin_golem: { xp: 180, gearChance: 1.0, boss: true },
+  // Aion 2 Aether Zindanı Yaratıkları
+  aether_guardian: { xp: 38, gearChance: 0.40 },
+  abyss_archon_mini: { xp: 95, gearChance: 0.85, elite: true },
+  tahabata_lord: { xp: 260, gearChance: 1.0, boss: true }
 };
 
 const RARITY_WEIGHTS = {
@@ -116,6 +120,46 @@ const ZONE_CONFIGS = {
     weights: [0, 20, 55, 22, 3], // Nadir & Destansı, %3 Efsanevi
     bossWeights: [0, 10, 48, 37, 5], // Boss: %5 Efsanevi (prestijli ve dengeli), %37 Destansı
     primoReward: 20 // Boss kesildiğinde 15-25 Primogem
+  },
+  // --- Aion 2 Tarzı 3 Aşamalı Aether Zindanları (Instance Dungeons) ---
+  dungeon_tier_1: {
+    id: 'dungeon_tier_1',
+    name: 'Mühürlü Aether Tapınağı (Normal)',
+    tier: 1,
+    isDungeon: true,
+    reqGS: 150,
+    minIlvl: 10,
+    maxIlvl: 20,
+    theme: 'aion_sanctum',
+    weights: [25, 50, 22, 3, 0],
+    bossWeights: [0, 35, 48, 15, 2],
+    primoReward: 10
+  },
+  dungeon_tier_2: {
+    id: 'dungeon_tier_2',
+    name: 'Kızıl Aether Kalesi (Kahraman)',
+    tier: 2,
+    isDungeon: true,
+    reqGS: 450,
+    minIlvl: 24,
+    maxIlvl: 36,
+    theme: 'aion_fortress',
+    weights: [5, 35, 45, 13, 2],
+    bossWeights: [0, 10, 50, 32, 8],
+    primoReward: 18
+  },
+  dungeon_tier_3: {
+    id: 'dungeon_tier_3',
+    name: "Tahabata'nın Uçurum Kalbi (Abyss)",
+    tier: 3,
+    isDungeon: true,
+    reqGS: 800,
+    minIlvl: 38,
+    maxIlvl: 50,
+    theme: 'aion_abyss',
+    weights: [0, 10, 50, 33, 7],
+    bossWeights: [0, 0, 32, 50, 18],
+    primoReward: 30
   }
 };
 
@@ -632,11 +676,435 @@ class RpgEngine {
     rows.sort((a, b) => b.gs - a.gs || b.level - a.level);
     return rows.slice(0, limit);
   }
+
+  _todayKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  _ensureDailyQuests(profile) {
+    const today = this._todayKey();
+    if (!profile.dailyQuests || typeof profile.dailyQuests !== 'object' || profile.dailyQuests.date !== today) {
+      profile.dailyQuests = {
+        date: today,
+        progress: {},
+        claimed: {},
+        bonusClaimed: false,
+        lastChatTs: 0
+      };
+    }
+    if (!profile.dailyQuests.progress) profile.dailyQuests.progress = {};
+    if (!profile.dailyQuests.claimed) profile.dailyQuests.claimed = {};
+    return profile.dailyQuests;
+  }
+
+  /**
+   * Günlük görev durumunu döndürür (5 görev + Mylune Günlük Lonca Sandığı).
+   */
+  getDailyQuestsState(username, opts = {}) {
+    const profile = this.getProfile(username, opts);
+    if (!profile) return null;
+    const dq = this._ensureDailyQuests(profile);
+    const quests = DAILY_QUESTS_POOL.map(q => {
+      const progress = Math.min(q.target, dq.progress[q.id] || 0);
+      const completed = progress >= q.target;
+      const claimed = Boolean(dq.claimed[q.id]);
+      return {
+        ...q,
+        progress,
+        completed,
+        claimed
+      };
+    });
+    const completedCount = quests.filter(q => q.completed).length;
+    const claimedCount = quests.filter(q => q.claimed).length;
+    const allCompleted = completedCount === DAILY_QUESTS_POOL.length;
+    return {
+      date: dq.date,
+      quests,
+      completedCount,
+      claimedCount,
+      totalCount: DAILY_QUESTS_POOL.length,
+      allCompleted,
+      bonusChest: {
+        ...DAILY_BONUS_CHEST,
+        unlocked: allCompleted,
+        claimed: Boolean(dq.bonusClaimed)
+      }
+    };
+  }
+
+  /**
+   * Günlük görev ilerlemesi kaydeder.
+   * kick_chat_10 için 5 saniyelik anti-spam soğuma süresi uygular.
+   */
+  recordDailyQuestProgress(username, questId, amount = 1, opts = {}) {
+    const profile = this.getProfile(username, opts);
+    const q = DAILY_QUESTS_POOL.find(item => item.id === questId);
+    if (!profile || !q) return { updated: false, error: 'Geçersiz görev.' };
+
+    const dq = this._ensureDailyQuests(profile);
+    const now = Date.now();
+    if (questId === 'kick_chat_10' && opts.enforceCooldown !== false) {
+      if (now - (dq.lastChatTs || 0) < 5000) {
+        return {
+          updated: false,
+          reason: 'cooldown',
+          state: this.getDailyQuestsState(username, opts)
+        };
+      }
+      dq.lastChatTs = now;
+    }
+
+    const prev = Math.min(q.target, dq.progress[questId] || 0);
+    if (prev >= q.target) {
+      return {
+        updated: false,
+        justCompleted: false,
+        quest: q,
+        progress: prev,
+        target: q.target,
+        state: this.getDailyQuestsState(username, opts)
+      };
+    }
+
+    const next = Math.min(q.target, prev + Math.max(1, amount | 0));
+    dq.progress[questId] = next;
+    this._scheduleSave(username);
+
+    return {
+      updated: next > prev,
+      justCompleted: prev < q.target && next >= q.target,
+      quest: q,
+      progress: next,
+      target: q.target,
+      state: this.getDailyQuestsState(username, opts)
+    };
+  }
+
+  /**
+   * RPG XP ve isteğe bağlı Epik/Efsanevi (4★/5★) ekipman ödülü verir.
+   */
+  grantQuestReward(username, { xp = 0, grantBonusItem = false } = {}, opts = {}) {
+    const profile = this.getProfile(username, opts);
+    if (!profile) return { ok: false };
+
+    let leveledUp = false;
+    if (xp > 0 && profile.level < MAX_LEVEL) {
+      profile.xp += xp;
+      while (profile.level < MAX_LEVEL && profile.xp >= xpForLevel(profile.level)) {
+        profile.xp -= xpForLevel(profile.level);
+        profile.level += 1;
+        leveledUp = true;
+      }
+      if (profile.level >= MAX_LEVEL) profile.xp = 0;
+    }
+
+    let bonusItem = null;
+    let autoSalvagedDust = 0;
+    if (grantBonusItem) {
+      const rarity = this.rng() < 0.38 ? 5 : 4; // %38 5★ Efsanevi, %62 4★ Epik
+      const ilvl = Math.max(1, Math.min(MAX_LEVEL, profile.level + 1));
+      const item = this.generateItem({ ilvl, rarity });
+      bonusItem = describeItem(item);
+      if (profile.bag.length >= BAG_SIZE) {
+        autoSalvagedDust = salvageValue(item);
+        profile.dust += autoSalvagedDust;
+      } else {
+        profile.bag.push(item);
+      }
+    }
+
+    this._scheduleSave(username);
+    return {
+      ok: true,
+      xp,
+      leveledUp,
+      level: profile.level,
+      bonusItem,
+      autoSalvagedDust
+    };
+  }
+
+  /**
+   * Tek bir günlük görevi veya 'bonus_chest' ödülünü talep eder.
+   */
+  claimDailyQuest(username, questId, opts = {}) {
+    const profile = this.getProfile(username, opts);
+    if (!profile) return { ok: false, error: 'Profil bulunamadı.' };
+    const dq = this._ensureDailyQuests(profile);
+
+    if (questId === 'bonus_chest') {
+      const allDone = DAILY_QUESTS_POOL.every(q => (dq.progress[q.id] || 0) >= q.target);
+      if (!allDone) {
+        return { ok: false, error: 'Önce 5 günlük görevin tamamını bitirmelisin!' };
+      }
+      if (dq.bonusClaimed) {
+        return { ok: false, error: 'Mylune Günlük Lonca Sandığı bugün zaten alındı.' };
+      }
+      dq.bonusClaimed = true;
+      const rw = this.grantQuestReward(username, {
+        xp: DAILY_BONUS_CHEST.rewardXp,
+        grantBonusItem: true
+      }, opts);
+      return {
+        ok: true,
+        questId: 'bonus_chest',
+        title: DAILY_BONUS_CHEST.title,
+        primoGain: DAILY_BONUS_CHEST.rewardPrimo,
+        xpGain: DAILY_BONUS_CHEST.rewardXp,
+        leveledUp: rw.leveledUp,
+        level: rw.level,
+        bonusItem: rw.bonusItem,
+        state: this.getDailyQuestsState(username, opts),
+        rpgState: this.getState(username, opts)
+      };
+    }
+
+    const q = DAILY_QUESTS_POOL.find(item => item.id === questId);
+    if (!q) return { ok: false, error: 'Geçersiz görev.' };
+    const prog = dq.progress[q.id] || 0;
+    if (prog < q.target) {
+      return { ok: false, error: `Görev henüz tamamlanmadı (${prog}/${q.target}).` };
+    }
+    if (dq.claimed[q.id]) {
+      return { ok: false, error: 'Bu görevin ödülü bugün zaten alındı.' };
+    }
+
+    dq.claimed[q.id] = true;
+    const rw = this.grantQuestReward(username, { xp: q.rewardXp, grantBonusItem: false }, opts);
+    return {
+      ok: true,
+      questId: q.id,
+      title: q.title,
+      primoGain: q.rewardPrimo,
+      xpGain: q.rewardXp,
+      leveledUp: rw.leveledUp,
+      level: rw.level,
+      state: this.getDailyQuestsState(username, opts),
+      rpgState: this.getState(username, opts)
+    };
+  }
+
+  /**
+   * Tamamlanmış ancak henüz alınmamış tüm günlük görev ödüllerini + açıksa Bonus Sandığı toplar.
+   */
+  claimAllAvailableDailyQuests(username, opts = {}) {
+    const profile = this.getProfile(username, opts);
+    if (!profile) return { ok: false, error: 'Profil bulunamadı.' };
+    const dq = this._ensureDailyQuests(profile);
+
+    let totalPrimo = 0;
+    let totalXp = 0;
+    let anyLeveledUp = false;
+    let bonusItem = null;
+    const claimedTitles = [];
+
+    for (const q of DAILY_QUESTS_POOL) {
+      const prog = dq.progress[q.id] || 0;
+      if (prog >= q.target && !dq.claimed[q.id]) {
+        dq.claimed[q.id] = true;
+        totalPrimo += q.rewardPrimo;
+        totalXp += q.rewardXp;
+        claimedTitles.push(q.title);
+      }
+    }
+
+    const allDone = DAILY_QUESTS_POOL.every(q => (dq.progress[q.id] || 0) >= q.target);
+    if (allDone && !dq.bonusClaimed) {
+      dq.bonusClaimed = true;
+      totalPrimo += DAILY_BONUS_CHEST.rewardPrimo;
+      totalXp += DAILY_BONUS_CHEST.rewardXp;
+      claimedTitles.push(`🎁 ${DAILY_BONUS_CHEST.title}`);
+      const rw = this.grantQuestReward(username, { xp: totalXp, grantBonusItem: true }, opts);
+      anyLeveledUp = rw.leveledUp;
+      bonusItem = rw.bonusItem;
+    } else if (totalXp > 0) {
+      const rw = this.grantQuestReward(username, { xp: totalXp, grantBonusItem: false }, opts);
+      anyLeveledUp = rw.leveledUp;
+    }
+
+    return {
+      ok: claimedTitles.length > 0,
+      claimedTitles,
+      primoGain: totalPrimo,
+      xpGain: totalXp,
+      leveledUp: anyLeveledUp,
+      level: profile.level,
+      bonusItem,
+      state: this.getDailyQuestsState(username, opts),
+      rpgState: this.getState(username, opts)
+    };
+  }
+
+  /**
+   * Aion 2 Tarzı Zindan Hazine Sandığı Ödülü (Normal Sandık & S-Rank Altın Uçurum Sandığı).
+   */
+  claimDungeonChest(username, { tierId = 'dungeon_tier_1', rank = 'B', isBonusChest = false } = {}, opts = {}) {
+    const profile = this.getProfile(username, opts);
+    if (!profile) return { ok: false, error: 'Profil bulunamadı.' };
+
+    const zone = ZONE_CONFIGS[tierId] || ZONE_CONFIGS.dungeon_tier_1;
+    const tier = zone.tier || 1;
+    const rankStr = ['S', 'A', 'B', 'C'].includes(rank) ? rank : 'B';
+
+    const rankMult = rankStr === 'S' ? 1.5 : (rankStr === 'A' ? 1.25 : (rankStr === 'B' ? 1.0 : 0.8));
+
+    let primoGain = 0;
+    let xpGain = 0;
+    let dustGain = 0;
+    let rarity = 3;
+    let ilvl = Math.max(zone.minIlvl || 10, Math.min(zone.maxIlvl || 20, profile.level + 2));
+
+    if (isBonusChest) {
+      // S-Rank Altın Uçurum Sandığı
+      if (tier === 3) {
+        primoGain = 320; // 2 Tam Dilek!
+        xpGain = 550;
+        dustGain = 60;
+        rarity = 5; // Garanti 5★ Efsanevi Ekipman!
+        ilvl = Math.max(42, Math.min(MAX_LEVEL, profile.level + 4));
+      } else if (tier === 2) {
+        primoGain = 240;
+        xpGain = 320;
+        dustGain = 32;
+        rarity = this.rng() < 0.45 ? 5 : 4;
+        ilvl = Math.max(28, Math.min(38, profile.level + 3));
+      } else {
+        primoGain = 160;
+        xpGain = 180;
+        dustGain = 18;
+        rarity = this.rng() < 0.20 ? 5 : 4;
+        ilvl = Math.max(14, Math.min(22, profile.level + 2));
+      }
+    } else {
+      // Standart Zindan Tamamlama Sandığı
+      const basePrimo = tier === 3 ? 160 : (tier === 2 ? 120 : 80);
+      const baseXp = tier === 3 ? 400 : (tier === 2 ? 240 : 120);
+      const baseDust = tier === 3 ? 38 : (tier === 2 ? 22 : 12);
+      primoGain = Math.round(basePrimo * rankMult);
+      xpGain = Math.round(baseXp * rankMult);
+      dustGain = Math.round(baseDust * rankMult);
+      const weights = zone.bossWeights || [0, 20, 50, 25, 5];
+      rarity = pickWeighted(weights, this.rng) + 1;
+      if (rankStr === 'S' && rarity < 4) rarity = 4;
+      if (tier >= 2 && rarity < 3) rarity = 3;
+    }
+
+    let leveledUp = false;
+    if (profile.level < MAX_LEVEL) {
+      profile.xp += xpGain;
+      while (profile.level < MAX_LEVEL && profile.xp >= xpForLevel(profile.level)) {
+        profile.xp -= xpForLevel(profile.level);
+        profile.level += 1;
+        leveledUp = true;
+      }
+      if (profile.level >= MAX_LEVEL) profile.xp = 0;
+    }
+
+    const item = this.generateItem({ ilvl, rarity });
+    const descItem = describeItem(item);
+    let autoSalvaged = false;
+    if (profile.bag.length >= BAG_SIZE) {
+      dustGain += salvageValue(item);
+      autoSalvaged = true;
+    } else {
+      profile.bag.push(item);
+    }
+    profile.dust += dustGain;
+    this._scheduleSave(username);
+
+    return {
+      ok: true,
+      success: true,
+      tierId: zone.id,
+      zoneName: zone.name,
+      rank: rankStr,
+      isBonusChest,
+      primoGain,
+      xpGain,
+      dustGain,
+      wishes: isBonusChest ? 2 : 1,
+      leveledUp,
+      level: profile.level,
+      item: descItem,
+      equipment: descItem,
+      autoSalvaged,
+      rpgState: this.getState(username, opts)
+    };
+  }
 }
+
+const DAILY_QUESTS_POOL = [
+  {
+    id: 'kick_chat_10',
+    title: 'Mylune Kick Sohbeti',
+    desc: 'Mylune Kick canlı yayın sohbetine 10 mesaj yaz (en az 5sn arayla)',
+    category: 'kick',
+    badge: 'KICK YAYINI',
+    icon: '💬',
+    target: 10,
+    rewardPrimo: 60,
+    rewardXp: 80
+  },
+  {
+    id: 'kick_stream_event',
+    title: 'Yayın Etkileşimi',
+    desc: 'Kick sohbetinde !wish çek, !katil ile Boss Raid\'e gir, !balik/!maden başlat veya Trivia bil',
+    category: 'kick',
+    badge: 'KICK YAYINI',
+    icon: '📺',
+    target: 1,
+    rewardPrimo: 50,
+    rewardXp: 70
+  },
+  {
+    id: 'mmo_fish_3',
+    title: 'Nehir Balıkçısı',
+    desc: 'Kasaba nehrinde 3 balık yakala',
+    category: 'mmo',
+    badge: '3D DÜNYA',
+    icon: '🎣',
+    target: 3,
+    rewardPrimo: 45,
+    rewardXp: 60
+  },
+  {
+    id: 'mmo_kill_10',
+    title: 'Zindan Avcısı',
+    desc: 'Vahşi Savaş Arenası zindanlarında 10 yaratık alt et',
+    category: 'mmo',
+    badge: '3D ZİNDAN',
+    icon: '⚔️',
+    target: 10,
+    rewardPrimo: 55,
+    rewardXp: 90
+  },
+  {
+    id: 'mmo_boss_or_guild',
+    title: 'Lonca & Boss Seferi',
+    desc: 'Maceracılar Loncası\'nda Katheryne ile görüş veya Zindanda 1 Boss devir',
+    category: 'mmo',
+    badge: 'LONCA / BOSS',
+    icon: '🏰',
+    target: 1,
+    rewardPrimo: 60,
+    rewardXp: 100
+  }
+];
+
+const DAILY_BONUS_CHEST = {
+  id: 'bonus_chest',
+  title: 'Mylune Günlük Lonca Sandığı',
+  desc: '5 günlük görevin tamamını bitirerek +160 Primogem (1 Dilek), +150 RPG XP ve 1x Rastgele 4★/5★ Epik/Efsanevi Ekipman kazan!',
+  icon: '🎁',
+  rewardPrimo: 160,
+  rewardXp: 150
+};
 
 module.exports = {
   RpgEngine, SLOTS, SLOT_LABELS, RARITIES, STAT_LABELS, PERCENT_STATS, MOB_TABLE,
   ZONE_CONFIGS, getGsDifficultyMultiplier,
+  DAILY_QUESTS_POOL, DAILY_BONUS_CHEST,
   MAX_LEVEL, BAG_SIZE, MAX_PLUS,
   xpForLevel, itemScore, itemStats, describeItem, upgradeCost, salvageValue
 };

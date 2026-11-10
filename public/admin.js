@@ -96,6 +96,10 @@
   const giftAmount = document.getElementById('gift-amount');
   const btnGiftPrimo = document.getElementById('btn-gift-primo');
   const giftFeedback = document.getElementById('gift-feedback');
+  const giftCharUsername = document.getElementById('gift-char-username');
+  const giftCharSelect = document.getElementById('gift-char-select');
+  const btnGiftChar = document.getElementById('btn-gift-char');
+  const giftCharFeedback = document.getElementById('gift-char-feedback');
   const gachaUsersCount = document.getElementById('gacha-users-count');
   const btnRefreshGachaUsers = document.getElementById('btn-refresh-gacha-users');
   const gachaUsersTbody = document.getElementById('gacha-users-tbody');
@@ -2282,6 +2286,10 @@
         ? `<span class="badge-mini" style="background: rgba(234, 179, 8, 0.25); color: #ffd700; border: 1px solid #eab308; font-weight:700;">🌟 KESİN GARANTİ</span>`
         : `<span class="badge-mini" style="background: rgba(148, 163, 184, 0.2); color: #94a3b8;">🎲 50/50</span>`;
 
+      const fiveStarBadges = (u.fiveStarCharacters && u.fiveStarCharacters.length > 0)
+        ? u.fiveStarCharacters.map(name => `<span class="badge-mini" style="background: rgba(234, 179, 8, 0.2); color: #ffd700; border: 1px solid #eab308; margin: 2px; display: inline-block;">★ ${escapeHtml(name)}</span>`).join(' ')
+        : `<span style="color: #64748b; font-size: 0.75rem;">Yok (0)</span>`;
+
       return `
         <tr>
           <td><strong>@${escapeHtml(u.username)}</strong></td>
@@ -2290,10 +2298,13 @@
           <td>${guaranteeBadge}</td>
           <td><span class="gacha-pity-badge" style="color: #93c5fd;">${u.standardPity5 || 0}/75</span></td>
           <td><span class="gacha-pity-badge" style="color:#38bdf8;">🗡️ ${u.threeStarsCount || 0}</span></td>
-          <td><strong style="color: #ffd700;">★ ${u.fiveStarsCount}</strong></td>
+          <td>${fiveStarBadges}</td>
           <td>${u.totalWishes}</td>
           <td>
-            <button class="btn btn-xs btn-outline btn-quick-add" data-user="${escapeHtml(u.username)}">+160 Primo</button>
+            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+              <button class="btn btn-xs btn-outline btn-quick-add" data-user="${escapeHtml(u.username)}">+160 Primo</button>
+              <button class="btn btn-xs btn-outline btn-quick-select-user" data-user="${escapeHtml(u.username)}" style="border-color:#eab308; color:#ffd700;" title="5★ Karakter Ekleme Kutusuna Aktar">★ 5★ Ekle</button>
+            </div>
           </td>
         </tr>
       `;
@@ -2303,6 +2314,17 @@
       btn.addEventListener('click', async (e) => {
         const username = e.target.getAttribute('data-user');
         await addPrimoToUser(username, 160);
+      });
+    });
+
+    gachaUsersTbody.querySelectorAll('.btn-quick-select-user').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const username = e.target.getAttribute('data-user');
+        if (giftCharUsername) {
+          giftCharUsername.value = username;
+          giftCharUsername.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          giftCharUsername.focus();
+        }
       });
     });
   }
@@ -2413,6 +2435,74 @@
   if (btnRefreshGachaUsers) {
     btnRefreshGachaUsers.addEventListener('click', loadGachaUsers);
   }
+
+  // 5-Star Character Gift & Companion Assignment Handler
+  if (btnGiftChar) {
+    btnGiftChar.addEventListener('click', async () => {
+      const username = giftCharUsername ? giftCharUsername.value.trim() : '';
+      const characterName = giftCharSelect ? giftCharSelect.value : '';
+      if (!username) {
+        if (giftCharFeedback) {
+          giftCharFeedback.style.color = '#ef4444';
+          giftCharFeedback.textContent = 'Lütfen kullanıcı adı girin.';
+        }
+        return;
+      }
+      if (!characterName) {
+        if (giftCharFeedback) {
+          giftCharFeedback.style.color = '#ef4444';
+          giftCharFeedback.textContent = 'Lütfen bir 5★ karakter seçin.';
+        }
+        return;
+      }
+      try {
+        const res = await fetch('/api/gacha/user/add-character', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, characterName })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (giftCharFeedback) {
+            giftCharFeedback.style.color = '#10b981';
+            giftCharFeedback.textContent = `✅ @${username} hesabına 5★ ${characterName} başarıyla eklendi! (MMO dünyasına canlı aktarıldı)`;
+          }
+          loadGachaUsers();
+        } else {
+          if (giftCharFeedback) {
+            giftCharFeedback.style.color = '#ef4444';
+            giftCharFeedback.textContent = 'Hata: ' + (data.error || 'Eklenemedi');
+          }
+        }
+      } catch (e) {
+        if (giftCharFeedback) {
+          giftCharFeedback.style.color = '#ef4444';
+          giftCharFeedback.textContent = 'Bağlantı hatası: ' + e.message;
+        }
+      }
+    });
+  }
+
+  async function load5StarCharacterOptions() {
+    if (!giftCharSelect) return;
+    try {
+      const res = await fetch('/api/gacha/characters');
+      if (!res.ok) return;
+      const chars = await res.json();
+      if (!Array.isArray(chars)) return;
+      const fiveStars = chars.filter(c => c.rarity === 5).sort((a, b) => a.name.localeCompare(b.name));
+      if (fiveStars.length > 0) {
+        const elemEmojis = { Pyro: '🔥', Hydro: '💧', Anemo: '🌪️', Electro: '⚡', Dendro: '🌿', Cryo: '❄️', Geo: '🛡️' };
+        giftCharSelect.innerHTML = fiveStars.map(c => {
+          const emoji = elemEmojis[c.element] || '★';
+          return `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)} (5★ ${c.element || ''}) ${emoji}</option>`;
+        }).join('');
+      }
+    } catch (e) {
+      console.warn('5★ karakter listesi çekilemedi:', e);
+    }
+  }
+  load5StarCharacterOptions();
 
   // ==========================================
   // Community Primogem Jackpot (Kumbara) Logic

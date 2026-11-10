@@ -1,6 +1,6 @@
 {
-  "jackpot_pool": 3959.75,
-  "jackpot_total_accumulated": 4293.45,
+  "jackpot_pool": 8495.75,
+  "jackpot_total_accumulated": 8829.45,
   "active_banner_id": "capitano",
   "jackpot_recent_winners": [
     {
@@ -155,5 +155,995 @@
       "useCount": 0,
       "description": "Yayın ve sohbet kuralları."
     }
-  ]
+  ],
+  "rpg:gezgin_3762": {
+    "level": 2,
+    "xp": 180,
+    "dust": 5,
+    "kills": 20,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwahv0zp_3cf",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 2,
+        "plus": 0,
+        "affixes": []
+      },
+      "ring": {
+        "uid": "it_mwahtr1m_2ex",
+        "slot": "ring",
+        "name": "Bakır Yüzük",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [
+      {
+        "uid": "it_mwaht3i4_11f",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwahvtui_4jb",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 2,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "critDmg",
+            "roll": 1
+          }
+        ]
+      },
+      {
+        "uid": "it_mwahwl4s_5ay",
+        "slot": "boots",
+        "name": "Eski Çarık",
+        "rarity": 1,
+        "ilvl": 3,
+        "plus": 0,
+        "affixes": []
+      }
+    ]
+  },
+  "rpg:zerkacy": {
+    "level": 5,
+    "xp": 56,
+    "dust": 14,
+    "kills": 75,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwahv0zp_3cf",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 2,
+        "plus": 0,
+        "affixes": []
+      },
+      "ring": {
+        "uid": "it_mwahtr1m_2ex",
+        "slot": "ring",
+        "name": "Bakır Yüzük",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      },
+      "chest": {
+        "uid": "it_mwakt3kt_3ev",
+        "slot": "chest",
+        "name": "Yamalı Yelek",
+        "rarity": 1,
+        "ilvl": 3,
+        "plus": 0,
+        "affixes": []
+      },
+      "helmet": {
+        "uid": "it_mwakav69_afq",
+        "slot": "helmet",
+        "name": "Deri Başlık",
+        "rarity": 1,
+        "ilvl": 3,
+        "plus": 0,
+        "affixes": []
+      },
+      "amulet": {
+        "uid": "it_mwak9s99_9d5",
+        "slot": "amulet",
+        "name": "İp Kolye",
+        "rarity": 1,
+        "ilvl": 2,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [
+      {
+        "uid": "it_mwaht3i4_11f",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwahwl4s_5ay",
+        "slot": "boots",
+        "name": "Eski Çarık",
+        "rarity": 1,
+        "ilvl": 3,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwahvtui_4jb",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 2,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "critDmg",
+            "roll": 1
+          }
+        ]
+      },
+      {
+        "uid": "it_mwak96x4_8n",
+        "slot": "amulet",
+        "name": "İp Kolye",
+        "rarity": 1,
+        "ilvl": 2,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwakt3kt_29l",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 2,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "hp",
+            "roll": 0.7
+          }
+        ]
+      },
+      {
+        "uid": "it_mwaktxv5_4rn",
+        "slot": "ring",
+        "name": "Bakır Yüzük",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwakwq8b_5ty",
+        "slot": "boots",
+        "name": "Deri Çizme",
+        "rarity": 2,
+        "ilvl": 15,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "hp",
+            "roll": 0.7
+          }
+        ]
+      },
+      {
+        "uid": "it_mwakwsr1_6uh",
+        "slot": "weapon",
+        "name": "Çelik Kılıç",
+        "rarity": 2,
+        "ilvl": 15,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "def",
+            "roll": 0.9
+          }
+        ]
+      },
+      {
+        "uid": "it_mwakwxqe_7ao",
+        "slot": "weapon",
+        "name": "Çelik Kılıç",
+        "rarity": 1,
+        "ilvl": 15,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwakxc8v_8k3",
+        "slot": "ring",
+        "name": "Gümüş Yüzük",
+        "rarity": 2,
+        "ilvl": 15,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "def",
+            "roll": 0.8
+          }
+        ]
+      },
+      {
+        "uid": "it_mwalxsk7_48a",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 2,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwalxtbx_57g",
+        "slot": "gloves",
+        "name": "Bez Eldiven",
+        "rarity": 1,
+        "ilvl": 2,
+        "plus": 0,
+        "affixes": []
+      }
+    ]
+  },
+  "rpg:gezgin_1654": {
+    "level": 2,
+    "xp": 191,
+    "dust": 7,
+    "kills": 21,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwak3a6b_354",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [
+      {
+        "uid": "it_mwak44ey_4af",
+        "slot": "ring",
+        "name": "Bakır Yüzük",
+        "rarity": 2,
+        "ilvl": 2,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "haste",
+            "roll": 0.7
+          }
+        ]
+      },
+      {
+        "uid": "it_mwak4ytz_5ju",
+        "slot": "boots",
+        "name": "Eski Çarık",
+        "rarity": 1,
+        "ilvl": 3,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwak64f5_6ca",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 2,
+        "ilvl": 2,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "lifesteal",
+            "roll": 0.8
+          }
+        ]
+      },
+      {
+        "uid": "it_mwak64f5_7o5",
+        "slot": "gloves",
+        "name": "Bez Eldiven",
+        "rarity": 1,
+        "ilvl": 3,
+        "plus": 0,
+        "affixes": []
+      }
+    ]
+  },
+  "rpg:gezgin_5597": {
+    "level": 2,
+    "xp": 23,
+    "dust": 4,
+    "kills": 9,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwalu52s_1dg",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [
+      {
+        "uid": "it_mwaluw3e_2yw",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwalv7ab_3b9",
+        "slot": "amulet",
+        "name": "İp Kolye",
+        "rarity": 1,
+        "ilvl": 3,
+        "plus": 0,
+        "affixes": []
+      }
+    ]
+  },
+  "rpg:gezgin_6397": {
+    "level": 2,
+    "xp": 147,
+    "dust": 3,
+    "kills": 17,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwantzdm_1u5",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [
+      {
+        "uid": "it_mwanulm7_2lq",
+        "slot": "gloves",
+        "name": "Bez Eldiven",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwanurjz_3ch",
+        "slot": "helmet",
+        "name": "Deri Başlık",
+        "rarity": 1,
+        "ilvl": 2,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwanvmqf_4my",
+        "slot": "boots",
+        "name": "Eski Çarık",
+        "rarity": 2,
+        "ilvl": 3,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "haste",
+            "roll": 0.8
+          }
+        ]
+      },
+      {
+        "uid": "it_mwanvo67_5fi",
+        "slot": "ring",
+        "name": "Bakır Yüzük",
+        "rarity": 2,
+        "ilvl": 2,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "haste",
+            "roll": 0.9
+          }
+        ]
+      }
+    ]
+  },
+  "rpg:gezgin_5353": {
+    "level": 2,
+    "xp": 52,
+    "dust": 4,
+    "kills": 10,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwaodp92_68l",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": []
+  },
+  "rpg:gezgin_2838": {
+    "level": 3,
+    "xp": 281,
+    "dust": 4,
+    "kills": 34,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwaoj7sq_7nc",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      },
+      "helmet": {
+        "uid": "it_mwaojkg6_9ly",
+        "slot": "helmet",
+        "name": "Deri Başlık",
+        "rarity": 1,
+        "ilvl": 2,
+        "plus": 0,
+        "affixes": []
+      },
+      "chest": {
+        "uid": "it_mwaojjy6_8da",
+        "slot": "chest",
+        "name": "Yamalı Yelek",
+        "rarity": 2,
+        "ilvl": 2,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "haste",
+            "roll": 0.9
+          }
+        ]
+      }
+    },
+    "bag": [
+      {
+        "uid": "it_mwaolsrp_a8q",
+        "slot": "weapon",
+        "name": "Çelik Kılıç",
+        "rarity": 2,
+        "ilvl": 15,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "crit",
+            "roll": 0.8
+          }
+        ]
+      },
+      {
+        "uid": "it_mwaolv18_bov",
+        "slot": "chest",
+        "name": "Zincir Zırh",
+        "rarity": 1,
+        "ilvl": 15,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwap9k3h_cyn",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwapb9ow_d49",
+        "slot": "boots",
+        "name": "Eski Çarık",
+        "rarity": 1,
+        "ilvl": 2,
+        "plus": 0,
+        "affixes": []
+      }
+    ]
+  },
+  "rpg:gezgin_6975": {
+    "level": 2,
+    "xp": 1,
+    "dust": 3,
+    "kills": 7,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwapgakn_e74",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [
+      {
+        "uid": "it_mwapgoby_fr4",
+        "slot": "helmet",
+        "name": "Deri Başlık",
+        "rarity": 1,
+        "ilvl": 3,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwapgwpv_ghg",
+        "slot": "ring",
+        "name": "Bakır Yüzük",
+        "rarity": 1,
+        "ilvl": 3,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwapgwpv_hw7",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 2,
+        "ilvl": 2,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "def",
+            "roll": 0.9
+          }
+        ]
+      }
+    ]
+  },
+  "rpg:gezgin_9483": {
+    "level": 1,
+    "xp": 22,
+    "dust": 1,
+    "kills": 2,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwaptx8v_ikx",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": []
+  },
+  "rpg:gezgin_9717": {
+    "level": 3,
+    "xp": 143,
+    "dust": 5,
+    "kills": 19,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwapz1in_jq3",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [
+      {
+        "uid": "it_mwapzeps_k6j",
+        "slot": "amulet",
+        "name": "İp Kolye",
+        "rarity": 2,
+        "ilvl": 3,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "hp",
+            "roll": 0.8
+          }
+        ]
+      },
+      {
+        "uid": "it_mwapzept_lpx",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwapzhrj_mkh",
+        "slot": "gloves",
+        "name": "Bez Eldiven",
+        "rarity": 1,
+        "ilvl": 2,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwapzj7l_naw",
+        "slot": "amulet",
+        "name": "İp Kolye",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwaq0bd1_ojw",
+        "slot": "gloves",
+        "name": "Deri Eldiven",
+        "rarity": 3,
+        "ilvl": 15,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "critDmg",
+            "roll": 0.7
+          },
+          {
+            "stat": "def",
+            "roll": 1
+          }
+        ]
+      },
+      {
+        "uid": "it_mwaq0ebi_ppb",
+        "slot": "weapon",
+        "name": "Çelik Kılıç",
+        "rarity": 2,
+        "ilvl": 15,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "crit",
+            "roll": 1
+          }
+        ]
+      },
+      {
+        "uid": "it_mwaq0kba_qfw",
+        "slot": "gloves",
+        "name": "Deri Eldiven",
+        "rarity": 4,
+        "ilvl": 15,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "critDmg",
+            "roll": 0.8
+          },
+          {
+            "stat": "haste",
+            "roll": 0.9
+          },
+          {
+            "stat": "hp",
+            "roll": 0.7
+          }
+        ]
+      },
+      {
+        "uid": "it_mwaq1bib_r4a",
+        "slot": "boots",
+        "name": "Deri Çizme",
+        "rarity": 2,
+        "ilvl": 15,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "atk",
+            "roll": 0.9
+          }
+        ]
+      }
+    ]
+  },
+  "rpg:gezgin_3125": {
+    "level": 1,
+    "xp": 84,
+    "dust": 1,
+    "kills": 4,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwat90w4_t65",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": []
+  },
+  "rpg:gezgin_1888": {
+    "level": 2,
+    "xp": 112,
+    "dust": 1,
+    "kills": 4,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwatpeqe_uq7",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [
+      {
+        "uid": "it_mwau4onx_vxw",
+        "slot": "weapon",
+        "name": "Rün Kılıcı",
+        "rarity": 3,
+        "ilvl": 32,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "hp",
+            "roll": 0.9
+          },
+          {
+            "stat": "atk",
+            "roll": 0.8
+          }
+        ]
+      },
+      {
+        "uid": "it_mwau4ony_wf",
+        "slot": "amulet",
+        "name": "Rün Tılsımı",
+        "rarity": 3,
+        "ilvl": 32,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "crit",
+            "roll": 0.7
+          },
+          {
+            "stat": "haste",
+            "roll": 0.8
+          }
+        ]
+      }
+    ]
+  },
+  "rpg:gezgin_4136": {
+    "level": 3,
+    "xp": 270,
+    "dust": 7,
+    "kills": 20,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwb1nvqr_4wd",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 3,
+        "ilvl": 3,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "def",
+            "roll": 0.8
+          },
+          {
+            "stat": "crit",
+            "roll": 0.7
+          }
+        ]
+      },
+      "boots": {
+        "uid": "it_mwb1nhdm_3v",
+        "slot": "boots",
+        "name": "Eski Çarık",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      },
+      "gloves": {
+        "uid": "it_mwb1nbod_288",
+        "slot": "gloves",
+        "name": "Bez Eldiven",
+        "rarity": 1,
+        "ilvl": 2,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [
+      {
+        "uid": "it_mwb1lwu7_1tf",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      },
+      {
+        "uid": "it_mwb1pcq2_5m3",
+        "slot": "ring",
+        "name": "Rün Yüzüğü",
+        "rarity": 3,
+        "ilvl": 32,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "haste",
+            "roll": 0.7
+          },
+          {
+            "stat": "critDmg",
+            "roll": 1
+          }
+        ]
+      },
+      {
+        "uid": "it_mwb1pe8f_6dv",
+        "slot": "boots",
+        "name": "Rün Çizmesi",
+        "rarity": 3,
+        "ilvl": 32,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "lifesteal",
+            "roll": 0.9
+          },
+          {
+            "stat": "atk",
+            "roll": 0.9
+          }
+        ]
+      },
+      {
+        "uid": "it_mwb1r4n6_7ur",
+        "slot": "amulet",
+        "name": "Rün Tılsımı",
+        "rarity": 2,
+        "ilvl": 32,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "crit",
+            "roll": 0.8
+          }
+        ]
+      }
+    ],
+    "dailyQuests": {
+      "date": "2026-11-10",
+      "progress": {
+        "mmo_kill_10": 10
+      },
+      "claimed": {
+        "mmo_kill_10": true
+      },
+      "bonusClaimed": false,
+      "lastChatTs": 0
+    }
+  },
+  "rpg:gezgin_6161": {
+    "level": 3,
+    "xp": 92,
+    "dust": 2,
+    "kills": 7,
+    "bossKills": 0,
+    "equipment": {
+      "weapon": {
+        "uid": "it_mwb5c3rd_1eg",
+        "slot": "weapon",
+        "name": "Paslı Kılıç",
+        "rarity": 1,
+        "ilvl": 1,
+        "plus": 0,
+        "affixes": []
+      }
+    },
+    "bag": [
+      {
+        "uid": "it_mwb5cgbh_28b",
+        "slot": "boots",
+        "name": "Deri Çizme",
+        "rarity": 3,
+        "ilvl": 10,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "atk",
+            "roll": 0.9
+          },
+          {
+            "stat": "hp",
+            "roll": 0.7
+          }
+        ]
+      },
+      {
+        "uid": "it_mwb5ckbb_37f",
+        "slot": "gloves",
+        "name": "Deri Eldiven",
+        "rarity": 2,
+        "ilvl": 10,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "haste",
+            "roll": 0.8
+          }
+        ]
+      },
+      {
+        "uid": "it_mwb5cwox_4dp",
+        "slot": "chest",
+        "name": "Zincir Zırh",
+        "rarity": 2,
+        "ilvl": 10,
+        "plus": 0,
+        "affixes": [
+          {
+            "stat": "def",
+            "roll": 1
+          }
+        ]
+      }
+    ],
+    "dailyQuests": {
+      "date": "2026-11-10",
+      "progress": {
+        "mmo_kill_10": 7
+      },
+      "claimed": {},
+      "bonusClaimed": false,
+      "lastChatTs": 0
+    }
+  }
 }

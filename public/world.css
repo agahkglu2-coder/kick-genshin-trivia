@@ -1702,6 +1702,225 @@ html, body {
   text-shadow: 0 1px 2px #000;
 }
 
+.combat-stamina-bar-outer {
+  width: 192px;
+  height: 13px;
+  background: #09090b;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.combat-stamina-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #eab308, #facc15);
+  border-radius: 6px;
+  transition: width 0.08s linear;
+}
+
+.combat-stamina-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.64rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 1px 2px #000;
+}
+
+/* Top-Center Cinematic Boss HP & Stagger Bar */
+.combat-boss-hud {
+  position: fixed;
+  top: 66px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(460px, 86vw);
+  background: rgba(9, 9, 15, 0.86);
+  border: 1.5px solid rgba(239, 68, 68, 0.55);
+  border-radius: 14px;
+  padding: 10px 14px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.7), 0 0 18px rgba(220, 38, 38, 0.25);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.boss-hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.boss-hud-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.boss-hud-skull {
+  font-size: 1rem;
+}
+
+.boss-hud-name {
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: #fef2f2;
+  letter-spacing: 0.6px;
+  text-shadow: 0 2px 4px #000;
+}
+
+.boss-hud-aura {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.boss-hud-status {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #fca5a5;
+  letter-spacing: 0.5px;
+}
+
+.boss-hp-bar-outer {
+  width: 100%;
+  height: 16px;
+  background: #09090b;
+  border: 1px solid #7f1d1d;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.boss-hp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #b91c1c, #ef4444, #f87171);
+  border-radius: 8px;
+  transition: width 0.14s ease;
+}
+
+.boss-hp-bar-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1px 3px #000;
+}
+
+.boss-poise-bar-outer {
+  width: 100%;
+  height: 9px;
+  background: #18181b;
+  border: 1px solid #52525b;
+  border-radius: 5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.boss-poise-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d97706, #facc15);
+  border-radius: 5px;
+  transition: width 0.12s ease;
+}
+
+.boss-poise-bar-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.56rem;
+  font-weight: 800;
+  color: #fef08a;
+  text-shadow: 0 1px 2px #000;
+}
+
+/* Right-Side Combo Hit Counter & Reaction Banner */
+.combat-combo-hud {
+  position: fixed;
+  top: 42%;
+  right: 28px;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.combo-hud-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.65));
+  border-right: 4px solid #facc15;
+  border-radius: 12px 4px 4px 12px;
+  padding: 6px 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+}
+
+.combo-hud-count {
+  font-size: 2.3rem;
+  font-weight: 900;
+  font-style: italic;
+  color: #facc15;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, 0.9), 0 0 12px rgba(250, 204, 21, 0.45);
+  line-height: 1;
+}
+
+.combo-hud-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.combo-hud-rank {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #38bdf8;
+  text-shadow: 0 2px 4px #000;
+  line-height: 1;
+}
+
+.combo-hud-label {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #cbd5e1;
+  letter-spacing: 1px;
+}
+
+.combo-hud-reaction {
+  background: linear-gradient(90deg, rgba(234, 88, 12, 0.92), rgba(220, 38, 38, 0.92));
+  border: 1px solid rgba(254, 215, 170, 0.7);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.45);
+  animation: reactionPop 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes reactionPop {
+  0% { transform: scale(0.65); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 .combat-skill-bar {
   position: fixed;
   bottom: 22px;
@@ -1734,7 +1953,8 @@ html, body {
   background: #27272a;
 }
 
-.skill-slot.ready-burst {
+.skill-slot.ready-burst,
+.skill-slot.burst-ready {
   border-color: #38bdf8;
   box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
   animation: burstReadyPulse 0.8s infinite alternate ease-in-out;
@@ -1757,6 +1977,64 @@ html, body {
 .skill-icon {
   font-size: 1.45rem;
   line-height: 1;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rpg-sprite-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-image: url('/assets/icons/rpg-icons-sheet.png');
+  background-size: 600% 400%;
+  background-repeat: no-repeat;
+  border-radius: 7px;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.65);
+}
+
+.rpg-sprite-icon.sprite-empty-slot {
+  filter: grayscale(0.92) brightness(0.55) opacity(0.55);
+}
+
+.slot-icon-box .rpg-sprite-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.popover-header-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.popover-icon-frame {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  background: rgba(9, 9, 15, 0.75);
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
+}
+
+.popover-header-titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.bag-item-icon {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .skill-name {
@@ -1869,6 +2147,14 @@ html, body {
   font-size: 1.35rem;
   font-weight: 900;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 2px #15803d;
+}
+
+.damage-num.reaction {
+  color: #fb923c;
+  font-size: 1.55rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.95), 0 0 10px rgba(249, 115, 22, 0.7);
 }
 
 @keyframes damageFloat {
@@ -3463,6 +3749,44 @@ html, body {
   margin-top: 2px;
 }
 
+.companion-card.rarity-4 {
+  border-color: #8b5cf6;
+  background: linear-gradient(180deg, #2e1065 0%, #0f172a 100%);
+}
+
+.companion-card.rarity-4:hover {
+  border-color: #a855f7;
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.35);
+}
+
+.companion-card.rarity-4 .companion-card-stars {
+  color: #c084fc;
+}
+
+.companion-card-source-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-size: 0.58rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 6px;
+  z-index: 2;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+.companion-card-source-badge.owned {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.companion-card-source-badge.demo {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
 /* Right Showcase Column */
 .companion-preview-card {
   background: rgba(15, 23, 42, 0.85);
@@ -3667,4 +3991,1028 @@ html, body {
     left: 20px;
     top: 130px;
   }
+}
+
+/* ============================================================
+   FISH CATCH STARS & INVENTORY / DAILY QUESTS UI
+   ============================================================ */
+.fish-catch-stars {
+  font-size: 1.2rem;
+  color: #facc15;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+  text-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
+}
+
+.btn-nav-daily {
+  position: relative;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.28), rgba(5, 150, 105, 0.45)) !important;
+  border-color: rgba(52, 211, 153, 0.65) !important;
+  color: #ecfdf5 !important;
+}
+
+.btn-nav-daily:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.48), rgba(5, 150, 105, 0.65)) !important;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.45);
+}
+
+.nav-alert-dot,
+.dq-tracker-claim-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 900;
+  margin-left: 4px;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+  animation: pulseAlertDot 1.2s infinite ease-in-out;
+}
+
+@keyframes pulseAlertDot {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+}
+
+/* Top-Right Mini Daily Quest Tracker HUD */
+.daily-quest-tracker {
+  margin-top: 8px;
+  width: 245px;
+  background: rgba(15, 23, 42, 0.86);
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  pointer-events: auto;
+  transition: all 0.2s ease;
+}
+
+.dq-tracker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  background: linear-gradient(90deg, rgba(6, 78, 59, 0.75), rgba(15, 23, 42, 0.85));
+  border-bottom: 1px solid rgba(52, 211, 153, 0.25);
+  cursor: pointer;
+  user-select: none;
+}
+
+.dq-tracker-title {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #a7f3d0;
+}
+
+.dq-tracker-title small {
+  color: #fef08a;
+  font-weight: 900;
+}
+
+.dq-tracker-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-dq-expand {
+  background: rgba(16, 185, 129, 0.25);
+  border: 1px solid rgba(52, 211, 153, 0.55);
+  color: #ecfdf5;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-dq-expand:hover {
+  background: rgba(16, 185, 129, 0.5);
+}
+
+.dq-tracker-list {
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 195px;
+  overflow-y: auto;
+}
+
+.daily-quest-tracker.collapsed .dq-tracker-list {
+  display: none;
+}
+
+.dq-mini-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.7rem;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(30, 41, 59, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.dq-mini-row.done {
+  border-color: rgba(52, 211, 153, 0.5);
+  background: rgba(6, 78, 59, 0.35);
+}
+
+.dq-mini-row.claimed {
+  opacity: 0.55;
+}
+
+.dq-mini-left {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+
+.dq-mini-name {
+  color: #e2e8f0;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dq-mini-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.dq-mini-prog {
+  font-weight: 800;
+  color: #94a3b8;
+  font-size: 0.68rem;
+}
+
+.dq-mini-row.done .dq-mini-prog {
+  color: #34d399;
+}
+
+.btn-dq-mini-claim {
+  background: linear-gradient(135deg, #f59e0b, #eab308);
+  border: none;
+  color: #0f172a;
+  font-size: 0.64rem;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* Standalone Inventory & Collection Modal (#modal-inventory-bag) */
+.modal-card-inventory {
+  width: min(880px, 95vw);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(165deg, #0f172a 0%, #1e293b 100%);
+  border: 2px solid rgba(250, 204, 21, 0.45);
+}
+
+.inv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.inv-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.76rem;
+  color: #94a3b8;
+}
+
+.inv-header-balances {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inv-balance-pill {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  color: #f8fafc;
+}
+
+.inv-Tabs-bar,
+.inv-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: rgba(2, 6, 23, 0.55);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  flex-wrap: wrap;
+}
+
+.btn-inv-tab {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #cbd5e1;
+  font-weight: 800;
+  font-size: 0.8rem;
+  padding: 7px 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-inv-tab.active {
+  background: linear-gradient(135deg, #eab308, #ca8a04);
+  border-color: #fde047;
+  color: #0f172a;
+}
+
+.btn-inv-open-char {
+  margin-left: auto;
+  background: rgba(59, 130, 246, 0.25);
+  border: 1px solid rgba(96, 165, 250, 0.55);
+  color: #dbeafe;
+  font-weight: 800;
+  font-size: 0.76rem;
+  padding: 7px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-inv-open-char:hover {
+  background: rgba(59, 130, 246, 0.45);
+}
+
+.inv-modal-body {
+  overflow-y: auto;
+  padding: 16px 18px;
+  max-height: 62vh;
+}
+
+.inv-rpg-grid,
+.inv-mat-grid,
+.inv-gacha-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+  gap: 10px;
+}
+
+.inv-item-card {
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inv-item-card.rarity-5 { border-color: #f59e0b; box-shadow: inset 0 0 12px rgba(245, 158, 11, 0.16); }
+.inv-item-card.rarity-4 { border-color: #a855f7; box-shadow: inset 0 0 12px rgba(168, 85, 247, 0.16); }
+.inv-item-card.rarity-3 { border-color: #38bdf8; }
+.inv-item-card.rarity-2 { border-color: #22c55e; }
+
+.inv-item-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inv-item-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: rgba(30, 41, 59, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.inv-item-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.inv-item-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.inv-item-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inv-item-sub {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.inv-mat-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(30, 41, 59, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+}
+
+.btn-inv-sell-all {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.78rem;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Mylune Daily Quests Modal (#modal-daily-quests) */
+.modal-card-daily-quests {
+  width: min(900px, 95vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(165deg, #071318 0%, #0f172a 55%, #111827 100%);
+  border: 2px solid rgba(52, 211, 153, 0.55);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75), 0 0 30px rgba(16, 185, 129, 0.2);
+}
+
+.dq-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  background: linear-gradient(90deg, rgba(6, 78, 59, 0.55), rgba(15, 23, 42, 0.8));
+  border-bottom: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.dq-header-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #34d399;
+  background: rgba(6, 78, 59, 0.7);
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-bottom: 4px;
+}
+
+.dq-subtitle {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+}
+
+.dq-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.btn-kick-stream-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #53fc18, #22c55e);
+  color: #052e16;
+  font-weight: 900;
+  font-size: 0.78rem;
+  padding: 8px 13px;
+  border-radius: 9px;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(83, 252, 24, 0.35);
+  transition: transform 0.15s ease;
+}
+
+.btn-kick-stream-link:hover {
+  transform: translateY(-2px);
+}
+
+.dq-modal-body {
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dq-overview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.dq-overview-progress {
+  flex: 1;
+  min-width: 220px;
+}
+
+.dq-overview-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-right: 6px;
+}
+
+.dq-master-bar {
+  margin-top: 6px;
+  height: 9px;
+  background: rgba(30, 41, 59, 0.95);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.dq-master-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #53fc18);
+  transition: width 0.3s ease;
+}
+
+.dq-overview-chat-hint {
+  font-size: 0.76rem;
+  color: #cbd5e1;
+  background: rgba(30, 41, 59, 0.75);
+  padding: 7px 11px;
+  border-radius: 8px;
+  border: 1px dashed rgba(83, 252, 24, 0.45);
+}
+
+.dq-overview-chat-hint code {
+  color: #53fc18;
+  font-weight: 900;
+}
+
+.btn-dq-claim-all {
+  background: linear-gradient(135deg, #f59e0b, #eab308);
+  border: none;
+  color: #0f172a;
+  font-weight: 900;
+  font-size: 0.82rem;
+  padding: 9px 15px;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.btn-dq-claim-all:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.dq-quests-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.dq-quest-card {
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 12px;
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.dq-quest-card.cat-kick {
+  border-left: 4px solid #53fc18;
+}
+
+.dq-quest-card.cat-mmo {
+  border-left: 4px solid #38bdf8;
+}
+
+.dq-quest-card.completed {
+  border-color: rgba(52, 211, 153, 0.65);
+  background: linear-gradient(160deg, rgba(6, 78, 59, 0.32), rgba(15, 23, 42, 0.9));
+}
+
+.dq-quest-card.claimed {
+  opacity: 0.68;
+}
+
+.dq-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.dq-card-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: rgba(30, 41, 59, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.45rem;
+  flex-shrink: 0;
+}
+
+.dq-card-head {
+  flex: 1;
+}
+
+.dq-card-badge {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(83, 252, 24, 0.18);
+  color: #86efac;
+  margin-bottom: 3px;
+}
+
+.dq-quest-card.cat-mmo .dq-card-badge {
+  background: rgba(56, 189, 248, 0.18);
+  color: #7dd3fc;
+}
+
+.dq-card-title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.dq-card-desc {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+.dq-card-prog-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dq-card-prog-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #cbd5e1;
+}
+
+.dq-card-prog-bar {
+  height: 8px;
+  background: rgba(2, 6, 23, 0.8);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.dq-card-prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #34d399);
+  transition: width 0.25s ease;
+}
+
+.dq-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.dq-card-rewards {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dq-reward-pill {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: rgba(30, 41, 59, 0.9);
+  color: #e2e8f0;
+}
+
+.dq-reward-pill.primo { color: #fde047; border: 1px solid rgba(250, 204, 21, 0.35); }
+.dq-reward-pill.xp { color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.35); }
+.dq-reward-pill.epic { color: #d8b4fe; border: 1px solid rgba(192, 132, 252, 0.45); }
+
+.btn-dq-claim {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none;
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 0.75rem;
+  padding: 6px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.btn-dq-claim:disabled {
+  background: rgba(51, 65, 85, 0.7);
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Grand Bonus Chest Card */
+.dq-bonus-chest-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.45), rgba(30, 41, 59, 0.92));
+  border: 2px solid rgba(250, 204, 21, 0.55);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45);
+  flex-wrap: wrap;
+}
+
+.dq-chest-icon {
+  width: 62px;
+  height: 62px;
+  border-radius: 14px;
+  background: radial-gradient(circle, rgba(250, 204, 21, 0.35), rgba(15, 23, 42, 0.9));
+  border: 2px solid rgba(250, 204, 21, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.1rem;
+  flex-shrink: 0;
+}
+
+.dq-chest-info {
+  flex: 1;
+  min-width: 240px;
+}
+
+.dq-chest-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dq-chest-title-row h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #fef08a;
+}
+
+.dq-chest-status {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #34d399;
+}
+
+.dq-chest-info p {
+  margin: 5px 0 8px;
+  font-size: 0.76rem;
+  color: #e2e8f0;
+}
+
+.dq-chest-rewards {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-dq-claim-chest {
+  background: linear-gradient(135deg, #f59e0b, #eab308);
+  border: none;
+  color: #0f172a;
+  font-weight: 900;
+  font-size: 0.85rem;
+  padding: 11px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);
+}
+
+.btn-dq-claim-chest:disabled {
+  background: rgba(51, 65, 85, 0.8);
+  color: #94a3b8;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   AION 2 AETHER DUNGEON HUD, PORTAL TABS & BANNERS
+   ============================================================ */
+.portal-tabs-bar {
+  display: flex;
+  gap: 10px;
+  padding: 10px 20px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.btn-portal-tab {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-bottom: none;
+  color: #cbd5e1;
+  font-weight: 800;
+  font-size: 0.84rem;
+  padding: 10px 14px;
+  border-radius: 10px 10px 0 0;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.btn-portal-tab.active {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.32), rgba(139, 92, 246, 0.38));
+  border-color: rgba(56, 189, 248, 0.75);
+  color: #ffffff;
+  box-shadow: 0 -4px 16px rgba(56, 189, 248, 0.22);
+}
+
+.dungeon-tier-card {
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  background: linear-gradient(165deg, rgba(15, 23, 42, 0.94), rgba(30, 27, 75, 0.85)) !important;
+}
+
+.btn-dungeon-enter {
+  background: linear-gradient(135deg, #0284c7, #6366f1) !important;
+  color: #ffffff !important;
+}
+
+.btn-dungeon-enter:hover {
+  background: linear-gradient(135deg, #38bdf8, #818cf8) !important;
+}
+
+/* Live Aion 2 Dungeon Scoreboard & Stage Tracker HUD */
+.dungeon-hud {
+  position: fixed;
+  top: 90px;
+  left: 20px;
+  width: 280px;
+  background: linear-gradient(160deg, rgba(8, 15, 32, 0.92), rgba(15, 23, 42, 0.88));
+  border: 1.5px solid rgba(56, 189, 248, 0.55);
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65), 0 0 22px rgba(56, 189, 248, 0.18);
+  backdrop-filter: blur(8px);
+  z-index: 45;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.dungeon-hud-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dungeon-tier-badge {
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  color: #7dd3fc;
+  background: rgba(14, 165, 233, 0.2);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.dungeon-rank-badge,
+.dv-rank-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  font-size: 1.1rem;
+  border: 2px solid #fde047;
+}
+
+.rank-S {
+  background: radial-gradient(circle, #f59e0b, #b45309);
+  color: #fef08a;
+  border-color: #fde047;
+  box-shadow: 0 0 14px rgba(250, 204, 21, 0.75);
+}
+
+.rank-A {
+  background: radial-gradient(circle, #a855f7, #6b21a8);
+  color: #f3e8ff;
+  border-color: #d8b4fe;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.65);
+}
+
+.rank-B {
+  background: radial-gradient(circle, #0284c7, #0369a1);
+  color: #e0f2fe;
+  border-color: #7dd3fc;
+}
+
+.rank-C {
+  background: radial-gradient(circle, #475569, #1e293b);
+  color: #cbd5e1;
+  border-color: #94a3b8;
+}
+
+.dungeon-hud-stage {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #f8fafc;
+}
+
+.dungeon-hud-objective {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #bae6fd;
+  background: rgba(2, 6, 23, 0.65);
+  border-left: 3px solid #38bdf8;
+  padding: 6px 8px;
+  border-radius: 6px;
+  line-height: 1.35;
+}
+
+.dungeon-hud-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.dh-stat {
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.7);
+  padding: 4px 6px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.dh-stat span {
+  font-size: 0.62rem;
+  color: #94a3b8;
+}
+
+.dh-stat strong {
+  font-size: 0.78rem;
+  color: #fef08a;
+  font-weight: 900;
+}
+
+.dungeon-hud-buff {
+  background: linear-gradient(90deg, rgba(234, 179, 8, 0.32), rgba(16, 185, 129, 0.32));
+  border: 1px solid #fde047;
+  color: #fef08a;
+  font-size: 0.7rem;
+  font-weight: 900;
+  padding: 5px 8px;
+  border-radius: 7px;
+  text-align: center;
+}
+
+/* Center-Screen Boss Phase Mechanic Alert Banner */
+.dungeon-mechanic-banner {
+  position: fixed;
+  top: 145px;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 420px;
+  max-width: 90vw;
+  background: linear-gradient(90deg, rgba(127, 29, 29, 0.94), rgba(88, 28, 135, 0.94), rgba(127, 29, 29, 0.94));
+  border: 2px solid #facc15;
+  border-radius: 14px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8), 0 0 28px rgba(239, 68, 68, 0.65);
+  z-index: 60;
+  pointer-events: none;
+  animation: pulseAlertDot 1.3s infinite ease-in-out;
+}
+
+.dm-icon {
+  font-size: 2rem;
+}
+
+.dm-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dm-text strong {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #fef08a;
+  letter-spacing: 0.5px;
+}
+
+.dm-text span {
+  font-size: 0.78rem;
+  color: #ffffff;
+}
+
+/* Aion 2 Dungeon Clear & Rank Summary Banner */
+.dungeon-victory-banner {
+  position: fixed;
+  top: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(580px, 92vw);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 27, 75, 0.96));
+  border: 2px solid #fde047;
+  border-radius: 16px;
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.85), 0 0 32px rgba(250, 204, 21, 0.45);
+  z-index: 65;
+}
+
+.dv-rank-circle {
+  width: 60px;
+  height: 60px;
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.dv-info {
+  flex: 1;
+}
+
+.dv-tag {
+  font-size: 0.68rem;
+  font-weight: 900;
+  color: #38bdf8;
+  letter-spacing: 1px;
+}
+
+.dv-info h3 {
+  margin: 3px 0;
+  font-size: 1.08rem;
+  color: #fef08a;
+}
+
+.dv-info p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #e2e8f0;
+}
+
+.btn-dv-close {
+  background: linear-gradient(135deg, #eab308, #ca8a04);
+  border: none;
+  color: #0f172a;
+  font-weight: 900;
+  font-size: 0.8rem;
+  padding: 9px 15px;
+  border-radius: 9px;
+  cursor: pointer;
 }

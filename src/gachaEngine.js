@@ -1569,6 +1569,9 @@ class GachaEngine extends EventEmitter {
         totalWishes: u.totalWishes,
         fiveStarsCount: (u.inventory || []).filter(i => i.rarity === 5).length,
         fourStarsCount: (u.inventory || []).filter(i => i.rarity === 4).length,
+        fiveStarCharacters: (u.inventory || []).filter(i => i.rarity === 5).map(i => i.name),
+        fourStarCharacters: (u.inventory || []).filter(i => i.rarity === 4).map(i => i.name),
+        activeCompanion: u.activeCompanion || null,
         lastActiveTime: u.lastActiveTime
       }))
       .sort((a, b) => b.primogems - a.primogems);
