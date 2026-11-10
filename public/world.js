@@ -5431,13 +5431,16 @@
       }
 
       if (Array.isArray(msg.mobs)) {
-        for (const m of activeCombatMobs) {
-          if (m.mesh) worldObjects.remove(m.mesh);
-          if (m.hpBarGroup) worldObjects.remove(m.hpBarGroup);
-        }
-        activeCombatMobs = [];
-        for (const sm of msg.mobs) {
-          if (!sm.isDead) spawnServerSyncedMob(sm);
+        pendingDungeonMobs = msg.mobs;
+        if (isDungeonMap(currentMap)) {
+          for (const m of activeCombatMobs) {
+            if (m.mesh) worldObjects.remove(m.mesh);
+            if (m.hpBarGroup) worldObjects.remove(m.hpBarGroup);
+          }
+          activeCombatMobs = [];
+          for (const sm of msg.mobs) {
+            if (!sm.isDead) spawnServerSyncedMob(sm);
+          }
         }
       }
     } else if (msg.type === 'DUNGEON_MOB_DAMAGED') {
@@ -5848,7 +5851,7 @@
       // 2. Check Exit Portal Gate back to Town
       const exitZ = isDungeonMap(currentMap) ? -66.0 : -32.0;
       const dist = Math.hypot(myPlayer.x - 0, myPlayer.z - exitZ);
-      if (dist < 4.4) {
+      if (dist < 6.0) {
         nearbyInteractable = { type: 'door', data: { name: 'Kasaba Meydanı' } };
         promptText.textContent = `[E] Kasabaya Geri Dön`;
         prompt.classList.remove('hidden');
@@ -5857,7 +5860,7 @@
       // Also allow quick exit near the Boss Altar after clearing the dungeon!
       if (isDungeonMap(currentMap) && dungeonState.bossDefeated) {
         const endPortalDist = Math.hypot(myPlayer.x - 0, myPlayer.z - 72.0);
-        if (endPortalDist < 4.4) {
+        if (endPortalDist < 6.5) {
           nearbyInteractable = { type: 'door', data: { name: 'Kasaba Meydanı' } };
           promptText.textContent = `[E] 🌀 Zafer Portalından Kasabaya Dön`;
           prompt.classList.remove('hidden');
@@ -8793,6 +8796,22 @@
     return mob;
   }
 
+  let pendingDungeonMobs = null;
+
+  function notifyDungeonMobHit(mob, dmg, isCrit = false, element = null) {
+    if (!mob || mob.isDead) return;
+    if (isDungeonMap(currentMap) && socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({
+        type: 'DUNGEON_MOB_HIT',
+        instanceId: currentMap,
+        mobId: mob.id,
+        dmg: Math.max(1, Math.round(dmg)),
+        isCrit: Boolean(isCrit),
+        element: element || null
+      }));
+    }
+  }
+
   function spawnServerSyncedMob(sm) {
     return spawnCombatMob(sm.type, sm.x, sm.z, {
       customId: sm.id,
@@ -10472,6 +10491,7 @@
         applyPoiseDamage(mob, (opts.poiseDmg || 35) * (isSweetspot ? 1.4 : 1.0), now);
 
         mob.hp = Math.max(0, mob.hp - dmg);
+        notifyDungeonMobHit(mob, dmg, isCrit || isSweetspot, elem);
         if (mob.hpFillMesh) {
           const ratio = Math.max(0.001, mob.hp / mob.maxHP);
           mob.hpFillMesh.scale.x = ratio;
@@ -11309,6 +11329,7 @@
           const react = applyElementAndTriggerReaction(mob, 'Electro', electroBonus, now);
           const eDmg = Math.round(electroBonus * react.mult);
           mob.hp = Math.max(0, mob.hp - eDmg);
+          notifyDungeonMobHit(mob, eDmg, true, 'Electro');
           createElectroSlashVFX(mob.x, mob.y + 1.0, mob.z);
           showDamageNumber({ x: mob.x, y: mob.y + mob.height + 0.4, z: mob.z }, `⚡ +${eDmg} Electro`, 'crit');
         }
@@ -11994,6 +12015,7 @@
             const react = applyElementAndTriggerReaction(mob, proj.element, proj.dmg, now);
             const fDmg = Math.round(proj.dmg * react.mult);
             mob.hp = Math.max(0, mob.hp - fDmg);
+            notifyDungeonMobHit(mob, fDmg, true, proj.element);
             if (mob.hpFillMesh) mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
             showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `✨ ${fDmg}`, 'crit');
             if (mob.hp <= 0) defeatMob(mob);
@@ -12063,6 +12085,7 @@
             applyPoiseDamage(mob, ss.poiseDmg * (isSweetspot ? 1.35 : 1.0), now);
 
             mob.hp = Math.max(0, mob.hp - dmg);
+            notifyDungeonMobHit(mob, dmg, isCrit || isSweetspot, ss.element);
             if (mob.hpFillMesh) {
               const ratio = Math.max(0.001, mob.hp / mob.maxHP);
               mob.hpFillMesh.scale.x = ratio;
@@ -12211,6 +12234,7 @@
               const react = applyElementAndTriggerReaction(mob, 'Anemo', tickDmg, now);
               const fDmg = Math.round(tickDmg * react.mult);
               mob.hp = Math.max(0, mob.hp - fDmg);
+              notifyDungeonMobHit(mob, fDmg, false, 'Anemo');
               if (mob.hpFillMesh) {
                 mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
               }
@@ -12622,6 +12646,7 @@
             const react = applyElementAndTriggerReaction(mob, 'Geo', 45, now);
             const gDmg = Math.round(45 * react.mult);
             mob.hp = Math.max(0, mob.hp - gDmg);
+            notifyDungeonMobHit(mob, gDmg, false, 'Geo');
             if (mob.hpFillMesh) mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
             mob.flashTimer = 0.12;
             showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `🪨 Rezonans! ${gDmg}`, 'normal');
@@ -12659,6 +12684,7 @@
               const react = applyElementAndTriggerReaction(nearestMob, 'Hydro', 35, now);
               const hDmg = Math.round(35 * react.mult);
               nearestMob.hp = Math.max(0, nearestMob.hp - hDmg);
+              notifyDungeonMobHit(nearestMob, hDmg, false, 'Hydro');
               if (nearestMob.hpFillMesh) nearestMob.hpFillMesh.scale.x = Math.max(0.001, nearestMob.hp / nearestMob.maxHP);
               nearestMob.flashTimer = 0.1;
               showDamageNumber({ x: nearestMob.x, y: nearestMob.y + nearestMob.height, z: nearestMob.z }, `💧 ${hDmg}`, 'normal');
@@ -12689,6 +12715,7 @@
               const react = applyElementAndTriggerReaction(mob, 'Anemo', 40, now);
               const aDmg = Math.round(40 * react.mult);
               mob.hp = Math.max(0, mob.hp - aDmg);
+              notifyDungeonMobHit(mob, aDmg, false, 'Anemo');
               if (mob.hpFillMesh) mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
               mob.flashTimer = 0.08;
               showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `🍃 ${aDmg}`, 'normal');
@@ -14036,17 +14063,19 @@
     const vBanner = document.getElementById('dungeon-victory-banner');
     if (vBanner) {
       vBanner.classList.remove('hidden');
-      const rankBadge = document.getElementById('vic-rank-badge');
+      const rankBadge = document.getElementById('dv-rank-circle') || document.getElementById('vic-rank-badge');
       if (rankBadge) {
         rankBadge.textContent = finalRank;
-        rankBadge.className = `vic-rank-badge rank-${finalRank}`;
+        rankBadge.className = `dv-rank-circle rank-${finalRank}`;
       }
       const mins = Math.floor(elapsed / 60);
       const secs = Math.floor(elapsed % 60);
-      const timeEl = document.getElementById('vic-time-text');
-      if (timeEl) timeEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-      const scoreEl = document.getElementById('vic-score-text');
-      if (scoreEl) scoreEl.textContent = `${finalScore} PUAN`;
+      const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      const titleEl = document.getElementById('dv-title');
+      const zName = (ZONE_CONFIGS[getDungeonBaseTier(dungeonState.tierId)] || ZONE_CONFIGS.dungeon_tier_1).name;
+      if (titleEl) titleEl.textContent = `${zName} Fethedildi!`;
+      const summaryEl = document.getElementById('dv-summary');
+      if (summaryEl) summaryEl.textContent = `Süre: ${timeStr} • Toplam Puan: ${finalScore} • Sunaktaki Hazine Sandıklarını [E] ile Aç!`;
     }
 
     // Spawn Physical 3D Chests
@@ -14300,9 +14329,15 @@
     // ---------------------------------------------------------
     // SPAWN DUNGEON MOBS (Synchronized via Server Instance)
     // ---------------------------------------------------------
+    if (Array.isArray(pendingDungeonMobs) && pendingDungeonMobs.length > 0) {
+      for (const sm of pendingDungeonMobs) {
+        if (!sm.isDead) spawnServerSyncedMob(sm);
+      }
+    }
+
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify({ type: 'DUNGEON_REQUEST_MOBS', instanceId: tierId }));
-    } else {
+    } else if (!pendingDungeonMobs || pendingDungeonMobs.length === 0) {
       const diff = zone.tier || 1;
       const hpMult = diff === 3 ? 1.45 : (diff === 2 ? 1.2 : 1.0);
       const dmgMult = diff === 3 ? 1.35 : (diff === 2 ? 1.15 : 1.0);
@@ -14767,6 +14802,51 @@
         socket.send(JSON.stringify({ type: 'WORLD_REQ_PIN', username: user }));
       }
     };
+
+    const btnCopyPin = document.getElementById('btn-copy-pin');
+    if (btnCopyPin) {
+      btnCopyPin.onclick = () => {
+        const pinText = document.getElementById('pin-code-text')?.textContent?.trim() || '';
+        if (!pinText) return;
+        const doCopy = (txt) => {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(txt);
+          }
+          const ta = document.createElement('textarea');
+          ta.value = txt;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          return Promise.resolve();
+        };
+
+        doCopy(pinText).then(() => {
+          playBeep(680, 'sine', 0.12);
+          btnCopyPin.classList.add('copied');
+          const iconSpan = document.getElementById('copy-pin-icon');
+          const textSpan = document.getElementById('copy-pin-text');
+          if (iconSpan) iconSpan.textContent = '✓';
+          if (textSpan) textSpan.textContent = 'Kopyalandı!';
+          setTimeout(() => {
+            btnCopyPin.classList.remove('copied');
+            if (iconSpan) iconSpan.textContent = '📋';
+            if (textSpan) textSpan.textContent = 'Kopyala';
+          }, 2500);
+        }).catch(err => console.error('PIN kopyalama hatası:', err));
+      };
+    }
+
+    // Dungeon Victory Banner Close Button
+    const btnDvClose = document.getElementById('btn-dv-close');
+    if (btnDvClose) {
+      btnDvClose.onclick = () => {
+        playBeep(440, 'sine', 0.1);
+        document.getElementById('dungeon-victory-banner')?.classList.add('hidden');
+      };
+    }
 
     document.getElementById('btn-play-guest').onclick = () => closeModal('modal-auth');
 

@@ -579,12 +579,59 @@ html, body {
   text-align: center;
 }
 
+.pin-code-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+
 .pin-code-highlight {
   font-family: 'Press Start 2P', monospace;
   font-size: 1.25rem;
   color: #53fc18;
-  margin: 10px 0;
   letter-spacing: 2px;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(83, 252, 24, 0.4);
+}
+
+.btn-copy-pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(83, 252, 24, 0.18);
+  border: 1.5px solid #53fc18;
+  color: #53fc18;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.btn-copy-pin:hover {
+  background: #53fc18;
+  color: #0b0f19;
+  box-shadow: 0 0 14px rgba(83, 252, 24, 0.65);
+  transform: translateY(-1px);
+}
+
+.btn-copy-pin:active {
+  transform: translateY(1px);
+}
+
+.btn-copy-pin.copied {
+  background: #38bdf8;
+  border-color: #38bdf8;
+  color: #0b0f19;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.8);
 }
 
 .pin-status-loader {

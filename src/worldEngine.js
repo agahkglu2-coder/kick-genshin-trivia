@@ -564,7 +564,7 @@ class WorldEngine extends EventEmitter {
     const player = this.players.get(socketId);
     if (!player) return null;
 
-    const curMap = this.maps[player.mapId];
+    const curMap = this.getMapConfig(player.mapId);
     if (!curMap) return null;
 
     // Check outdoor doors
@@ -585,18 +585,38 @@ class WorldEngine extends EventEmitter {
 
           console.log(`[WorldEngine] 🚪 @${player.username} ${door.name} binasına girdi.`);
           this.emit('player_changed_map', { player, oldMap, newMap: player.mapId, doorName: door.name });
-          return { success: true, player, doorName: door.name, newMap: player.mapId };
+          return { success: true, player, doorName: door.name, newMap: player.mapId, spawnPos: door.spawnPos };
         }
       }
     }
 
-    // Check indoor exit door
+    // Check Dungeon exits: Entrance portal at z: -66 OR Victory portal at z: 72
+    const isDungeon = (player.mapId && player.mapId.startsWith('dungeon_')) || Boolean(curMap.isDungeon);
+    if (isDungeon) {
+      const distEntrance = Math.hypot(player.x - 0, player.z - (-66));
+      const distBossAltar = Math.hypot(player.x - 0, player.z - 72);
+      if (distEntrance <= 7.5 || distBossAltar <= 7.5 || player.z <= -55 || player.z >= 66) {
+        const oldMap = player.mapId;
+        player.mapId = 'town';
+        player.x = 0;
+        player.y = 0;
+        player.z = 28;
+        player.rot = Math.PI;
+        player.anim = 'idle';
+
+        console.log(`[WorldEngine] 🚪 @${player.username} zindandan kasaba meydanına geri döndü.`);
+        this.emit('player_changed_map', { player, oldMap, newMap: 'town', doorName: 'Kasaba Meydanı' });
+        return { success: true, player, doorName: 'Kasaba Meydanı', newMap: 'town', spawnPos: { x: 0, z: 28 } };
+      }
+    }
+
+    // Check indoor / battle zone exit door
     if (player.mapId !== 'town' && curMap.exitDoor) {
       const exit = curMap.exitDoor;
       const dx = player.x - exit.pos.x;
       const dz = player.z - exit.pos.z;
       const dist = Math.sqrt(dx * dx + dz * dz);
-      if (dist <= exit.radius) {
+      if (dist <= (exit.radius || 4.5)) {
         const oldMap = player.mapId;
         player.mapId = exit.targetMap;
         player.x = exit.spawnPos.x;
@@ -607,7 +627,7 @@ class WorldEngine extends EventEmitter {
 
         console.log(`[WorldEngine] 🚪 @${player.username} kasaba meydanına geri çıktı.`);
         this.emit('player_changed_map', { player, oldMap, newMap: player.mapId, doorName: 'Kasaba Meydanı' });
-        return { success: true, player, doorName: 'Kasaba Meydanı', newMap: player.mapId };
+        return { success: true, player, doorName: 'Kasaba Meydanı', newMap: player.mapId, spawnPos: exit.spawnPos };
       }
     }
 
@@ -1026,13 +1046,23 @@ class WorldEngine extends EventEmitter {
   // ==========================================
 
   getOrCreateDungeonInstance(partyId, tierId, socketId = null) {
-    const instId = partyId
+    const isParty = Boolean(partyId && partyId !== 'public' && partyId !== 'solo');
+    const instId = isParty
       ? `${tierId}_inst_${partyId}`
-      : `${tierId}_inst_solo_${socketId || Date.now()}`;
+      : `${tierId}_inst_public`;
 
     let inst = this.instances.get(instId);
+
+    // If boss was defeated and all players have left, renew the instance for fresh run
+    if (inst && inst.bossDefeated) {
+      const activePlayersInInst = Array.from(this.players.values()).filter(p => p.mapId === instId);
+      if (activePlayersInInst.length === 0) {
+        inst = null;
+      }
+    }
+
     if (!inst) {
-      inst = new DungeonInstance(instId, tierId, partyId);
+      inst = new DungeonInstance(instId, tierId, isParty ? partyId : null);
       this.instances.set(instId, inst);
       console.log(`[WorldEngine] ⚔️ Yeni zindan örneği (Instance) hazırlandı: ${instId} (${tierId})`);
     }
@@ -1040,7 +1070,16 @@ class WorldEngine extends EventEmitter {
   }
 
   getDungeonInstance(instanceId) {
-    return this.instances.get(instanceId) || null;
+    if (!instanceId) return null;
+    if (this.instances.has(instanceId)) return this.instances.get(instanceId);
+
+    // Fallback: Check if instanceId is a base tier (e.g. 'dungeon_tier_1') or has prefix
+    for (const [id, inst] of this.instances.entries()) {
+      if (id === instanceId || id.startsWith(instanceId) || inst.tierId === instanceId) {
+        return inst;
+      }
+    }
+    return null;
   }
 
   /**

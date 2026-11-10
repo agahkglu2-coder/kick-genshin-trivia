@@ -149,7 +149,12 @@
 
         <div id="pin-display-box" class="pin-display-box hidden">
           <div class="pin-step">1. Kick yayını sohbetine şu komutu yaz:</div>
-          <div class="pin-code-highlight" id="pin-code-text">!giris 8421</div>
+          <div class="pin-code-row">
+            <div class="pin-code-highlight" id="pin-code-text">!giris 8421</div>
+            <button type="button" class="btn-copy-pin" id="btn-copy-pin" title="Kodu Kopyala">
+              <span id="copy-pin-icon">📋</span> <span id="copy-pin-text">Kopyala</span>
+            </button>
+          </div>
           <div class="pin-status-loader">
             <span class="spinner-small"></span> Yayından sohbet mesajı bekleniyor...
           </div>
@@ -1084,7 +1089,7 @@
       <h3 id="dv-title">Tahabata'nın Uçurum Kalbi Fethedildi!</h3>
       <p id="dv-summary">Süre: 01:42 • Toplam Puan: 4,450 • Sunaktaki Hazine Sandıklarını [E] ile Aç!</p>
     </div>
-    <button type="button" class="btn-dv-close" id="btn-dv-close">Tamam</button>
+    <button type="button" class="btn-dv-close" id="btn-dv-close" onclick="document.getElementById('dungeon-victory-banner')?.classList.add('hidden')">Tamam</button>
   </div>
 
   <!-- 16. Player Defeat Fullscreen Overlay -->

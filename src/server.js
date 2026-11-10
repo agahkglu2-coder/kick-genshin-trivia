@@ -1336,6 +1336,10 @@ wss.on('connection', (ws) => {
                       instanceId: inst.id,
                       tierId: inst.tierId,
                       stage: inst.stage,
+                      stage1Cleared: inst.stage1Cleared,
+                      stage2Cleared: inst.stage2Cleared,
+                      bossDefeated: inst.bossDefeated,
+                      phase2ShieldActive: inst.phase2ShieldActive,
                       mobs: inst.getMobList()
                     });
                   }
@@ -1353,22 +1357,26 @@ wss.on('connection', (ws) => {
             return;
           }
 
-          // Solo Player Dungeon Entry: Create solo private instance
-          const soloInst = worldEngine.getOrCreateDungeonInstance(null, zoneId, socketId);
-          const zoneRes = worldEngine.switchZone(socketId, soloInst.id);
+          // Public / Matchmaking Player Dungeon Entry: Share the public instance for this tier so all players fight together!
+          const sharedInst = worldEngine.getOrCreateDungeonInstance(null, zoneId);
+          const zoneRes = worldEngine.switchZone(socketId, sharedInst.id);
           if (zoneRes.success) {
             ws.send(JSON.stringify({
               type: 'WORLD_DOOR_RESULT',
               success: true,
-              newMap: soloInst.id,
+              newMap: sharedInst.id,
               spawnPos: zoneRes.spawnPos
             }));
             ws.send(JSON.stringify({
               type: 'DUNGEON_INSTANCE_INFO',
-              instanceId: soloInst.id,
-              tierId: soloInst.tierId,
-              stage: soloInst.stage,
-              mobs: soloInst.getMobList()
+              instanceId: sharedInst.id,
+              tierId: sharedInst.tierId,
+              stage: sharedInst.stage,
+              stage1Cleared: sharedInst.stage1Cleared,
+              stage2Cleared: sharedInst.stage2Cleared,
+              bossDefeated: sharedInst.bossDefeated,
+              phase2ShieldActive: sharedInst.phase2ShieldActive,
+              mobs: sharedInst.getMobList()
             }));
           }
           return;
@@ -1426,6 +1434,10 @@ wss.on('connection', (ws) => {
                   instanceId: inst.id,
                   tierId: inst.tierId,
                   stage: inst.stage,
+                  stage1Cleared: inst.stage1Cleared,
+                  stage2Cleared: inst.stage2Cleared,
+                  bossDefeated: inst.bossDefeated,
+                  phase2ShieldActive: inst.phase2ShieldActive,
                   mobs: inst.getMobList()
                 });
               }
@@ -1508,14 +1520,14 @@ wss.on('connection', (ws) => {
       } else if (data.type === 'DUNGEON_MOB_HIT') {
         const me = worldEngine.getPlayer(socketId);
         if (me) {
-          const instId = data.instanceId || me.mapId;
-          const inst = worldEngine.getDungeonInstance(instId);
+          const inst = worldEngine.getDungeonInstance(data.instanceId) || worldEngine.getDungeonInstance(me.mapId);
           if (inst) {
+            const targetMapId = inst.id;
             const hitRes = inst.applyHit(data.mobId, data.dmg, me.username, data.isCrit, data.element);
             if (hitRes) {
-              broadcastToMap(instId, {
+              broadcastToMap(targetMapId, {
                 type: 'DUNGEON_MOB_DAMAGED',
-                instanceId: instId,
+                instanceId: targetMapId,
                 mobId: data.mobId,
                 dmg: hitRes.dmg,
                 newHp: hitRes.newHp,
@@ -1528,15 +1540,15 @@ wss.on('connection', (ws) => {
 
               for (const ev of hitRes.events) {
                 if (ev.type === 'STAGE_CLEAR') {
-                  broadcastToMap(instId, { type: 'DUNGEON_STAGE_CLEAR', stage: ev.stage });
+                  broadcastToMap(targetMapId, { type: 'DUNGEON_STAGE_CLEAR', stage: ev.stage });
                 } else if (ev.type === 'BOSS_PHASE_2') {
-                  broadcastToMap(instId, { type: 'DUNGEON_BOSS_PHASE', phase: 2, newMobs: ev.newMobs });
+                  broadcastToMap(targetMapId, { type: 'DUNGEON_BOSS_PHASE', phase: 2, newMobs: ev.newMobs });
                 } else if (ev.type === 'SHIELD_DOWN') {
-                  broadcastToMap(instId, { type: 'DUNGEON_SHIELD_DOWN' });
+                  broadcastToMap(targetMapId, { type: 'DUNGEON_SHIELD_DOWN' });
                 } else if (ev.type === 'BOSS_PHASE_3') {
-                  broadcastToMap(instId, { type: 'DUNGEON_BOSS_PHASE', phase: 3, safeZone: ev.safeZone });
+                  broadcastToMap(targetMapId, { type: 'DUNGEON_BOSS_PHASE', phase: 3, safeZone: ev.safeZone });
                 } else if (ev.type === 'VICTORY') {
-                  broadcastToMap(instId, { type: 'DUNGEON_VICTORY', ...ev });
+                  broadcastToMap(targetMapId, { type: 'DUNGEON_VICTORY', ...ev });
                 }
               }
             }
@@ -1545,8 +1557,9 @@ wss.on('connection', (ws) => {
       } else if (data.type === 'DUNGEON_REQUEST_MOBS') {
         const me = worldEngine.getPlayer(socketId);
         if (me) {
-          const instId = data.instanceId || me.mapId;
-          const inst = worldEngine.getDungeonInstance(instId);
+          const inst = worldEngine.getDungeonInstance(data.instanceId) ||
+                       worldEngine.getDungeonInstance(me.mapId) ||
+                       worldEngine.getOrCreateDungeonInstance(null, data.instanceId || me.mapId);
           if (inst) {
             ws.send(JSON.stringify({
               type: 'DUNGEON_INSTANCE_INFO',
