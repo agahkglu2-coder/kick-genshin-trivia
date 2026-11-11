@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Fredoka:wght@600;700;800&family=Nunito:wght@700;800;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/world.css">
   <!-- Three.js from CDN with fallback -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -26,6 +26,7 @@
     <div class="player-profile-card" id="profile-card">
       <div class="avatar-ring" id="ui-avatar-ring">
         <canvas id="ui-avatar-preview" width="48" height="48"></canvas>
+        <div class="avatar-celestial-frame"></div>
       </div>
       <div class="profile-info">
         <div class="profile-name-row">
@@ -33,8 +34,14 @@
           <span id="ui-badge" class="badge-guest">Misafir</span>
         </div>
         <div class="profile-stats-row">
-          <span class="primo-pill">💎 <span id="ui-primogems">0</span></span>
-          <span class="gs-pill" id="ui-gs-badge" title="GearScore (Ekipman Puanı)">⚔️ <span id="ui-gs-value">0</span> GS</span>
+          <span class="primo-pill" title="Primogem Bakiyesi">
+            <svg class="hud-svg-icon primo-gem-svg" viewBox="0 0 24 24"><polygon fill="#67e8f9" points="12,2 19,12 12,22 5,12"/><polygon fill="#38bdf8" points="12,5 17,12 12,19 7,12"/><polygon fill="#fde047" points="12,8 15,12 12,16 9,12"/></svg>
+            <span id="ui-primogems">0</span>
+          </span>
+          <span class="gs-pill" id="ui-gs-badge" title="GearScore (Ekipman Puanı) [C]">
+            <svg class="hud-svg-icon" viewBox="0 0 24 24"><path fill="#f59e0b" d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 2.18l6 2.25v4.66c0 4.1-2.67 7.9-6 9-3.33-1.1-6-4.9-6-9V6.43l6-2.25zM11 7h2v6h-2zm0 8h2v2h-2z"/></svg>
+            <span id="ui-gs-value">0</span> GS
+          </span>
           <span class="location-pill" id="ui-location">Meydan</span>
         </div>
       </div>
@@ -94,14 +101,34 @@
     <!-- Quick Action Bar -->
     <div class="quick-nav-bar">
       <button class="btn-mmo-nav btn-nav-daily" id="btn-open-daily-quests" title="Mylune Günlük Görevler [J]">
-        📜 Günlük Görev [J]
+        <svg class="nav-svg-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        <span class="nav-label">Görev</span>
+        <span class="nav-hotkey-badge">J</span>
         <span id="nav-daily-badge" class="nav-alert-dot hidden">!</span>
       </button>
-      <button class="btn-mmo-nav btn-nav-companion" id="btn-open-companion" title="5★ Yoldaş Seçimi [P]">🐾 5★ Yoldaş [P]</button>
-      <button class="btn-mmo-nav btn-nav-character" id="btn-open-character" title="Ekipman & GearScore [C]">⚔️ Ekipman & GS [C]</button>
-      <button class="btn-mmo-nav btn-nav-inventory" id="btn-open-inventory" title="Envanter & Koleksiyon Çantası [I]">🎒 Envanter [I]</button>
-      <button class="btn-mmo-nav" id="btn-open-auth">🛡️ Kick Girişi</button>
-      <button class="btn-mmo-nav" id="btn-change-avatar">🎭 Karakter</button>
+      <button class="btn-mmo-nav btn-nav-companion" id="btn-open-companion" title="5★ Yoldaş Seçimi [P]">
+        <svg class="nav-svg-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        <span class="nav-label">Yoldaş</span>
+        <span class="nav-hotkey-badge">P</span>
+      </button>
+      <button class="btn-mmo-nav btn-nav-character" id="btn-open-character" title="Ekipman & GearScore [C]">
+        <svg class="nav-svg-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M6.92 5h10.16L12 11.08 6.92 5zM4 3l8 9.5L20 3H4zm8 11.23L5.42 21h13.16L12 14.23zM12 17l2.84 3H9.16L12 17z"/></svg>
+        <span class="nav-label">Ekipman</span>
+        <span class="nav-hotkey-badge">C</span>
+      </button>
+      <button class="btn-mmo-nav btn-nav-inventory" id="btn-open-inventory" title="Envanter & Koleksiyon Çantası [I]">
+        <svg class="nav-svg-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
+        <span class="nav-label">Envanter</span>
+        <span class="nav-hotkey-badge">I</span>
+      </button>
+      <button class="btn-mmo-nav" id="btn-open-auth" title="Kick Hesabı ile Giriş">
+        <svg class="nav-svg-icon" viewBox="0 0 24 24"><path fill="#53fc18" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+        <span class="nav-label">Kick Giriş</span>
+      </button>
+      <button class="btn-mmo-nav" id="btn-change-avatar" title="Görünüm Değiştir">
+        <svg class="nav-svg-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+        <span class="nav-label">Karakter</span>
+      </button>
     </div>
   </footer>
 
@@ -441,51 +468,68 @@
       <button type="button" class="btn-hud-companion-open" id="btn-hud-companion-open" title="Yoldaş Seçimi [P]">P</button>
     </div>
 
-    <!-- Player Combat Status -->
+    <!-- Player Combat Status (Genshin-style Dynamic Gauge) -->
     <div class="combat-player-card">
-      <div class="combat-hp-bar-outer">
-        <div class="combat-hp-bar-fill" id="combat-hp-fill" style="width: 100%;"></div>
-        <span class="combat-hp-text" id="combat-hp-text">HP 500 / 500</span>
+      <div class="combat-hp-row">
+        <div class="combat-hp-bar-outer">
+          <div class="combat-hp-bar-ghost" id="combat-hp-ghost"></div>
+          <div class="combat-hp-bar-fill" id="combat-hp-fill" style="width: 100%;"></div>
+          <div class="combat-hp-segments"></div>
+          <span class="combat-hp-text" id="combat-hp-text">HP 500 / 500</span>
+        </div>
       </div>
-      <div class="combat-stamina-bar-outer">
-        <div class="combat-stamina-bar-fill" id="combat-stamina-fill" style="width: 100%;"></div>
-        <span class="combat-stamina-text" id="combat-stamina-text">STAMINA: 100 / 100</span>
-      </div>
-      <div class="combat-energy-bar-outer">
-        <div class="combat-energy-bar-fill" id="combat-energy-fill" style="width: 0%;"></div>
-        <span class="combat-energy-text" id="combat-energy-text">ULTİ: %0</span>
+      <div class="combat-sub-bars-row">
+        <div class="combat-stamina-bar-outer" title="Dayanıklılık (Stamina) - Hızlı Koşu, Takla ve Ağır Vuruş">
+          <div class="combat-stamina-bar-fill" id="combat-stamina-fill" style="width: 100%;"></div>
+          <span class="combat-stamina-text" id="combat-stamina-text">STAMINA 100</span>
+        </div>
+        <div class="combat-energy-bar-outer" title="Elemental Enerji (Ulti [Q] için %100 Gereklidir)">
+          <div class="combat-energy-bar-fill" id="combat-energy-fill" style="width: 0%;"></div>
+          <span class="combat-energy-text" id="combat-energy-text">ULTİ %0</span>
+        </div>
       </div>
     </div>
 
-    <!-- Bottom Center Skill Bar -->
+    <!-- Bottom Center Skill Bar (Anime Fantasy MMO Action Deck) -->
     <div class="combat-skill-bar">
-      <div class="skill-slot active" id="slot-attack" title="4'lü Kombo Saldırı [Sol Tık / F] (Fare İmlecine Nişan Alır)">
-        <span class="skill-key">SOL TIK / F</span>
-        <span class="skill-icon" id="icon-slot-attack"><span class="rpg-sprite-icon sprite-skill" style="background-position: 20.00% 33.33%;"></span></span>
-        <span class="skill-name" id="name-slot-attack">Kombo</span>
+      <div class="skill-slot active" id="slot-attack" title="4'lü Kombo Saldırı [Sol Tık / F]">
+        <div class="skill-inner-circle">
+          <svg class="skill-vector-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-3.12 3.12-1.93-1.91-1.41 1.41 1.42 1.42L3 16.25V21h4.75l8.92-8.92 1.42 1.42 1.41-1.41-1.92-1.92 3.12-3.12c.4-.4.4-1.03.01-1.42zM6.92 19L5 17.08l8.06-8.06 1.92 1.92L6.92 19z"/></svg>
+        </div>
+        <span class="skill-name" id="name-slot-attack">Saldırı</span>
+        <span class="skill-key">F / M1</span>
       </div>
       <div class="skill-slot" id="slot-heavy" title="Ağır Zırh Kıran Darbe [Sağ Tık / R] (25 Stamina)">
-        <span class="skill-key">SAĞ TIK / R</span>
-        <span class="skill-icon" id="icon-slot-heavy"><span class="rpg-sprite-icon sprite-skill" style="background-position: 40.00% 33.33%;"></span></span>
+        <div class="skill-inner-circle">
+          <svg class="skill-vector-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M14.58 2.42c-.78-.78-2.05-.78-2.83 0L3.17 11c-.78.78-.78 2.05 0 2.83l3.54 3.54 1.41-1.41-2.83-2.83 7.88-7.88 7.88 7.88-2.83 2.83 1.41 1.41 3.54-3.54c.78-.78.78-2.05 0-2.83L14.58 2.42zM12 14.5l-3 3 1.41 1.41L12 17.33l1.59 1.58 1.41-1.41-3-3z"/></svg>
+        </div>
         <span class="skill-name" id="name-slot-heavy">Ağır Darbe</span>
+        <span class="skill-key">R / M2</span>
         <div class="skill-cd-overlay" id="cd-heavy"></div>
       </div>
       <div class="skill-slot" id="slot-dash" title="Hızlı Kaçış / Mükemmel Dodge [Shift]">
+        <div class="skill-inner-circle">
+          <svg class="skill-vector-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7"/></svg>
+        </div>
+        <span class="skill-name">Kaçış</span>
         <span class="skill-key">SHIFT</span>
-        <span class="skill-icon"><span class="rpg-sprite-icon sprite-skill" style="background-position: 60.00% 33.33%;"></span></span>
-        <span class="skill-name">Takla</span>
         <div class="skill-cd-overlay" id="cd-dash"></div>
       </div>
       <div class="skill-slot" id="slot-vortex" title="Elemental Beceri [E]">
-        <span class="skill-key">E</span>
-        <span class="skill-icon" id="icon-slot-skill"><span class="rpg-sprite-icon sprite-skill" style="background-position: 80.00% 33.33%;"></span></span>
+        <div class="skill-inner-circle">
+          <svg class="skill-vector-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        </div>
         <span class="skill-name" id="name-slot-skill">Beceri</span>
+        <span class="skill-key">E</span>
         <div class="skill-cd-overlay" id="cd-vortex"></div>
       </div>
-      <div class="skill-slot" id="slot-burst" title="Elemental Patlama (Nihai) [Q]">
+      <div class="skill-slot slot-burst-ultimate" id="slot-burst" title="Elemental Patlama (Nihai) [Q]">
+        <div class="burst-celestial-halo" id="burst-celestial-halo"></div>
+        <div class="skill-inner-circle">
+          <svg class="skill-vector-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l2.4 7.2L22 10l-6 4.8 2.4 7.2L12 17.6 5.6 22l2.4-7.2-6-4.8 7.6-.8L12 2z"/></svg>
+        </div>
+        <span class="skill-name" id="name-slot-burst">Nihai</span>
         <span class="skill-key">Q</span>
-        <span class="skill-icon" id="icon-slot-burst"><span class="rpg-sprite-icon sprite-skill" style="background-position: 100.00% 33.33%;"></span></span>
-        <span class="skill-name" id="name-slot-burst">Ulti</span>
         <div class="skill-cd-overlay" id="cd-burst"></div>
       </div>
     </div>

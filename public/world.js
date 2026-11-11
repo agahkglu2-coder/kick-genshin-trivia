@@ -1885,57 +1885,265 @@
     return tex;
   }
 
+  // =========================================================
+  // Lush Realistic Anime Grass & Atmospheric Flora Engine
+  // =========================================================
+
+  const grassWindUniforms = {
+    uGrassTime: { value: 0 }
+  };
+
+  let windAtmosphereParticles = null;
+  let windAtmosphereData = [];
+
+  function applyGrassWindShader(material) {
+    material.onBeforeCompile = (shader) => {
+      shader.uniforms.uGrassTime = grassWindUniforms.uGrassTime;
+      shader.vertexShader = `
+        uniform float uGrassTime;
+        ${shader.vertexShader}
+      `;
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `
+        #include <begin_vertex>
+        // Organic wind sway for curved grass blades: roots remain firmly pinned
+        float bladeH = transformed.y;
+        if (bladeH > 0.04) {
+          #ifdef USE_INSTANCING
+            vec4 worldOrigin = instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+          #else
+            vec4 worldOrigin = modelMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+          #endif
+          float waveA = sin(uGrassTime * 2.3 + worldOrigin.x * 0.35 + worldOrigin.z * 0.4);
+          float waveB = cos(uGrassTime * 1.5 + worldOrigin.x * 0.22 - worldOrigin.z * 0.28);
+          float sway = (bladeH * bladeH) * 0.45;
+          transformed.x += (waveA + waveB * 0.35) * sway * 0.26;
+          transformed.z += (waveB - waveA * 0.3) * sway * 0.22;
+        }
+        `
+      );
+    };
+  }
+
+  function createRealisticGrassTuftGeometry() {
+    const geo = new THREE.BufferGeometry();
+    const bladeCount = 5;
+    const vertsPerBlade = 6;
+    
+    const positions = new Float32Array(bladeCount * vertsPerBlade * 3);
+    const normals = new Float32Array(bladeCount * vertsPerBlade * 3);
+    const colors = new Float32Array(bladeCount * vertsPerBlade * 3);
+    const indices = [];
+
+    // Root -> Mid -> Tip vertex color gradient (dark emerald root to sunlit lime tips)
+    const rootCol = [0.06, 0.24, 0.11];
+    const midCol = [0.17, 0.56, 0.23];
+    const tipCol = [0.44, 0.86, 0.30];
+
+    const angles = [0.12, 1.38, 2.62, 3.88, 5.14];
+
+    for (let b = 0; b < bladeCount; b++) {
+      const baseIdx = b * vertsPerBlade;
+      const angle = angles[b] + (Math.random() - 0.5) * 0.25;
+      const cosA = Math.cos(angle);
+      const sinA = Math.sin(angle);
+      const perpCos = -sinA;
+      const perpSin = cosA;
+
+      const bladeHeight = 0.54 + Math.random() * 0.16;
+      const midHeight = bladeHeight * 0.52;
+      const curveAmount = 0.12 + Math.random() * 0.06;
+
+      const baseWidth = 0.065;
+      const midWidth = 0.045;
+      const tipWidth = 0.012;
+
+      // Root (y = 0)
+      const v0x = -perpCos * baseWidth;
+      const v0z = -perpSin * baseWidth;
+      const v1x = perpCos * baseWidth;
+      const v1z = perpSin * baseWidth;
+
+      // Mid (y = midHeight)
+      const midOutX = cosA * (curveAmount * 0.45);
+      const midOutZ = sinA * (curveAmount * 0.45);
+      const v2x = midOutX - perpCos * midWidth;
+      const v2z = midOutZ - perpSin * midWidth;
+      const v3x = midOutX + perpCos * midWidth;
+      const v3z = midOutZ + perpSin * midWidth;
+
+      // Tip (y = bladeHeight)
+      const tipOutX = cosA * curveAmount;
+      const tipOutZ = sinA * curveAmount;
+      const v4x = tipOutX - perpCos * tipWidth;
+      const v4z = tipOutZ - perpSin * tipWidth;
+      const v5x = tipOutX + perpCos * tipWidth;
+      const v5z = tipOutZ + perpSin * tipWidth;
+
+      const bladePositions = [
+        v0x, 0, v0z,
+        v1x, 0, v1z,
+        v2x, midHeight, v2z,
+        v3x, midHeight, v3z,
+        v4x, bladeHeight, v4z,
+        v5x, bladeHeight, v5z
+      ];
+
+      for (let i = 0; i < 18; i++) {
+        positions[baseIdx * 3 + i] = bladePositions[i];
+      }
+
+      // Soft upward normals for anime-style lush lighting
+      for (let v = 0; v < vertsPerBlade; v++) {
+        normals[(baseIdx + v) * 3] = cosA * 0.15;
+        normals[(baseIdx + v) * 3 + 1] = 0.96;
+        normals[(baseIdx + v) * 3 + 2] = sinA * 0.15;
+      }
+
+      // Vertex color gradient
+      for (let k = 0; k < 2; k++) {
+        colors[(baseIdx + k) * 3] = rootCol[0];
+        colors[(baseIdx + k) * 3 + 1] = rootCol[1];
+        colors[(baseIdx + k) * 3 + 2] = rootCol[2];
+
+        colors[(baseIdx + 2 + k) * 3] = midCol[0];
+        colors[(baseIdx + 2 + k) * 3 + 1] = midCol[1];
+        colors[(baseIdx + 2 + k) * 3 + 2] = midCol[2];
+
+        colors[(baseIdx + 4 + k) * 3] = tipCol[0];
+        colors[(baseIdx + 4 + k) * 3 + 1] = tipCol[1];
+        colors[(baseIdx + 4 + k) * 3 + 2] = tipCol[2];
+      }
+
+      // 4 triangles per blade
+      indices.push(
+        baseIdx + 0, baseIdx + 1, baseIdx + 2,
+        baseIdx + 2, baseIdx + 1, baseIdx + 3,
+        baseIdx + 2, baseIdx + 3, baseIdx + 4,
+        baseIdx + 4, baseIdx + 3, baseIdx + 5
+      );
+    }
+
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geo.setIndex(indices);
+    return geo;
+  }
+
   function createProceduralGrassTexture() {
     const cvs = document.createElement('canvas');
-    cvs.width = 128;
-    cvs.height = 128;
+    cvs.width = 512;
+    cvs.height = 512;
     const ctx = cvs.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
 
-    // Rich meadow green base
-    ctx.fillStyle = '#1e7b34';
-    ctx.fillRect(0, 0, 128, 128);
+    // 1. Lush multi-layered gradient base
+    const baseGrad = ctx.createLinearGradient(0, 0, 512, 512);
+    baseGrad.addColorStop(0, '#1b4332');
+    baseGrad.addColorStop(0.35, '#2d6a4f');
+    baseGrad.addColorStop(0.7, '#236b3b');
+    baseGrad.addColorStop(1, '#1e5f32');
+    ctx.fillStyle = baseGrad;
+    ctx.fillRect(0, 0, 512, 512);
 
-    // Soft organic grass tone variation (larger clusters, gentle blending)
-    const tones = ['#22863a', '#1e7b34', '#196c2e', '#2ea043', '#1b7332'];
-    for (let i = 0; i < 280; i++) {
-      const x = Math.floor(Math.random() * 60) * 2;
-      const y = Math.floor(Math.random() * 60) * 2;
-      const w = 2 + Math.floor(Math.random() * 3) * 2;
-      const h = 2 + Math.floor(Math.random() * 2) * 2;
-      ctx.fillStyle = tones[Math.floor(Math.random() * tones.length)];
-      ctx.fillRect(x, y, w, h);
+    // 2. Multi-scale organic meadow patches
+    const patchColors = ['#1a4329', '#245a38', '#2d6a4f', '#367c55', '#40916c', '#1b4d2c'];
+    for (let i = 0; i < 450; i++) {
+      const px = Math.random() * 512;
+      const py = Math.random() * 512;
+      const rad = 14 + Math.random() * 38;
+      const pGrad = ctx.createRadialGradient(px, py, 2, px, py, rad);
+      const c = patchColors[Math.floor(Math.random() * patchColors.length)];
+      pGrad.addColorStop(0, c);
+      pGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = pGrad;
+      ctx.beginPath();
+      ctx.arc(px, py, rad, 0, Math.PI * 2);
+      ctx.fill();
     }
 
-    // Little clover leaves / gentle blades
-    ctx.fillStyle = '#34d058';
-    for (let i = 0; i < 80; i++) {
-      const cx = Math.floor(Math.random() * 62) * 2;
-      const cy = Math.floor(Math.random() * 62) * 2;
-      ctx.fillRect(cx, cy, 2, 4);
-      ctx.fillRect(cx - 2, cy + 2, 2, 2);
-      ctx.fillRect(cx + 2, cy + 2, 2, 2);
+    // 3. Fine painterly grass blade strokes
+    const bladeTones = ['#2d6a4f', '#347a54', '#40916c', '#489d75', '#52b788', '#235e3a', '#74c69d'];
+    ctx.lineWidth = 1.4;
+    for (let i = 0; i < 16000; i++) {
+      const bx = Math.random() * 512;
+      const by = Math.random() * 512;
+      const len = 4 + Math.random() * 8;
+      const lean = (Math.random() - 0.5) * 4;
+      ctx.strokeStyle = bladeTones[i % bladeTones.length];
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx + lean, by - len);
+      ctx.stroke();
     }
 
-    // Gentle wildflowers (subtle pastel specks: buttercup, daisy, lavender, rose)
-    const flowerColors = ['#fef08a', '#ffffff', '#f472b6', '#a78bfa', '#fb923c'];
-    for (let i = 0; i < 35; i++) {
-      const fx = Math.floor(Math.random() * 62) * 2;
-      const fy = Math.floor(Math.random() * 62) * 2;
-      ctx.fillStyle = flowerColors[i % flowerColors.length];
-      ctx.fillRect(fx, fy, 2, 2);
-      if (i % 2 === 0) {
-        ctx.fillStyle = '#fbbf24';
-        ctx.fillRect(fx + 2, fy, 2, 2);
+    // 4. Little clover clusters
+    ctx.fillStyle = '#52b788';
+    for (let i = 0; i < 160; i++) {
+      const cx = Math.random() * 500 + 6;
+      const cy = Math.random() * 500 + 6;
+      for (let leaf = 0; leaf < 3; leaf++) {
+        const la = (leaf * Math.PI * 2) / 3;
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(la) * 3.5, cy + Math.sin(la) * 3.5, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // 5. Delicate subtle pastel wildflower specks
+    const flowerPalette = ['#fef08a', '#ffffff', '#f472b6', '#c084fc', '#67e8f9', '#fbbf24'];
+    for (let i = 0; i < 90; i++) {
+      const fx = Math.random() * 512;
+      const fy = Math.random() * 512;
+      ctx.fillStyle = flowerPalette[i % flowerPalette.length];
+      ctx.beginPath();
+      ctx.arc(fx, fy, 1.8 + Math.random() * 1.4, 0, Math.PI * 2);
+      ctx.fill();
+      if (i % 3 === 0) {
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(fx, fy, 0.8, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
 
     const tex = new THREE.CanvasTexture(cvs);
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(12, 12);
-    tex.magFilter = THREE.NearestFilter;
-    tex.minFilter = THREE.NearestFilter;
+    tex.repeat.set(24, 24);
+    tex.magFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.generateMipmaps = true;
+    return tex;
+  }
+
+  function createProceduralGrassNormalMap() {
+    const cvs = document.createElement('canvas');
+    cvs.width = 256;
+    cvs.height = 256;
+    const ctx = cvs.getContext('2d');
+
+    ctx.fillStyle = '#8080ff';
+    ctx.fillRect(0, 0, 256, 256);
+
+    for (let i = 0; i < 3500; i++) {
+      const nx = Math.random() * 256;
+      const ny = Math.random() * 256;
+      const r = Math.floor(120 + Math.random() * 20);
+      const g = Math.floor(120 + Math.random() * 20);
+      ctx.fillStyle = `rgb(${r}, ${g}, 255)`;
+      ctx.fillRect(nx, ny, 1 + Math.random() * 2, 3 + Math.random() * 4);
+    }
+
+    const tex = new THREE.CanvasTexture(cvs);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(24, 24);
+    tex.magFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.generateMipmaps = true;
     return tex;
   }
 
@@ -4435,75 +4643,146 @@
     return true;
   }
 
+  function initWindAtmosphereParticles() {
+    if (windAtmosphereParticles && scene) {
+      scene.remove(windAtmosphereParticles);
+    }
+    const count = 220;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    windAtmosphereData = [];
+
+    for (let i = 0; i < count; i++) {
+      const x = (Math.random() - 0.5) * 70;
+      const y = 0.5 + Math.random() * 7;
+      const z = (Math.random() - 0.5) * 70;
+      positions[i * 3] = x;
+      positions[i * 3 + 1] = y;
+      positions[i * 3 + 2] = z;
+
+      // 40% Sakura blush pink petals, 60% golden dandelion fluff / ethereal spores
+      const isSakura = Math.random() < 0.4;
+      if (isSakura) {
+        colors[i * 3] = 1.0;
+        colors[i * 3 + 1] = 0.72 + Math.random() * 0.14;
+        colors[i * 3 + 2] = 0.82 + Math.random() * 0.12;
+        sizes[i] = 0.22 + Math.random() * 0.12;
+      } else {
+        colors[i * 3] = 0.98;
+        colors[i * 3 + 1] = 0.96;
+        colors[i * 3 + 2] = 0.80 + Math.random() * 0.15;
+        sizes[i] = 0.15 + Math.random() * 0.08;
+      }
+
+      windAtmosphereData.push({
+        vx: 0.012 + Math.random() * 0.016,
+        vy: -0.002 - Math.random() * 0.003,
+        vz: 0.008 + Math.random() * 0.012,
+        wobbleSpeed: 0.002 + Math.random() * 0.0025,
+        wobbleAmp: 0.006 + Math.random() * 0.006,
+        phase: Math.random() * Math.PI * 2
+      });
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+    // Circular soft glowing particle canvas texture
+    const pCvs = document.createElement('canvas');
+    pCvs.width = 32;
+    pCvs.height = 32;
+    const pCtx = pCvs.getContext('2d');
+    const grad = pCtx.createRadialGradient(16, 16, 2, 16, 16, 15);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    grad.addColorStop(0.45, 'rgba(255, 255, 255, 0.85)');
+    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    pCtx.fillStyle = grad;
+    pCtx.beginPath();
+    pCtx.arc(16, 16, 15, 0, Math.PI * 2);
+    pCtx.fill();
+
+    const pTex = new THREE.CanvasTexture(pCvs);
+    const pMat = new THREE.PointsMaterial({
+      size: 0.32,
+      map: pTex,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+      blending: THREE.NormalBlending
+    });
+
+    windAtmosphereParticles = new THREE.Points(geometry, pMat);
+    worldObjects.add(windAtmosphereParticles);
+  }
+
   function populateLush3DGrassAndWildflowers(mode = 'town') {
     const dummy = new THREE.Object3D();
 
-    // 3 Instanced Grass Blade Batches (Deep Emerald, Vibrant Meadow, Sunlit Lime)
-    const bladeGeo = new THREE.ConeGeometry(0.14, 0.58, 4);
-    bladeGeo.translate(0, 0.29, 0);
+    // 1. Realistic 5-blade curved grass tufts with GPU vertex wind shader
+    const tuftGeo = createRealisticGrassTuftGeometry();
+    const grassMat = new THREE.MeshLambertMaterial({
+      vertexColors: true,
+      side: THREE.DoubleSide
+    });
+    applyGrassWindShader(grassMat);
 
-    const grassColors = mode === 'battle_zone_1'
-      ? [0x059669, 0x10b981, 0x34d399]
-      : [0x15803d, 0x22c55e, 0x4ade80];
+    const totalTufts = mode === 'town' ? 2400 : 1500;
+    const instMesh = new THREE.InstancedMesh(tuftGeo, grassMat, totalTufts);
+    instMesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
 
-    const totalBladesPerBatch = mode === 'town' ? 520 : 380;
-
-    for (let b = 0; b < 3; b++) {
-      const mat = new THREE.MeshLambertMaterial({ color: grassColors[b] });
-      const instMesh = new THREE.InstancedMesh(bladeGeo, mat, totalBladesPerBatch);
-      instMesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
-
-      let placed = 0;
-      let attempts = 0;
-      while (placed < totalBladesPerBatch && attempts < totalBladesPerBatch * 4) {
-        attempts++;
-        let gx, gz;
-        if (mode === 'town') {
-          gx = (Math.random() - 0.5) * 86;
-          gz = (Math.random() - 0.5) * 84;
-          if (!isValidTownGrassSpot(gx, gz)) continue;
-        } else {
-          const angle = Math.random() * Math.PI * 2;
-          const dist = 4.5 + Math.random() * 32;
-          gx = Math.cos(angle) * dist;
-          gz = Math.sin(angle) * dist;
-          if (Math.hypot(gx, gz - 14) < 9.5 || Math.hypot(gx, gz + 32) < 4.5) continue;
-        }
-
-        const s = 0.65 + Math.random() * 0.75;
-        dummy.position.set(gx, 0, gz);
-        dummy.rotation.set(
-          (Math.random() - 0.5) * 0.35,
-          Math.random() * Math.PI * 2,
-          (Math.random() - 0.5) * 0.35
-        );
-        dummy.scale.set(s, s * (0.85 + Math.random() * 0.55), s);
-        dummy.updateMatrix();
-        instMesh.setMatrixAt(placed, dummy.matrix);
-        placed++;
+    let placed = 0;
+    let attempts = 0;
+    while (placed < totalTufts && attempts < totalTufts * 4) {
+      attempts++;
+      let gx, gz;
+      if (mode === 'town') {
+        gx = (Math.random() - 0.5) * 88;
+        gz = (Math.random() - 0.5) * 86;
+        if (!isValidTownGrassSpot(gx, gz)) continue;
+      } else {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 4.5 + Math.random() * 32;
+        gx = Math.cos(angle) * dist;
+        gz = Math.sin(angle) * dist;
+        if (Math.hypot(gx, gz - 14) < 9.5 || Math.hypot(gx, gz + 32) < 4.5) continue;
       }
 
-      instMesh.count = placed;
-      instMesh.instanceMatrix.needsUpdate = true;
-      worldObjects.add(instMesh);
-      swayingFloraList.push({ mesh: instMesh, phase: b * 1.1, amp: 0.008, speed: 0.0025 });
+      const s = 0.72 + Math.random() * 0.65;
+      dummy.position.set(gx, 0, gz);
+      dummy.rotation.set(
+        (Math.random() - 0.5) * 0.15,
+        Math.random() * Math.PI * 2,
+        (Math.random() - 0.5) * 0.15
+      );
+      dummy.scale.set(s, s * (0.85 + Math.random() * 0.45), s);
+      dummy.updateMatrix();
+      instMesh.setMatrixAt(placed, dummy.matrix);
+      placed++;
     }
 
-    // 4 Instanced Wildflower Blossom Batches (Gold Buttercup, Sakura Pink, Sky Cecilia, Violet Aster)
-    const flowerGeo = new THREE.DodecahedronGeometry(0.14, 0);
+    instMesh.count = placed;
+    instMesh.instanceMatrix.needsUpdate = true;
+    worldObjects.add(instMesh);
+
+    // 2. 4 Batches of 3D Wildflowers (Gold Dandelions, White Daisies, Lilac Lavender, Sky Cecilias)
+    const flowerGeo = new THREE.DodecahedronGeometry(0.13, 0);
     flowerGeo.translate(0, 0.38, 0);
     const flowerPalette = mode === 'battle_zone_1'
       ? [0x2dd4bf, 0xa855f7, 0xfacc15, 0x38bdf8]
       : [0xfef08a, 0xf472b6, 0x38bdf8, 0xc084fc];
 
-    const flowersPerColor = mode === 'town' ? 85 : 60;
+    const flowersPerColor = mode === 'town' ? 95 : 65;
     for (let f = 0; f < flowerPalette.length; f++) {
       const fMat = new THREE.MeshBasicMaterial({ color: flowerPalette[f] });
       const fInst = new THREE.InstancedMesh(flowerGeo, fMat, flowersPerColor);
-      let placed = 0;
-      let attempts = 0;
-      while (placed < flowersPerColor && attempts < flowersPerColor * 4) {
-        attempts++;
+      let fPlaced = 0;
+      let fAttempts = 0;
+      while (fPlaced < flowersPerColor && fAttempts < flowersPerColor * 4) {
+        fAttempts++;
         let fx, fz;
         if (mode === 'town') {
           fx = (Math.random() - 0.5) * 82;
@@ -4517,21 +4796,26 @@
           if (Math.hypot(fx, fz - 14) < 9.5) continue;
         }
 
-        const fs = 0.75 + Math.random() * 0.55;
+        const fs = 0.8 + Math.random() * 0.5;
         dummy.position.set(fx, 0, fz);
         dummy.rotation.set(0, Math.random() * Math.PI * 2, 0);
         dummy.scale.set(fs, fs, fs);
         dummy.updateMatrix();
-        fInst.setMatrixAt(placed, dummy.matrix);
-        placed++;
+        fInst.setMatrixAt(fPlaced, dummy.matrix);
+        fPlaced++;
       }
-      fInst.count = placed;
+      fInst.count = fPlaced;
       fInst.instanceMatrix.needsUpdate = true;
       worldObjects.add(fInst);
     }
+
+    // 3. Initialize Floating Atmospheric Wind Particles (Sakura petals & Dandelion fluff)
+    initWindAtmosphereParticles();
   }
 
   function clearWorld() {
+    windAtmosphereParticles = null;
+    windAtmosphereData = [];
     animatedCats = [];
     animatedNPCs = [];
     fountainParticlesData = [];
@@ -4564,9 +4848,11 @@
     document.getElementById('ui-location').textContent = 'Kasaba Meydanı';
 
     // 1. Terrain Grass (Expansive 120x120 Meadow)
-    const grassGeo = new THREE.PlaneGeometry(120, 120);
+    const grassGeo = new THREE.PlaneGeometry(120, 120, 32, 32);
     const grassMat = new THREE.MeshLambertMaterial({
-      map: createProceduralGrassTexture()
+      map: createProceduralGrassTexture(),
+      bumpMap: createProceduralGrassNormalMap(),
+      bumpScale: 0.035
     });
     const grass = new THREE.Mesh(grassGeo, grassMat);
     grass.rotation.x = -Math.PI / 2;
@@ -11689,6 +11975,8 @@
     if (hpFill) {
       const hpPct = Math.max(0, Math.min(100, (playerHP / playerMaxHP) * 100));
       hpFill.style.width = `${hpPct}%`;
+      const hpGhost = document.getElementById('combat-hp-ghost');
+      if (hpGhost) hpGhost.style.width = `${hpPct}%`;
     }
     if (hpText) {
       const shieldStr = activeJadeShieldHP > 0 ? ` (+${activeJadeShieldHP} 🛡️)` : '';
@@ -12964,10 +13252,12 @@
 
     if (zoneId === 'battle_zone_1') {
       // 🌿 Zone 1: Kadim Sarmaşıklı Orman (Ancient Enchanted Forest)
-      // Lush Organic Moss Floor with procedural grass texture
+      // Lush Organic Moss Floor with procedural grass texture & normal bump
       const floorGeo = new THREE.CircleGeometry(42, 48);
       const floorMat = new THREE.MeshLambertMaterial({
         map: createProceduralGrassTexture(),
+        bumpMap: createProceduralGrassNormalMap(),
+        bumpScale: 0.04,
         color: 0x4ade80
       });
       const floor = new THREE.Mesh(floorGeo, floorMat);
@@ -15185,10 +15475,32 @@
       }
     }
 
-    // 1. Animate River Water Surface Ripples & Swaying 3D Grass / Tree Canopies
+    // 1. Animate River Water Ripples & Flora Wind Sway
     if (canalWaterMesh && canalWaterMesh.material.map) {
       canalWaterMesh.material.map.offset.x = (now * 0.0001) % 1;
     }
+    // Update GPU Grass Wind Sway Uniform
+    grassWindUniforms.uGrassTime.value = now * 0.0015;
+
+    // Update Floating Wind Atmosphere Particles (Sakura petals & Dandelion fluff)
+    if (windAtmosphereParticles && windAtmosphereData.length > 0) {
+      const pos = windAtmosphereParticles.geometry.attributes.position.array;
+      const px = myPlayer ? myPlayer.x : 0;
+      const pz = myPlayer ? myPlayer.z : 0;
+      for (let i = 0; i < windAtmosphereData.length; i++) {
+        const d = windAtmosphereData[i];
+        pos[i * 3] += d.vx;
+        pos[i * 3 + 1] += d.vy + Math.sin(now * d.wobbleSpeed + d.phase) * d.wobbleAmp;
+        pos[i * 3 + 2] += d.vz;
+        if (pos[i * 3 + 1] < 0.2 || Math.hypot(pos[i * 3] - px, pos[i * 3 + 2] - pz) > 45) {
+          pos[i * 3] = px + (Math.random() - 0.5) * 65;
+          pos[i * 3 + 1] = 4 + Math.random() * 5;
+          pos[i * 3 + 2] = pz + (Math.random() - 0.5) * 65;
+        }
+      }
+      windAtmosphereParticles.geometry.attributes.position.needsUpdate = true;
+    }
+
     if (swayingFloraList.length > 0) {
       for (let i = 0; i < swayingFloraList.length; i++) {
         const fl = swayingFloraList[i];

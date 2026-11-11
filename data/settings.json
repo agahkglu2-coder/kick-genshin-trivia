@@ -1,6 +1,6 @@
 {
-  "jackpot_pool": 8969.75,
-  "jackpot_total_accumulated": 9303.45,
+  "jackpot_pool": 9622.25,
+  "jackpot_total_accumulated": 9955.95,
   "active_banner_id": "capitano",
   "jackpot_recent_winners": [
     {
@@ -408,11 +408,11 @@
     "dailyQuests": {
       "date": "2026-11-10",
       "progress": {
-        "kick_chat_10": 2
+        "kick_chat_10": 4
       },
       "claimed": {},
       "bonusClaimed": false,
-      "lastChatTs": 1794346661055
+      "lastChatTs": 1794349830426
     }
   },
   "rpg:gezgin_1654": {
@@ -1181,7 +1181,7 @@
       },
       "claimed": {},
       "bonusClaimed": false,
-      "lastChatTs": 1794346926459
+      "lastChatTs": 1794350427362
     }
   },
   "rpg:bnyasheer": {
@@ -1205,11 +1205,11 @@
     "dailyQuests": {
       "date": "2026-11-10",
       "progress": {
-        "kick_chat_10": 3
+        "kick_chat_10": 10
       },
       "claimed": {},
       "bonusClaimed": false,
-      "lastChatTs": 1794346543552
+      "lastChatTs": 1794351773284
     }
   },
   "rpg:mylune": {
@@ -1233,11 +1233,11 @@
     "dailyQuests": {
       "date": "2026-11-10",
       "progress": {
-        "kick_chat_10": 1
+        "kick_chat_10": 6
       },
       "claimed": {},
       "bonusClaimed": false,
-      "lastChatTs": 1794343827565
+      "lastChatTs": 1794351761231
     }
   },
   "rpg:burak1206": {
@@ -1261,11 +1261,11 @@
     "dailyQuests": {
       "date": "2026-11-10",
       "progress": {
-        "kick_chat_10": 7
+        "kick_chat_10": 10
       },
       "claimed": {},
       "bonusClaimed": false,
-      "lastChatTs": 1794345774127
+      "lastChatTs": 1794349972630
     }
   },
   "rpg:shadowdream232": {
