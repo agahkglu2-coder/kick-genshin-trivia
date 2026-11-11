@@ -1016,13 +1016,51 @@
     return tex;
   }
 
+  let adventurerPortraitImg = null;
+  function getAdventurerPortraitImg() {
+    if (!adventurerPortraitImg && typeof Image !== 'undefined') {
+      adventurerPortraitImg = new Image();
+      adventurerPortraitImg.src = '/assets/character/adventurer/idle_down.png';
+    }
+    return adventurerPortraitImg;
+  }
+
   // Draw 2D Avatar Portrait for HUD profile & Avatar Selection Modal
   function drawAvatarPreviewPortrait(canvas, preset) {
-    if (!canvas || !preset) return;
+    if (!canvas) return;
     const w = canvas.width || 48;
     const h = canvas.height || 48;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, w, h);
+
+    const advImg = getAdventurerPortraitImg();
+    if (advImg && advImg.complete && advImg.naturalWidth > 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, w / 2 - 2, 0, Math.PI * 2);
+      ctx.clip();
+
+      const bgGrad = ctx.createRadialGradient(w / 2, h / 2, 4, w / 2, h / 2, w * 0.7);
+      bgGrad.addColorStop(0, '#334155');
+      bgGrad.addColorStop(1, '#090d16');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(advImg, 18, 8, 60, 64, 2, 2, w - 4, h - 4);
+      ctx.restore();
+
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, w / 2 - 2, 0, Math.PI * 2);
+      ctx.stroke();
+      return;
+    } else if (advImg) {
+      advImg.onload = () => drawAvatarPreviewPortrait(canvas, preset);
+    }
+
+    if (!preset) return;
 
     // 1. Vibrant Elemental Badge Background
     const bgGrad = ctx.createRadialGradient(w / 2, h / 2, 4, w / 2, h / 2, w * 0.7);
@@ -1546,6 +1584,77 @@
   // --- Procedural Chibi Animation & Full-Body Combat Choreography Controller ---
   function animateRig(rig, isMoving, delta, now) {
     if (!rig) return;
+
+    if (rig.type === 'adventurer_sprite') {
+      // 1. Determine direction from player rotation or parent mesh rotation
+      const rootMesh = rig.mesh ? rig.mesh.parent : null;
+      let rot = (rootMesh === myMesh) ? myPlayer.rot : (rootMesh ? rootMesh.rotation.y : 0);
+
+      // Normalize rotation angle to [-PI, PI]
+      let normRot = rot;
+      while (normRot > Math.PI) normRot -= Math.PI * 2;
+      while (normRot < -Math.PI) normRot += Math.PI * 2;
+
+      let newFacing = rig.facing || 'down';
+      if (isMoving || rig.combatAction || (activeSkillAimState && rootMesh === myMesh)) {
+        if (normRot > -Math.PI * 0.25 && normRot <= Math.PI * 0.25) {
+          newFacing = 'down';
+        } else if (normRot > Math.PI * 0.25 && normRot <= Math.PI * 0.75) {
+          newFacing = 'right';
+        } else if (normRot > -Math.PI * 0.75 && normRot <= -Math.PI * 0.25) {
+          newFacing = 'left';
+        } else {
+          newFacing = 'up';
+        }
+      }
+      rig.facing = newFacing;
+
+      // 2. Determine Action
+      let action = 'idle';
+      if (rig.combatAction) {
+        const elapsed = now - rig.combatAction.startTime;
+        if (elapsed < rig.combatAction.duration) {
+          const act = rig.combatAction.type;
+          action = (act === 'combo2' || act === 'heavy' || act === 'burst') ? 'attack2' : 'attack1';
+        } else {
+          rig.combatAction = null;
+        }
+      } else if (isMoving) {
+        action = 'run';
+      }
+
+      // 3. Switch Texture Strip if Action or Direction Changed
+      const animKey = `${action}_${rig.facing}`;
+      if (rig.currentKey !== animKey) {
+        rig.currentKey = animKey;
+        rig.frameIndex = 0;
+        rig.frameTimer = 0;
+        const tex = rig.animTextures[animKey];
+        if (tex) {
+          rig.material.map = tex;
+          rig.material.needsUpdate = true;
+        }
+      }
+
+      // 4. Advance Frame Animation
+      const fps = (action.startsWith('attack') ? 12 : (action === 'run' ? 11 : 8));
+      rig.frameTimer += delta;
+      if (rig.frameTimer >= 1 / fps) {
+        rig.frameTimer -= 1 / fps;
+        rig.frameIndex = (rig.frameIndex + 1) % 8;
+        const curTex = rig.animTextures[rig.currentKey];
+        if (curTex) {
+          curTex.offset.x = rig.frameIndex / 8;
+        }
+      }
+
+      // 5. Billboard Alignment to Camera
+      if (camera) {
+        rig.mesh.quaternion.copy(camera.quaternion);
+      }
+
+      return;
+    }
 
     // 1. Base Walk / Idle Lower & Upper Body Motion
     if (isMoving) {
@@ -5346,9 +5455,119 @@
     }
   }
 
+  // =========================================================================
+  // Adventurer 2D Pixel Art Main Character Engine (4-Directional Animated)
+  // =========================================================================
+  const ADVENTURER_ANIM_DEFS = {
+    idle_down: '/assets/character/adventurer/idle_down.png',
+    idle_up: '/assets/character/adventurer/idle_up.png',
+    idle_left: '/assets/character/adventurer/idle_left.png',
+    idle_right: '/assets/character/adventurer/idle_right.png',
+
+    run_down: '/assets/character/adventurer/run_down.png',
+    run_up: '/assets/character/adventurer/run_up.png',
+    run_left: '/assets/character/adventurer/run_left.png',
+    run_right: '/assets/character/adventurer/run_right.png',
+
+    attack1_down: '/assets/character/adventurer/attack1_down.png',
+    attack1_up: '/assets/character/adventurer/attack1_up.png',
+    attack1_left: '/assets/character/adventurer/attack1_left.png',
+    attack1_right: '/assets/character/adventurer/attack1_right.png',
+
+    attack2_down: '/assets/character/adventurer/attack2_down.png',
+    attack2_up: '/assets/character/adventurer/attack2_up.png',
+    attack2_left: '/assets/character/adventurer/attack2_left.png',
+    attack2_right: '/assets/character/adventurer/attack2_right.png'
+  };
+
+  const adventurerBaseTextureCache = {};
+  function getAdventurerBaseTexture(url) {
+    if (!adventurerBaseTextureCache[url]) {
+      const tex = textureLoader.load(url);
+      tex.magFilter = THREE.NearestFilter;
+      tex.minFilter = THREE.NearestFilter;
+      adventurerBaseTextureCache[url] = tex;
+    }
+    return adventurerBaseTextureCache[url];
+  }
+
+  function createAdventurerCharacter(avatarIndex = 0) {
+    const root = new THREE.Group();
+
+    // 1. Soft Ground Shadow
+    const shadowGeo = new THREE.CircleGeometry(0.68, 16);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.35,
+      depthWrite: false
+    });
+    const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+    shadowMesh.rotation.x = -Math.PI / 2;
+    shadowMesh.position.y = 0.02;
+    root.add(shadowMesh);
+
+    // 2. Prepare cloned textures for this player's animations
+    const animTextures = {};
+    for (const [key, url] of Object.entries(ADVENTURER_ANIM_DEFS)) {
+      const baseTex = getAdventurerBaseTexture(url);
+      const cloneTex = baseTex.clone();
+      cloneTex.magFilter = THREE.NearestFilter;
+      cloneTex.minFilter = THREE.NearestFilter;
+      cloneTex.repeat.set(1 / 8, 1);
+      cloneTex.offset.set(0, 0);
+      cloneTex.needsUpdate = true;
+      animTextures[key] = cloneTex;
+    }
+
+    // 3. Sprite Mesh Quad (Frame is 96x80, in 3D world 2.4 x 2.0)
+    const planeGeo = new THREE.PlaneGeometry(2.4, 2.0);
+    planeGeo.translate(0, 1.0, 0); // Pivot at feet
+
+    const initialTex = animTextures.idle_down;
+    const spriteMat = new THREE.MeshStandardMaterial({
+      map: initialTex,
+      transparent: true,
+      alphaTest: 0.08,
+      roughness: 0.65,
+      metalness: 0.05,
+      side: THREE.DoubleSide
+    });
+
+    const spriteMesh = new THREE.Mesh(planeGeo, spriteMat);
+    spriteMesh.castShadow = true;
+    root.add(spriteMesh);
+
+    // 4. Dummy anchors for hooks
+    const weaponHolder = new THREE.Group();
+    weaponHolder.position.set(0.5, 1.0, 0.1);
+    root.add(weaponHolder);
+
+    const rightArmGroup = new THREE.Group();
+    rightArmGroup.position.set(0.5, 1.2, 0);
+    root.add(rightArmGroup);
+
+    // Rig storage
+    root.userData.rig = {
+      type: 'adventurer_sprite',
+      mesh: spriteMesh,
+      material: spriteMat,
+      animTextures,
+      facing: 'down',
+      currentKey: 'idle_down',
+      frameIndex: 0,
+      frameTimer: 0,
+      combatAction: null,
+      weaponHolder,
+      rightArmGroup
+    };
+
+    return root;
+  }
+
   // --- 6. Character 3D Mesh Creation & Bubbles ---
   function createPlayerMesh(avatarIndex, username, isGuest, primogems, gearScore = 0, level = 1) {
-    const group = create3DChibiCharacter(avatarIndex);
+    const group = createAdventurerCharacter(avatarIndex);
 
     // Overhead Nametag Billboard
     const nameTex = createNametagCanvas(username, isGuest, primogems, gearScore, level);
@@ -9266,15 +9485,20 @@
   }
 
   function createAfterimageGhost(x, z, rot) {
-    const geo = new THREE.BoxGeometry(0.8, 1.4, 0.5);
+    const geo = new THREE.PlaneGeometry(2.4, 2.0);
+    geo.translate(0, 1.0, 0);
     const mat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
       transparent: true,
-      opacity: 0.55
+      opacity: 0.6,
+      side: THREE.DoubleSide
     });
+    if (myMesh && myMesh.userData && myMesh.userData.rig && myMesh.userData.rig.material && myMesh.userData.rig.material.map) {
+      mat.map = myMesh.userData.rig.material.map;
+    }
     const ghost = new THREE.Mesh(geo, mat);
-    ghost.position.set(x, 0.8, z);
-    ghost.rotation.y = rot;
+    ghost.position.set(x, 0, z);
+    if (camera) ghost.quaternion.copy(camera.quaternion);
     worldObjects.add(ghost);
 
     const fadeStart = performance.now();
@@ -9284,7 +9508,7 @@
         clearInterval(interval);
         worldObjects.remove(ghost);
       } else {
-        mat.opacity = 0.55 * (1 - elapsed / 200);
+        mat.opacity = 0.6 * (1 - elapsed / 200);
       }
     }, 25);
   }
