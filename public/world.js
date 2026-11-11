@@ -1648,9 +1648,13 @@
         }
       }
 
-      // 5. Billboard Alignment to Camera
-      if (camera) {
-        rig.mesh.quaternion.copy(camera.quaternion);
+      // 5. Billboard Alignment to Camera (compensate parent rotation so sprite never tilts or rolls)
+      if (camera && rig.mesh) {
+        if (rig.mesh.parent) {
+          rig.mesh.quaternion.copy(rig.mesh.parent.quaternion).invert().multiply(camera.quaternion);
+        } else {
+          rig.mesh.quaternion.copy(camera.quaternion);
+        }
       }
 
       return;
@@ -5494,12 +5498,13 @@
   function createAdventurerCharacter(avatarIndex = 0) {
     const root = new THREE.Group();
 
-    // 1. Soft Ground Shadow
-    const shadowGeo = new THREE.CircleGeometry(0.68, 16);
+    // 1. Soft Ground Contact Shadow (subtle grounded oval directly beneath feet)
+    const shadowGeo = new THREE.CircleGeometry(0.38, 16);
+    shadowGeo.scale(1.0, 0.6, 1.0);
     const shadowMat = new THREE.MeshBasicMaterial({
       color: 0x000000,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.22,
       depthWrite: false
     });
     const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
@@ -5520,9 +5525,10 @@
       animTextures[key] = cloneTex;
     }
 
-    // 3. Sprite Mesh Quad (Frame is 96x80, in 3D world 2.4 x 2.0)
-    const planeGeo = new THREE.PlaneGeometry(2.4, 2.0);
-    planeGeo.translate(0, 1.0, 0); // Pivot at feet
+    // 3. Sprite Mesh Quad (Adventurer proportioned to 1.85m hero height, feet grounded at y=0)
+    // Frame is 96x80 px; character inside is 34 px high, feet are at y=57 (22 px above frame bottom).
+    const planeGeo = new THREE.PlaneGeometry(5.22, 4.35);
+    planeGeo.translate(0, 0.98, 0); // Anchors feet firmly at ground y = 0.0
 
     const initialTex = animTextures.idle_down;
     const spriteMat = new THREE.MeshStandardMaterial({
@@ -5535,7 +5541,7 @@
     });
 
     const spriteMesh = new THREE.Mesh(planeGeo, spriteMat);
-    spriteMesh.castShadow = true;
+    spriteMesh.castShadow = false; // Disable rectangular 3D shadow map projection
     root.add(spriteMesh);
 
     // 4. Dummy anchors for hooks
@@ -5574,7 +5580,7 @@
     const nameMat = new THREE.SpriteMaterial({ map: nameTex });
     const nameSprite = new THREE.Sprite(nameMat);
     nameSprite.scale.set(3.4, 0.8, 1);
-    nameSprite.position.y = 2.45;
+    nameSprite.position.y = 2.35;
     group.add(nameSprite);
 
     group.userData.nameSprite = nameSprite;
@@ -8622,11 +8628,12 @@
     const defs = MOB_SPRITE_DEFS[spriteType] || MOB_SPRITE_DEFS.orc;
 
     // Ground circular shadow
-    const shadowGeo = new THREE.CircleGeometry(0.72, 16);
+    const shadowGeo = new THREE.CircleGeometry(0.55, 16);
+    shadowGeo.scale(1.0, 0.65, 1.0);
     const shadowMat = new THREE.MeshBasicMaterial({
       color: 0x000000,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.25,
       depthWrite: false
     });
     const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
@@ -8651,9 +8658,11 @@
       };
     }
 
-    // Sprite Quad Mesh (100x100 pixel art, rendered 2.4 x 2.4 in world units)
-    const planeGeo = new THREE.PlaneGeometry(2.4, 2.4);
-    planeGeo.translate(0, 1.15, 0);
+    // Sprite Quad Mesh (Proportioned to grounded mob dimensions)
+    const isSoldier = spriteType === 'soldier';
+    const planeGeo = new THREE.PlaneGeometry(7.5, 7.5);
+    const translateY = isSoldier ? 0.75 : 0.52;
+    planeGeo.translate(0, translateY, 0);
 
     const initialAnim = animTextures.idle || Object.values(animTextures)[0];
     const spriteMat = new THREE.MeshStandardMaterial({
@@ -8669,7 +8678,7 @@
     }
 
     const spriteMesh = new THREE.Mesh(planeGeo, spriteMat);
-    spriteMesh.castShadow = true;
+    spriteMesh.castShadow = false;
     group.add(spriteMesh);
 
     // Elite / Boss glowing ground rune ring
@@ -9167,8 +9176,12 @@
         }
       }
 
-      if (camera) {
-        rig.mesh.quaternion.copy(camera.quaternion);
+      if (camera && rig.mesh) {
+        if (rig.mesh.parent) {
+          rig.mesh.quaternion.copy(rig.mesh.parent.quaternion).invert().multiply(camera.quaternion);
+        } else {
+          rig.mesh.quaternion.copy(camera.quaternion);
+        }
       }
 
       const dx = myPlayer.x - mob.x;
@@ -9485,8 +9498,8 @@
   }
 
   function createAfterimageGhost(x, z, rot) {
-    const geo = new THREE.PlaneGeometry(2.4, 2.0);
-    geo.translate(0, 1.0, 0);
+    const geo = new THREE.PlaneGeometry(5.22, 4.35);
+    geo.translate(0, 0.98, 0);
     const mat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
       transparent: true,
@@ -12758,7 +12771,13 @@
               const frame = Math.min(deathCfg.frames - 1, Math.floor(p * deathCfg.frames));
               deathCfg.texture.offset.x = frame / deathCfg.frames;
             }
-            if (camera) rig.mesh.quaternion.copy(camera.quaternion);
+            if (camera && rig.mesh) {
+              if (rig.mesh.parent) {
+                rig.mesh.quaternion.copy(rig.mesh.parent.quaternion).invert().multiply(camera.quaternion);
+              } else {
+                rig.mesh.quaternion.copy(camera.quaternion);
+              }
+            }
             if (p > 0.55) {
               rig.material.opacity = Math.max(0, 1 - (p - 0.55) / 0.45);
             }
@@ -13442,7 +13461,13 @@
       }
       if (mob.staggeredUntil && now < mob.staggeredUntil) {
         animateMobRig(mob, false, delta, now);
-        if (mob.hpBarGroup && camera) mob.hpBarGroup.quaternion.copy(camera.quaternion);
+        if (mob.hpBarGroup && camera) {
+          if (mob.hpBarGroup.parent) {
+            mob.hpBarGroup.quaternion.copy(mob.hpBarGroup.parent.quaternion).invert().multiply(camera.quaternion);
+          } else {
+            mob.hpBarGroup.quaternion.copy(camera.quaternion);
+          }
+        }
         continue;
       }
 
@@ -13466,7 +13491,11 @@
 
       // Billboard Mob HP Bar to Camera
       if (mob.hpBarGroup && camera) {
-        mob.hpBarGroup.quaternion.copy(camera.quaternion);
+        if (mob.hpBarGroup.parent) {
+          mob.hpBarGroup.quaternion.copy(mob.hpBarGroup.parent.quaternion).invert().multiply(camera.quaternion);
+        } else {
+          mob.hpBarGroup.quaternion.copy(camera.quaternion);
+        }
       }
 
       if (mob.isCrystal) {
