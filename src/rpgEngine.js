@@ -59,21 +59,21 @@ const STAT_LABELS = {
 
 const PERCENT_STATS = new Set(['crit', 'critDmg', 'haste', 'lifesteal']);
 
-// Canavar şablonları: XP ve ganimet tablosu
+// Canavar şablonları: XP ve ganimet tablosu (Dengeli Kademeli Drop Oranları)
 const MOB_TABLE = {
-  slime_green: { xp: 10, gearChance: 0.2 },
-  slime_pyro: { xp: 13, gearChance: 0.22 },
-  hilichurl_recruit: { xp: 15, gearChance: 0.24 },
-  hilichurl: { xp: 18, gearChance: 0.26 },
-  hilichurl_warrior: { xp: 24, gearChance: 0.30 },
-  pyromancer: { xp: 32, gearChance: 0.36 },
-  mitachurl_axe: { xp: 60, gearChance: 0.65, elite: true },
-  abyss_sentinel: { xp: 45, gearChance: 0.42 },
-  abyss_mage: { xp: 55, gearChance: 0.48 },
+  slime_green: { xp: 10, gearChance: 0.08 },
+  slime_pyro: { xp: 13, gearChance: 0.09 },
+  hilichurl_recruit: { xp: 15, gearChance: 0.10 },
+  hilichurl: { xp: 18, gearChance: 0.11 },
+  hilichurl_warrior: { xp: 24, gearChance: 0.13 },
+  pyromancer: { xp: 32, gearChance: 0.16 },
+  mitachurl_axe: { xp: 60, gearChance: 0.35, elite: true },
+  abyss_sentinel: { xp: 45, gearChance: 0.18 },
+  abyss_mage: { xp: 55, gearChance: 0.22 },
   ruin_golem: { xp: 180, gearChance: 1.0, boss: true },
   // Aion 2 Aether Zindanı Yaratıkları
-  aether_guardian: { xp: 38, gearChance: 0.40 },
-  abyss_archon_mini: { xp: 95, gearChance: 0.85, elite: true },
+  aether_guardian: { xp: 38, gearChance: 0.16 },
+  abyss_archon_mini: { xp: 95, gearChance: 0.38, elite: true },
   tahabata_lord: { xp: 260, gearChance: 1.0, boss: true }
 };
 
@@ -219,6 +219,31 @@ function pickWeighted(weights, rng) {
   return weights.length - 1;
 }
 
+const RARITY_BASE_GS = {
+  1: 4,   // Sıradan (1★): İlkel parça tabanı
+  2: 10,  // Sıradışı (2★): Orman/Labirent tabanı
+  3: 20,  // Nadir (3★): Zindan Tier 1-2 & Lav tabanı
+  4: 38,  // Destansı (4★): Zindan Tier 2-3 & Uçurum tabanı
+  5: 65   // Efsanevi (5★): Tahabata Lordu & Kadim boss tabanı
+};
+
+const UPGRADE_CHANCES = {
+  1: 1.00, // +0 -> +1: %100 Güvenli
+  2: 1.00, // +1 -> +2: %100 Güvenli
+  3: 1.00, // +2 -> +3: %100 Güvenli
+  4: 1.00, // +3 -> +4: %100 Güvenli
+  5: 0.75, // +4 -> +5: %75
+  6: 0.65, // +5 -> +6: %65
+  7: 0.50, // +6 -> +7: %50
+  8: 0.40, // +7 -> +8: %40
+  9: 0.30, // +8 -> +9: %30
+  10: 0.20 // +9 -> +10: %20
+};
+
+function getUpgradeChance(targetPlus) {
+  return UPGRADE_CHANCES[targetPlus] || 0.20;
+}
+
 function itemPower(item) {
   const r = RARITIES[item.rarity] || RARITIES[1];
   return item.ilvl * r.powerMult * (1 + 0.06 * (item.plus || 0));
@@ -226,8 +251,11 @@ function itemPower(item) {
 
 function itemScore(item) {
   if (!item) return 0;
-  const r = RARITIES[item.rarity] || RARITIES[1];
-  return Math.round(item.ilvl * 10 * r.scoreMult * (1 + 0.05 * (item.plus || 0)));
+  const base = RARITY_BASE_GS[item.rarity] || 4;
+  const ilvlContribution = item.ilvl * (0.8 + (item.rarity || 1) * 0.25);
+  const rawScore = base + ilvlContribution;
+  const plusBonus = 1 + 0.08 * (item.plus || 0);
+  return Math.max(1, Math.round(rawScore * plusBonus));
 }
 
 /** Bir itemin güncel (güçlendirme dahil) stat değerlerini hesaplar. */
@@ -265,14 +293,15 @@ function itemStats(item) {
 
 function upgradeCost(item) {
   const plus = item.plus || 0;
-  return Math.round(Math.pow(plus + 1, 1.5) * 3 * item.rarity + item.ilvl * 0.5);
+  const baseCost = Math.pow(plus + 1, 1.8) * 4 * (1 + (item.rarity || 1) * 0.35);
+  return Math.round(baseCost + item.ilvl * 1.2);
 }
 
 function salvageValue(item) {
   const r = RARITIES[item.rarity] || RARITIES[1];
   let refund = 0;
   for (let i = 0; i < (item.plus || 0); i++) {
-    refund += Math.round(Math.pow(i + 1, 1.5) * 3 * item.rarity + item.ilvl * 0.5);
+    refund += upgradeCost({ ...item, plus: i });
   }
   return Math.round(r.dust * (1 + item.ilvl / 10) + refund * 0.6);
 }
@@ -280,13 +309,17 @@ function salvageValue(item) {
 /** İstemciye gönderilecek, hesaplanmış alanları eklenmiş item görünümü. */
 function describeItem(item) {
   if (!item) return null;
+  const nextPlus = (item.plus || 0) + 1;
+  const isMax = (item.plus || 0) >= MAX_PLUS;
   return {
     ...item,
     slotLabel: SLOT_LABELS[item.slot],
     rarityLabel: RARITIES[item.rarity].label,
     score: itemScore(item),
     stats: itemStats(item),
-    upgradeCost: (item.plus || 0) >= MAX_PLUS ? null : upgradeCost(item),
+    upgradeCost: isMax ? null : upgradeCost(item),
+    upgradeChance: isMax ? null : Math.round(getUpgradeChance(nextPlus) * 100),
+    isRiskyUpgrade: nextPlus >= 5,
     salvage: salvageValue(item)
   };
 }
@@ -657,13 +690,39 @@ class RpgEngine {
     const item = profile.bag.find(i => i.uid === uid)
       || SLOTS.map(s => profile.equipment[s]).find(i => i && i.uid === uid);
     if (!item) return { ok: false, error: 'Eşya bulunamadı.' };
-    if ((item.plus || 0) >= MAX_PLUS) return { ok: false, error: 'Eşya zaten en yüksek seviyede (+10).' };
+    const currentPlus = item.plus || 0;
+    if (currentPlus >= MAX_PLUS) return { ok: false, error: 'Eşya zaten en yüksek seviyede (+10).' };
     const cost = upgradeCost(item);
     if (profile.dust < cost) return { ok: false, error: `Yeterli Rün Tozu yok (${cost} gerekli).` };
     profile.dust -= cost;
-    item.plus = (item.plus || 0) + 1;
+
+    const targetPlus = currentPlus + 1;
+    const chance = getUpgradeChance(targetPlus);
+    const roll = this.rng();
+    const success = roll < chance;
+
+    let dropped = false;
+    if (success) {
+      item.plus = targetPlus;
+    } else {
+      // Riskli seviye (+5 ve üzeri): başarısızlıkta eşya kırılmaz, -1 seviye düşer (min 0)
+      if (currentPlus >= 5) {
+        item.plus = Math.max(0, currentPlus - 1);
+        dropped = true;
+      }
+    }
+
     this._scheduleSave(username);
-    return { ok: true, item: describeItem(item), cost };
+    return {
+      ok: true,
+      success,
+      dropped,
+      prevPlus: currentPlus,
+      newPlus: item.plus || 0,
+      chance: Math.round(chance * 100),
+      item: describeItem(item),
+      cost
+    };
   }
 
   /** Sunucudaki en yüksek GearScore sıralaması (yalnızca kalıcı profiller). */

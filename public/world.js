@@ -15988,8 +15988,14 @@
         if (item.plus >= 10) {
           btnUpgrade.textContent = 'Maks (+10)';
           btnUpgrade.disabled = true;
+          btnUpgrade.title = 'Eşya maksimum güçlendirme seviyesindedir (+10).';
         } else {
-          btnUpgrade.textContent = `✨ Güçlendir (+${item.plus + 1}) [${item.upgradeCost || 0} Toz]`;
+          const chanceStr = typeof item.upgradeChance === 'number' ? ` (%${item.upgradeChance})` : '';
+          const riskTag = item.isRiskyUpgrade ? ' ⚠️' : '';
+          btnUpgrade.textContent = `✨ Güçlendir (+${item.plus + 1})${chanceStr}${riskTag} [${item.upgradeCost || 0} Toz]`;
+          btnUpgrade.title = item.isRiskyUpgrade
+            ? `Riskli Güçlendirme: Başarı şansı %${item.upgradeChance}. Başarısız olursa eşya kırılmaz ancak -1 seviye düşer!`
+            : `Güvenli Güçlendirme: Başarı şansı %100.`;
           btnUpgrade.disabled = Boolean(myRpgProfile && myRpgProfile.dust < (item.upgradeCost || 0));
         }
       }
@@ -16072,14 +16078,24 @@
       });
       const data = await res.json();
       if (data && data.ok) {
-        playBeep(1046, 'triangle', 0.2);
         myRpgProfile = data.state;
         updateUIProfile();
         renderCharacterSheet();
         showItemPopover(data.result.item, selectedPopoverIsEquipped);
-        addChatMessage('Demirci', `✨ Güçlendirme Başarılı! "${data.result.item.name}" seviyesi +${data.result.item.plus} oldu! (${data.result.item.score} GS)`);
+
+        if (data.result.success) {
+          playBeep(1046, 'triangle', 0.25);
+          addChatMessage('Demirci', `✨ Güçlendirme Başarılı! (%${data.result.chance}) "${data.result.item.name}" seviyesi +${data.result.item.plus} oldu! [GS ${data.result.item.score}]`);
+        } else {
+          playBeep(220, 'sawtooth', 0.35);
+          if (data.result.dropped) {
+            addChatMessage('Demirci', `💥 Güçlendirme Başarısız! (%${data.result.chance} şans vardı) "${data.result.item.name}" -1 seviye düştü (+${data.result.prevPlus} -> +${data.result.newPlus})! [GS ${data.result.item.score}]`);
+          } else {
+            addChatMessage('Demirci', `⚠️ Güçlendirme Başarısız Oldu! (%${data.result.chance} şans vardı) Seviye korundu (+${data.result.newPlus}). [GS ${data.result.item.score}]`);
+          }
+        }
       } else {
-        alert(data.error || 'Güçlendirme başarısız.');
+        alert(data.error || 'Güçlendirme yapılamadı.');
       }
     } catch (e) {
       console.error(e);
