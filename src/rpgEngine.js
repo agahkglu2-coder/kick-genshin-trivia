@@ -341,7 +341,18 @@ class RpgEngine {
   }
 
   _newProfile() {
-    return { level: 1, xp: 0, dust: 0, kills: 0, bossKills: 0, equipment: {}, bag: [] };
+    return {
+      level: 1,
+      xp: 0,
+      dust: 0,
+      kills: 0,
+      bossKills: 0,
+      pvpKills: 0,
+      pvpDeaths: 0,
+      honorPoints: 0,
+      equipment: {},
+      bag: []
+    };
   }
 
   /**
@@ -733,6 +744,72 @@ class RpgEngine {
       rows.push({ username: key, level: profile.level, gs: this.computeStats(profile).gearScore });
     }
     rows.sort((a, b) => b.gs - a.gs || b.level - a.level);
+    return rows.slice(0, limit);
+  }
+
+  /** PvP Arenasında bir oyuncunun diğerini alt etmesini kaydeder. */
+  recordPvPKill(killerUsername, victimUsername) {
+    const killer = this.getProfile(killerUsername);
+    const victim = this.getProfile(victimUsername);
+    if (!killer || !victim) return { ok: false, error: 'Profiller bulunamadı.' };
+
+    killer.pvpKills = (killer.pvpKills || 0) + 1;
+    victim.pvpDeaths = (victim.pvpDeaths || 0) + 1;
+
+    // Şeref Puanı (+10)
+    killer.honorPoints = (killer.honorPoints || 0) + 10;
+
+    // Suistimali engellemek için günlük max 50 Primogem tavanı (+2 per kill)
+    const today = this._todayKey();
+    if (killer.lastPvPDate !== today) {
+      killer.lastPvPDate = today;
+      killer.dailyPvPPrimo = 0;
+    }
+    let primoGain = 0;
+    if ((killer.dailyPvPPrimo || 0) < 50) {
+      primoGain = 2;
+      killer.dailyPvPPrimo = (killer.dailyPvPPrimo || 0) + primoGain;
+      if (this.db) {
+        try {
+          this.db.addPrimogems(killerUsername, primoGain);
+        } catch (e) {}
+      }
+    }
+
+    this._scheduleSave(killerUsername);
+    this._scheduleSave(victimUsername);
+
+    return {
+      ok: true,
+      killer: {
+        username: killerUsername,
+        kills: killer.pvpKills,
+        honorPoints: killer.honorPoints,
+        primoGain
+      },
+      victim: {
+        username: victimUsername,
+        deaths: victim.pvpDeaths
+      }
+    };
+  }
+
+  /** Gladyatör Arenası Şeref Puanı ve Kill Sıralaması */
+  getPvPLeaderboard(limit = 10) {
+    const rows = [];
+    for (const [key, profile] of this.profiles.entries()) {
+      if (!profile.persist) continue;
+      if ((profile.pvpKills || 0) > 0 || (profile.honorPoints || 0) > 0) {
+        rows.push({
+          username: key,
+          kills: profile.pvpKills || 0,
+          deaths: profile.pvpDeaths || 0,
+          honor: profile.honorPoints || 0,
+          gs: this.computeStats(profile).gearScore
+        });
+      }
+    }
+    rows.sort((a, b) => (b.honor - a.honor) || (b.kills - a.kills));
     return rows.slice(0, limit);
   }
 

@@ -259,6 +259,14 @@ class WorldEngine extends EventEmitter {
             radius: 4.2,
             targetMap: 'battle_zone',
             spawnPos: { x: 0, z: -28 }
+          },
+          {
+            id: 'door_pvp',
+            name: '⚔️ Gladyatör Arenası (PvP)',
+            pos: { x: 24, z: 28 },
+            radius: 4.2,
+            targetMap: 'pvp_arena',
+            spawnPos: { x: 0, z: -24 }
           }
         ]
       },
@@ -340,6 +348,15 @@ class WorldEngine extends EventEmitter {
         bounds: { minX: -32, maxX: 32, minZ: -72, maxZ: 82 },
         spawn: { x: 0, z: -60 },
         exitDoor: { pos: { x: 0, z: -66 }, radius: 4.5, targetMap: 'town', spawnPos: { x: 0, z: 28 } }
+      },
+      pvp_arena: {
+        id: 'pvp_arena',
+        name: 'Gladyatör Arenası (Colosseum)',
+        isPvP: true,
+        combatPitRadius: 17.5,
+        bounds: { minX: -36, maxX: 36, minZ: -36, maxZ: 36 },
+        spawn: { x: 0, z: -24 },
+        exitDoor: { pos: { x: 0, z: -28 }, radius: 3.8, targetMap: 'town', spawnPos: { x: 24, z: 24 } }
       }
     };
 

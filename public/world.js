@@ -218,6 +218,16 @@
       maxIlvl: 55,
       isDungeon: true,
       theme: 'aion_abyss_core'
+    },
+    pvp_arena: {
+      id: 'pvp_arena',
+      name: '⚔️ Gladyatör Arenası (PvP)',
+      tier: 1,
+      reqGS: 0,
+      minIlvl: 1,
+      maxIlvl: 60,
+      theme: 'gladiator_colosseum',
+      isPvP: true
     }
   };
 
@@ -235,7 +245,7 @@
   }
 
   function isBattleZone(map) {
-    return map === 'battle_zone' || map === 'battle_zone_1' || map === 'battle_zone_2' || map === 'battle_zone_3' || isDungeonMap(map);
+    return map === 'battle_zone' || map === 'battle_zone_1' || map === 'battle_zone_2' || map === 'battle_zone_3' || map === 'pvp_arena' || isDungeonMap(map);
   }
 
   // Aion 2 Instance Dungeon Runtime State
@@ -2147,6 +2157,57 @@
     return tex;
   }
 
+  function createProceduralSandTexture() {
+    const cvs = document.createElement('canvas');
+    cvs.width = 512;
+    cvs.height = 512;
+    const ctx = cvs.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+
+    // 1. Warm Ochre Arena Sand base
+    const baseGrad = ctx.createLinearGradient(0, 0, 512, 512);
+    baseGrad.addColorStop(0, '#b45309');
+    baseGrad.addColorStop(0.35, '#d97706');
+    baseGrad.addColorStop(0.7, '#f59e0b');
+    baseGrad.addColorStop(1, '#92400e');
+    ctx.fillStyle = baseGrad;
+    ctx.fillRect(0, 0, 512, 512);
+
+    // 2. Sand grain variations & wind ripples
+    const patchColors = ['#92400e', '#78350f', '#b45309', '#d97706', '#f59e0b', '#fbbf24'];
+    for (let i = 0; i < 400; i++) {
+      const px = Math.random() * 512;
+      const py = Math.random() * 512;
+      const rad = 10 + Math.random() * 32;
+      const pGrad = ctx.createRadialGradient(px, py, 2, px, py, rad);
+      const c = patchColors[Math.floor(Math.random() * patchColors.length)];
+      pGrad.addColorStop(0, c);
+      pGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = pGrad;
+      ctx.beginPath();
+      ctx.arc(px, py, rad, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 3. Fine granular arena specks
+    const grainTones = ['#451a03', '#78350f', '#fde68a', '#fef3c7', '#d97706'];
+    for (let i = 0; i < 18000; i++) {
+      const gx = Math.random() * 512;
+      const gy = Math.random() * 512;
+      ctx.fillStyle = grainTones[i % grainTones.length];
+      ctx.fillRect(gx, gy, 1.2, 1.2);
+    }
+
+    const tex = new THREE.CanvasTexture(cvs);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(16, 16);
+    tex.magFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.generateMipmaps = true;
+    return tex;
+  }
+
   function createProceduralCobbleTexture(repeatX = 2, repeatY = 24) {
     const cvs = document.createElement('canvas');
     cvs.width = 64;
@@ -2378,6 +2439,22 @@
         hemiInt: 0.46,
         sunColor: 0xfde047,
         sunInt: 0.92
+      },
+      pvp_arena: {
+        bg: 0x2d1808,
+        fogColor: 0x451a03,
+        fogNear: 75,
+        fogFar: 180,
+        skyTop: '#1e1b4b',
+        skyMid: '#7c2d12',
+        skyBot: '#f59e0b',
+        ambColor: 0xffedd5,
+        ambInt: 0.85,
+        hemiSky: 0xfbbf24,
+        hemiGround: 0x78350f,
+        hemiInt: 0.45,
+        sunColor: 0xfef08a,
+        sunInt: 0.95
       }
     };
 
@@ -4968,6 +5045,9 @@
     // Battle Zone Ancient Portal Gate at South Bridge Landing (0, 32)
     worldObjects.add(createBattlePortalGate(0, 32));
 
+    // Gladiator PvP Arena Portal Gate at South-East Meadow (24, 28)
+    worldObjects.add(createPvPArenaPortalGate(24, 28));
+
     // 5. Four Key 3D Stylized Architectural Buildings (Spaced Generously Apart!)
     // A) Takas Pazarı (Trade Mart) - North-West Quarter (-24, -14)
     const tradeHouse = createTradeMartBuilding();
@@ -5403,7 +5483,7 @@
       addChatMessage(msg.username, msg.text);
     } else if (msg.type === 'WORLD_DOOR_RESULT') {
       if (msg.success) {
-        triggerDoorWipe(msg.newMap);
+        triggerDoorWipe(msg.newMap, msg.spawnPos);
       }
     } else if (msg.type === 'WORLD_PIN_RESULT') {
       if (msg.success) {
@@ -5808,7 +5888,97 @@
         const chestType = msg.isBonusChest ? '🌟 Efsanevi S-Rank Abyss Sandığını' : '🎁 Aion Zindan Hazinesini';
         addChatMessage('👑 ZİNDAN ZAFERİ', `@${msg.username} ${msg.zoneName || 'Aion'} zindanını [${msg.rank}-Rank] dereceyle tamamladı ve ${chestType} açtı!`);
       }
+    } else if (msg.type === 'PVP_HIT_EFFECT') {
+      handlePvPHitEffect(msg);
+    } else if (msg.type === 'PVP_KILLFEED') {
+      handlePvPKillfeed(msg);
+    } else if (msg.type === 'PVP_LEADERBOARD_UPDATE') {
+      handlePvPLeaderboardUpdate(msg.leaderboard);
     }
+  }
+
+  function handlePvPHitEffect(msg) {
+    if (currentMap !== 'pvp_arena') return;
+    const isMeTarget = (msg.targetSocketId === socketId);
+    let targetX = 0, targetY = 1.6, targetZ = 0;
+
+    if (isMeTarget) {
+      targetX = myPlayer.x;
+      targetY = myPlayer.y + 1.8;
+      targetZ = myPlayer.z;
+      playerHP = Math.max(0, msg.newHp);
+      playerMaxHP = msg.maxHp;
+      updateCombatHUD();
+      playPunchyHitSound(true);
+      screenShakeTimer = msg.isCrit ? 0.22 : 0.12;
+      screenShakeMagnitude = msg.isCrit ? 0.35 : 0.2;
+    } else {
+      const entry = otherPlayers.get(msg.targetSocketId);
+      if (entry && entry.mesh) {
+        targetX = entry.mesh.position.x;
+        targetY = entry.mesh.position.y + 1.8;
+        targetZ = entry.mesh.position.z;
+      }
+    }
+
+    const elemColor = ELEMENT_META[msg.element]?.color || 0xef4444;
+    createSlashArcMesh(targetX, targetZ, 0, 2, elemColor);
+    const prefix = msg.isCrit ? '💥 CRIT! ' : '';
+    showDamageNumber({ x: targetX, y: targetY, z: targetZ }, `${prefix}-${msg.dmg}`, msg.isCrit ? 'crit' : 'normal');
+  }
+
+  function handlePvPKillfeed(msg) {
+    if (currentMap !== 'pvp_arena') return;
+    const kfEl = document.getElementById('pvp-killfeed');
+    const kfText = document.getElementById('pvp-killfeed-text');
+    if (kfEl && kfText) {
+      const primoStr = msg.primoGain > 0 ? ` (+${msg.primoGain} 💎)` : '';
+      kfText.textContent = `@${msg.killerName}, @${msg.victimName}'i alt etti! (+10 🏅${primoStr})`;
+      kfEl.classList.remove('hidden');
+      clearTimeout(window._pvpKillfeedTimer);
+      window._pvpKillfeedTimer = setTimeout(() => {
+        kfEl.classList.add('hidden');
+      }, 4500);
+    }
+    playBeep(587.33, 'triangle', 0.25);
+
+    addChatMessage('⚔️ Gladyatör Arenası', `**@${msg.killerName}**, arena kumlarında **@${msg.victimName}**'i dize getirdi! (+10 Şeref Puanı)`);
+
+    // If local player was the victim:
+    if (msg.targetSocketId === socketId) {
+      playBeep(220, 'sawtooth', 0.4);
+      addChatMessage('💀 Arena Mağlubiyeti', 'Kum çukurunda yenildin! Seyirci tribününde full canla yeniden doğdun.');
+      if (msg.respawnPos) {
+        myPlayer.x = msg.respawnPos.x;
+        myPlayer.z = msg.respawnPos.z;
+        myPlayer.y = 1.2;
+        if (myMesh) {
+          myMesh.position.set(myPlayer.x, myPlayer.y, myPlayer.z);
+        }
+      }
+      playerHP = playerMaxHP;
+      updateCombatHUD();
+    }
+  }
+
+  function handlePvPLeaderboardUpdate(leaderboard) {
+    const listEl = document.getElementById('pvp-leaderboard-list');
+    if (!listEl) return;
+    if (!Array.isArray(leaderboard) || leaderboard.length === 0) {
+      listEl.innerHTML = '<div class="pvp-leaderboard-empty">Henüz dövüş kaydı yok. Kuma in ve çarpış!</div>';
+      return;
+    }
+    listEl.innerHTML = leaderboard.map((r, i) => {
+      const isMe = r.username === myPlayer.username;
+      const rankNum = r.rank || (i + 1);
+      return `
+        <div class="pvp-leaderboard-row ${isMe ? 'me' : ''}">
+          <span class="rank-num">#${rankNum}</span>
+          <span class="gladiator-name">${r.username}${isMe ? ' (Sen)' : ''}</span>
+          <span class="gladiator-honor">${r.kills || 0}K/${r.deaths || 0}D (${r.honorPoints || 0}🏅)</span>
+        </div>
+      `;
+    }).join('');
   }
 
   // --- 8. Multiplayer State Sync & Interpolation ---
@@ -5919,6 +6089,9 @@
   }
 
   function getCombatZoneBounds(map = currentMap) {
+    if (map === 'pvp_arena') {
+      return { minX: -34.5, maxX: 34.5, minZ: -34.5, maxZ: 34.5 };
+    }
     if (isDungeonMap(map)) {
       let maxZ = 78;
       if (dungeonState.active) {
@@ -6027,7 +6200,31 @@
       const aimNow = getCombatAimAngleAndTarget(true);
       myPlayer.rot = aimNow.angle;
     }
+
+    // In PvP Arena, height difference: r <= 17.8 is Sand Combat Pit (y=0), r > 17.8 is Spectator Terrace (y=1.2)
+    if (currentMap === 'pvp_arena') {
+      const distCenter = Math.hypot(myPlayer.x, myPlayer.z);
+      myPlayer.y = distCenter > 17.8 ? 1.2 : 0.0;
+      const badge = document.getElementById('pvp-zone-badge');
+      if (badge) {
+        if (distCenter <= 17.8) {
+          if (!badge.classList.contains('combat')) {
+            badge.className = 'pvp-zone-badge combat';
+            badge.textContent = '⚔️ DÖVÜŞ ÇUKURU';
+          }
+        } else {
+          if (!badge.classList.contains('safe')) {
+            badge.className = 'pvp-zone-badge safe';
+            badge.textContent = '🛡️ TRİBÜN';
+          }
+        }
+      }
+    } else {
+      myPlayer.y = 0;
+    }
+
     myMesh.position.x = myPlayer.x;
+    myMesh.position.y = myPlayer.y;
     myMesh.position.z = myPlayer.z;
     myMesh.rotation.y = myPlayer.rot;
 
@@ -6036,8 +6233,8 @@
     const targetCamZ = myPlayer.z + CONFIG.cameraDistance;
     camera.position.x += (targetCamX - camera.position.x) * CONFIG.posLerp;
     camera.position.z += (targetCamZ - camera.position.z) * CONFIG.posLerp;
-    camera.position.y = CONFIG.cameraHeight;
-    camera.lookAt(myPlayer.x, 1.5, myPlayer.z);
+    camera.position.y = CONFIG.cameraHeight + (myPlayer.y || 0);
+    camera.lookAt(myPlayer.x, (myPlayer.y || 0) + 1.5, myPlayer.z);
 
     // Send movement to server (throttled to 20Hz)
     const now = Date.now();
@@ -6075,7 +6272,8 @@
         { id: 'door_tavern', name: "Cat's Tail Taverna", pos: { x: 24, z: -10.0 } },
         { id: 'door_shrine', name: 'Dilek Tapınağı', pos: { x: 0, z: -26.0 } },
         { id: 'door_guild', name: 'Maceracılar Loncası', pos: { x: -24, z: 10.0 } },
-        { id: 'door_battle', name: '🌀 Kadim Zindan Portalı', pos: { x: 0, z: 32.0 } }
+        { id: 'door_battle', name: '🌀 Kadim Zindan Portalı', pos: { x: 0, z: 32.0 } },
+        { id: 'door_pvp', name: '⚔️ Gladyatör Arenası (PvP)', pos: { x: 24, z: 28.0 } }
       ];
 
       for (const d of doors) {
@@ -6135,7 +6333,7 @@
       }
 
       // 2. Check Exit Portal Gate back to Town
-      const exitZ = isDungeonMap(currentMap) ? -66.0 : -32.0;
+      const exitZ = isDungeonMap(currentMap) ? -66.0 : (currentMap === 'pvp_arena' ? -28.0 : -32.0);
       const dist = Math.hypot(myPlayer.x - 0, myPlayer.z - exitZ);
       if (dist < 6.0) {
         nearbyInteractable = { type: 'door', data: { name: 'Kasaba Meydanı' } };
@@ -6727,7 +6925,7 @@
     });
   }
 
-  function triggerDoorWipe(targetMap) {
+  function triggerDoorWipe(targetMap, spawnPos = null) {
     const wipe = document.getElementById('screen-wipe');
     wipe.classList.add('active');
 
@@ -6738,30 +6936,48 @@
         document.getElementById('dungeon-hud')?.classList.add('hidden');
         document.getElementById('dungeon-mechanic-banner')?.classList.add('hidden');
         document.getElementById('dungeon-victory-banner')?.classList.add('hidden');
+        document.getElementById('pvp-hud')?.classList.add('hidden');
         buildTownMap();
-        myPlayer.x = 0;
-        myPlayer.z = 26;
+        myPlayer.x = spawnPos ? spawnPos.x : 0;
+        myPlayer.y = 0;
+        myPlayer.z = spawnPos ? spawnPos.z : 26;
         document.getElementById('combat-hud')?.classList.add('hidden');
         detachCombatWeapon();
+      } else if (targetMap === 'pvp_arena') {
+        dungeonState.active = false;
+        document.getElementById('dungeon-hud')?.classList.add('hidden');
+        document.getElementById('dungeon-mechanic-banner')?.classList.add('hidden');
+        document.getElementById('dungeon-victory-banner')?.classList.add('hidden');
+        document.getElementById('pvp-hud')?.classList.remove('hidden');
+        buildPvPArenaMap();
+        myPlayer.x = spawnPos ? spawnPos.x : 0;
+        myPlayer.y = 1.2;
+        myPlayer.z = spawnPos ? spawnPos.z : -24;
       } else if (isDungeonMap(targetMap)) {
+        document.getElementById('pvp-hud')?.classList.add('hidden');
         buildAionDungeonMap(targetMap);
         myPlayer.x = 0;
+        myPlayer.y = 0;
         myPlayer.z = -60;
       } else if (isBattleZone(targetMap)) {
+        document.getElementById('pvp-hud')?.classList.add('hidden');
         dungeonState.active = false;
         document.getElementById('dungeon-hud')?.classList.add('hidden');
         document.getElementById('dungeon-mechanic-banner')?.classList.add('hidden');
         document.getElementById('dungeon-victory-banner')?.classList.add('hidden');
         buildBattleZoneMap(targetMap);
         myPlayer.x = 0;
+        myPlayer.y = 0;
         myPlayer.z = -28;
       } else {
+        document.getElementById('pvp-hud')?.classList.add('hidden');
         dungeonState.active = false;
         document.getElementById('dungeon-hud')?.classList.add('hidden');
         document.getElementById('dungeon-mechanic-banner')?.classList.add('hidden');
         document.getElementById('dungeon-victory-banner')?.classList.add('hidden');
         buildInteriorMap(targetMap);
         myPlayer.x = 0;
+        myPlayer.y = 0;
         myPlayer.z = 6;
         document.getElementById('combat-hud')?.classList.add('hidden');
         detachCombatWeapon();
@@ -7350,6 +7566,40 @@
       ctx.fillRect(cx + (-24 - myPlayer.x) * scale - 6, cy + (14 - myPlayer.z) * scale - 6, 12, 12); // Guild
       ctx.fillStyle = '#059669';
       ctx.fillRect(cx + (24 - myPlayer.x) * scale - 5, cy + (14 - myPlayer.z) * scale - 5, 10, 10); // Gazebo
+
+      // Gladiator PvP Portal in Town (Amber with crimson border)
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc(cx + (24 - myPlayer.x) * scale, cy + (28 - myPlayer.z) * scale, 5.0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    } else if (currentMap === 'pvp_arena') {
+      ctx.fillStyle = '#2d1808';
+      ctx.fillRect(0, 0, w, h);
+
+      // Colosseum Outer Spectator Ring
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(cx - myPlayer.x * scale, cy - myPlayer.z * scale, 34.0 * scale, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Inner Sand Combat Pit
+      ctx.fillStyle = '#b45309';
+      ctx.beginPath();
+      ctx.arc(cx - myPlayer.x * scale, cy - myPlayer.z * scale, 17.8 * scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Return Portal Gate Dot at (0, -28) (Purple)
+      ctx.fillStyle = '#a855f7';
+      ctx.beginPath();
+      ctx.arc(cx + (0 - myPlayer.x) * scale, cy + (-28 - myPlayer.z) * scale, 3.5 * scale, 0, Math.PI * 2);
+      ctx.fill();
     } else if (isBattleZone(currentMap)) {
       ctx.fillStyle = currentMap === 'battle_zone_1' ? '#064e3b' : (currentMap === 'battle_zone_2' ? '#2d1212' : '#05050e');
       ctx.fillRect(0, 0, w, h);
@@ -7953,6 +8203,89 @@
 
     // PointLight aura
     const pLight = new THREE.PointLight(0xa855f7, 1.3, 10, 1.8);
+    pLight.position.set(0, 2.8, 0);
+    gateGroup.add(pLight);
+
+    return gateGroup;
+  }
+
+  function createPvPArenaPortalGate(x, z, labelText = '⚔️ Gladyatör Arenası') {
+    const gateGroup = new THREE.Group();
+    gateGroup.position.set(x, 0, z);
+
+    const stoneMat = new THREE.MeshLambertMaterial({ color: 0x292524 });
+    const brassMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.35, metalness: 0.8 });
+    const bannerMat = new THREE.MeshLambertMaterial({ color: 0x991b1b });
+    const portalGlowMat = new THREE.MeshBasicMaterial({
+      color: 0xf59e0b,
+      transparent: true,
+      opacity: 0.85,
+      side: THREE.DoubleSide
+    });
+
+    // Base stone platform (elevated 0.22)
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(3.6, 4.1, 0.45, 16), stoneMat);
+    base.position.y = 0.22;
+    base.receiveShadow = true;
+    gateGroup.add(base);
+
+    // Golden Roman Arena Ring
+    const brassRing = new THREE.Mesh(new THREE.RingGeometry(2.4, 3.4, 16), brassMat);
+    brassRing.rotation.x = -Math.PI / 2;
+    brassRing.position.y = 0.46;
+    gateGroup.add(brassRing);
+
+    // Twin dark stone columns with brass caps and crimson banners
+    [-2.2, 2.2].forEach(px => {
+      const col = new THREE.Mesh(new THREE.BoxGeometry(0.85, 5.2, 0.85), stoneMat);
+      col.position.set(px, 2.7, 0);
+      col.castShadow = true;
+      gateGroup.add(col);
+
+      const brassBand = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.35, 0.92), brassMat);
+      brassBand.position.set(px, 3.2, 0);
+      gateGroup.add(brassBand);
+
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 1.2), brassMat);
+      cap.position.set(px, 5.4, 0);
+      gateGroup.add(cap);
+
+      // Hanging Crimson Gladiator Banner
+      const banner = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 2.4), bannerMat);
+      banner.position.set(px, 2.8, 0.45);
+      gateGroup.add(banner);
+    });
+
+    // Top lintel / arch
+    const lintel = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.85, 1.0), stoneMat);
+    lintel.position.set(0, 5.4, 0);
+    lintel.castShadow = true;
+    gateGroup.add(lintel);
+
+    // Golden Crossed Swords Crest at Apex
+    const sword1 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.6, 0.1), brassMat);
+    sword1.rotation.z = Math.PI / 4;
+    sword1.position.set(0, 6.35, 0.1);
+    gateGroup.add(sword1);
+
+    const sword2 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.6, 0.1), brassMat);
+    sword2.rotation.z = -Math.PI / 4;
+    sword2.position.set(0, 6.35, 0.1);
+    gateGroup.add(sword2);
+
+    const shieldCrest = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.14, 8), brassMat);
+    shieldCrest.rotation.x = Math.PI / 2;
+    shieldCrest.position.set(0, 6.35, 0.2);
+    gateGroup.add(shieldCrest);
+
+    // Glowing amber-crimson portal membrane
+    const membrane = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 4.4), portalGlowMat);
+    membrane.position.set(0, 2.8, 0);
+    membrane.name = 'pvpPortalMembrane';
+    gateGroup.add(membrane);
+
+    // Warm Fire Aura PointLight
+    const pLight = new THREE.PointLight(0xf59e0b, 1.6, 12, 1.8);
     pLight.position.set(0, 2.8, 0);
     gateGroup.add(pLight);
 
@@ -11446,6 +11779,62 @@
     });
   }
 
+  function triggerPvPAttackScan(actionType, hitRadius = 4.2, hitAngle = null, maxAngleDiff = Math.PI) {
+    if (currentMap !== 'pvp_arena') return;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+
+    // Attacker must be inside or on the edge of the pit (r <= 18.2)
+    const myDist = Math.hypot(myPlayer.x, myPlayer.z);
+    if (myDist > 18.2) {
+      showDamageNumber({ x: myPlayer.x, y: 2.2, z: myPlayer.z }, '🛡️ TRİBÜNDESİN! Kum Çukuruna İn', 'glance');
+      return;
+    }
+
+    const playerElem = getActivePlayerElement();
+    let hits = 0;
+
+    for (const [id, entry] of otherPlayers.entries()) {
+      if (!entry.mesh || !entry.data) continue;
+      const ox = entry.mesh.position.x;
+      const oz = entry.mesh.position.z;
+
+      // Target must also be in the fighting pit (r <= 18.2)
+      const targetDistFromCenter = Math.hypot(ox, oz);
+      if (targetDistFromCenter > 18.2) continue;
+
+      const dx = ox - myPlayer.x;
+      const dz = oz - myPlayer.z;
+      const dist = Math.hypot(dx, dz);
+
+      if (dist <= hitRadius) {
+        if (hitAngle !== null && maxAngleDiff < Math.PI) {
+          const targetAngle = Math.atan2(dx, dz);
+          let diff = Math.abs(targetAngle - hitAngle);
+          while (diff > Math.PI) diff = Math.abs(diff - Math.PI * 2);
+          if (diff > maxAngleDiff) continue;
+        }
+
+        hits++;
+        socket.send(JSON.stringify({
+          type: 'PVP_PLAYER_HIT',
+          targetSocketId: entry.data.id || id,
+          action: actionType,
+          element: playerElem
+        }));
+
+        createSlashArcMesh(ox, oz, myPlayer.rot, 2, 0xf59e0b);
+        registerComboHit(1);
+        playPunchyHitSound(true);
+      }
+    }
+    if (hits > 0) {
+      screenShakeTimer = 0.12;
+      screenShakeMagnitude = 0.22;
+      playerEnergy = Math.min(100, playerEnergy + 8);
+      updateCombatHUD();
+    }
+  }
+
   function performAttack() {
     if (!isBattleZone(currentMap)) return;
     const now = performance.now();
@@ -11648,6 +12037,13 @@
       playerStamina = Math.min(playerMaxStamina, playerStamina + 4);
       updateCombatHUD();
     }
+
+    if (currentMap === 'pvp_arena') {
+      const pvpRadius = step >= 3 ? 4.8 : 3.8;
+      const pvpAngle = step < 3 ? myPlayer.rot : null;
+      const pvpMaxDiff = step < 3 ? 1.35 : Math.PI;
+      triggerPvPAttackScan(step, pvpRadius, pvpAngle, pvpMaxDiff);
+    }
   }
 
   function getCombatAimAngleAndAngleTarget() {
@@ -11693,6 +12089,10 @@
     playSlashSound(4);
     createSlashArcMesh(myPlayer.x, myPlayer.z, myPlayer.rot, 4, elemMeta.color);
     broadcastCombatAction('heavy', 4, playerElem);
+
+    if (currentMap === 'pvp_arena') {
+      triggerPvPAttackScan('heavy', 5.5, myPlayer.rot, 1.25);
+    }
 
     let baseDmg = Math.round(stats.atk * 3.85);
     if (companionBuffs.active) baseDmg = Math.round(baseDmg * companionBuffs.dmgMult);
@@ -11790,6 +12190,10 @@
     const elem = getActivePlayerElement();
     broadcastCombatAction('skill', 1, elem);
 
+    if (currentMap === 'pvp_arena') {
+      triggerPvPAttackScan('vortex', 7.5);
+    }
+
     if (compCfg) {
       const baseCd = compCfg.eCooldown || 10000;
       const vortexCd = Math.round(baseCd * (1 - Math.min(0.35, (stats.haste / 100) * 0.4)));
@@ -11844,6 +12248,10 @@
     const elem = getActivePlayerElement();
     broadcastCombatAction('burst', 1, elem);
     updateCombatHUD();
+
+    if (currentMap === 'pvp_arena') {
+      triggerPvPAttackScan('burst', 9.5);
+    }
 
     const compCfg = getCompanionConfig(myCompanion);
     if (compCfg) {
@@ -14663,6 +15071,205 @@
     showDungeonMechanicBanner('⚔️ AETHER KORİDORU BAŞLADI! Mühür Kristallerini yok et!', 4000);
   }
 
+  function buildPvPArenaMap() {
+    clearWorld();
+    currentMap = 'pvp_arena';
+    setMapAtmosphere('pvp_arena');
+
+    activeCombatMobs = [];
+    activeDropGems = [];
+    activeSlashTrails = [];
+    activeProjectiles = [];
+    activeSkillshots = [];
+    activeSkillAimState = null;
+    skillAimIndicatorGroup = null;
+    vortexMesh = null;
+    isVortexActive = false;
+    targetReticleMesh = null;
+    lockedTargetMob = null;
+    combatComboHits = 0;
+
+    for (let tg of activeTelegraphs) {
+      if (tg.cleanup) tg.cleanup();
+      else worldObjects.remove(tg.group);
+    }
+    activeTelegraphs = [];
+
+    const locEl = document.getElementById('ui-location');
+    if (locEl) locEl.textContent = '⚔️ Gladyatör Arenası (PvP)';
+
+    // 1. Central Sand Combat Pit (r <= 17.8m, y = 0.0)
+    const sandGeo = new THREE.CircleGeometry(17.8, 64);
+    const sandMat = new THREE.MeshLambertMaterial({
+      map: createProceduralSandTexture(),
+      bumpMap: createProceduralGrassNormalMap(),
+      bumpScale: 0.025,
+      color: 0xfbbf24
+    });
+    const sandMesh = new THREE.Mesh(sandGeo, sandMat);
+    sandMesh.rotation.x = -Math.PI / 2;
+    sandMesh.position.y = 0.01;
+    sandMesh.receiveShadow = true;
+    worldObjects.add(sandMesh);
+
+    // Center Arena Insignia (Bronze & Gold Octagram)
+    const insBronze = new THREE.Mesh(
+      new THREE.RingGeometry(11.0, 11.8, 48),
+      new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.7 })
+    );
+    insBronze.rotation.x = -Math.PI / 2;
+    insBronze.position.y = 0.02;
+    worldObjects.add(insBronze);
+
+    const insGold = new THREE.Mesh(
+      new THREE.RingGeometry(4.8, 5.4, 32),
+      new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4, metalness: 0.8 })
+    );
+    insGold.rotation.x = -Math.PI / 2;
+    insGold.position.y = 0.03;
+    worldObjects.add(insGold);
+
+    // Center Octagram Golden Star
+    const starMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, transparent: true, opacity: 0.65 });
+    for (let s = 0; s < 4; s++) {
+      const rib = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 8.5), starMat);
+      rib.rotation.x = -Math.PI / 2;
+      rib.rotation.z = (s * Math.PI) / 4;
+      rib.position.y = 0.035;
+      worldObjects.add(rib);
+    }
+
+    // 2. Inner Pit Retaining Barrier Wall (r = 18.0, height = 1.4m)
+    const barrierMat = new THREE.MeshStandardMaterial({ color: 0x44403c, roughness: 0.8 });
+    const barrierTopMat = new THREE.MeshStandardMaterial({ color: 0xd6d3d1, roughness: 0.5 });
+
+    // Build curved stone barrier segments, leaving 4 archways at N, S, E, W
+    const numSegments = 32;
+    for (let i = 0; i < numSegments; i++) {
+      if (i % 8 === 0 || i % 8 === 7) continue; // Gap for ramps
+
+      const angle = (i / numSegments) * Math.PI * 2;
+      const nextAngle = ((i + 1) / numSegments) * Math.PI * 2;
+      const midAngle = (angle + nextAngle) / 2;
+      const segWidth = (Math.PI * 2 * 18.0) / numSegments;
+
+      const seg = new THREE.Mesh(new THREE.BoxGeometry(segWidth * 1.05, 1.4, 0.8), barrierMat);
+      seg.position.set(Math.sin(midAngle) * 18.0, 0.7, Math.cos(midAngle) * 18.0);
+      seg.rotation.y = midAngle;
+      seg.castShadow = true;
+      seg.receiveShadow = true;
+      worldObjects.add(seg);
+
+      // Travertine coping stone on top
+      const topCoping = new THREE.Mesh(new THREE.BoxGeometry(segWidth * 1.08, 0.2, 1.0), barrierTopMat);
+      topCoping.position.set(Math.sin(midAngle) * 18.0, 1.4, Math.cos(midAngle) * 18.0);
+      topCoping.rotation.y = midAngle;
+      worldObjects.add(topCoping);
+    }
+
+    // Four Cardinal Stair Ramps leading down into the pit
+    [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2].forEach(cardAngle => {
+      const ramp = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.25, 3.2), barrierTopMat);
+      ramp.position.set(Math.sin(cardAngle) * 18.0, 0.6, Math.cos(cardAngle) * 18.0);
+      ramp.rotation.y = cardAngle;
+      ramp.rotation.x = cardAngle === 0 || cardAngle === Math.PI ? 0.35 : 0;
+      ramp.rotation.z = cardAngle === Math.PI / 2 || cardAngle === (Math.PI * 3) / 2 ? 0.35 : 0;
+      worldObjects.add(ramp);
+    });
+
+    // 3. Elevated Spectator Terrace (Tribün) (r = 18.2 to 34.5, y = 1.2m)
+    const terraceGeo = new THREE.RingGeometry(18.2, 34.5, 64);
+    const marbleMat = new THREE.MeshStandardMaterial({ color: 0xe7e5e4, roughness: 0.6 });
+    const terrace = new THREE.Mesh(terraceGeo, marbleMat);
+    terrace.rotation.x = -Math.PI / 2;
+    terrace.position.y = 1.2;
+    terrace.receiveShadow = true;
+    worldObjects.add(terrace);
+
+    // Three Stepped Tier Seating Rings
+    const tierMat = new THREE.MeshStandardMaterial({ color: 0xd6d3d1, roughness: 0.65 });
+    [
+      { r1: 22.0, r2: 25.5, y: 1.6, h: 0.4 },
+      { r1: 26.0, r2: 29.5, y: 2.0, h: 0.8 },
+      { r1: 30.0, r2: 33.5, y: 2.4, h: 1.2 }
+    ].forEach(t => {
+      const tierMesh = new THREE.Mesh(new THREE.CylinderGeometry(t.r2, t.r2, t.h, 48, 1, true), tierMat);
+      tierMesh.position.y = 1.2 + t.h / 2;
+      worldObjects.add(tierMesh);
+
+      const seatFloor = new THREE.Mesh(new THREE.RingGeometry(t.r1, t.r2, 48), tierMat);
+      seatFloor.rotation.x = -Math.PI / 2;
+      seatFloor.position.y = t.y;
+      worldObjects.add(seatFloor);
+    });
+
+    // 4. Grand Roman Colonnade & Torches (16 Pillars at r = 33.0)
+    const pillarMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f4, roughness: 0.5 });
+    const capitalMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.4, metalness: 0.6 });
+
+    for (let p = 0; p < 16; p++) {
+      const pAngle = (p / 16) * Math.PI * 2;
+      const px = Math.sin(pAngle) * 33.0;
+      const pz = Math.cos(pAngle) * 33.0;
+
+      // Pillar Column
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.7, 6.5, 14), pillarMat);
+      col.position.set(px, 1.2 + 3.25, pz);
+      col.castShadow = true;
+      worldObjects.add(col);
+
+      // Ornate Corinthian Golden Capital
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 1.6), capitalMat);
+      cap.position.set(px, 1.2 + 6.6, pz);
+      worldObjects.add(cap);
+
+      // Iron Torch / Brazier on every 2nd pillar
+      if (p % 2 === 0) {
+        const torchBase = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.2, 0.5, 8), new THREE.MeshLambertMaterial({ color: 0x292524 }));
+        torchBase.position.set(px * 0.96, 4.2, pz * 0.96);
+        worldObjects.add(torchBase);
+
+        const flame = new THREE.Mesh(new THREE.DodecahedronGeometry(0.24), new THREE.MeshBasicMaterial({ color: 0xf97316 }));
+        flame.position.set(px * 0.96, 4.6, pz * 0.96);
+        worldObjects.add(flame);
+
+        const torchLight = new THREE.PointLight(0xf59e0b, 1.4, 14, 1.6);
+        torchLight.position.set(px * 0.96, 4.7, pz * 0.96);
+        worldObjects.add(torchLight);
+      }
+    }
+
+    // Outer Monumental Enclosing Wall (r = 35.5, height = 10m)
+    const outerWallMat = new THREE.MeshStandardMaterial({ color: 0x57534e, roughness: 0.9 });
+    const outerWall = new THREE.Mesh(new THREE.CylinderGeometry(35.5, 35.5, 10.0, 64, 1, true), outerWallMat);
+    outerWall.position.y = 5.0;
+    worldObjects.add(outerWall);
+
+    // 5. Exit Portal Gate back to Town at (0, 1.2, -28)
+    const returnPortal = createBattlePortalGate(0, -28, 'Kasabaya Dön');
+    returnPortal.rotation.y = Math.PI;
+    returnPortal.position.y = 1.2;
+    worldObjects.add(returnPortal);
+
+    // Initial setup
+    attachCombatWeapon();
+    document.getElementById('combat-hud')?.classList.remove('hidden');
+    document.getElementById('pvp-hud')?.classList.remove('hidden');
+
+    const stats = getPlayerEffectiveStats();
+    playerMaxHP = Math.round(stats.hp * 2.5);
+    playerHP = playerMaxHP;
+    playerStamina = playerMaxStamina;
+    playerEnergy = 50;
+    updateCombatHUD();
+
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: 'PVP_REQUEST_LEADERBOARD' }));
+    }
+
+    addChatMessage('⚔️ Gladyatör Arenası', '🏛️ Gladyatör Kolombiyumu\'na hoş geldin! Kum havuzuna inerek serbest PvP savaşına katılabilir, seyirci terasında güvenle izleyebilirsin.');
+  }
+
   // --- 13. Event Listeners ---
   function initEvents() {
     // Keyboard Input
@@ -15461,6 +16068,11 @@
     for (const entry of otherPlayers.values()) {
       entry.mesh.position.x += (entry.targetX - entry.mesh.position.x) * CONFIG.posLerp;
       entry.mesh.position.z += (entry.targetZ - entry.mesh.position.z) * CONFIG.posLerp;
+      if (currentMap === 'pvp_arena') {
+        const oDist = Math.hypot(entry.mesh.position.x, entry.mesh.position.z);
+        const targetY = oDist > 17.8 ? 1.2 : 0.0;
+        entry.mesh.position.y += (targetY - entry.mesh.position.y) * CONFIG.posLerp;
+      }
       entry.mesh.rotation.y += (entry.targetRot - entry.mesh.rotation.y) * CONFIG.rotLerp;
       if (entry.mesh.userData && entry.mesh.userData.rig) {
         animateRig(entry.mesh.userData.rig, entry.anim === 'walk', delta, now);

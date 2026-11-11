@@ -1554,6 +1554,96 @@ wss.on('connection', (ws) => {
             }
           }
         }
+      } else if (data.type === 'PVP_PLAYER_HIT') {
+        const attacker = worldEngine.getPlayer(socketId);
+        const target = worldEngine.getPlayer(data.targetSocketId);
+        if (attacker && target && attacker.mapId === 'pvp_arena' && target.mapId === 'pvp_arena') {
+          // Check that both players are inside the circular combat pit (radius <= 18.2)
+          const attDist = Math.hypot(attacker.x, attacker.z);
+          const tgtDist = Math.hypot(target.x, target.z);
+          if (attDist <= 18.2 && tgtDist <= 18.2) {
+            const attProfile = rpgEngine.getProfile(attacker.username);
+            const attStats = attProfile ? rpgEngine.computeStats(attProfile) : { atk: 25, crit: 5, critDmg: 150 };
+
+            const tgtProfile = rpgEngine.getProfile(target.username);
+            const tgtStats = tgtProfile ? rpgEngine.computeStats(tgtProfile) : { def: 10, hp: 600 };
+
+            // Balanced PvP Damage Scaling
+            const comboMult = { 1: 0.9, 2: 1.1, 3: 1.35, 4: 1.8, heavy: 1.6, vortex: 2.1, burst: 3.2 };
+            const mult = comboMult[data.action] || 1.0;
+            let rawDmg = Math.round((attStats.atk || 25) * mult);
+
+            // Crit roll
+            const isCrit = (Math.random() * 100) < (attStats.crit || 5);
+            if (isCrit) {
+              rawDmg = Math.round(rawDmg * ((attStats.critDmg || 150) / 100));
+            }
+
+            // DEF mitigation: def / (def + 160)
+            const def = tgtStats.def || 0;
+            const defReduction = def / (def + 160);
+            const finalDmg = Math.max(12, Math.round(rawDmg * (1 - defReduction) * 0.55));
+
+            // PvP effective Max HP is 2.5x standard RPG max HP (prevents one-shots)
+            const baseMaxHp = tgtStats.hp || 500;
+            const pvpMaxHp = Math.round(baseMaxHp * 2.5);
+
+            if (typeof target.pvpHp !== 'number') {
+              target.pvpHp = pvpMaxHp;
+            }
+            target.pvpHp = Math.max(0, target.pvpHp - finalDmg);
+
+            const isDead = target.pvpHp <= 0;
+
+            // Broadcast hit visual & damage number to all players in pvp_arena
+            broadcastToMap('pvp_arena', {
+              type: 'PVP_HIT_EFFECT',
+              attackerSocketId: socketId,
+              attackerName: attacker.username,
+              targetSocketId: data.targetSocketId,
+              targetName: target.username,
+              dmg: finalDmg,
+              isCrit,
+              element: data.element || 'Pyro',
+              newHp: target.pvpHp,
+              maxHp: pvpMaxHp,
+              isDead
+            });
+
+            if (isDead) {
+              const killResult = rpgEngine.recordPvPKill(attacker.username, target.username);
+
+              // Reset target to full HP and respawn safely on the spectator terrace
+              target.pvpHp = pvpMaxHp;
+              target.x = 0;
+              target.z = -24;
+              worldEngine.updateMovement(data.targetSocketId, { x: 0, z: -24, rot: 0 });
+
+              // Broadcast killfeed event
+              broadcastToMap('pvp_arena', {
+                type: 'PVP_KILLFEED',
+                killerName: attacker.username,
+                victimName: target.username,
+                primoGain: killResult && killResult.killer ? killResult.killer.primoGain : 0,
+                targetSocketId: data.targetSocketId,
+                respawnPos: { x: 0, z: -24 }
+              });
+
+              // Broadcast updated PvP leaderboard
+              const pvpBoard = rpgEngine.getPvPLeaderboard(5);
+              broadcastToMap('pvp_arena', {
+                type: 'PVP_LEADERBOARD_UPDATE',
+                leaderboard: pvpBoard
+              });
+            }
+          }
+        }
+      } else if (data.type === 'PVP_REQUEST_LEADERBOARD') {
+        const pvpBoard = rpgEngine.getPvPLeaderboard(10);
+        ws.send(JSON.stringify({
+          type: 'PVP_LEADERBOARD_UPDATE',
+          leaderboard: pvpBoard
+        }));
       } else if (data.type === 'DUNGEON_REQUEST_MOBS') {
         const me = worldEngine.getPlayer(socketId);
         if (me) {
@@ -1834,7 +1924,11 @@ app.post('/api/world/sell-materials', express.json(), (req, res) => {
   });
 });
 
-// --- MMORPG Item & GearScore (GS) REST Endpoints ---
+// --- MMORPG Item, GearScore (GS) & PvP REST Endpoints ---
+app.get('/api/rpg/pvp-leaderboard', (req, res) => {
+  res.json({ ok: true, leaderboard: rpgEngine.getPvPLeaderboard(15) });
+});
+
 app.get('/api/world/daily-quests', (req, res) => {
   const username = (req.query.username || req.query.user || '').trim();
   if (!username) return res.status(400).json({ ok: false, error: 'Kullanıcı adı gerekli.' });
