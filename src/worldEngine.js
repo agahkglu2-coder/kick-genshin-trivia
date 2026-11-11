@@ -255,16 +255,16 @@ class WorldEngine extends EventEmitter {
           {
             id: 'door_battle',
             name: '⚔️ Vahşi Savaş Arenası',
-            pos: { x: 0, z: 32 },
-            radius: 4.2,
+            pos: { x: -6.5, z: 32 },
+            radius: 7.0,
             targetMap: 'battle_zone',
             spawnPos: { x: 0, z: -28 }
           },
           {
             id: 'door_pvp',
             name: '⚔️ Gladyatör Arenası (PvP)',
-            pos: { x: 24, z: 28 },
-            radius: 4.2,
+            pos: { x: 6.5, z: 32 },
+            radius: 4.8,
             targetMap: 'pvp_arena',
             spawnPos: { x: 0, z: -24 }
           }
@@ -356,7 +356,7 @@ class WorldEngine extends EventEmitter {
         combatPitRadius: 17.5,
         bounds: { minX: -36, maxX: 36, minZ: -36, maxZ: 36 },
         spawn: { x: 0, z: -24 },
-        exitDoor: { pos: { x: 0, z: -28 }, radius: 3.8, targetMap: 'town', spawnPos: { x: 24, z: 24 } }
+        exitDoor: { pos: { x: 0, z: -28 }, radius: 3.8, targetMap: 'town', spawnPos: { x: 6.5, z: 28 } }
       }
     };
 

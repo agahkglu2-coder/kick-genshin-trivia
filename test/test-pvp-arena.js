@@ -23,16 +23,16 @@ const townMap = worldEngine.getMapConfig('town');
 const pvpDoor = townMap.doors.find(d => d.id === 'door_pvp');
 assert.ok(pvpDoor, 'town.doors must contain door_pvp');
 assert.strictEqual(pvpDoor.targetMap, 'pvp_arena');
-assert.strictEqual(pvpDoor.pos.x, 24);
-assert.strictEqual(pvpDoor.pos.z, 28);
+assert.strictEqual(pvpDoor.pos.x, 6.5);
+assert.strictEqual(pvpDoor.pos.z, 32);
 assert.strictEqual(pvpDoor.spawnPos.z, -24);
-console.log('  ✓ Town portal door to pvp_arena is correctly configured at { x: 24, z: 28 }.');
+console.log('  ✓ Town portal door to pvp_arena is correctly configured at { x: 6.5, z: 32 }.');
 
 // 2. Test Player Door Interactions
 console.log('\nTest 3: Door Transition into PvP Arena and Exit...');
 const socketA = 'sock_gladiator_1';
 worldEngine.addPlayer(socketA, { username: 'Maximus', avatarIndex: 0, isGuest: false });
-worldEngine.updateMovement(socketA, { x: 24, z: 28, rot: 0 });
+worldEngine.updateMovement(socketA, { x: 6.5, z: 32, rot: 0 });
 
 const enterRes = worldEngine.interactDoor(socketA);
 assert.ok(enterRes && enterRes.success, 'Player should enter pvp_arena');
@@ -48,8 +48,8 @@ worldEngine.updateMovement(socketA, { x: 0, z: -28, rot: 0 });
 const exitRes = worldEngine.interactDoor(socketA);
 assert.ok(exitRes && exitRes.success, 'Player should exit back to town');
 assert.strictEqual(exitRes.newMap, 'town');
-assert.strictEqual(exitRes.spawnPos.x, 24);
-assert.strictEqual(exitRes.spawnPos.z, 24);
+assert.strictEqual(exitRes.spawnPos.x, 6.5);
+assert.strictEqual(exitRes.spawnPos.z, 28);
 console.log('  ✓ Player transition between town and pvp_arena works bi-directionally.');
 
 // 3. Test RPG Profile PvP Stats & Kill Tracking
@@ -107,7 +107,29 @@ assert.ok(finalDmg < pvpMaxHp * 0.25, 'Normal hit must not deal more than 25% of
 assert.ok(finalDmg >= 12, 'Damage must be at least minimum floor');
 console.log('  ✓ Balanced PvP formula ensures competitive, multi-hit MMORPG combat.');
 
+// 6. Test Auto-Equip Best items
+console.log('\nTest 7: Auto-Equip Best Items Engine...');
+const testUser = 'GladiatorTester';
+const pProfile = rpgEngine.getProfile(testUser);
+pProfile.level = 20;
+pProfile.equipment = {};
+pProfile.bag = [
+  { uid: 'item_1', slot: 'weapon', name: 'Demir Kılıç', ilvl: 15, score: 80, atk: 25 },
+  { uid: 'item_2', slot: 'weapon', name: 'Ejder Katili Kılıç', ilvl: 22, score: 210, atk: 85 },
+  { uid: 'item_3', slot: 'weapon', name: 'Tanrı Katili (Giyilemez)', ilvl: 60, score: 999, atk: 500 }, // Level 20 cannot equip ilvl 60 (max level+5 = 25)
+  { uid: 'item_4', slot: 'chest', name: 'Çelik Zırh', ilvl: 18, score: 140, def: 50, hp: 120 }
+];
+
+const autoRes = rpgEngine.autoEquipBest(testUser);
+assert.ok(autoRes && autoRes.ok, 'autoEquipBest should succeed');
+assert.strictEqual(autoRes.equippedCount, 2, 'Should equip 2 best wearable items');
+assert.strictEqual(pProfile.equipment.weapon.uid, 'item_2', 'Should equip item_2 (best wearable weapon)');
+assert.strictEqual(pProfile.equipment.chest.uid, 'item_4', 'Should equip item_4');
+assert.ok(pProfile.bag.some(i => i.uid === 'item_1'), 'Inferior weapon item_1 should remain in bag');
+assert.ok(pProfile.bag.some(i => i.uid === 'item_3'), 'High level weapon item_3 should remain in bag');
+console.log('  ✓ Auto-Equip correctly equipped best wearable items according to GS & level restrictions.');
+
 // Cleanup test sockets
 worldEngine.removePlayer(socketA);
 
-console.log('\n🎉 ALL PVP ARENA TESTS PASSED SUCCESSFULLY! (6/6)');
+console.log('\n🎉 ALL PVP ARENA & AUTO-EQUIP TESTS PASSED SUCCESSFULLY! (7/7)');

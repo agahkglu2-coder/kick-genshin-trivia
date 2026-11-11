@@ -1710,6 +1710,13 @@ wss.on('connection', (ws) => {
           const state = rpgEngine.getState(me.username);
           ws.send(JSON.stringify({ type: 'RPG_PROFILE_STATE', state, equipResult: res }));
         }
+      } else if (data.type === 'RPG_AUTO_EQUIP') {
+        const me = worldEngine.getPlayer(socketId);
+        if (me) {
+          const res = rpgEngine.autoEquipBest(me.username);
+          const state = rpgEngine.getState(me.username);
+          ws.send(JSON.stringify({ type: 'RPG_PROFILE_STATE', state, autoEquipResult: res }));
+        }
       } else if (data.type === 'RPG_UNEQUIP') {
         const me = worldEngine.getPlayer(socketId);
         if (me && data.slot) {
@@ -2003,6 +2010,15 @@ app.post('/api/rpg/unequip', express.json(), (req, res) => {
   const { username, slot } = req.body || {};
   if (!username || !slot) return res.status(400).json({ ok: false, error: 'Eksik parametre.' });
   const result = rpgEngine.unequip(username, slot);
+  const onlinePlayer = worldEngine.getPlayerByName(username);
+  const state = rpgEngine.getState(username, { persist: onlinePlayer ? !onlinePlayer.isGuest : true });
+  res.json({ ok: result.ok, error: result.error, result, state });
+});
+
+app.post('/api/rpg/auto-equip', express.json(), (req, res) => {
+  const { username } = req.body || {};
+  if (!username) return res.status(400).json({ ok: false, error: 'Kullanıcı adı gerekli.' });
+  const result = rpgEngine.autoEquipBest(username);
   const onlinePlayer = worldEngine.getPlayerByName(username);
   const state = rpgEngine.getState(username, { persist: onlinePlayer ? !onlinePlayer.isGuest : true });
   res.json({ ok: result.ok, error: result.error, result, state });

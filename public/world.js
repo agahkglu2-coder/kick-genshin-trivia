@@ -2441,20 +2441,20 @@
         sunInt: 0.92
       },
       pvp_arena: {
-        bg: 0x2d1808,
-        fogColor: 0x451a03,
-        fogNear: 75,
-        fogFar: 180,
-        skyTop: '#1e1b4b',
-        skyMid: '#7c2d12',
-        skyBot: '#f59e0b',
+        bg: 0x0a0710,
+        fogColor: 0x140e18,
+        fogNear: 85,
+        fogFar: 200,
+        skyTop: '#0a0614',
+        skyMid: '#240d18',
+        skyBot: '#632514',
         ambColor: 0xffedd5,
-        ambInt: 0.85,
-        hemiSky: 0xfbbf24,
-        hemiGround: 0x78350f,
-        hemiInt: 0.45,
-        sunColor: 0xfef08a,
-        sunInt: 0.95
+        ambInt: 0.38,
+        hemiSky: 0xf97316,
+        hemiGround: 0x181014,
+        hemiInt: 0.25,
+        sunColor: 0xfbbf24,
+        sunInt: 0.50
       }
     };
 
@@ -5042,11 +5042,45 @@
     });
     worldObjects.add(bridgeGroup);
 
-    // Battle Zone Ancient Portal Gate at South Bridge Landing (0, 32)
-    worldObjects.add(createBattlePortalGate(0, 32));
+    // Portallar Meydanı (Portals Plaza) at South Bridge Landing (z = 32)
+    // Symmetrically hosts Kadim Zindan Portalı (x = -6.5, z = 32) and Gladyatör Arenası (x = 6.5, z = 32)
+    const plazaGeo = new THREE.BoxGeometry(22, 0.12, 10);
+    const plazaMat = new THREE.MeshLambertMaterial({
+      color: 0x64748b,
+      map: createProceduralCobbleTexture(6, 4)
+    });
+    const plazaMesh = new THREE.Mesh(plazaGeo, plazaMat);
+    plazaMesh.position.set(0, 0.06, 32);
+    plazaMesh.receiveShadow = true;
+    worldObjects.add(plazaMesh);
 
-    // Gladiator PvP Arena Portal Gate at South-East Meadow (24, 28)
-    worldObjects.add(createPvPArenaPortalGate(24, 28));
+    // Stone pathway connector from bridge landing (z=27) into the plaza
+    const pathGeo = new THREE.BoxGeometry(7, 0.1, 4);
+    const pathMesh = new THREE.Mesh(pathGeo, plazaMat);
+    pathMesh.position.set(0, 0.05, 27);
+    pathMesh.receiveShadow = true;
+    worldObjects.add(pathMesh);
+
+    // Plaza decorative street lanterns
+    [-10, 10].forEach(lx => {
+      [28, 36].forEach(lz => {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 2.2, 8), new THREE.MeshLambertMaterial({ color: 0x334155 }));
+        post.position.set(lx, 1.1, lz);
+        worldObjects.add(post);
+        const lamp = new THREE.Mesh(new THREE.DodecahedronGeometry(0.25), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+        lamp.position.set(lx, 2.2, lz);
+        worldObjects.add(lamp);
+        const lLight = new THREE.PointLight(0xfef08a, 0.5, 6, 2);
+        lLight.position.set(lx, 2.2, lz);
+        worldObjects.add(lLight);
+      });
+    });
+
+    // West Side (Left): Ancient Dungeon Portal Gate at (-6.5, 32)
+    worldObjects.add(createBattlePortalGate(-6.5, 32));
+
+    // East Side (Right): Gladiator PvP Arena Portal Gate at (6.5, 32)
+    worldObjects.add(createPvPArenaPortalGate(6.5, 32));
 
     // 5. Four Key 3D Stylized Architectural Buildings (Spaced Generously Apart!)
     // A) Takas Pazarı (Trade Mart) - North-West Quarter (-24, -14)
@@ -6272,8 +6306,8 @@
         { id: 'door_tavern', name: "Cat's Tail Taverna", pos: { x: 24, z: -10.0 } },
         { id: 'door_shrine', name: 'Dilek Tapınağı', pos: { x: 0, z: -26.0 } },
         { id: 'door_guild', name: 'Maceracılar Loncası', pos: { x: -24, z: 10.0 } },
-        { id: 'door_battle', name: '🌀 Kadim Zindan Portalı', pos: { x: 0, z: 32.0 } },
-        { id: 'door_pvp', name: '⚔️ Gladyatör Arenası (PvP)', pos: { x: 24, z: 28.0 } }
+        { id: 'door_battle', name: '🌀 Kadim Zindan Portalı', pos: { x: -6.5, z: 32.0 } },
+        { id: 'door_pvp', name: '⚔️ Gladyatör Arenası (PvP)', pos: { x: 6.5, z: 32.0 } }
       ];
 
       for (const d of doors) {
@@ -7567,31 +7601,44 @@
       ctx.fillStyle = '#059669';
       ctx.fillRect(cx + (24 - myPlayer.x) * scale - 5, cy + (14 - myPlayer.z) * scale - 5, 10, 10); // Gazebo
 
-      // Gladiator PvP Portal in Town (Amber with crimson border)
+      // South Portals Plaza at (0, 32)
+      ctx.fillStyle = '#64748b';
+      ctx.fillRect(cx + (-11 - myPlayer.x) * scale, cy + (27 - myPlayer.z) * scale, 22 * scale, 10 * scale);
+
+      // Kadim Zindan Portalı at (-6.5, 32) (Indigo / Blue-Purple)
+      ctx.fillStyle = '#818cf8';
+      ctx.beginPath();
+      ctx.arc(cx + (-6.5 - myPlayer.x) * scale, cy + (32 - myPlayer.z) * scale, 4.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // Gladiator PvP Portal in Town at (6.5, 32) (Amber with crimson border)
       ctx.fillStyle = '#f59e0b';
       ctx.beginPath();
-      ctx.arc(cx + (24 - myPlayer.x) * scale, cy + (28 - myPlayer.z) * scale, 5.0, 0, Math.PI * 2);
+      ctx.arc(cx + (6.5 - myPlayer.x) * scale, cy + (32 - myPlayer.z) * scale, 4.8, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = 1.2;
       ctx.stroke();
     } else if (currentMap === 'pvp_arena') {
-      ctx.fillStyle = '#2d1808';
+      ctx.fillStyle = '#0a0710';
       ctx.fillRect(0, 0, w, h);
 
       // Colosseum Outer Spectator Ring
-      ctx.strokeStyle = '#78350f';
+      ctx.strokeStyle = '#27272a';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.arc(cx - myPlayer.x * scale, cy - myPlayer.z * scale, 34.0 * scale, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Inner Sand Combat Pit
-      ctx.fillStyle = '#b45309';
+      // Inner Sand Combat Pit (Terracotta)
+      ctx.fillStyle = '#854d0e';
       ctx.beginPath();
       ctx.arc(cx - myPlayer.x * scale, cy - myPlayer.z * scale, 17.8 * scale, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = '#f59e0b';
+      ctx.strokeStyle = '#d97706';
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
@@ -8317,6 +8364,129 @@
     combatWeaponMesh = null;
   }
 
+  // =========================================================================
+  // Tiny RPG 2.5D Animated Pixel-Art Sprite Mob System (Orc & Soldier Pack)
+  // =========================================================================
+  const MOB_SPRITE_DEFS = {
+    orc: {
+      idle: { url: '/assets/mobs/orc/Orc_Idle.png', frames: 6, fps: 8 },
+      walk: { url: '/assets/mobs/orc/Orc_Walk.png', frames: 8, fps: 11 },
+      attack1: { url: '/assets/mobs/orc/Orc_Attack01.png', frames: 6, fps: 10 },
+      attack2: { url: '/assets/mobs/orc/Orc_Attack02.png', frames: 6, fps: 10 },
+      hurt: { url: '/assets/mobs/orc/Orc_Hurt.png', frames: 4, fps: 12 },
+      death: { url: '/assets/mobs/orc/Orc_Death.png', frames: 4, fps: 8 }
+    },
+    soldier: {
+      idle: { url: '/assets/mobs/soldier/Soldier_Idle.png', frames: 6, fps: 8 },
+      walk: { url: '/assets/mobs/soldier/Soldier_Walk.png', frames: 8, fps: 11 },
+      attack1: { url: '/assets/mobs/soldier/Soldier_Attack01.png', frames: 6, fps: 10 },
+      attack2: { url: '/assets/mobs/soldier/Soldier_Attack02.png', frames: 6, fps: 10 },
+      attack3: { url: '/assets/mobs/soldier/Soldier_Attack03.png', frames: 9, fps: 12 },
+      hurt: { url: '/assets/mobs/soldier/Soldier_Hurt.png', frames: 4, fps: 12 },
+      death: { url: '/assets/mobs/soldier/Soldier_Death.png', frames: 4, fps: 8 }
+    }
+  };
+
+  const mobBaseTextureCache = {};
+  function getMobBaseTexture(url) {
+    if (!mobBaseTextureCache[url]) {
+      const tex = textureLoader.load(url);
+      tex.magFilter = THREE.NearestFilter;
+      tex.minFilter = THREE.NearestFilter;
+      mobBaseTextureCache[url] = tex;
+    }
+    return mobBaseTextureCache[url];
+  }
+
+  function createAnimatedSpriteMobMesh(spriteType = 'orc', options = {}) {
+    const group = new THREE.Group();
+    const defs = MOB_SPRITE_DEFS[spriteType] || MOB_SPRITE_DEFS.orc;
+
+    // Ground circular shadow
+    const shadowGeo = new THREE.CircleGeometry(0.72, 16);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.35,
+      depthWrite: false
+    });
+    const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+    shadowMesh.rotation.x = -Math.PI / 2;
+    shadowMesh.position.y = 0.02;
+    group.add(shadowMesh);
+
+    // Prepare cloned textures for each animation state
+    const animTextures = {};
+    for (const [animKey, cfg] of Object.entries(defs)) {
+      const baseTex = getMobBaseTexture(cfg.url);
+      const cloneTex = baseTex.clone();
+      cloneTex.magFilter = THREE.NearestFilter;
+      cloneTex.minFilter = THREE.NearestFilter;
+      cloneTex.repeat.set(1 / cfg.frames, 1);
+      cloneTex.offset.set(0, 0);
+      cloneTex.needsUpdate = true;
+      animTextures[animKey] = {
+        texture: cloneTex,
+        frames: cfg.frames,
+        fps: cfg.fps || 10
+      };
+    }
+
+    // Sprite Quad Mesh (100x100 pixel art, rendered 2.4 x 2.4 in world units)
+    const planeGeo = new THREE.PlaneGeometry(2.4, 2.4);
+    planeGeo.translate(0, 1.15, 0);
+
+    const initialAnim = animTextures.idle || Object.values(animTextures)[0];
+    const spriteMat = new THREE.MeshStandardMaterial({
+      map: initialAnim.texture,
+      transparent: true,
+      alphaTest: 0.08,
+      roughness: 0.65,
+      metalness: 0.05,
+      side: THREE.DoubleSide
+    });
+    if (options.tint) {
+      spriteMat.color.setHex(options.tint);
+    }
+
+    const spriteMesh = new THREE.Mesh(planeGeo, spriteMat);
+    spriteMesh.castShadow = true;
+    group.add(spriteMesh);
+
+    // Elite / Boss glowing ground rune ring
+    if (options.aura || options.isElite || options.isBoss) {
+      const auraColor = options.aura || (options.isBoss ? 0xa855f7 : 0xf59e0b);
+      const auraRing = new THREE.Mesh(
+        new THREE.RingGeometry(0.85, 1.35, 32),
+        new THREE.MeshBasicMaterial({ color: auraColor, transparent: true, opacity: 0.6, side: THREE.DoubleSide })
+      );
+      auraRing.rotation.x = -Math.PI / 2;
+      auraRing.position.y = 0.03;
+      group.add(auraRing);
+    }
+
+    const scaleMult = options.scale || 1.0;
+    if (scaleMult !== 1.0) {
+      group.scale.set(scaleMult, scaleMult, scaleMult);
+    }
+
+    group.userData.mobRig = {
+      type: 'sprite',
+      spriteType,
+      mesh: spriteMesh,
+      material: spriteMat,
+      animTextures,
+      currentAnim: 'idle',
+      frameIndex: 0,
+      frameTimer: 0,
+      facingLeft: false,
+      baseScaleX: 1.0,
+      baseTorsoY: 1.2
+    };
+
+    return group;
+  }
+
   // --- 3D Rigged & Cel-Shaded Mob Meshes ---
   function createSlimeMesh(type) {
     const group = new THREE.Group();
@@ -8738,6 +8908,56 @@
   function animateMobRig(mob, isMoving, delta, now) {
     if (!mob || !mob.mesh || !mob.mesh.userData || !mob.mesh.userData.mobRig) return;
     const rig = mob.mesh.userData.mobRig;
+
+    if (rig.type === 'sprite') {
+      let desiredAnim = 'idle';
+      if (mob.isDead) {
+        desiredAnim = 'death';
+      } else if (mob.flashTimer > 0 || (mob.staggeredUntil && now < mob.staggeredUntil)) {
+        desiredAnim = 'hurt';
+      } else if (mob.isAttacking) {
+        desiredAnim = (rig.spriteType === 'soldier' && Math.random() < 0.35) ? 'attack2' : 'attack1';
+        if (!rig.animTextures[desiredAnim]) desiredAnim = 'attack1';
+      } else if (isMoving) {
+        desiredAnim = 'walk';
+      }
+
+      if (rig.currentAnim !== desiredAnim) {
+        rig.currentAnim = desiredAnim;
+        rig.frameIndex = 0;
+        rig.frameTimer = 0;
+        const animCfg = rig.animTextures[desiredAnim];
+        if (animCfg) {
+          rig.material.map = animCfg.texture;
+          rig.material.needsUpdate = true;
+        }
+      }
+
+      const curCfg = rig.animTextures[rig.currentAnim];
+      if (curCfg) {
+        rig.frameTimer += delta;
+        const frameDuration = 1 / curCfg.fps;
+        if (rig.frameTimer >= frameDuration) {
+          rig.frameTimer -= frameDuration;
+          if (rig.currentAnim === 'death') {
+            rig.frameIndex = Math.min(curCfg.frames - 1, rig.frameIndex + 1);
+          } else {
+            rig.frameIndex = (rig.frameIndex + 1) % curCfg.frames;
+          }
+          curCfg.texture.offset.x = rig.frameIndex / curCfg.frames;
+        }
+      }
+
+      if (camera) {
+        rig.mesh.quaternion.copy(camera.quaternion);
+      }
+
+      const dx = myPlayer.x - mob.x;
+      const shouldFaceLeft = dx < 0;
+      rig.mesh.scale.x = shouldFaceLeft ? -1 : 1;
+
+      return;
+    }
 
     // Staggered / Frozen Override
     if (mob.staggeredUntil && now < mob.staggeredUntil) {
@@ -9342,19 +9562,20 @@
     } else if (type.startsWith('slime_')) {
       mesh = createSlimeMesh(type);
     } else if (type === 'pyromancer' || type === 'abyss_mage') {
-      mesh = createPyromancerMesh(type);
+      mesh = createAnimatedSpriteMobMesh('soldier', { tint: 0xfca5a5, scale: 1.15, aura: 0xf97316 });
     } else if (type === 'ruin_golem' || type === 'tahabata_lord') {
       mesh = createRuinGolemMesh();
       if (type === 'tahabata_lord') {
         mesh.scale.set(2.15, 2.15, 2.15);
       }
     } else if (type === 'abyss_archon_mini') {
-      mesh = createHilichurlMesh('mitachurl_axe');
-      mesh.scale.set(1.55, 1.55, 1.55);
-    } else if (type === 'aether_guardian') {
-      mesh = createHilichurlMesh('abyss_sentinel');
+      mesh = createAnimatedSpriteMobMesh('soldier', { isBoss: true, scale: 1.6, aura: 0xa855f7 });
+    } else if (type === 'aether_guardian' || type === 'abyss_sentinel') {
+      mesh = createAnimatedSpriteMobMesh('soldier', { scale: 1.25 });
+    } else if (type === 'mitachurl_axe') {
+      mesh = createAnimatedSpriteMobMesh('orc', { isElite: true, scale: 1.55, aura: 0xef4444 });
     } else {
-      mesh = createHilichurlMesh(type);
+      mesh = createAnimatedSpriteMobMesh('orc');
     }
 
     mesh.position.set(x, 0, z);
@@ -12293,19 +12514,49 @@
       createShockwaveRing(mob.x, mob.z, mob.isBoss ? 4.5 : 2.2, 0xfacc15);
       const dyingMesh = mob.mesh;
       if (mob.hpBarGroup) mob.hpBarGroup.visible = false;
-      const deathStart = performance.now();
-      const deathAnim = () => {
-        const el = performance.now() - deathStart;
-        if (el >= 340) {
-          worldObjects.remove(dyingMesh);
-        } else {
-          const p = el / 340;
-          dyingMesh.rotation.x = p * (Math.PI / 2.2);
-          dyingMesh.scale.multiplyScalar(0.94);
-          requestAnimationFrame(deathAnim);
+
+      if (dyingMesh.userData && dyingMesh.userData.mobRig && dyingMesh.userData.mobRig.type === 'sprite') {
+        const rig = dyingMesh.userData.mobRig;
+        const deathCfg = rig.animTextures.death;
+        if (deathCfg) {
+          rig.material.map = deathCfg.texture;
+          rig.material.needsUpdate = true;
         }
-      };
-      requestAnimationFrame(deathAnim);
+        const deathStart = performance.now();
+        const deathDuration = 520;
+        const deathAnim = () => {
+          const el = performance.now() - deathStart;
+          if (el >= deathDuration) {
+            worldObjects.remove(dyingMesh);
+          } else {
+            const p = el / deathDuration;
+            if (deathCfg) {
+              const frame = Math.min(deathCfg.frames - 1, Math.floor(p * deathCfg.frames));
+              deathCfg.texture.offset.x = frame / deathCfg.frames;
+            }
+            if (camera) rig.mesh.quaternion.copy(camera.quaternion);
+            if (p > 0.55) {
+              rig.material.opacity = Math.max(0, 1 - (p - 0.55) / 0.45);
+            }
+            requestAnimationFrame(deathAnim);
+          }
+        };
+        requestAnimationFrame(deathAnim);
+      } else {
+        const deathStart = performance.now();
+        const deathAnim = () => {
+          const el = performance.now() - deathStart;
+          if (el >= 340) {
+            worldObjects.remove(dyingMesh);
+          } else {
+            const p = el / 340;
+            dyingMesh.rotation.x = p * (Math.PI / 2.2);
+            dyingMesh.scale.multiplyScalar(0.94);
+            requestAnimationFrame(deathAnim);
+          }
+        };
+        requestAnimationFrame(deathAnim);
+      }
     }
 
     const droppedItems = rollMobLoot(mob.type);
@@ -15104,7 +15355,7 @@
       map: createProceduralSandTexture(),
       bumpMap: createProceduralGrassNormalMap(),
       bumpScale: 0.025,
-      color: 0xfbbf24
+      color: 0x854d0e
     });
     const sandMesh = new THREE.Mesh(sandGeo, sandMat);
     sandMesh.rotation.x = -Math.PI / 2;
@@ -15115,7 +15366,7 @@
     // Center Arena Insignia (Bronze & Gold Octagram)
     const insBronze = new THREE.Mesh(
       new THREE.RingGeometry(11.0, 11.8, 48),
-      new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.7 })
+      new THREE.MeshStandardMaterial({ color: 0x5c2b09, roughness: 0.7 })
     );
     insBronze.rotation.x = -Math.PI / 2;
     insBronze.position.y = 0.02;
@@ -15123,14 +15374,14 @@
 
     const insGold = new THREE.Mesh(
       new THREE.RingGeometry(4.8, 5.4, 32),
-      new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4, metalness: 0.8 })
+      new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.4, metalness: 0.8 })
     );
     insGold.rotation.x = -Math.PI / 2;
     insGold.position.y = 0.03;
     worldObjects.add(insGold);
 
     // Center Octagram Golden Star
-    const starMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, transparent: true, opacity: 0.65 });
+    const starMat = new THREE.MeshBasicMaterial({ color: 0xb45309, transparent: true, opacity: 0.65 });
     for (let s = 0; s < 4; s++) {
       const rib = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 8.5), starMat);
       rib.rotation.x = -Math.PI / 2;
@@ -15140,8 +15391,8 @@
     }
 
     // 2. Inner Pit Retaining Barrier Wall (r = 18.0, height = 1.4m)
-    const barrierMat = new THREE.MeshStandardMaterial({ color: 0x44403c, roughness: 0.8 });
-    const barrierTopMat = new THREE.MeshStandardMaterial({ color: 0xd6d3d1, roughness: 0.5 });
+    const barrierMat = new THREE.MeshStandardMaterial({ color: 0x1c1917, roughness: 0.85 });
+    const barrierTopMat = new THREE.MeshStandardMaterial({ color: 0x292524, roughness: 0.7 });
 
     // Build curved stone barrier segments, leaving 4 archways at N, S, E, W
     const numSegments = 32;
@@ -15179,7 +15430,7 @@
 
     // 3. Elevated Spectator Terrace (Tribün) (r = 18.2 to 34.5, y = 1.2m)
     const terraceGeo = new THREE.RingGeometry(18.2, 34.5, 64);
-    const marbleMat = new THREE.MeshStandardMaterial({ color: 0xe7e5e4, roughness: 0.6 });
+    const marbleMat = new THREE.MeshStandardMaterial({ color: 0x262626, roughness: 0.7 });
     const terrace = new THREE.Mesh(terraceGeo, marbleMat);
     terrace.rotation.x = -Math.PI / 2;
     terrace.position.y = 1.2;
@@ -15187,7 +15438,7 @@
     worldObjects.add(terrace);
 
     // Three Stepped Tier Seating Rings
-    const tierMat = new THREE.MeshStandardMaterial({ color: 0xd6d3d1, roughness: 0.65 });
+    const tierMat = new THREE.MeshStandardMaterial({ color: 0x1c1917, roughness: 0.75 });
     [
       { r1: 22.0, r2: 25.5, y: 1.6, h: 0.4 },
       { r1: 26.0, r2: 29.5, y: 2.0, h: 0.8 },
@@ -15204,8 +15455,8 @@
     });
 
     // 4. Grand Roman Colonnade & Torches (16 Pillars at r = 33.0)
-    const pillarMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f4, roughness: 0.5 });
-    const capitalMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.4, metalness: 0.6 });
+    const pillarMat = new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.65 });
+    const capitalMat = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.45, metalness: 0.7 });
 
     for (let p = 0; p < 16; p++) {
       const pAngle = (p / 16) * Math.PI * 2;
@@ -15218,7 +15469,7 @@
       col.castShadow = true;
       worldObjects.add(col);
 
-      // Ornate Corinthian Golden Capital
+      // Ornate Corinthian Weathered Bronze Capital
       const cap = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 1.6), capitalMat);
       cap.position.set(px, 1.2 + 6.6, pz);
       worldObjects.add(cap);
@@ -15240,7 +15491,7 @@
     }
 
     // Outer Monumental Enclosing Wall (r = 35.5, height = 10m)
-    const outerWallMat = new THREE.MeshStandardMaterial({ color: 0x57534e, roughness: 0.9 });
+    const outerWallMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.9 });
     const outerWall = new THREE.Mesh(new THREE.CylinderGeometry(35.5, 35.5, 10.0, 64, 1, true), outerWallMat);
     outerWall.position.y = 5.0;
     worldObjects.add(outerWall);
@@ -15572,6 +15823,8 @@
     // RPG Bag & Popover Action Buttons
     const btnSalvageJunk = document.getElementById('btn-salvage-junk');
     if (btnSalvageJunk) btnSalvageJunk.onclick = () => salvageJunk();
+    const btnAutoEquip = document.getElementById('btn-auto-equip');
+    if (btnAutoEquip) btnAutoEquip.onclick = () => autoEquipBestItems();
 
     const popoverBackdrop = document.getElementById('popover-backdrop');
     if (popoverBackdrop) popoverBackdrop.onclick = () => closeItemPopover();
@@ -16753,6 +17006,36 @@
         addChatMessage('Rün Tozu', `♻️ Toplu Parçalama: ${data.result.count} adet eşya parçalandı, +${data.result.dust} Rün Tozu kazanıldı!`);
       } else {
         alert(data.error || 'Parçalanacak eşya bulunamadı.');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function autoEquipBestItems() {
+    try {
+      const res = await fetch('/api/rpg/auto-equip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: myPlayer.username })
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        myRpgProfile = data.state;
+        updateUIProfile();
+        renderCharacterSheet();
+        if (isBattleZone(currentMap)) {
+          attachCombatWeapon();
+          updateCombatHUD();
+        }
+        if (data.result && data.result.equippedCount > 0) {
+          playBeep(880, 'sine', 0.2);
+          addChatMessage('Ekipman', `⚡ En İyisini Kuşan: ${data.result.equippedCount} parça daha güçlü eşya otomatik kuşandı! [GS ${data.state.stats.gearScore}]`);
+        } else {
+          addChatMessage('Ekipman', 'ℹ️ Zaten çantandaki giyilebilir en güçlü eşyaları kuşanmış durumdasın.');
+        }
+      } else {
+        alert(data.error || 'Otomatik kuşanma yapılamadı.');
       }
     } catch (e) {
       console.error(e);

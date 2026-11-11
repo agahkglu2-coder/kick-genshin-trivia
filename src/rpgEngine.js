@@ -313,8 +313,8 @@ function describeItem(item) {
   const isMax = (item.plus || 0) >= MAX_PLUS;
   return {
     ...item,
-    slotLabel: SLOT_LABELS[item.slot],
-    rarityLabel: RARITIES[item.rarity].label,
+    slotLabel: SLOT_LABELS[item.slot] || item.slot,
+    rarityLabel: (RARITIES[item.rarity] || RARITIES[1]).label,
     score: itemScore(item),
     stats: itemStats(item),
     upgradeCost: isMax ? null : upgradeCost(item),
@@ -673,6 +673,67 @@ class RpgEngine {
     profile.bag.push(item);
     this._scheduleSave(username);
     return { ok: true };
+  }
+
+  /**
+   * Çantadaki giyilebilir en yüksek GearScore puanına sahip eşyaları otomatik kuşanır.
+   * Seviye gereksinimini karşılamayan eşyalar (ilvl > level + 5) elenir.
+   */
+  autoEquipBest(username) {
+    const profile = this.getProfile(username);
+    if (!profile) return { ok: false, error: 'Profil bulunamadı.' };
+
+    const changes = [];
+    const maxWearableIlvl = (profile.level || 1) + 5;
+
+    for (const slot of SLOTS) {
+      const curEquipped = profile.equipment[slot] || null;
+      const curScore = curEquipped ? itemScore(curEquipped) : -1;
+
+      let bestItem = null;
+      let bestIdx = -1;
+      let bestScore = curScore;
+
+      for (let i = 0; i < profile.bag.length; i++) {
+        const candidate = profile.bag[i];
+        if (!candidate || candidate.slot !== slot) continue;
+        if (candidate.ilvl > maxWearableIlvl) continue;
+
+        const score = itemScore(candidate);
+        if (score > bestScore) {
+          bestScore = score;
+          bestItem = candidate;
+          bestIdx = i;
+        }
+      }
+
+      if (bestItem && bestIdx >= 0) {
+        profile.bag.splice(bestIdx, 1);
+        if (curEquipped) {
+          profile.bag.push(curEquipped);
+        }
+        profile.equipment[slot] = bestItem;
+        changes.push({
+          slot,
+          item: describeItem(bestItem),
+          prev: curEquipped ? describeItem(curEquipped) : null
+        });
+      }
+    }
+
+    if (changes.length > 0) {
+      this._scheduleSave(username);
+      if (typeof this.emit === 'function') {
+        this.emit('stats_updated', { username, profile });
+      }
+    }
+
+    return {
+      ok: true,
+      equippedCount: changes.length,
+      changes,
+      state: this.getState(username)
+    };
   }
 
   /** Tek eşyayı (uid) ya da belirli nadirliğe kadar tüm çantayı (maxRarity) parçalar. */
