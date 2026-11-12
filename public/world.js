@@ -5014,6 +5014,8 @@
     if (Math.abs(x) < 11 && z < -23) return false;
     // Skip Guild (-24, 14)
     if (x > -32 && x < -14 && z > 6 && z < 20) return false;
+    // Skip Stone Well (-14, 6)
+    if (Math.hypot(x - (-14), z - 6) < 3.2) return false;
     // Skip Scenic Gazebo (24, 14)
     if (Math.hypot(x - 24, z - 14) < 5.5) return false;
     // Skip Battle Portal landing (0, 32)
@@ -5333,37 +5335,100 @@
       { x: 8, z: 24.5 }, { x: 22, z: 23.5 }
     ].forEach(p => worldObjects.add(createRiverFishSchool(p.x, p.z)));
 
-    // Arched Stone Bridge at x = 0, z = 24
+    // Arched Stone Bridge at x = 0, z = 24 with Approach Ramps & Textured Cobblestone Deck
     const bridgeGroup = new THREE.Group();
-    const bridgeGeo = new THREE.BoxGeometry(6.6, 0.4, 8.4);
-    const bridgeMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
-    const bridgeMesh = new THREE.Mesh(bridgeGeo, bridgeMat);
-    bridgeMesh.position.set(0, 0.45, 24);
-    bridgeMesh.castShadow = true;
-    bridgeMesh.receiveShadow = true;
-    bridgeGroup.add(bridgeMesh);
+    const bridgeMat = new THREE.MeshLambertMaterial({
+      map: createProceduralCobbleTexture(2, 3),
+      bumpMap: createProceduralCobbleBumpMap(2, 3),
+      bumpScale: 0.025
+    });
+    const bridgeSideMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
 
-    // Bridge Stone & Timber Railings
-    [-3.3, 3.3].forEach(rx => {
-      const railGeo = new THREE.BoxGeometry(0.3, 0.8, 8.4);
+    // 1. Central Elevated Bridge Deck (z: 21.0 to 27.0, surface at y = 0.65)
+    const bridgeDeckMesh = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.4, 6.0), bridgeMat);
+    bridgeDeckMesh.position.set(0, 0.45, 24);
+    bridgeDeckMesh.castShadow = true;
+    bridgeDeckMesh.receiveShadow = true;
+    bridgeGroup.add(bridgeDeckMesh);
+
+    // Stone Arch Support Foundation underneath deck spanning the canal
+    const archSupport = new THREE.Mesh(new THREE.BoxGeometry(6.7, 0.55, 7.8), bridgeSideMat);
+    archSupport.position.set(0, -0.05, 24);
+    bridgeGroup.add(archSupport);
+
+    // 2. North Approach Ramp (z: 18.0 to 21.0, length 3.0, smoothly ascending from y = 0.0 to 0.65)
+    const rampAngle = Math.atan2(0.65, 3.0);
+    const rampLen = Math.hypot(3.0, 0.65);
+    const northRamp = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.32, rampLen), bridgeMat);
+    northRamp.rotation.x = -rampAngle;
+    northRamp.position.set(0, 0.28, 19.5);
+    northRamp.castShadow = true;
+    northRamp.receiveShadow = true;
+    bridgeGroup.add(northRamp);
+
+    // 3. South Exit Ramp (z: 27.0 to 30.0, length 3.0, smoothly descending from y = 0.65 to 0.0)
+    const southRamp = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.32, rampLen), bridgeMat);
+    southRamp.rotation.x = rampAngle;
+    southRamp.position.set(0, 0.28, 28.5);
+    southRamp.castShadow = true;
+    southRamp.receiveShadow = true;
+    bridgeGroup.add(southRamp);
+
+    // Stone Curb Borders and Parapet Walls flanking the Bridge and Ramps
+    [-3.35, 3.35].forEach(rx => {
+      // Central Curb
+      const cCurb = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.22, 6.0), bridgeSideMat);
+      cCurb.position.set(rx, 0.72, 24);
+      bridgeGroup.add(cCurb);
+
+      // North Ramp Curb
+      const nCurb = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.22, rampLen), bridgeSideMat);
+      nCurb.rotation.x = -rampAngle;
+      nCurb.position.set(rx, 0.40, 19.5);
+      bridgeGroup.add(nCurb);
+
+      // South Ramp Curb
+      const sCurb = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.22, rampLen), bridgeSideMat);
+      sCurb.rotation.x = rampAngle;
+      sCurb.position.set(rx, 0.40, 28.5);
+      bridgeGroup.add(sCurb);
+
+      // Timber Railings spanning the whole bridge
       const railMat = new THREE.MeshLambertMaterial({ color: 0x451a03 });
-      const rail = new THREE.Mesh(railGeo, railMat);
-      rail.position.set(rx, 0.9, 24);
-      rail.castShadow = true;
-      bridgeGroup.add(rail);
+      const railMid = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.75, 6.0), railMat);
+      railMid.position.set(rx, 1.15, 24);
+      railMid.castShadow = true;
+      bridgeGroup.add(railMid);
 
-      [19.8, 28.2].forEach(pz => {
-        const ped = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, 0.6), bankMat);
-        ped.position.set(rx, 0.6, pz);
+      const railNorth = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.75, rampLen), railMat);
+      railNorth.rotation.x = -rampAngle;
+      railNorth.position.set(rx, 0.83, 19.5);
+      railNorth.castShadow = true;
+      bridgeGroup.add(railNorth);
+
+      const railSouth = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.75, rampLen), railMat);
+      railSouth.rotation.x = rampAngle;
+      railSouth.position.set(rx, 0.83, 28.5);
+      railSouth.castShadow = true;
+      bridgeGroup.add(railSouth);
+
+      // Lantern Pedestals at North Entrance (z=18), Mid-Span (z=24), South Landing (z=30)
+      [
+        { z: 18.0, y: 0.55 },
+        { z: 24.0, y: 0.95 },
+        { z: 30.0, y: 0.55 }
+      ].forEach(p => {
+        const ped = new THREE.Mesh(new THREE.BoxGeometry(0.65, 1.1, 0.65), bridgeSideMat);
+        ped.position.set(rx, p.y, p.z);
         ped.castShadow = true;
         bridgeGroup.add(ped);
 
         const bl = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.45, 0.35), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
-        bl.position.set(rx, 1.4, pz);
+        bl.position.set(rx, p.y + 0.75, p.z);
         bridgeGroup.add(bl);
 
-        const blLight = new THREE.PointLight(0xfef08a, 0.6, 8, 2);
-        blLight.position.set(rx, 1.4, pz);
+        const blLight = new THREE.PointLight(0xfef08a, 0.65, 8, 2);
+        blLight.position.set(rx, p.y + 0.75, p.z);
         bridgeGroup.add(blLight);
       });
     });
@@ -5416,19 +5481,19 @@
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_blacksmith_blue.gltf', {
       x: -24, z: -14, scale: 8.2
     });
-    // Medieval Market Stall in front of Trade Mart
+    // Medieval Market Stall tucked beside Trade Mart
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_market_blue.gltf', {
-      x: -16, z: -5.5, rotY: Math.PI / 2, scale: 6.2
+      x: -18.5, z: -7.5, rotY: Math.PI / 2, scale: 6.2
     });
-    // Blacksmith & Trade Props
+    // Blacksmith & Trade Props against building wall
     spawnKayKitModel('/assets/models/kaykit/decoration/props/weaponrack.gltf', {
-      x: -19, z: -10, rotY: Math.PI / 2, scale: 3.8
+      x: -21.0, z: -9.5, rotY: Math.PI / 2, scale: 3.8
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/sack.gltf', {
-      x: -12.5, z: -6.5, scale: 3.2
+      x: -17.5, z: -9.5, scale: 3.2
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/wheelbarrow.gltf', {
-      x: -11, z: -4.5, rotY: -0.4, scale: 3.2
+      x: -19.5, z: -10.5, rotY: -0.4, scale: 3.2
     });
 
     // B) Cat's Tail Taverna - North-East Quarter (24, -14)
@@ -5498,9 +5563,9 @@
     worldObjects.add(createScenicGazebo(24, 14));
 
     // F) Yeni Eklenen KayKit 3D Şehir Yapıları ve Anıtları (Büyük Boyut)
-    // 1. Taş Meydan Kuyusu (Central Stone Well)
+    // 1. Taş Meydan Kuyusu (Central Stone Well) - Neatly relocated to West Courtyard beside Guild
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_well_blue.gltf', {
-      x: 0, z: 7.5, scale: 5.2
+      x: -14, z: 6.0, scale: 5.2
     });
     // 2. Dönen Su Değirmeni (Rotating River Watermill)
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_watermill_blue.gltf', {
@@ -5535,41 +5600,23 @@
       x: 16, z: 38, scale: 8.2
     });
 
-    // 7. Portallar Meydanı Detayları (z = 32):
-    // Zindan Kampı (Sol Taraf: -6.5, 32):
-    spawnKayKitModel('/assets/models/kaykit/decoration/props/tent.gltf', {
-      x: -12.5, z: 30, rotY: 0.5, scale: 5.2
-    });
-    spawnKayKitModel('/assets/models/kaykit/decoration/props/tent.gltf', {
-      x: -12.5, z: 35.0, rotY: -0.3, scale: 4.8
-    });
-    spawnKayKitModel('/assets/models/kaykit/decoration/props/target.gltf', {
-      x: -15.0, z: 32, rotY: Math.PI / 2, scale: 3.8
+    // 7. Portallar Meydanı Asil Süslemeleri (z = 32):
+    // Zindan Portalı Yanı (Sol Taraf: -6.5, 32):
+    spawnKayKitModel('/assets/models/kaykit/decoration/props/flag_blue.gltf', {
+      x: -9.5, z: 32, scale: 4.5, animatedFlag: true
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/weaponrack.gltf', {
-      x: -10, z: 35.5, rotY: -0.2, scale: 3.8
-    });
-    spawnKayKitModel('/assets/models/kaykit/decoration/props/crate_A_big.gltf', {
-      x: -3.8, z: 35.5, scale: 3.2
-    });
-    spawnKayKitModel('/assets/models/kaykit/decoration/props/barrel.gltf', {
-      x: -3.8, z: 33.5, scale: 3.2
+      x: -11.0, z: 34.5, rotY: 0.2, scale: 3.5
     });
     // Gladyatör Arenası Girişi (Sağ Taraf: 6.5, 32):
     spawnKayKitModel('/assets/models/kaykit/buildings/neutral/wall_straight.gltf', {
-      x: 6.5, z: 37.5, scale: 4.5
+      x: 6.5, z: 36.8, scale: 4.5
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/flag_blue.gltf', {
-      x: 4.2, z: 35, scale: 4.5, animatedFlag: true
+      x: 4.2, z: 34.5, scale: 4.5, animatedFlag: true
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/flag_red.gltf', {
-      x: 8.8, z: 35, scale: 4.5, animatedFlag: true
-    });
-    spawnKayKitModel('/assets/models/kaykit/buildings/neutral/projectile_catapult.gltf', {
-      x: 10.5, z: 33.5, scale: 3.5
-    });
-    spawnKayKitModel('/assets/models/kaykit/decoration/props/weaponrack.gltf', {
-      x: 10.5, z: 31, rotY: -Math.PI / 2, scale: 3.8
+      x: 8.8, z: 34.5, scale: 4.5, animatedFlag: true
     });
 
     // 8. KayKit 3D Doğal Çevre, Orman ve Nehir Objeleri (Gerçekçi Büyük Boyut)
@@ -5578,11 +5625,11 @@
     spawnKayKitModel('/assets/models/kaykit/decoration/nature/trees_B_large.gltf', { x: 34, z: -14, scale: 7.5 });
     spawnKayKitModel('/assets/models/kaykit/decoration/nature/trees_A_large.gltf', { x: -34, z: 12, scale: 7.2 });
     spawnKayKitModel('/assets/models/kaykit/decoration/nature/trees_B_large.gltf', { x: 32, z: 26, scale: 7.5 });
-    // Tekil Ağaçlar
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/tree_single_A.gltf', { x: -8, z: -18, scale: 6.2 });
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/tree_single_B.gltf', { x: 8, z: -18, scale: 6.2 });
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/tree_single_A.gltf', { x: -7, z: 18, scale: 6.0 });
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/tree_single_B.gltf', { x: 7, z: 18, scale: 6.0 });
+    // Tekil Ağaçlar (Clear of grand avenue corridors)
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/tree_single_A.gltf', { x: -10, z: -18, scale: 6.2 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/tree_single_B.gltf', { x: 10, z: -18, scale: 6.2 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/tree_single_A.gltf', { x: -9.5, z: 17, scale: 6.0 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/tree_single_B.gltf', { x: 9.5, z: 17, scale: 6.0 });
     // 3D Nehir Boyu ve Köşe Kayaları
     spawnKayKitModel('/assets/models/kaykit/decoration/nature/rock_single_A.gltf', { x: -20, z: 20.2, scale: 6.0 });
     spawnKayKitModel('/assets/models/kaykit/decoration/nature/rock_single_B.gltf', { x: 20, z: 27.8, scale: 6.0 });
@@ -5594,24 +5641,32 @@
     spawnKayKitModel('/assets/models/kaykit/decoration/nature/waterplant_A.gltf', { x: -6, y: 0.05, z: 21.0, scale: 3.6 });
     spawnKayKitModel('/assets/models/kaykit/decoration/nature/waterplant_A.gltf', { x: 6, y: 0.05, z: 27.0, scale: 3.6 });
 
-    // 6. Street Lamps along crossroads & plazas
+    // 6. Street Lamps neatly positioned along sidewalk curbs (Never blocking avenues)
     const lampPositions = [
-      { x: -12, z: 0 }, { x: -24, z: 0 }, { x: 12, z: 0 }, { x: 24, z: 0 },
-      { x: 0, z: -14 }, { x: 0, z: -24 }, { x: 0, z: 12 },
-      { x: -16, z: -7 }, { x: 16, z: -7 }, { x: -16, z: 7 }, { x: 16, z: 7 }
+      // North Avenue Curbs (x = ±4.6)
+      { x: -4.6, z: -16 }, { x: 4.6, z: -16 },
+      { x: -4.6, z: -26 }, { x: 4.6, z: -26 },
+      // South Avenue Curbs (x = ±4.6)
+      { x: -4.6, z: 13 }, { x: 4.6, z: 13 },
+      // West Avenue Curbs (z = ±4.6)
+      { x: -16, z: -4.6 }, { x: -16, z: 4.6 },
+      { x: -26, z: -4.6 }, { x: -26, z: 4.6 },
+      // East Avenue Curbs (z = ±4.6)
+      { x: 16, z: -4.6 }, { x: 16, z: 4.6 },
+      { x: 26, z: -4.6 }, { x: 26, z: 4.6 }
     ];
     lampPositions.forEach(p => worldObjects.add(createStreetLamp(p.x, p.z)));
 
-    // 7. Stone Benches & Flower Beds around Fountain Plaza (Framing the fountain)
-    worldObjects.add(createBench(0, -7.2, 0));
-    worldObjects.add(createBench(0, 7.2, Math.PI));
-    worldObjects.add(createBench(-7.2, 0, Math.PI / 2));
-    worldObjects.add(createBench(7.2, 0, -Math.PI / 2));
+    // 7. Stone Benches & Flower Beds (At 4 diagonal corners of fountain plaza - avenues 100% clear)
+    worldObjects.add(createBench(-5.6, -5.6, Math.PI * 0.25));
+    worldObjects.add(createBench(5.6, -5.6, -Math.PI * 0.25));
+    worldObjects.add(createBench(-5.6, 5.6, Math.PI * 0.75));
+    worldObjects.add(createBench(5.6, 5.6, -Math.PI * 0.75));
 
-    worldObjects.add(createFlowerBed(-10, 5, 4, 2));
-    worldObjects.add(createFlowerBed(10, 5, 4, 2));
-    worldObjects.add(createFlowerBed(-10, -10, 4, 2));
-    worldObjects.add(createFlowerBed(10, -10, 4, 2));
+    worldObjects.add(createFlowerBed(-10, 6.5, 4, 2));
+    worldObjects.add(createFlowerBed(10, 6.5, 4, 2));
+    worldObjects.add(createFlowerBed(-10, -6.5, 4, 2));
+    worldObjects.add(createFlowerBed(10, -6.5, 4, 2));
 
     // 8. Cute Wandering Pixel Cats
     worldObjects.add(createPixelCat(20, -2.5, 0xf97316)); // Ginger tabby near tavern patio
@@ -5942,7 +5997,8 @@
     const spriteMat = new THREE.MeshStandardMaterial({
       map: initialTex,
       transparent: true,
-      alphaTest: 0.05,
+      alphaTest: 0.08,
+      depthWrite: true,
       roughness: 0.65,
       metalness: 0.05,
       side: THREE.DoubleSide
@@ -5951,6 +6007,8 @@
     // Link material to initial texture load
     const baseInit = getPixelCharBaseTexture(initialUrl);
     if (baseInit.image) {
+      initialTex.image = baseInit.image;
+      initialTex.needsUpdate = true;
       spriteMat.needsUpdate = true;
     } else {
       if (!pixelCharTextureSubscribers[initialUrl]) pixelCharTextureSubscribers[initialUrl] = [];
@@ -6857,20 +6915,89 @@
     myPlayer.x = Math.max(bounds.minX, Math.min(bounds.maxX, myPlayer.x));
     myPlayer.z = Math.max(bounds.minZ, Math.min(bounds.maxZ, myPlayer.z));
 
-    // Soft obstacle collision in Town
+    // Obstacle collisions in Town & Interiors
     if (currentMap === 'town') {
-      const fDist = Math.hypot(myPlayer.x, myPlayer.z);
-      if (fDist < 4.9 && fDist > 0.01) {
-        const angle = Math.atan2(myPlayer.z, myPlayer.x);
-        myPlayer.x = Math.cos(angle) * 4.9;
-        myPlayer.z = Math.sin(angle) * 4.9;
+      // 1. River Canal Retaining Walls & Bridge Railings (Canal spans z in [19.5, 28.5])
+      // Crossing is ONLY permitted on the Bridge (|x| <= 3.0) or Fishing Piers
+      const onBridge = Math.abs(myPlayer.x) <= 3.0 && myPlayer.z >= 17.5 && myPlayer.z <= 30.5;
+      const onWestPier = myPlayer.x >= -15.5 && myPlayer.x <= -12.5 && myPlayer.z >= 19.5 && myPlayer.z <= 26.5;
+      const onEastPier = myPlayer.x >= 12.5 && myPlayer.x <= 15.5 && myPlayer.z >= 19.5 && myPlayer.z <= 26.5;
+
+      if (onBridge) {
+        // Confine player securely between bridge railings so they don't fall off sides
+        if (myPlayer.z >= 18.5 && myPlayer.z <= 29.5) {
+          if (myPlayer.x < -2.85) myPlayer.x = -2.85;
+          if (myPlayer.x > 2.85) myPlayer.x = 2.85;
+        }
+      } else if (onWestPier) {
+        // Confine player to wooden fishing deck
+        if (myPlayer.x < -15.2) myPlayer.x = -15.2;
+        if (myPlayer.x > -12.8) myPlayer.x = -12.8;
+        if (myPlayer.z > 26.2) myPlayer.z = 26.2;
+      } else if (onEastPier) {
+        // Confine player to wooden fishing deck
+        if (myPlayer.x < 12.8) myPlayer.x = 12.8;
+        if (myPlayer.x > 15.2) myPlayer.x = 15.2;
+        if (myPlayer.z > 26.2) myPlayer.z = 26.2;
+      } else {
+        // Solid stone retaining walls block walking into canal water
+        if (myPlayer.z > 19.5 && myPlayer.z < 28.5) {
+          if (myPlayer.z < 24.0) {
+            myPlayer.z = 19.5; // North bank retaining wall
+          } else {
+            myPlayer.z = 28.5; // South bank retaining wall
+          }
+        }
       }
+
+      // 2. Radial Obstacle Collisions (Fountain, Well, Gazebo, Windmill, Watchtowers)
+      const circleColliders = [
+        { cx: 0, cz: 0, r: 4.9 },       // Central Fountain
+        { cx: -14, cz: 6.0, r: 2.2 },   // Relocated Stone Well
+        { cx: 24, cz: 14, r: 4.0 },     // Scenic Waterside Gazebo
+        { cx: 36, cz: -26, r: 4.6 },    // Hill Windmill
+        { cx: 40, cz: -38, r: 3.5 },    // Watchtower NE
+        { cx: -40, cz: 26, r: 3.5 },    // Watchtower SW
+        { cx: 16, cz: 38, r: 3.5 }      // Watchtower SE
+      ];
+      for (const c of circleColliders) {
+        const cd = Math.hypot(myPlayer.x - c.cx, myPlayer.z - c.cz);
+        if (cd < c.r && cd > 0.001) {
+          const a = Math.atan2(myPlayer.z - c.cz, myPlayer.x - c.cx);
+          myPlayer.x = c.cx + Math.cos(a) * c.r;
+          myPlayer.z = c.cz + Math.sin(a) * c.r;
+        }
+      }
+
+      // 3. Axis-Aligned Bounding Box (AABB) Collisions for All Town Architecture
       const buildingColliders = [
-        { x1: -29.2, x2: -18.8, z1: -19.0, z2: -9.6 }, // Trade Mart (-24, -14)
-        { x1: 18.8, x2: 29.2, z1: -19.0, z2: -9.6 },   // Cat's Tail Taverna (24, -14)
-        { x1: -6.5, x2: 6.5, z1: -37.8, z2: -26.2 },  // Dilek Tapınağı (0, -32)
-        { x1: -29.2, x2: -18.8, z1: 9.4, z2: 18.8 },   // Maceracılar Loncası (-24, 14)
-        { x1: 20.0, x2: 28.0, z1: 10.0, z2: 18.0 }     // Gazebo (24, 14)
+        // Gacha Cathedral Sanctuary (0, -34)
+        { x1: -7.5, x2: 7.5, z1: -44.0, z2: -26.5 },
+        // Takas Pazarı & Demirci Ocağı (-24, -14)
+        { x1: -31.0, x2: -17.0, z1: -20.0, z2: -9.5 },
+        // Market Stall (-18.5, -7.5)
+        { x1: -21.5, x2: -15.5, z1: -9.5, z2: -5.5 },
+        // Cat's Tail Taverna (24, -14)
+        { x1: 17.0, x2: 31.0, z1: -20.0, z2: -9.5 },
+        // Tavern Outdoor Patio (24, -4)
+        { x1: 19.0, x2: 29.0, z1: -7.5, z2: -0.5 },
+        // Maceracılar Loncası (Guild Hall) (-24, 14)
+        { x1: -31.0, x2: -17.0, z1: 9.5, z2: 20.0 },
+        // Northwest Castle Keep (-36, -34)
+        { x1: -43.0, x2: -29.0, z1: -41.0, z2: -27.0 },
+        // River Watermill (16, 19.8)
+        { x1: 12.0, x2: 20.0, z1: 16.5, z2: 22.5 },
+        // Residential House East (33, 0)
+        { x1: 28.5, x2: 37.5, z1: -4.5, z2: 4.5 },
+        // Residential House West (-33, 0)
+        { x1: -37.5, x2: -28.5, z1: -4.5, z2: 4.5 },
+        // Residential House North-East (27, -26)
+        { x1: 22.5, x2: 31.5, z1: -30.5, z2: -21.5 },
+        // Benches around Central Plaza (diagonal corners)
+        { x1: -6.8, x2: -4.4, z1: -6.8, z2: -4.4 },
+        { x1: 4.4, x2: 6.8, z1: -6.8, z2: -4.4 },
+        { x1: -6.8, x2: -4.4, z1: 4.4, z2: 6.8 },
+        { x1: 4.4, x2: 6.8, z1: 4.4, z2: 6.8 }
       ];
       for (const b of buildingColliders) {
         if (myPlayer.x > b.x1 && myPlayer.x < b.x2 && myPlayer.z > b.z1 && myPlayer.z < b.z2) {
@@ -6885,6 +7012,9 @@
           else myPlayer.z = b.z2;
         }
       }
+    } else if (['trade_house', 'tavern', 'shrine', 'guild'].includes(currentMap)) {
+      // Prevent walking through merchant shop counters in interior maps
+      if (myPlayer.z < -3.2) myPlayer.z = -3.2;
     }
 
     // Lerp Mesh Position & Rotation
@@ -6893,7 +7023,7 @@
       myPlayer.rot = aimNow.angle;
     }
 
-    // In PvP Arena, height difference: r <= 17.8 is Sand Combat Pit (y=0), r > 17.8 is Spectator Terrace (y=1.2)
+    // Dynamic Vertical Elevation (PvP Arena & Town Bridge Ramps)
     if (currentMap === 'pvp_arena') {
       const distCenter = Math.hypot(myPlayer.x, myPlayer.z);
       myPlayer.y = distCenter > 17.8 ? 1.2 : 0.0;
@@ -6910,6 +7040,24 @@
             badge.textContent = '🛡️ TRİBÜN';
           }
         }
+      }
+    } else if (currentMap === 'town') {
+      // Dynamic Bridge Elevation: Walk up approach ramp (y: 0.0 -> 0.65), across deck (0.65), and down exit ramp (0.65 -> 0.0)
+      if (Math.abs(myPlayer.x) <= 3.25 && myPlayer.z >= 18.0 && myPlayer.z <= 30.0) {
+        if (myPlayer.z < 21.0) {
+          // North Approach Ramp (z: 18.0 -> 21.0, y: 0.0 -> 0.65)
+          const t = (myPlayer.z - 18.0) / 3.0;
+          myPlayer.y = t * 0.65;
+        } else if (myPlayer.z > 27.0) {
+          // South Exit Ramp (z: 27.0 -> 30.0, y: 0.65 -> 0.0)
+          const t = (30.0 - myPlayer.z) / 3.0;
+          myPlayer.y = t * 0.65;
+        } else {
+          // Flat Bridge Deck (z: 21.0 -> 27.0)
+          myPlayer.y = 0.65;
+        }
+      } else {
+        myPlayer.y = 0.0;
       }
     } else {
       myPlayer.y = 0;
@@ -17123,6 +17271,18 @@
       if (currentMap === 'pvp_arena') {
         const oDist = Math.hypot(entry.mesh.position.x, entry.mesh.position.z);
         const targetY = oDist > 17.8 ? 1.2 : 0.0;
+        entry.mesh.position.y += (targetY - entry.mesh.position.y) * CONFIG.posLerp;
+      } else if (currentMap === 'town') {
+        let targetY = 0.0;
+        if (Math.abs(entry.mesh.position.x) <= 3.25 && entry.mesh.position.z >= 18.0 && entry.mesh.position.z <= 30.0) {
+          if (entry.mesh.position.z < 21.0) {
+            targetY = ((entry.mesh.position.z - 18.0) / 3.0) * 0.65;
+          } else if (entry.mesh.position.z > 27.0) {
+            targetY = ((30.0 - entry.mesh.position.z) / 3.0) * 0.65;
+          } else {
+            targetY = 0.65;
+          }
+        }
         entry.mesh.position.y += (targetY - entry.mesh.position.y) * CONFIG.posLerp;
       }
       entry.mesh.rotation.y += (entry.targetRot - entry.mesh.rotation.y) * CONFIG.rotLerp;
