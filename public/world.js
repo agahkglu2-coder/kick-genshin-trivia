@@ -5913,7 +5913,7 @@
     const charId = (Math.abs(avatarIndex) % 2 === 1) ? 'kari' : 'erkek';
 
     // 1. Soft Ground Contact Shadow (grounded oval directly beneath feet)
-    const shadowGeo = new THREE.CircleGeometry(0.42, 16);
+    const shadowGeo = new THREE.CircleGeometry(0.58, 16);
     shadowGeo.scale(1.0, 0.6, 1.0);
     const shadowMat = new THREE.MeshBasicMaterial({
       color: 0x000000,
@@ -5926,11 +5926,11 @@
     shadowMesh.position.y = 0.02;
     root.add(shadowMesh);
 
-    // 2. Sprite Mesh Quad (3.6m quad, feet anchored firmly at y = 0.0)
+    // 2. Sprite Mesh Quad (5.2m quad, character height ~2.35m hero proportions, feet anchored firmly at y = 0.0)
     // 256x256 frame with baseline feet at Y=210, center at 128:
-    // Offset = (210 - 128) / 256 * 3.6 = 1.153m
-    const planeGeo = new THREE.PlaneGeometry(3.6, 3.6);
-    planeGeo.translate(0, 1.153, 0);
+    // Offset = (210 - 128) / 256 * 5.2 = 1.666m
+    const planeGeo = new THREE.PlaneGeometry(5.2, 5.2);
+    planeGeo.translate(0, 1.666, 0);
 
     const animTextures = {};
     const initialKey = 'idle_south';
@@ -6013,7 +6013,7 @@
     const nameMat = new THREE.SpriteMaterial({ map: nameTex });
     const nameSprite = new THREE.Sprite(nameMat);
     nameSprite.scale.set(3.4, 0.8, 1);
-    nameSprite.position.y = 2.35;
+    nameSprite.position.y = 2.95;
     group.add(nameSprite);
 
     group.userData.nameSprite = nameSprite;
@@ -6040,7 +6040,7 @@
     const bMat = new THREE.SpriteMaterial({ map: bTex });
     const bSprite = new THREE.Sprite(bMat);
     bSprite.scale.set(4.2, 1.45, 1);
-    bSprite.position.y = 3.65;
+    bSprite.position.y = 4.3;
     playerGroup.add(bSprite);
     if (playerGroup.userData) {
       playerGroup.userData.bubbleMesh = bSprite;
@@ -6252,7 +6252,7 @@
             scene.remove(otherPlayerCompanions.get(msg.socketId));
           }
           const otherPet = createCompanionChibiMesh(msg.companion, msg.companionData ? msg.companionData.element : 'Electro');
-          otherPet.position.set(entry.mesh.position.x, entry.mesh.position.y + 1.85, entry.mesh.position.z);
+          otherPet.position.set(entry.mesh.position.x, entry.mesh.position.y + 2.25, entry.mesh.position.z);
           scene.add(otherPet);
           otherPlayerCompanions.set(msg.socketId, otherPet);
         } else {
@@ -6702,7 +6702,7 @@
         // Other player companion
         if (p.companion && p.companion !== 'none') {
           const otherPet = createCompanionChibiMesh(p.companion, 'Electro');
-          otherPet.position.set(p.x, p.y + 1.85, p.z);
+          otherPet.position.set(p.x, p.y + 2.25, p.z);
           scene.add(otherPet);
           otherPlayerCompanions.set(p.id, otherPet);
         }
@@ -6738,7 +6738,7 @@
         if (p.companion && p.companion !== 'none') {
           if (!otherPlayerCompanions.has(p.id)) {
             const compPet = createCompanionChibiMesh(p.companion, 'Electro');
-            compPet.position.set(p.x, (p.y || 0) + 1.85, p.z);
+            compPet.position.set(p.x, (p.y || 0) + 2.25, p.z);
             scene.add(compPet);
             otherPlayerCompanions.set(p.id, compPet);
           }
@@ -10858,7 +10858,7 @@
   function spawnCompanionMesh(charName, element = 'Electro') {
     removeCompanionMesh();
     myCompanionMesh = createCompanionChibiMesh(charName, element);
-    myCompanionMesh.position.set(myPlayer.x, (myMesh ? myMesh.position.y : 0) + 1.85, myPlayer.z);
+    myCompanionMesh.position.set(myPlayer.x, (myMesh ? myMesh.position.y : 0) + 2.25, myPlayer.z);
     scene.add(myCompanionMesh);
   }
 
@@ -10874,11 +10874,11 @@
 
     // Follow target: floating over player's right shoulder
     const shoulderAngle = myPlayer.rot - 0.75;
-    const shoulderDist = 1.35;
+    const shoulderDist = 1.55;
     const bobOffset = Math.sin(now * 0.0035) * 0.14;
     const targetX = myPlayer.x + Math.sin(shoulderAngle) * shoulderDist;
     const targetZ = myPlayer.z + Math.cos(shoulderAngle) * shoulderDist;
-    const targetY = (myMesh ? myMesh.position.y : 0) + 1.85 + bobOffset;
+    const targetY = (myMesh ? myMesh.position.y : 0) + 2.25 + bobOffset;
 
     // Smooth Lerp Follow
     const lerpSpeed = Math.min(1.0, 7.5 * delta);
@@ -17106,9 +17106,9 @@
     for (const [id, pet] of otherPlayerCompanions.entries()) {
       const otherEntry = otherPlayers.get(id);
       if (otherEntry) {
-        const ox = otherEntry.mesh.position.x + Math.sin(otherEntry.mesh.rotation.y - 0.75) * 1.35;
-        const oz = otherEntry.mesh.position.z + Math.cos(otherEntry.mesh.rotation.y - 0.75) * 1.35;
-        const oy = otherEntry.mesh.position.y + 1.85 + Math.sin(now * 0.0035 + (id.charCodeAt(0) || 0)) * 0.14;
+        const ox = otherEntry.mesh.position.x + Math.sin(otherEntry.mesh.rotation.y - 0.75) * 1.55;
+        const oz = otherEntry.mesh.position.z + Math.cos(otherEntry.mesh.rotation.y - 0.75) * 1.55;
+        const oy = otherEntry.mesh.position.y + 2.25 + Math.sin(now * 0.0035 + (id.charCodeAt(0) || 0)) * 0.14;
         pet.position.x += (ox - pet.position.x) * Math.min(1.0, 7.5 * delta);
         pet.position.y += (oy - pet.position.y) * Math.min(1.0, 7.5 * delta);
         pet.position.z += (oz - pet.position.z) * Math.min(1.0, 7.5 * delta);
