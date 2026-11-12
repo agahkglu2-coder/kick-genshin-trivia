@@ -293,21 +293,28 @@
 
   function getGsDifficultyMultiplier(playerGS = 0, reqGS = 100) {
     if (!reqGS || reqGS <= 0) {
-      return { damageMult: 1.0, damageTakenMult: 1.0, glanceChance: 0, status: 'safe', ratio: 1.0 };
+      return { damageMult: 1.0, damageTakenMult: 1.0, glanceChance: 0, status: 'safe', ratio: 1.0, label: '🛡️ UYGUN SEVİYE' };
     }
-    const ratio = Math.max(0.05, playerGS / reqGS);
+    const ratio = Math.max(0.01, playerGS / reqGS);
     if (ratio >= 1.0) {
-      return { damageMult: 1.0, damageTakenMult: 1.0, glanceChance: 0, status: 'safe', ratio: 1.0 };
+      return { damageMult: 1.0, damageTakenMult: 1.0, glanceChance: 0, status: 'safe', ratio: Math.round(ratio * 100) / 100, label: '🛡️ UYGUN SEVİYE' };
     } else if (ratio >= 0.6) {
       const damageMult = Math.max(0.45, Math.round(ratio * 100) / 100);
       const damageTakenMult = Math.min(1.8, Math.round((1 + (1 - ratio) * 1.3) * 100) / 100);
       const glanceChance = Math.round((1 - ratio) * 0.25 * 100) / 100;
-      return { damageMult, damageTakenMult, glanceChance, status: 'challenging', ratio: Math.round(ratio * 100) / 100 };
-    } else {
+      return { damageMult, damageTakenMult, glanceChance, status: 'challenging', ratio: Math.round(ratio * 100) / 100, label: '⚔️ ZORLU SEVİYE' };
+    } else if (ratio >= 0.18) {
       const damageMult = Math.max(0.15, Math.round(ratio * 0.7 * 100) / 100);
-      const damageTakenMult = Math.min(2.5, Math.round((1.5 + (1 - ratio) * 1.5) * 100) / 100);
+      const damageTakenMult = 2.5;
       const glanceChance = 0.35;
-      return { damageMult, damageTakenMult, glanceChance, status: 'deadly', ratio: Math.round(ratio * 100) / 100 };
+      return { damageMult, damageTakenMult, glanceChance, status: 'deadly', ratio: Math.round(ratio * 100) / 100, label: '⚠️ ÇOK TEHLİKELİ' };
+    } else {
+      // KAFATASI / AŞIRI YETERSİZ DONANIM (Ratio < 0.18 - Örn: 5 GS vs 100 GS = 0.05, 5 GS vs 350 GS = 0.014)
+      // 5 GS ile gelen oyuncu düşman zırhını delemez; %88 sektirme, %3 hasar, 4.5 kat ölümcül hasar alma!
+      const damageMult = 0.03;
+      const damageTakenMult = 4.5;
+      const glanceChance = 0.88;
+      return { damageMult, damageTakenMult, glanceChance, poiseBreakable: false, status: 'deadly', ratio: Math.round(ratio * 100) / 100, label: '💀 ÖLÜMCÜL DONANIM EKSİĞİ' };
     }
   }
 
@@ -1635,6 +1642,21 @@
   }
 
   // --- Procedural Chibi Animation & Full-Body Combat Choreography Controller ---
+  const _camEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+  const _uprightQuat = new THREE.Quaternion();
+  const _worldUpVec = new THREE.Vector3(0, 1, 0);
+
+  function alignUprightBillboard(mesh) {
+    if (!camera || !mesh) return;
+    _camEuler.setFromQuaternion(camera.quaternion, 'YXZ');
+    _uprightQuat.setFromAxisAngle(_worldUpVec, _camEuler.y);
+    if (mesh.parent) {
+      mesh.quaternion.copy(mesh.parent.quaternion).invert().multiply(_uprightQuat);
+    } else {
+      mesh.quaternion.copy(_uprightQuat);
+    }
+  }
+
   function animateRig(rig, isMoving, delta, now) {
     if (!rig) return;
 
@@ -1723,14 +1745,8 @@
         }
       }
 
-      // 5. Billboard Alignment to Camera (compensate parent rotation so sprite never tilts or rolls)
-      if (camera && rig.mesh) {
-        if (rig.mesh.parent) {
-          rig.mesh.quaternion.copy(rig.mesh.parent.quaternion).invert().multiply(camera.quaternion);
-        } else {
-          rig.mesh.quaternion.copy(camera.quaternion);
-        }
-      }
+      // 5. Upright Cylindrical Billboard Alignment (Y-axis only; sprite never slants/leans into ground, bridge, or walls)
+      alignUprightBillboard(rig.mesh);
 
       return;
     }
@@ -5359,17 +5375,17 @@
     // 2. North Approach Ramp (z: 18.0 to 21.0, length 3.0, smoothly ascending from y = 0.0 to 0.65)
     const rampAngle = Math.atan2(0.65, 3.0);
     const rampLen = Math.hypot(3.0, 0.65);
-    const northRamp = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.32, rampLen), bridgeMat);
+    const northRamp = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.25, rampLen), bridgeMat);
     northRamp.rotation.x = -rampAngle;
-    northRamp.position.set(0, 0.28, 19.5);
+    northRamp.position.set(0, 0.203, 19.5);
     northRamp.castShadow = true;
     northRamp.receiveShadow = true;
     bridgeGroup.add(northRamp);
 
     // 3. South Exit Ramp (z: 27.0 to 30.0, length 3.0, smoothly descending from y = 0.65 to 0.0)
-    const southRamp = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.32, rampLen), bridgeMat);
+    const southRamp = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.25, rampLen), bridgeMat);
     southRamp.rotation.x = rampAngle;
-    southRamp.position.set(0, 0.28, 28.5);
+    southRamp.position.set(0, 0.203, 28.5);
     southRamp.castShadow = true;
     southRamp.receiveShadow = true;
     bridgeGroup.add(southRamp);
@@ -5378,19 +5394,19 @@
     [-3.35, 3.35].forEach(rx => {
       // Central Curb
       const cCurb = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.22, 6.0), bridgeSideMat);
-      cCurb.position.set(rx, 0.72, 24);
+      cCurb.position.set(rx, 0.69, 24);
       bridgeGroup.add(cCurb);
 
       // North Ramp Curb
       const nCurb = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.22, rampLen), bridgeSideMat);
       nCurb.rotation.x = -rampAngle;
-      nCurb.position.set(rx, 0.40, 19.5);
+      nCurb.position.set(rx, 0.37, 19.5);
       bridgeGroup.add(nCurb);
 
       // South Ramp Curb
       const sCurb = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.22, rampLen), bridgeSideMat);
       sCurb.rotation.x = rampAngle;
-      sCurb.position.set(rx, 0.40, 28.5);
+      sCurb.position.set(rx, 0.37, 28.5);
       bridgeGroup.add(sCurb);
 
       // Timber Railings spanning the whole bridge
@@ -9814,13 +9830,8 @@
         }
       }
 
-      if (camera && rig.mesh) {
-        if (rig.mesh.parent) {
-          rig.mesh.quaternion.copy(rig.mesh.parent.quaternion).invert().multiply(camera.quaternion);
-        } else {
-          rig.mesh.quaternion.copy(camera.quaternion);
-        }
-      }
+      // Upright Billboard Alignment for pixel mobs
+      alignUprightBillboard(rig.mesh);
 
       const dx = myPlayer.x - mob.x;
       const shouldFaceLeft = dx < 0;
@@ -10345,30 +10356,30 @@
     mob.auraMesh = auraMesh;
   }
 
-  // Mob Templates
+  // Mob Templates - Scaled for True MMORPG Gear Check Progression
   const MOB_TEMPLATES = {
     // Zone 1: Zümrüt Çayırları (Slime Vadisi) [GS 100]
-    slime_green: { name: 'Zümrüt Balçık', hp: 70, speed: 2.2, dmg: 7, height: 1.1, aggroRange: 16, attackRange: 1.4 },
-    slime_electro: { name: 'Yıldırım Balçığı', hp: 90, speed: 2.5, dmg: 10, height: 1.2, aggroRange: 16, attackRange: 1.4 },
-    hilichurl_recruit: { name: 'Çırak Hilichurl', hp: 120, speed: 2.6, dmg: 12, height: 1.7, aggroRange: 18, attackRange: 1.9 },
+    slime_green: { name: 'Zümrüt Balçık', hp: 320, speed: 2.2, dmg: 24, height: 1.1, aggroRange: 16, attackRange: 1.4 },
+    slime_electro: { name: 'Yıldırım Balçığı', hp: 420, speed: 2.5, dmg: 32, height: 1.2, aggroRange: 16, attackRange: 1.4 },
+    hilichurl_recruit: { name: 'Çırak Hilichurl', hp: 580, speed: 2.6, dmg: 38, height: 1.7, aggroRange: 18, attackRange: 1.9 },
 
     // Zone 2: Kızıl Hilichurl Harabeleri [GS 350]
-    slime_pyro: { name: 'Ateş Balçığı', hp: 140, speed: 2.6, dmg: 18, height: 1.2, aggroRange: 16, attackRange: 1.4 },
-    hilichurl_warrior: { name: 'Zırhlı Hilichurl Savaşçısı', hp: 260, speed: 2.7, dmg: 24, height: 1.9, aggroRange: 18, attackRange: 2.0 },
-    pyromancer: { name: 'Kızıl Pyro Büyücüsü', hp: 210, speed: 1.9, dmg: 28, height: 2.0, aggroRange: 22, attackRange: 7.5, isRanged: true },
-    mitachurl_axe: { name: 'Alev Baltalı Mitachurl (ELİT)', hp: 750, speed: 2.2, dmg: 44, height: 2.6, aggroRange: 22, attackRange: 2.6, isElite: true },
+    slime_pyro: { name: 'Ateş Balçığı', hp: 950, speed: 2.6, dmg: 65, height: 1.2, aggroRange: 16, attackRange: 1.4 },
+    hilichurl_warrior: { name: 'Zırhlı Hilichurl Savaşçısı', hp: 1650, speed: 2.7, dmg: 92, height: 1.9, aggroRange: 18, attackRange: 2.0 },
+    pyromancer: { name: 'Kızıl Pyro Büyücüsü', hp: 1350, speed: 1.9, dmg: 105, height: 2.0, aggroRange: 22, attackRange: 7.5, isRanged: true },
+    mitachurl_axe: { name: 'Alev Baltalı Mitachurl (ELİT)', hp: 4800, speed: 2.2, dmg: 165, height: 2.6, aggroRange: 22, attackRange: 2.6, isElite: true },
 
     // Zone 3: Kadim Uçurum Arenası [GS 750]
-    abyss_sentinel: { name: 'Uçurum Muhafızı', hp: 550, speed: 2.8, dmg: 55, height: 2.2, aggroRange: 22, attackRange: 2.2 },
-    abyss_mage: { name: 'Kadim Hiçlik Büyücüsü', hp: 480, speed: 2.0, dmg: 62, height: 2.1, aggroRange: 24, attackRange: 8.5, isRanged: true },
-    ruin_golem: { name: 'Antik Yıkım Muhafızı (DÜNYA BOSSU)', hp: 2800, speed: 1.4, dmg: 85, height: 3.4, aggroRange: 28, attackRange: 3.4, isBoss: true },
+    abyss_sentinel: { name: 'Uçurum Muhafızı', hp: 3800, speed: 2.8, dmg: 180, height: 2.2, aggroRange: 22, attackRange: 2.2 },
+    abyss_mage: { name: 'Kadim Hiçlik Büyücüsü', hp: 3200, speed: 2.0, dmg: 210, height: 2.1, aggroRange: 24, attackRange: 8.5, isRanged: true },
+    ruin_golem: { name: 'Antik Yıkım Muhafızı (DÜNYA BOSSU)', hp: 28000, speed: 1.4, dmg: 360, height: 3.4, aggroRange: 28, attackRange: 3.4, isBoss: true },
 
     // Aion 2 Instance Dungeon Mobs & Bosses
-    aether_crystal: { name: '🔮 Aether Mühür Kristali', hp: 210, speed: 0, dmg: 0, height: 2.4, aggroRange: 0, attackRange: 0, isCrystal: true },
-    resonance_crystal: { name: '🔮 Rezonans Kalkan Kristali', hp: 165, speed: 0, dmg: 0, height: 2.2, aggroRange: 0, attackRange: 0, isCrystal: true, isResonanceCrystal: true },
-    aether_guardian: { name: 'Aether Tapınak Muhafızı', hp: 240, speed: 2.7, dmg: 22, height: 2.1, aggroRange: 22, attackRange: 2.1 },
-    abyss_archon_mini: { name: '⚔️ Kapı Muhafızı Archon (MİNİ-BOSS)', hp: 1050, speed: 2.4, dmg: 46, height: 2.8, aggroRange: 24, attackRange: 2.8, isElite: true },
-    tahabata_lord: { name: '👑 Tahabata: Aether Hükümdarı (ZİNDAN BOSSU)', hp: 3100, speed: 1.7, dmg: 76, height: 3.6, aggroRange: 30, attackRange: 3.5, isBoss: true }
+    aether_crystal: { name: '🔮 Aether Mühür Kristali', hp: 1200, speed: 0, dmg: 0, height: 2.4, aggroRange: 0, attackRange: 0, isCrystal: true },
+    resonance_crystal: { name: '🔮 Rezonans Kalkan Kristali', hp: 950, speed: 0, dmg: 0, height: 2.2, aggroRange: 0, attackRange: 0, isCrystal: true, isResonanceCrystal: true },
+    aether_guardian: { name: 'Aether Tapınak Muhafızı', hp: 1800, speed: 2.7, dmg: 85, height: 2.1, aggroRange: 22, attackRange: 2.1 },
+    abyss_archon_mini: { name: '⚔️ Kapı Muhafızı Archon (MİNİ-BOSS)', hp: 8500, speed: 2.4, dmg: 195, height: 2.8, aggroRange: 24, attackRange: 2.8, isElite: true },
+    tahabata_lord: { name: '👑 Tahabata: Aether Hükümdarı (ZİNDAN BOSSU)', hp: 38000, speed: 1.7, dmg: 320, height: 3.6, aggroRange: 30, attackRange: 3.5, isBoss: true }
   };
 
   function createAetherCrystalMesh(isResonance = false) {
@@ -12197,13 +12208,20 @@
         if (isSweetspot) dmg = Math.round(dmg * 1.35);
         if (mob.staggeredUntil && now < mob.staggeredUntil) dmg = Math.round(dmg * 1.5);
 
-        const react = applyElementAndTriggerReaction(mob, elem, dmg, now);
-        dmg = Math.max(1, Math.round(dmg * react.mult * penalty.damageMult));
+        const isGlance = penalty.glanceChance > 0 && Math.random() < penalty.glanceChance;
+        if (isGlance) {
+          dmg = Math.floor(Math.random() * 2);
+        } else {
+          const react = applyElementAndTriggerReaction(mob, elem, dmg, now);
+          dmg = Math.max(1, Math.round(dmg * react.mult * penalty.damageMult));
+        }
         if (mob.isBoss && dungeonState.active && dungeonState.phase2ShieldActive) {
           dmg = Math.max(1, Math.round(dmg * 0.1));
         }
 
-        applyPoiseDamage(mob, (opts.poiseDmg || 35) * (isSweetspot ? 1.4 : 1.0), now);
+        if (penalty.poiseBreakable !== false) {
+          applyPoiseDamage(mob, (opts.poiseDmg || 35) * (isSweetspot ? 1.4 : 1.0), now);
+        }
 
         mob.hp = Math.max(0, mob.hp - dmg);
         notifyDungeonMobHit(mob, dmg, isCrit || isSweetspot, elem);
@@ -12219,11 +12237,12 @@
           mob.knockbackVz = -(dz / dist) * 7.5;
         } else {
           const nDist = dist || 1;
-          mob.knockbackVx = (dx / nDist) * (7.5 / (mob.isBoss ? 2.5 : 1.0));
-          mob.knockbackVz = (dz / nDist) * (7.5 / (mob.isBoss ? 2.5 : 1.0));
+          const kbForce = (penalty.poiseBreakable === false ? 0.3 : 7.5) / (mob.isBoss ? 2.5 : 1.0);
+          mob.knockbackVx = (dx / nDist) * kbForce;
+          mob.knockbackVz = (dz / nDist) * kbForce;
         }
 
-        if (opts.petrifyDuration && mob.hp > 0) {
+        if (opts.petrifyDuration && mob.hp > 0 && penalty.poiseBreakable !== false) {
           mob.isPetrified = true;
           mob.petrifyUntil = now + opts.petrifyDuration;
           mob.mesh.traverse(child => {
@@ -12234,11 +12253,16 @@
           showDamageNumber({ x: mob.x, y: mob.y + mob.height + 0.45, z: mob.z }, '🪨 TAŞLAŞTI!', 'crit');
         }
 
-        showDamageNumber(
-          { x: mob.x, y: mob.y + mob.height, z: mob.z },
-          `${opts.label || elemMeta.emoji} ${dmg}`,
-          isCrit ? 'crit' : 'normal'
-        );
+        if (isGlance) {
+          showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `🛡️ SEKTİ! (${dmg})`, 'glance');
+          playBeep(260, 'sine', 0.08);
+        } else {
+          showDamageNumber(
+            { x: mob.x, y: mob.y + mob.height, z: mob.z },
+            `${opts.label || elemMeta.emoji} ${dmg}`,
+            isCrit ? 'crit' : 'normal'
+          );
+        }
 
         if (isSweetspot && !sweetspotTriggered) {
           sweetspotTriggered = true;
@@ -13045,13 +13069,16 @@
           finalDmg = Math.round(finalDmg * react.mult);
         }
 
-        // Poise / Stagger Damage
-        applyPoiseDamage(mob, poiseDmg, now);
+        // Poise / Stagger Damage (Undergeared players cannot stagger enemies)
+        if (penalty.poiseBreakable !== false) {
+          applyPoiseDamage(mob, poiseDmg, now);
+        }
 
         // GS Glance check
         const isGlance = penalty.glanceChance > 0 && Math.random() < penalty.glanceChance;
         if (isGlance) {
-          finalDmg = Math.floor(Math.random() * 2) + 1;
+          finalDmg = Math.floor(Math.random() * 2); // 0 or 1 scratch damage
+          isCrit = false;
         } else {
           finalDmg = Math.max(1, Math.round(finalDmg * penalty.damageMult));
         }
@@ -13079,7 +13106,7 @@
           mob.hpFillMesh.position.x = -((1 - ratio) * mob.hpFillBaseWidth) / 2;
         }
 
-        const kbForce = (step >= 3 ? 7.2 : 3.8) / (mob.isBoss ? 2.8 : 1.0);
+        const kbForce = (penalty.poiseBreakable === false ? 0.3 : (step >= 3 ? 7.2 : 3.8)) / (mob.isBoss ? 2.8 : 1.0);
         const normX = dx / (dist || 1);
         const normZ = dz / (dist || 1);
         mob.knockbackVx = normX * kbForce;
@@ -13087,7 +13114,8 @@
         mob.flashTimer = 0.14;
 
         if (isGlance) {
-          showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `🛡️ SEKTİ! ${finalDmg}`, 'glance');
+          showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `🛡️ SEKTİ! (${finalDmg})`, 'glance');
+          playBeep(260, 'sine', 0.08);
           playBeep(180, 'square', 0.08);
         } else {
           const prefix = step === 4 ? `${elemMeta.emoji} ` : (isCrit ? '💥 CRIT! ' : '');
@@ -13409,13 +13437,7 @@
               const frame = Math.min(deathCfg.frames - 1, Math.floor(p * deathCfg.frames));
               deathCfg.texture.offset.x = frame / deathCfg.frames;
             }
-            if (camera && rig.mesh) {
-              if (rig.mesh.parent) {
-                rig.mesh.quaternion.copy(rig.mesh.parent.quaternion).invert().multiply(camera.quaternion);
-              } else {
-                rig.mesh.quaternion.copy(camera.quaternion);
-              }
-            }
+            alignUprightBillboard(rig.mesh);
             if (p > 0.55) {
               rig.material.opacity = Math.max(0, 1 - (p - 0.55) / 0.45);
             }
@@ -13540,6 +13562,22 @@
         slotBurst.classList.add('burst-ready');
       } else {
         slotBurst.classList.remove('burst-ready');
+      }
+    }
+
+    // Dynamic GearScore & Zone Difficulty Badge
+    const gsTag = document.getElementById('combat-gs-tag');
+    const gsStatus = document.getElementById('combat-gs-status');
+    if (gsTag || gsStatus) {
+      const stats = getPlayerEffectiveStats();
+      const zoneConf = ZONE_CONFIGS[currentMap] || ZONE_CONFIGS.battle_zone_1;
+      const penalty = getGsDifficultyMultiplier(stats.gearScore, zoneConf.reqGS);
+      if (gsTag) {
+        gsTag.textContent = `GS ${stats.gearScore} / ${zoneConf.reqGS}`;
+      }
+      if (gsStatus) {
+        gsStatus.textContent = penalty.label || '🛡️ UYGUN SEVİYE';
+        gsStatus.className = `combat-gs-status ${penalty.status}`;
       }
     }
 
@@ -13904,13 +13942,20 @@
             if (isSweetspot) dmg = Math.round(dmg * 1.32);
             if (mob.staggeredUntil && now < mob.staggeredUntil) dmg = Math.round(dmg * 1.5);
 
-            const react = applyElementAndTriggerReaction(mob, ss.element, dmg, now);
-            dmg = Math.max(1, Math.round(dmg * react.mult * gsPenalty.damageMult));
+            const isGlance = gsPenalty.glanceChance > 0 && Math.random() < gsPenalty.glanceChance;
+            if (isGlance) {
+              dmg = Math.floor(Math.random() * 2);
+            } else {
+              const react = applyElementAndTriggerReaction(mob, ss.element, dmg, now);
+              dmg = Math.max(1, Math.round(dmg * react.mult * gsPenalty.damageMult));
+            }
             if (mob.isBoss && dungeonState.active && dungeonState.phase2ShieldActive) {
               dmg = Math.max(1, Math.round(dmg * 0.1));
             }
 
-            applyPoiseDamage(mob, ss.poiseDmg * (isSweetspot ? 1.35 : 1.0), now);
+            if (gsPenalty.poiseBreakable !== false) {
+              applyPoiseDamage(mob, ss.poiseDmg * (isSweetspot ? 1.35 : 1.0), now);
+            }
 
             mob.hp = Math.max(0, mob.hp - dmg);
             notifyDungeonMobHit(mob, dmg, isCrit || isSweetspot, ss.element);
@@ -13920,15 +13965,24 @@
               mob.hpFillMesh.position.x = -((1 - ratio) * mob.hpFillBaseWidth) / 2;
             }
             mob.flashTimer = 0.2;
-            const kb = 8.5 / (mob.isBoss ? 2.5 : 1.0);
+            const kb = (gsPenalty.poiseBreakable === false ? 0.3 : 8.5) / (mob.isBoss ? 2.5 : 1.0);
             mob.knockbackVx = Math.sin(ss.angle) * kb;
             mob.knockbackVz = Math.cos(ss.angle) * kb;
 
-            showDamageNumber(
-              { x: mob.x, y: mob.y + mob.height, z: mob.z },
-              `${ss.label} ${isCrit ? 'CRIT! ' : ''}${dmg}`,
-              isCrit ? 'crit' : 'normal'
-            );
+            if (isGlance) {
+              showDamageNumber(
+                { x: mob.x, y: mob.y + mob.height, z: mob.z },
+                `🛡️ SEKTİ! (${dmg})`,
+                'glance'
+              );
+              playBeep(260, 'sine', 0.08);
+            } else {
+              showDamageNumber(
+                { x: mob.x, y: mob.y + mob.height, z: mob.z },
+                `${ss.label} ${isCrit ? 'CRIT! ' : ''}${dmg}`,
+                isCrit ? 'crit' : 'normal'
+              );
+            }
 
             if (isSweetspot && !ss.sweetspotTriggered) {
               ss.sweetspotTriggered = true;
@@ -14481,14 +14535,19 @@
           if (mob.isDead) continue;
           const dist = Math.hypot(mob.x - spx, mob.z - spz);
           if (dist <= 6.5) {
-            const react = applyElementAndTriggerReaction(mob, 'Geo', 45, now);
-            const gDmg = Math.round(45 * react.mult);
-            mob.hp = Math.max(0, mob.hp - gDmg);
-            notifyDungeonMobHit(mob, gDmg, false, 'Geo');
-            if (mob.hpFillMesh) mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
-            mob.flashTimer = 0.12;
-            showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `🪨 Rezonans! ${gDmg}`, 'normal');
-            if (mob.hp <= 0) defeatMob(mob);
+            const isGlance = gsPenalty.glanceChance > 0 && Math.random() < gsPenalty.glanceChance;
+            if (isGlance) {
+              showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, '🛡️ SEKTİ! (0)', 'glance');
+            } else {
+              const react = applyElementAndTriggerReaction(mob, 'Geo', 45, now);
+              const gDmg = Math.max(1, Math.round(45 * react.mult * gsPenalty.damageMult));
+              mob.hp = Math.max(0, mob.hp - gDmg);
+              notifyDungeonMobHit(mob, gDmg, false, 'Geo');
+              if (mob.hpFillMesh) mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
+              mob.flashTimer = 0.12;
+              showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `🪨 Rezonans! ${gDmg}`, 'normal');
+              if (mob.hp <= 0) defeatMob(mob);
+            }
           }
         }
       }
@@ -14519,15 +14578,20 @@
               }
             }
             if (nearestMob) {
-              const react = applyElementAndTriggerReaction(nearestMob, 'Hydro', 35, now);
-              const hDmg = Math.round(35 * react.mult);
-              nearestMob.hp = Math.max(0, nearestMob.hp - hDmg);
-              notifyDungeonMobHit(nearestMob, hDmg, false, 'Hydro');
-              if (nearestMob.hpFillMesh) nearestMob.hpFillMesh.scale.x = Math.max(0.001, nearestMob.hp / nearestMob.maxHP);
-              nearestMob.flashTimer = 0.1;
-              showDamageNumber({ x: nearestMob.x, y: nearestMob.y + nearestMob.height, z: nearestMob.z }, `💧 ${hDmg}`, 'normal');
-              playHydroSplashSound();
-              if (nearestMob.hp <= 0) defeatMob(nearestMob);
+              const isGlance = gsPenalty.glanceChance > 0 && Math.random() < gsPenalty.glanceChance;
+              if (isGlance) {
+                showDamageNumber({ x: nearestMob.x, y: nearestMob.y + nearestMob.height, z: nearestMob.z }, '🛡️ SEKTİ! (0)', 'glance');
+              } else {
+                const react = applyElementAndTriggerReaction(nearestMob, 'Hydro', 35, now);
+                const hDmg = Math.max(1, Math.round(35 * react.mult * gsPenalty.damageMult));
+                nearestMob.hp = Math.max(0, nearestMob.hp - hDmg);
+                notifyDungeonMobHit(nearestMob, hDmg, false, 'Hydro');
+                if (nearestMob.hpFillMesh) nearestMob.hpFillMesh.scale.x = Math.max(0.001, nearestMob.hp / nearestMob.maxHP);
+                nearestMob.flashTimer = 0.1;
+                showDamageNumber({ x: nearestMob.x, y: nearestMob.y + nearestMob.height, z: nearestMob.z }, `💧 ${hDmg}`, 'normal');
+                playHydroSplashSound();
+                if (nearestMob.hp <= 0) defeatMob(nearestMob);
+              }
             }
           }
         }
@@ -14550,14 +14614,19 @@
             if (mob.isDead) continue;
             const dist = Math.hypot(mob.x - kx, mob.z - kz);
             if (dist <= 7.0) {
-              const react = applyElementAndTriggerReaction(mob, 'Anemo', 40, now);
-              const aDmg = Math.round(40 * react.mult);
-              mob.hp = Math.max(0, mob.hp - aDmg);
-              notifyDungeonMobHit(mob, aDmg, false, 'Anemo');
-              if (mob.hpFillMesh) mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
-              mob.flashTimer = 0.08;
-              showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `🍃 ${aDmg}`, 'normal');
-              if (mob.hp <= 0) defeatMob(mob);
+              const isGlance = gsPenalty.glanceChance > 0 && Math.random() < gsPenalty.glanceChance;
+              if (isGlance) {
+                showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, '🛡️ SEKTİ! (0)', 'glance');
+              } else {
+                const react = applyElementAndTriggerReaction(mob, 'Anemo', 40, now);
+                const aDmg = Math.max(1, Math.round(40 * react.mult * gsPenalty.damageMult));
+                mob.hp = Math.max(0, mob.hp - aDmg);
+                notifyDungeonMobHit(mob, aDmg, false, 'Anemo');
+                if (mob.hpFillMesh) mob.hpFillMesh.scale.x = Math.max(0.001, mob.hp / mob.maxHP);
+                mob.flashTimer = 0.08;
+                showDamageNumber({ x: mob.x, y: mob.y + mob.height, z: mob.z }, `🍃 ${aDmg}`, 'normal');
+                if (mob.hp <= 0) defeatMob(mob);
+              }
             }
           }
         }

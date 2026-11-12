@@ -169,23 +169,30 @@ const ZONE_CONFIGS = {
  */
 function getGsDifficultyMultiplier(playerGS = 0, reqGS = 100) {
   if (!reqGS || reqGS <= 0) {
-    return { damageMult: 1.0, damageTakenMult: 1.0, glanceChance: 0, status: 'safe', ratio: 1.0 };
+    return { damageMult: 1.0, damageTakenMult: 1.0, glanceChance: 0, status: 'safe', ratio: 1.0, label: '🛡️ UYGUN SEVİYE' };
   }
-  const ratio = Math.max(0.05, playerGS / reqGS);
+  const ratio = Math.max(0.01, playerGS / reqGS);
   if (ratio >= 1.0) {
-    return { damageMult: 1.0, damageTakenMult: 1.0, glanceChance: 0, status: 'safe', ratio: 1.0 };
+    return { damageMult: 1.0, damageTakenMult: 1.0, glanceChance: 0, status: 'safe', ratio: Math.round(ratio * 100) / 100, label: '🛡️ UYGUN SEVİYE' };
   } else if (ratio >= 0.6) {
     // Zorlu Seviye (Challenging): %40'a varan hasar cezası, hafif darbe artışı
     const damageMult = Math.max(0.45, Math.round(ratio * 100) / 100);
     const damageTakenMult = Math.min(1.8, Math.round((1 + (1 - ratio) * 1.3) * 100) / 100);
     const glanceChance = Math.round((1 - ratio) * 0.25 * 100) / 100; // %5 - %10 sektirme
-    return { damageMult, damageTakenMult, glanceChance, status: 'challenging', ratio: Math.round(ratio * 100) / 100 };
-  } else {
-    // Ölümcül Risk (Deadly): %85'e varan hasar cezası, 2.5 kat hasar alma, %35 vuruş sektirme
+    return { damageMult, damageTakenMult, glanceChance, status: 'challenging', label: '⚔️ ZORLU SEVİYE', ratio: Math.round(ratio * 100) / 100 };
+  } else if (ratio >= 0.18) {
+    // Ölümcül Risk (Deadly): %85'e varan hasar cezası, 2.5 kat hasar alma, %35 vuruş sektirme (örn: 150/750 veya 200/750)
     const damageMult = Math.max(0.15, Math.round(ratio * 0.7 * 100) / 100);
-    const damageTakenMult = Math.min(2.5, Math.round((1.5 + (1 - ratio) * 1.5) * 100) / 100);
+    const damageTakenMult = 2.5;
     const glanceChance = 0.35; // %35 sektirme
-    return { damageMult, damageTakenMult, glanceChance, status: 'deadly', ratio: Math.round(ratio * 100) / 100 };
+    return { damageMult, damageTakenMult, glanceChance, status: 'deadly', label: '⚠️ ÇOK TEHLİKELİ', ratio: Math.round(ratio * 100) / 100 };
+  } else {
+    // KAFATASI / AŞIRI YETERSİZ DONANIM (Ratio < 0.18 - Örn: 5 GS vs 100 GS = 0.05, 5 GS vs 350 GS = 0.014)
+    // 5 GearScore ile savaş bölgelerine giren oyuncu için tam ceza!
+    const damageMult = 0.03;      // %3 hasar (düşman zırhını çizemez bile)
+    const damageTakenMult = 4.5;  // 4.5 kat ölümcül hasar alma (2 vuruşta nakavt)
+    const glanceChance = 0.88;    // %88 sektirme (her vuruş seker, 0-1 hasar)
+    return { damageMult, damageTakenMult, glanceChance, poiseBreakable: false, status: 'deadly', label: '💀 ÖLÜMCÜL DONANIM EKSİĞİ', ratio: Math.round(ratio * 100) / 100 };
   }
 }
 

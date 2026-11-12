@@ -1,7 +1,7 @@
 {
   "zerkacy": {
     "username": "zerkacy",
-    "primogems": 5407,
+    "primogems": 5477,
     "pity4": 0,
     "pity5": 13,
     "totalWishes": 13,
@@ -714,8 +714,8 @@
         "obtainedAt": "2026-11-10T11:29:50.460Z"
       }
     ],
-    "lastChatAwardTime": 1794349810328,
-    "lastActiveTime": 1794355358016,
+    "lastChatAwardTime": 1794437498536,
+    "lastActiveTime": 1794438241871,
     "createdAt": "2026-09-22T17:16:56.235Z",
     "isGuaranteed": false,
     "isGuaranteed4": false,
@@ -1170,7 +1170,7 @@
   },
   "verzagtheit": {
     "username": "verzagtheit",
-    "primogems": 1950,
+    "primogems": 1980,
     "pity4": 1,
     "pity5": 1,
     "isGuaranteed": false,
@@ -1202,8 +1202,8 @@
         "pulledAt": "2026-11-10T21:15:01.012Z"
       }
     ],
-    "lastChatAwardTime": 1794350427341,
-    "lastActiveTime": 1794355358060,
+    "lastChatAwardTime": 1794438063807,
+    "lastActiveTime": 1794438241976,
     "createdAt": "2026-11-09T20:50:43.308Z"
   },
   "shadowdream232": {
@@ -1226,7 +1226,7 @@
   },
   "bnyasheer": {
     "username": "Bnyasheer",
-    "primogems": 2070,
+    "primogems": 2140,
     "pity4": 0,
     "pity5": 0,
     "isGuaranteed": false,
@@ -1238,8 +1238,8 @@
     "fourStarsCount": 0,
     "threeStarsCount": 0,
     "inventory": [],
-    "lastChatAwardTime": 1794351764798,
-    "lastActiveTime": 1794355358090,
+    "lastChatAwardTime": 1794437564395,
+    "lastActiveTime": 1794438242075,
     "createdAt": "2026-11-09T20:51:45.104Z"
   },
   "gezgin_3509": {
@@ -3908,7 +3908,7 @@
   },
   "mylune": {
     "username": "mylune",
-    "primogems": 50770,
+    "primogems": 50840,
     "pity4": 0,
     "pity5": 0,
     "isGuaranteed": false,
@@ -3920,13 +3920,13 @@
     "fourStarsCount": 0,
     "threeStarsCount": 0,
     "inventory": [],
-    "lastChatAwardTime": 1794351761200,
-    "lastActiveTime": 1794355358133,
+    "lastChatAwardTime": 1794437508116,
+    "lastActiveTime": 1794438242147,
     "createdAt": "2026-11-10T20:50:27.532Z"
   },
   "nizipli_cavus": {
     "username": "Nizipli_Cavus",
-    "primogems": 710,
+    "primogems": 760,
     "pity4": 0,
     "pity5": 0,
     "isGuaranteed": false,
@@ -3938,8 +3938,85 @@
     "fourStarsCount": 0,
     "threeStarsCount": 0,
     "inventory": [],
-    "lastChatAwardTime": 1794346815637,
-    "lastActiveTime": 1794355358150,
+    "lastChatAwardTime": 1794437676019,
+    "lastActiveTime": 1794438242188,
     "createdAt": "2026-11-10T21:40:15.635Z"
+  },
+  "gezgin_2383": {
+    "username": "Gezgin_2383",
+    "primogems": 220,
+    "pity4": 0,
+    "pity5": 0,
+    "isGuaranteed": false,
+    "isGuaranteed4": false,
+    "standardPity5": 0,
+    "standardPity4": 0,
+    "totalWishes": 0,
+    "fiveStarsCount": 0,
+    "fourStarsCount": 0,
+    "threeStarsCount": 0,
+    "inventory": [],
+    "lastChatAwardTime": 0,
+    "lastActiveTime": 1794438242234,
+    "createdAt": "2026-11-11T22:49:02.413Z"
+  },
+  "gezgin_3868": {
+    "username": "Gezgin_3868",
+    "primogems": 220,
+    "pity4": 0,
+    "pity5": 0,
+    "isGuaranteed": false,
+    "isGuaranteed4": false,
+    "standardPity5": 0,
+    "standardPity4": 0,
+    "totalWishes": 0,
+    "fiveStarsCount": 0,
+    "fourStarsCount": 0,
+    "threeStarsCount": 0,
+    "inventory": [
+      {
+        "id": "slime_condensate",
+        "name": "Balçık Sıvısı",
+        "type": "material",
+        "rarity": 1,
+        "sellPrice": 3,
+        "icon": "/assets/materials/slime_condensate.svg",
+        "desc": "Balçıklardan sızan temel yapışkan sıvı. Tüccar Liben simya için kullanıyor.",
+        "obtainedAt": "2026-11-11T22:49:27.569Z"
+      },
+      {
+        "id": "slime_condensate",
+        "name": "Balçık Sıvısı",
+        "type": "material",
+        "rarity": 1,
+        "sellPrice": 3,
+        "icon": "/assets/materials/slime_condensate.svg",
+        "desc": "Balçıklardan sızan temel yapışkan sıvı. Tüccar Liben simya için kullanıyor.",
+        "obtainedAt": "2026-11-11T22:49:32.362Z"
+      },
+      {
+        "id": "slime_condensate",
+        "name": "Balçık Sıvısı",
+        "type": "material",
+        "rarity": 1,
+        "sellPrice": 3,
+        "icon": "/assets/materials/slime_condensate.svg",
+        "desc": "Balçıklardan sızan temel yapışkan sıvı. Tüccar Liben simya için kullanıyor.",
+        "obtainedAt": "2026-11-11T22:49:39.906Z"
+      },
+      {
+        "id": "damaged_mask",
+        "name": "Hasarlı Maske",
+        "type": "material",
+        "rarity": 1,
+        "sellPrice": 4,
+        "icon": "/assets/materials/damaged_mask.svg",
+        "desc": "Kabile savaşçısının taktığı tahta maske parçası.",
+        "obtainedAt": "2026-11-11T22:49:55.713Z"
+      }
+    ],
+    "lastChatAwardTime": 0,
+    "lastActiveTime": 1794438242267,
+    "createdAt": "2026-11-11T22:49:10.935Z"
   }
 }
