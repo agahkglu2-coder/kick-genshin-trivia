@@ -5328,189 +5328,189 @@
     // East Side (Right): Gladiator PvP Arena Portal Gate at (6.5, 32)
     worldObjects.add(createPvPArenaPortalGate(6.5, 32));
 
-    // 5. Authentic KayKit 3D Medieval Architectural Buildings & Landmarks
+    // 5. Authentic KayKit 3D Medieval Architectural Buildings & Landmarks (Grand Scaled to 120x120 World)
     // A) Takas Pazarı & Demirci Ocağı (Blacksmith & Trade Mart) - North-West Quarter (-24, -14)
     worldObjects.add(createEntrancePortalMat(-24, -10.0, 0x53fc18));
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_blacksmith_blue.gltf', {
-      x: -24, z: -14, scale: 3.7
+      x: -24, z: -14, scale: 8.2
     });
     // Medieval Market Stall in front of Trade Mart
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_market_blue.gltf', {
-      x: -16, z: -6, rotY: Math.PI / 2, scale: 3.2
+      x: -16, z: -5.5, rotY: Math.PI / 2, scale: 6.2
     });
     // Blacksmith & Trade Props
     spawnKayKitModel('/assets/models/kaykit/decoration/props/weaponrack.gltf', {
-      x: -19, z: -11, rotY: Math.PI / 2, scale: 2.5
+      x: -19, z: -10, rotY: Math.PI / 2, scale: 3.8
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/sack.gltf', {
-      x: -12.5, z: -6.5, scale: 2.2
+      x: -12.5, z: -6.5, scale: 3.2
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/wheelbarrow.gltf', {
-      x: -11, z: -4.5, rotY: -0.4, scale: 2.2
+      x: -11, z: -4.5, rotY: -0.4, scale: 3.2
     });
 
     // B) Cat's Tail Taverna - North-East Quarter (24, -14)
-    chimneyPos = { x: 26.8, y: 8.5, z: -16.2 };
+    chimneyPos = { x: 26.8, y: 11.5, z: -16.2 };
     worldObjects.add(createEntrancePortalMat(24, -10.0, 0x53fc18));
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_tavern_blue.gltf', {
-      x: 24, z: -14, scale: 3.7
+      x: 24, z: -14, scale: 8.2
     });
     // Cat's Tail Outdoor Patio with Parasols and Tables (24, -4)
     worldObjects.add(createTavernPatio(24, -4));
     // Tavern Beer Barrels & Crates
     spawnKayKitModel('/assets/models/kaykit/decoration/props/barrel.gltf', {
-      x: 19.5, z: -5.5, scale: 2.3
+      x: 19.5, z: -5.5, scale: 3.2
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/barrel.gltf', {
-      x: 18.5, z: -6.5, scale: 2.1
+      x: 18.2, z: -6.8, scale: 3.0
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/crate_A_big.gltf', {
-      x: 28.5, z: -6.0, scale: 2.3
+      x: 28.5, z: -6.0, scale: 3.2
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/crate_B_small.gltf', {
-      x: 28.5, y: 0.9, z: -6.0, scale: 2.0
+      x: 28.5, y: 1.25, z: -6.0, scale: 2.8
     });
 
     // C) Dilek Tapınağı (Gacha Cathedral) - Grand North Sanctuary (0, -34)
-    worldObjects.add(createEntrancePortalMat(0, -26.0, 0xa855f7));
+    worldObjects.add(createEntrancePortalMat(0, -25.5, 0xa855f7));
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_church_blue.gltf', {
-      x: 0, z: -34, scale: 4.2
+      x: 0, z: -34, scale: 10.5
     });
     // Floating Celestial Star Crystal
-    const crystalGeo = new THREE.OctahedronGeometry(0.75, 0);
+    const crystalGeo = new THREE.OctahedronGeometry(1.0, 0);
     const crystalMat = new THREE.MeshBasicMaterial({ color: 0xc084fc, wireframe: true });
     shrineCrystalMesh = new THREE.Mesh(crystalGeo, crystalMat);
-    shrineCrystalMesh.position.set(0, 5.0, -26);
+    shrineCrystalMesh.position.set(0, 7.2, -25.5);
     const innerCrystal = new THREE.Mesh(
-      new THREE.OctahedronGeometry(0.48, 0),
+      new THREE.OctahedronGeometry(0.65, 0),
       new THREE.MeshBasicMaterial({ color: 0xf472b6, transparent: true, opacity: 0.85 })
     );
     shrineCrystalMesh.add(innerCrystal);
     worldObjects.add(shrineCrystalMesh);
     // Heraldic Royal Banners framing the Cathedral
     spawnKayKitModel('/assets/models/kaykit/decoration/props/flag_blue.gltf', {
-      x: -5.5, z: -27, scale: 2.8, animatedFlag: true
+      x: -6.5, z: -26.5, scale: 4.5, animatedFlag: true
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/flag_blue.gltf', {
-      x: 5.5, z: -27, scale: 2.8, animatedFlag: true
+      x: 6.5, z: -26.5, scale: 4.5, animatedFlag: true
     });
 
     // D) Maceracılar Loncası (Guild Hall / Barracks) - South-West Quarter (-24, 14)
     worldObjects.add(createEntrancePortalMat(-24, 10.0, 0x53fc18));
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_barracks_blue.gltf', {
-      x: -24, z: 14, scale: 3.7
+      x: -24, z: 14, scale: 8.2
     });
     worldObjects.add(createNoticeBoard(-17, 8, 0));
     // Guild Archery & Weapon Training Yard
     spawnKayKitModel('/assets/models/kaykit/decoration/props/target.gltf', {
-      x: -17, z: 17.5, rotY: Math.PI / 2, scale: 2.4
+      x: -17, z: 18.0, rotY: Math.PI / 2, scale: 3.8
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/bucket_arrows.gltf', {
-      x: -17, z: 16.0, scale: 2.2
+      x: -17, z: 16.0, scale: 3.2
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/weaponrack.gltf', {
-      x: -17, z: 11.5, rotY: Math.PI / 2, scale: 2.4
+      x: -17, z: 11.5, rotY: Math.PI / 2, scale: 3.8
     });
 
     // E) Scenic Waterside Gazebo & Garden - South-East Quarter (24, 14)
     worldObjects.add(createScenicGazebo(24, 14));
 
-    // F) Yeni Eklenen KayKit 3D Şehir Yapıları ve Anıtları
+    // F) Yeni Eklenen KayKit 3D Şehir Yapıları ve Anıtları (Büyük Boyut)
     // 1. Taş Meydan Kuyusu (Central Stone Well)
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_well_blue.gltf', {
-      x: 0, z: 7.5, scale: 3.0
+      x: 0, z: 7.5, scale: 5.2
     });
     // 2. Dönen Su Değirmeni (Rotating River Watermill)
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_watermill_blue.gltf', {
-      x: 16, z: 20.4, rotY: Math.PI, scale: 3.4, animatedWatermill: true
+      x: 16, z: 19.8, rotY: Math.PI, scale: 7.5, animatedWatermill: true
     });
     // 3. Tepedeki Dönen Yel Değirmeni (Rotating Hill Windmill)
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_windmill_blue.gltf', {
-      x: 36, z: -26, rotY: -Math.PI * 0.25, scale: 3.8, animatedWindmill: true
+      x: 36, z: -26, rotY: -Math.PI * 0.25, scale: 8.5, animatedWindmill: true
     });
     // 4. Kuzeybatı Kalesi & Hisar (North-West Castle Keep)
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_castle_blue.gltf', {
-      x: -36, z: -34, rotY: Math.PI * 0.25, scale: 3.2
+      x: -36, z: -34, rotY: Math.PI * 0.25, scale: 8.5
     });
     // 5. Şirin Ahşap Kasaba Evleri (Residential Houses)
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_home_A_blue.gltf', {
-      x: 33, z: 0, rotY: -Math.PI / 2, scale: 3.4
+      x: 33, z: 0, rotY: -Math.PI / 2, scale: 7.8
     });
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_home_B_blue.gltf', {
-      x: -33, z: 0, rotY: Math.PI / 2, scale: 3.4
+      x: -33, z: 0, rotY: Math.PI / 2, scale: 7.8
     });
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_home_B_blue.gltf', {
-      x: 27, z: -26, rotY: Math.PI / 4, scale: 3.4
+      x: 27, z: -26, rotY: Math.PI / 4, scale: 7.8
     });
     // 6. Şehir Sınır Gözetleme Kuleleri (Stone Watchtowers)
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_tower_A_blue.gltf', {
-      x: 40, z: -38, scale: 3.5
+      x: 40, z: -38, scale: 8.2
     });
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_tower_B_blue.gltf', {
-      x: -40, z: 26, scale: 3.5
+      x: -40, z: 26, scale: 8.2
     });
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_tower_A_blue.gltf', {
-      x: 16, z: 38, scale: 3.5
+      x: 16, z: 38, scale: 8.2
     });
 
     // 7. Portallar Meydanı Detayları (z = 32):
     // Zindan Kampı (Sol Taraf: -6.5, 32):
     spawnKayKitModel('/assets/models/kaykit/decoration/props/tent.gltf', {
-      x: -12.5, z: 30, rotY: 0.5, scale: 3.0
+      x: -12.5, z: 30, rotY: 0.5, scale: 5.2
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/tent.gltf', {
-      x: -12.5, z: 34.5, rotY: -0.3, scale: 2.8
+      x: -12.5, z: 35.0, rotY: -0.3, scale: 4.8
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/target.gltf', {
-      x: -14.5, z: 32, rotY: Math.PI / 2, scale: 2.4
+      x: -15.0, z: 32, rotY: Math.PI / 2, scale: 3.8
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/weaponrack.gltf', {
-      x: -10, z: 35, rotY: -0.2, scale: 2.4
+      x: -10, z: 35.5, rotY: -0.2, scale: 3.8
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/crate_A_big.gltf', {
-      x: -3.8, z: 35, scale: 2.2
+      x: -3.8, z: 35.5, scale: 3.2
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/barrel.gltf', {
-      x: -3.8, z: 33.5, scale: 2.2
+      x: -3.8, z: 33.5, scale: 3.2
     });
     // Gladyatör Arenası Girişi (Sağ Taraf: 6.5, 32):
     spawnKayKitModel('/assets/models/kaykit/buildings/neutral/wall_straight.gltf', {
-      x: 6.5, z: 37.5, scale: 3.0
+      x: 6.5, z: 37.5, scale: 4.5
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/flag_blue.gltf', {
-      x: 4.5, z: 35, scale: 2.8, animatedFlag: true
+      x: 4.2, z: 35, scale: 4.5, animatedFlag: true
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/flag_red.gltf', {
-      x: 8.5, z: 35, scale: 2.8, animatedFlag: true
+      x: 8.8, z: 35, scale: 4.5, animatedFlag: true
     });
     spawnKayKitModel('/assets/models/kaykit/buildings/neutral/projectile_catapult.gltf', {
-      x: 10, z: 33.5, scale: 2.5
+      x: 10.5, z: 33.5, scale: 3.5
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/weaponrack.gltf', {
-      x: 10, z: 31, rotY: -Math.PI / 2, scale: 2.4
+      x: 10.5, z: 31, rotY: -Math.PI / 2, scale: 3.8
     });
 
-    // 8. KayKit 3D Doğal Çevre, Orman ve Nehir Objeleri
+    // 8. KayKit 3D Doğal Çevre, Orman ve Nehir Objeleri (Gerçekçi Büyük Boyut)
     // Çam ve Meşe Kümeleri
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/trees_A_large.gltf', { x: -32, z: -20, scale: 3.2 });
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/trees_B_large.gltf', { x: 34, z: -14, scale: 3.2 });
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/trees_A_large.gltf', { x: -34, z: 12, scale: 3.0 });
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/trees_B_large.gltf', { x: 32, z: 26, scale: 3.2 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/trees_A_large.gltf', { x: -32, z: -20, scale: 7.5 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/trees_B_large.gltf', { x: 34, z: -14, scale: 7.5 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/trees_A_large.gltf', { x: -34, z: 12, scale: 7.2 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/trees_B_large.gltf', { x: 32, z: 26, scale: 7.5 });
     // Tekil Ağaçlar
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/tree_single_A.gltf', { x: -8, z: -18, scale: 3.2 });
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/tree_single_B.gltf', { x: 8, z: -18, scale: 3.2 });
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/tree_single_A.gltf', { x: -7, z: 18, scale: 3.0 });
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/tree_single_B.gltf', { x: 7, z: 18, scale: 3.0 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/tree_single_A.gltf', { x: -8, z: -18, scale: 6.2 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/tree_single_B.gltf', { x: 8, z: -18, scale: 6.2 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/tree_single_A.gltf', { x: -7, z: 18, scale: 6.0 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/tree_single_B.gltf', { x: 7, z: 18, scale: 6.0 });
     // 3D Nehir Boyu ve Köşe Kayaları
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/rock_single_A.gltf', { x: -20, z: 20.2, scale: 3.2 });
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/rock_single_B.gltf', { x: 20, z: 27.8, scale: 3.0 });
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/rock_single_C.gltf', { x: -38, z: 36, scale: 3.5 });
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/rock_single_D.gltf', { x: 38, z: 36, scale: 3.5 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/rock_single_A.gltf', { x: -20, z: 20.2, scale: 6.0 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/rock_single_B.gltf', { x: 20, z: 27.8, scale: 6.0 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/rock_single_C.gltf', { x: -38, z: 36, scale: 6.5 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/rock_single_D.gltf', { x: 38, z: 36, scale: 6.5 });
     // 3D Nehir Nilüferleri ve Sazlıklar
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/waterlily_A.gltf', { x: -12, y: 0.05, z: 23.5, scale: 2.2 });
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/waterlily_B.gltf', { x: 12, y: 0.05, z: 24.5, scale: 2.2 });
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/waterplant_A.gltf', { x: -6, y: 0.05, z: 21.0, scale: 2.5 });
-    spawnKayKitModel('/assets/models/kaykit/decoration/nature/waterplant_A.gltf', { x: 6, y: 0.05, z: 27.0, scale: 2.5 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/waterlily_A.gltf', { x: -12, y: 0.05, z: 23.5, scale: 3.2 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/waterlily_B.gltf', { x: 12, y: 0.05, z: 24.5, scale: 3.2 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/waterplant_A.gltf', { x: -6, y: 0.05, z: 21.0, scale: 3.6 });
+    spawnKayKitModel('/assets/models/kaykit/decoration/nature/waterplant_A.gltf', { x: 6, y: 0.05, z: 27.0, scale: 3.6 });
 
     // 6. Street Lamps along crossroads & plazas
     const lampPositions = [
@@ -15893,24 +15893,24 @@
       worldObjects.add(rock);
     }
 
-    // KayKit Ancient Ruined Structures & Mine Shafts in the Abyssal Cavern
+    // KayKit Ancient Ruined Structures & Mine Shafts in the Abyssal Cavern (Grand Scale)
     spawnKayKitModel('/assets/models/kaykit/buildings/neutral/building_destroyed.gltf', {
-      x: -18, y: 0.2, z: -16, rotY: 0.4, scale: 3.2
+      x: -18, y: 0.2, z: -16, rotY: 0.4, scale: 7.5
     });
     spawnKayKitModel('/assets/models/kaykit/buildings/neutral/building_destroyed.gltf', {
-      x: 18, y: 0.2, z: -16, rotY: -0.4, scale: 3.2
+      x: 18, y: 0.2, z: -16, rotY: -0.4, scale: 7.5
     });
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_mine_blue.gltf', {
-      x: 0, y: 0.2, z: -58, rotY: 0, scale: 3.8
+      x: 0, y: 0.2, z: -58, rotY: 0, scale: 8.5
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/crate_open.gltf', {
-      x: -12, y: 0.6, z: 48, scale: 2.4
+      x: -12, y: 0.6, z: 48, scale: 3.5
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/crate_long_A.gltf', {
-      x: 12, y: 0.6, z: 48, scale: 2.4
+      x: 12, y: 0.6, z: 48, scale: 3.5
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/sack.gltf', {
-      x: 13.5, y: 0.6, z: 47, scale: 2.2
+      x: 13.5, y: 0.6, z: 47, scale: 3.2
     });
 
     // ---------------------------------------------------------
@@ -16134,40 +16134,40 @@
     outerWall.position.y = 5.0;
     worldObjects.add(outerWall);
 
-    // KayKit Gladiator Arena Decor & Catapult Towers
+    // KayKit Gladiator Arena Decor & Catapult Towers (Imposing Scale)
     spawnKayKitModel('/assets/models/kaykit/buildings/red/building_tower_catapult_red.gltf', {
-      x: 0, y: 1.2, z: -32, rotY: Math.PI, scale: 3.2
+      x: 0, y: 1.2, z: -32, rotY: Math.PI, scale: 7.5
     });
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_tower_catapult_blue.gltf', {
-      x: 0, y: 1.2, z: 32, rotY: 0, scale: 3.2
+      x: 0, y: 1.2, z: 32, rotY: 0, scale: 7.5
     });
 
     // Heraldic Arena Banners along the Colonnade
     spawnKayKitModel('/assets/models/kaykit/decoration/props/flag_red.gltf', {
-      x: -6, y: 1.2, z: -27, scale: 2.8, animatedFlag: true
+      x: -6, y: 1.2, z: -27, scale: 4.5, animatedFlag: true
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/flag_red.gltf', {
-      x: 6, y: 1.2, z: -27, scale: 2.8, animatedFlag: true
+      x: 6, y: 1.2, z: -27, scale: 4.5, animatedFlag: true
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/flag_blue.gltf', {
-      x: -6, y: 1.2, z: 27, scale: 2.8, animatedFlag: true
+      x: -6, y: 1.2, z: 27, scale: 4.5, animatedFlag: true
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/flag_blue.gltf', {
-      x: 6, y: 1.2, z: 27, scale: 2.8, animatedFlag: true
+      x: 6, y: 1.2, z: 27, scale: 4.5, animatedFlag: true
     });
 
     // Terrace Weapon Racks & Catapult Stone Piles
     spawnKayKitModel('/assets/models/kaykit/decoration/props/weaponrack.gltf', {
-      x: -22, y: 1.2, z: 0, rotY: Math.PI / 2, scale: 2.4
+      x: -22, y: 1.2, z: 0, rotY: Math.PI / 2, scale: 3.8
     });
     spawnKayKitModel('/assets/models/kaykit/decoration/props/weaponrack.gltf', {
-      x: 22, y: 1.2, z: 0, rotY: -Math.PI / 2, scale: 2.4
+      x: 22, y: 1.2, z: 0, rotY: -Math.PI / 2, scale: 3.8
     });
     spawnKayKitModel('/assets/models/kaykit/buildings/neutral/projectile_catapult.gltf', {
-      x: -20, y: 1.2, z: 3.5, scale: 2.4
+      x: -20, y: 1.2, z: 3.5, scale: 3.6
     });
     spawnKayKitModel('/assets/models/kaykit/buildings/neutral/projectile_catapult.gltf', {
-      x: 20, y: 1.2, z: 3.5, scale: 2.4
+      x: 20, y: 1.2, z: 3.5, scale: 3.6
     });
 
     // 5. Exit Portal Gate back to Town at (0, 1.2, -28)
