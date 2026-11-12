@@ -2396,59 +2396,36 @@
     return tex;
   }
 
-  function createProceduralCobbleTexture(repeatX = 2, repeatY = 24) {
-    const cvs = document.createElement('canvas');
-    cvs.width = 64;
-    cvs.height = 64;
-    const ctx = cvs.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
-
-    // Mortar (soft dark slate grey)
-    ctx.fillStyle = '#293548';
-    ctx.fillRect(0, 0, 64, 64);
-
-    // Stone pavers with natural rounded corners & gentle edge shading
-    const stoneBases = ['#5b697d', '#64748b', '#526071', '#6f7f95', '#4d5b6d'];
-    const stoneHighlights = ['#7c8c9f', '#8595a8', '#718195'];
-    const stoneShadows = ['#1e293b', '#243042', '#1b2434'];
-
-    for (let row = 0; row < 8; row++) {
-      const y = row * 8;
-      const xOffset = (row % 2) * 4;
-      for (let col = -1; col < 8; col++) {
-        const x = col * 8 + xOffset;
-        const colorIdx = (row * 3 + col * 5 + 20) % stoneBases.length;
-
-        // Base stone body (6x6)
-        ctx.fillStyle = stoneBases[colorIdx];
-        ctx.fillRect(x + 1, y + 1, 6, 6);
-
-        // Top & Left soft highlight
-        ctx.fillStyle = stoneHighlights[colorIdx % stoneHighlights.length];
-        ctx.fillRect(x + 2, y + 1, 4, 1);
-        ctx.fillRect(x + 1, y + 2, 1, 4);
-
-        // Bottom & Right soft shadow
-        ctx.fillStyle = stoneShadows[colorIdx % stoneShadows.length];
-        ctx.fillRect(x + 2, y + 6, 4, 1);
-        ctx.fillRect(x + 6, y + 2, 1, 4);
-
-        // Rounded corners: soften the 4 corner pixels with mortar color
-        ctx.fillStyle = '#293548';
-        ctx.fillRect(x + 1, y + 1, 1, 1);
-        ctx.fillRect(x + 6, y + 1, 1, 1);
-        ctx.fillRect(x + 1, y + 6, 1, 1);
-        ctx.fillRect(x + 6, y + 6, 1, 1);
-      }
+  const cobbleTextureCache = {};
+  function createProceduralCobbleTexture(repeatX = 2, repeatY = 11) {
+    const key = `${repeatX}_${repeatY}`;
+    if (!cobbleTextureCache[key]) {
+      const tex = textureLoader.load('/assets/world/road_cobble.png');
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(repeatX, repeatY);
+      tex.generateMipmaps = true;
+      tex.magFilter = THREE.LinearFilter;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      cobbleTextureCache[key] = tex;
     }
+    return cobbleTextureCache[key];
+  }
 
-    const tex = new THREE.CanvasTexture(cvs);
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(repeatX, repeatY);
-    tex.magFilter = THREE.NearestFilter;
-    tex.minFilter = THREE.NearestFilter;
-    return tex;
+  const cobbleBumpCache = {};
+  function createProceduralCobbleBumpMap(repeatX = 2, repeatY = 11) {
+    const key = `${repeatX}_${repeatY}`;
+    if (!cobbleBumpCache[key]) {
+      const tex = textureLoader.load('/assets/world/road_cobble_bump.png');
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(repeatX, repeatY);
+      tex.generateMipmaps = true;
+      tex.magFilter = THREE.LinearFilter;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      cobbleBumpCache[key] = tex;
+    }
+    return cobbleBumpCache[key];
   }
 
   function createProceduralWaterTexture() {
@@ -4830,10 +4807,14 @@
 
   function createCentralPlaza() {
     const group = new THREE.Group();
-    const cobbleTex = createProceduralCobbleTexture(8, 8);
+    const cobbleTex = createProceduralCobbleTexture(4, 4);
     const plazaFloor = new THREE.Mesh(
       new THREE.CircleGeometry(10.6, 36),
-      new THREE.MeshLambertMaterial({ map: cobbleTex })
+      new THREE.MeshLambertMaterial({
+        map: cobbleTex,
+        bumpMap: createProceduralCobbleBumpMap(4, 4),
+        bumpScale: 0.025
+      })
     );
     plazaFloor.rotation.x = -Math.PI / 2;
     plazaFloor.position.y = 0.018;
@@ -4843,7 +4824,7 @@
     // Outer carved stone border ring
     const outerRim = new THREE.Mesh(
       new THREE.RingGeometry(10.3, 10.9, 36),
-      new THREE.MeshLambertMaterial({ color: 0x64748b, side: THREE.DoubleSide })
+      new THREE.MeshLambertMaterial({ color: 0x5a5045, side: THREE.DoubleSide })
     );
     outerRim.rotation.x = -Math.PI / 2;
     outerRim.position.y = 0.025;
@@ -5258,21 +5239,46 @@
     worldObjects.add(grass);
 
     // 2. Wide Cobblestone Crossroads (Clean '+' Shaped Grand Avenues)
-    const pathTexX = createProceduralCobbleTexture(2, 28);
-    const pathMatX = new THREE.MeshLambertMaterial({ map: pathTexX });
+    const pathTexX = createProceduralCobbleTexture(2, 11);
+    const pathMatX = new THREE.MeshLambertMaterial({
+      map: pathTexX,
+      bumpMap: createProceduralCobbleBumpMap(2, 11),
+      bumpScale: 0.025
+    });
     const pathX = new THREE.Mesh(new THREE.PlaneGeometry(8, 88), pathMatX);
     pathX.rotation.x = -Math.PI / 2;
     pathX.position.y = 0.02;
     pathX.receiveShadow = true;
     worldObjects.add(pathX);
 
-    const pathTexZ = createProceduralCobbleTexture(28, 2);
-    const pathMatZ = new THREE.MeshLambertMaterial({ map: pathTexZ });
+    const pathTexZ = createProceduralCobbleTexture(11, 2);
+    const pathMatZ = new THREE.MeshLambertMaterial({
+      map: pathTexZ,
+      bumpMap: createProceduralCobbleBumpMap(11, 2),
+      bumpScale: 0.025
+    });
     const pathZ = new THREE.Mesh(new THREE.PlaneGeometry(88, 8), pathMatZ);
     pathZ.rotation.x = -Math.PI / 2;
     pathZ.position.y = 0.02;
     pathZ.receiveShadow = true;
     worldObjects.add(pathZ);
+
+    // Weathered Stone Curbs along Avenues (frames roads, eliminates raw harsh geometric cuts)
+    const curbMat = new THREE.MeshLambertMaterial({ color: 0x4a4035 });
+    // North-South Avenue Curbs
+    [-4.05, 4.05].forEach(cx => {
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.06, 88), curbMat);
+      curb.position.set(cx, 0.03, 0);
+      curb.receiveShadow = true;
+      worldObjects.add(curb);
+    });
+    // East-West Avenue Curbs
+    [-4.05, 4.05].forEach(cz => {
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(88, 0.06, 0.32), curbMat);
+      curb.position.set(0, 0.03, cz);
+      curb.receiveShadow = true;
+      worldObjects.add(curb);
+    });
 
     // 3. Central Fountain & Ornate Circular Cobblestone Plaza
     worldObjects.add(createCentralPlaza());
@@ -5367,8 +5373,9 @@
     // Symmetrically hosts Kadim Zindan Portalı (x = -6.5, z = 32) and Gladyatör Arenası (x = 6.5, z = 32)
     const plazaGeo = new THREE.BoxGeometry(22, 0.12, 10);
     const plazaMat = new THREE.MeshLambertMaterial({
-      color: 0x64748b,
-      map: createProceduralCobbleTexture(6, 4)
+      map: createProceduralCobbleTexture(3, 2),
+      bumpMap: createProceduralCobbleBumpMap(3, 2),
+      bumpScale: 0.025
     });
     const plazaMesh = new THREE.Mesh(plazaGeo, plazaMat);
     plazaMesh.position.set(0, 0.06, 32);
