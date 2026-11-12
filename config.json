@@ -6,8 +6,8 @@
   "gameMode": "first_correct",
   "triviaMode": "genshin",
   "soundEnabled": true,
-  "jackpotPool": 9683.75,
-  "jackpotTotalAccumulated": 10017.45,
+  "jackpotPool": 509,
+  "jackpotTotalAccumulated": 10295.7,
   "channel": "mylune",
   "botTargetChannel": "mylune",
   "port": 3000,
@@ -117,6 +117,32 @@
       "amount": 99,
       "perUser": 33,
       "type": "DISTRIBUTION",
+      "timestamp": 1794513009175
+    },
+    {
+      "username": "Gezgin1",
+      "amount": 65,
+      "type": "RAFFLE",
+      "timestamp": 1794513009138
+    },
+    {
+      "username": "Tüm Chat (3 Kişi)",
+      "amount": 99,
+      "perUser": 33,
+      "type": "DISTRIBUTION",
+      "timestamp": 1793045215960
+    },
+    {
+      "username": "Gezgin1",
+      "amount": 65,
+      "type": "RAFFLE",
+      "timestamp": 1793045215937
+    },
+    {
+      "username": "Tüm Chat (3 Kişi)",
+      "amount": 99,
+      "perUser": 33,
+      "type": "DISTRIBUTION",
       "timestamp": 1792786953530
     },
     {
@@ -150,32 +176,6 @@
       "amount": 65,
       "type": "RAFFLE",
       "timestamp": 1792523898475
-    },
-    {
-      "username": "Tüm Chat (3 Kişi)",
-      "amount": 99,
-      "perUser": 33,
-      "type": "DISTRIBUTION",
-      "timestamp": 1792523510789
-    },
-    {
-      "username": "Gezgin1",
-      "amount": 65,
-      "type": "RAFFLE",
-      "timestamp": 1792523510770
-    },
-    {
-      "username": "Tüm Chat (3 Kişi)",
-      "amount": 99,
-      "perUser": 33,
-      "type": "DISTRIBUTION",
-      "timestamp": 1792523458890
-    },
-    {
-      "username": "Gezgin1",
-      "amount": 65,
-      "type": "RAFFLE",
-      "timestamp": 1792523458869
     }
   ]
 }

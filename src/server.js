@@ -665,7 +665,67 @@ kickClient.on('message', async (chatMsg) => {
       }
     }
 
-    // 3. Handle Custom Configurable Chat Commands (!bot, !dc, !instagram, etc.)
+    // 3. !primosil / !primodusur [@kullanıcı] [miktar]
+    const deductPrimoMatch = content.match(/^!(?:[pP][rR][iIıİ][mM][oO][sS][iIıİ][lL]|[pP][rR][iIıİ][mM][oO][dD][uUüÜ][şsŞS][uUüÜ][rR])(?:\s+@?([a-zA-Z0-9_\u00C0-\u017F]+))?(?:\s+(\d+))?$/u);
+    if (deductPrimoMatch) {
+      if (!isAuthorized) {
+        kickBot.sendMessage(`⚠️ @${senderUser} Primogem silme komutunu yalnızca yayıncı veya moderatörler kullanabilir.`);
+      } else {
+        const targetUser = (deductPrimoMatch[1] || '').trim();
+        const amount = parseInt(deductPrimoMatch[2], 10);
+        if (!targetUser || !amount || amount <= 0) {
+          kickBot.sendMessage(`ℹ️ @${senderUser} Kullanım: !primosil @kullanıcı <miktar> (Örn: !primosil @zerkacy 500)`);
+        } else {
+          const user = gachaEngine.deductPrimogems(targetUser, amount, 'CHAT_COMMAND');
+          if (user) {
+            if (worldEngine) {
+              const onlineP = worldEngine.getPlayerByName(targetUser);
+              if (onlineP) onlineP.primogems = user.primogems;
+            }
+            broadcast({
+              type: 'WORLD_PRIMO_UPDATE_USER',
+              username: user.username || targetUser,
+              primogems: user.primogems
+            });
+            kickBot.sendMessage(`🔻 @${targetUser} kullanıcısının bakiyesinden -${amount} Primogem silindi. (Kalan Bakiye: ${user.primogems} 💎)`);
+          } else {
+            kickBot.sendMessage(`⚠️ @${senderUser} @${targetUser} adlı kullanıcı bulunamadı.`);
+          }
+        }
+      }
+    }
+
+    // 4. !primover / !primoekle [@kullanıcı] [miktar]
+    const addPrimoMatch = content.match(/^!(?:[pP][rR][iIıİ][mM][oO][vV][eE][rR]|[pP][rR][iIıİ][mM][oO][eE][kK][lL][eE])(?:\s+@?([a-zA-Z0-9_\u00C0-\u017F]+))?(?:\s+(\d+))?$/u);
+    if (addPrimoMatch) {
+      if (!isAuthorized) {
+        kickBot.sendMessage(`⚠️ @${senderUser} Primogem ekleme komutunu yalnızca yayıncı veya moderatörler kullanabilir.`);
+      } else {
+        const targetUser = (addPrimoMatch[1] || '').trim();
+        const amount = parseInt(addPrimoMatch[2], 10);
+        if (!targetUser || !amount || amount <= 0) {
+          kickBot.sendMessage(`ℹ️ @${senderUser} Kullanım: !primover @kullanıcı <miktar> (Örn: !primover @zerkacy 160)`);
+        } else {
+          const user = gachaEngine.addPrimogems(targetUser, amount, 'CHAT_COMMAND');
+          if (user) {
+            if (worldEngine) {
+              const onlineP = worldEngine.getPlayerByName(targetUser);
+              if (onlineP) onlineP.primogems = user.primogems;
+            }
+            broadcast({
+              type: 'WORLD_PRIMO_UPDATE_USER',
+              username: user.username || targetUser,
+              primogems: user.primogems
+            });
+            kickBot.sendMessage(`💎 @${targetUser} kullanıcısına +${amount} Primogem hediye edildi! (Yeni Bakiye: ${user.primogems} 💎)`);
+          } else {
+            kickBot.sendMessage(`⚠️ @${senderUser} @${targetUser} adlı kullanıcı bulunamadı.`);
+          }
+        }
+      }
+    }
+
+    // 5. Handle Custom Configurable Chat Commands (!bot, !dc, !instagram, etc.)
     const cmdReply = commandService.processMessage(chatMsg, {
       channel: config.channel || 'mylune',
       isAuthorized
@@ -2330,8 +2390,64 @@ app.post('/api/gacha/banner/create', (req, res) => {
 app.post('/api/gacha/add-primo', (req, res) => {
   const { username, amount } = req.body || {};
   if (!username) return res.status(400).json({ error: 'Kullanıcı adı gerekli.' });
-  const user = gachaEngine.addPrimogems(username, parseInt(amount, 10) || 0);
+  const val = parseInt(amount, 10) || 0;
+  const user = gachaEngine.addPrimogems(username.trim(), val);
+  if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
+
+  // Sync with worldEngine if player is online & broadcast
+  if (worldEngine) {
+    const onlineP = worldEngine.getPlayerByName(username.trim());
+    if (onlineP) onlineP.primogems = user.primogems;
+  }
+  broadcast({
+    type: 'WORLD_PRIMO_UPDATE_USER',
+    username: user.username || username,
+    primogems: user.primogems
+  });
+
   res.json({ success: true, user });
+});
+
+app.post('/api/gacha/deduct-primo', (req, res) => {
+  const { username, amount } = req.body || {};
+  if (!username) return res.status(400).json({ error: 'Kullanıcı adı gerekli.' });
+  const toDeduct = Math.abs(parseInt(amount, 10) || 0);
+  const user = gachaEngine.deductPrimogems(username.trim(), toDeduct);
+  if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
+
+  // Sync with worldEngine if player is online & broadcast
+  if (worldEngine) {
+    const onlineP = worldEngine.getPlayerByName(username.trim());
+    if (onlineP) onlineP.primogems = user.primogems;
+  }
+  broadcast({
+    type: 'WORLD_PRIMO_UPDATE_USER',
+    username: user.username || username,
+    primogems: user.primogems
+  });
+
+  res.json({ success: true, user, deductedAmount: toDeduct });
+});
+
+app.post('/api/gacha/set-primo', (req, res) => {
+  const { username, amount } = req.body || {};
+  if (!username) return res.status(400).json({ error: 'Kullanıcı adı gerekli.' });
+  const target = Math.max(0, parseInt(amount, 10) || 0);
+  const user = gachaEngine.setPrimogems(username.trim(), target);
+  if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
+
+  // Sync with worldEngine if player is online & broadcast
+  if (worldEngine) {
+    const onlineP = worldEngine.getPlayerByName(username.trim());
+    if (onlineP) onlineP.primogems = user.primogems;
+  }
+  broadcast({
+    type: 'WORLD_PRIMO_UPDATE_USER',
+    username: user.username || username,
+    primogems: user.primogems
+  });
+
+  res.json({ success: true, user, setAmount: target });
 });
 
 app.get('/api/gacha/user/:username/inventory', (req, res) => {

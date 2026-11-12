@@ -693,15 +693,35 @@
             <div class="cmd-item"><code>!envanter</code> <span>5★ Karakterler</span></div>
           </div>
 
-          <!-- Manual Primogem Gifter -->
-          <div class="gift-primo-box">
-            <h4>🎁 İzleyiciye Özel Primogem Ekle</h4>
-            <div class="gift-inputs">
-              <input type="text" id="gift-username" placeholder="Kick Kullanıcı Adı">
-              <input type="number" id="gift-amount" placeholder="Miktar" value="160" min="10" step="10">
-              <button id="btn-gift-primo" class="btn btn-success btn-sm">+ Primogem Gönder</button>
+          <!-- Manual Primogem Management (Add, Deduct, Reset) -->
+          <div class="gift-primo-box" style="border: 1.5px solid rgba(56, 189, 248, 0.35); background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(12, 74, 110, 0.3) 100%); border-radius: 12px; padding: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="margin: 0; display: flex; align-items: center; gap: 6px; color: #38bdf8; font-weight: 800;">
+                <span>💎</span>
+                <span>İzleyici Primogem Yönetimi (Ekle / Sil / Düşür)</span>
+              </h4>
+              <span class="badge-mini" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #0284c7;">Canlı MMO Senkronize</span>
             </div>
-            <div id="gift-feedback" class="field-hint" style="margin-top: 4px; font-weight: 600;"></div>
+            <div style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 10px;">
+              Kullanıcının hesabına istediğiniz miktarda Primogem ekleyebilir, bakiyesinden istediğiniz kadar silebilir veya tamamen sıfırlayabilirsiniz.
+            </div>
+            <div class="gift-inputs" style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <input type="text" id="gift-username" placeholder="Kick Kullanıcı Adı (örn: zerkacy)" style="flex: 2; min-width: 140px; padding: 7px 12px; border-radius: 6px; background: rgba(0,0,0,0.4); border: 1px solid #334155; color: #fff;">
+              <input type="number" id="gift-amount" placeholder="Miktar" value="160" min="1" step="10" style="flex: 1; min-width: 90px; padding: 7px 12px; border-radius: 6px; background: rgba(0,0,0,0.4); border: 1px solid #334155; color: #ffd700; font-weight: 700;">
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" id="btn-gift-primo" class="btn btn-success btn-sm" style="font-weight: 700; padding: 6px 14px;" title="Belirtilen miktarı ekle">+ Primogem Ekle</button>
+                <button type="button" id="btn-deduct-primo" class="btn btn-danger btn-sm" style="background: #dc2626; border-color: #ef4444; font-weight: 700; padding: 6px 14px;" title="Belirtilen miktarı bakiyeden düşür/sil">- Primogem Sil</button>
+                <button type="button" id="btn-reset-primo" class="btn btn-outline btn-sm" style="border-color: #ef4444; color: #f87171; padding: 6px 12px;" title="Kullanıcının bakiyesini 0 yap">🗑️ 0'a Sıfırla</button>
+              </div>
+            </div>
+            <div style="display: flex; gap: 6px; margin-top: 10px; align-items: center; flex-wrap: wrap;">
+              <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">Hızlı Miktarlar:</span>
+              <button type="button" class="btn btn-xs btn-outline btn-preset-amount" data-amount="160" style="color: #4ade80; border-color: #22c55e;">+160 (1 Wish)</button>
+              <button type="button" class="btn btn-xs btn-outline btn-preset-amount" data-amount="1600" style="color: #4ade80; border-color: #22c55e;">+1600 (10 Wish)</button>
+              <button type="button" class="btn btn-xs btn-outline btn-preset-deduct" data-amount="160" style="color: #f87171; border-color: #ef4444;">-160 Sil</button>
+              <button type="button" class="btn btn-xs btn-outline btn-preset-deduct" data-amount="1600" style="color: #f87171; border-color: #ef4444;">-1600 Sil</button>
+            </div>
+            <div id="gift-feedback" class="field-hint" style="margin-top: 6px; font-weight: 600; min-height: 18px;"></div>
           </div>
 
           <!-- 5-Star Character Assignment Card -->

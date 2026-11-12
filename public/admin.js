@@ -95,6 +95,8 @@
   const giftUsername = document.getElementById('gift-username');
   const giftAmount = document.getElementById('gift-amount');
   const btnGiftPrimo = document.getElementById('btn-gift-primo');
+  const btnDeductPrimo = document.getElementById('btn-deduct-primo');
+  const btnResetPrimo = document.getElementById('btn-reset-primo');
   const giftFeedback = document.getElementById('gift-feedback');
   const giftCharUsername = document.getElementById('gift-char-username');
   const giftCharSelect = document.getElementById('gift-char-select');
@@ -2302,7 +2304,9 @@
           <td>${u.totalWishes}</td>
           <td>
             <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-              <button class="btn btn-xs btn-outline btn-quick-add" data-user="${escapeHtml(u.username)}">+160 Primo</button>
+              <button class="btn btn-xs btn-outline btn-quick-add" data-user="${escapeHtml(u.username)}" style="color:#4ade80; border-color:#22c55e;" title="+160 Primogem Ekle">+160</button>
+              <button class="btn btn-xs btn-outline btn-quick-deduct" data-user="${escapeHtml(u.username)}" style="color:#f87171; border-color:#ef4444;" title="-160 Primogem Sil / Düşür">-160</button>
+              <button class="btn btn-xs btn-outline btn-quick-manage-user" data-user="${escapeHtml(u.username)}" data-primo="${u.primogems}" style="color:#38bdf8; border-color:#0284c7;" title="Yönetim Kutusuna Aktar">💎 Düzenle</button>
               <button class="btn btn-xs btn-outline btn-quick-select-user" data-user="${escapeHtml(u.username)}" style="border-color:#eab308; color:#ffd700;" title="5★ Karakter Ekleme Kutusuna Aktar">★ 5★ Ekle</button>
             </div>
           </td>
@@ -2314,6 +2318,24 @@
       btn.addEventListener('click', async (e) => {
         const username = e.target.getAttribute('data-user');
         await addPrimoToUser(username, 160);
+      });
+    });
+
+    gachaUsersTbody.querySelectorAll('.btn-quick-deduct').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const username = e.target.getAttribute('data-user');
+        await deductPrimoFromUser(username, 160);
+      });
+    });
+
+    gachaUsersTbody.querySelectorAll('.btn-quick-manage-user').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const username = e.target.getAttribute('data-user');
+        if (giftUsername) {
+          giftUsername.value = username;
+          giftUsername.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (giftAmount) giftAmount.focus();
+        }
       });
     });
 
@@ -2338,10 +2360,58 @@
       });
       const data = await res.json();
       if (data.success) {
+        if (giftFeedback) {
+          giftFeedback.style.color = '#10b981';
+          giftFeedback.textContent = `✅ @${username} kullanıcısına +${amount} Primogem yüklendi! (Toplam: ${data.user.primogems})`;
+        }
         loadGachaUsers();
       }
     } catch (e) {
       alert('Primogem eklenemedi: ' + e.message);
+    }
+  }
+
+  async function deductPrimoFromUser(username, amount) {
+    try {
+      const res = await fetch('/api/gacha/deduct-primo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, amount })
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (giftFeedback) {
+          giftFeedback.style.color = '#ef4444';
+          giftFeedback.textContent = `🔻 @${username} kullanıcısından -${amount} Primogem silindi! (Kalan: ${data.user.primogems} 💎)`;
+        }
+        loadGachaUsers();
+      } else {
+        alert('Primogem silinemedi: ' + (data.error || 'İşlem başarısız'));
+      }
+    } catch (e) {
+      alert('Primogem silinemedi: ' + e.message);
+    }
+  }
+
+  async function setPrimoForUser(username, amount) {
+    try {
+      const res = await fetch('/api/gacha/set-primo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, amount })
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (giftFeedback) {
+          giftFeedback.style.color = '#f59e0b';
+          giftFeedback.textContent = `⚙️ @${username} kullanıcısının Primogem bakiyesi ${amount} olarak ayarlandı.`;
+        }
+        loadGachaUsers();
+      } else {
+        alert('Primogem ayarlanamadı: ' + (data.error || 'İşlem başarısız'));
+      }
+    } catch (e) {
+      alert('Primogem ayarlanamadı: ' + e.message);
     }
   }
 
@@ -2431,6 +2501,90 @@
       }
     });
   }
+
+  if (btnDeductPrimo) {
+    btnDeductPrimo.addEventListener('click', async () => {
+      const username = giftUsername.value.trim();
+      const amount = parseInt(giftAmount.value, 10) || 0;
+      if (!username) {
+        giftFeedback.style.color = '#ef4444';
+        giftFeedback.textContent = 'Lütfen kullanıcı adı girin.';
+        return;
+      }
+      if (amount <= 0) {
+        giftFeedback.style.color = '#ef4444';
+        giftFeedback.textContent = 'Lütfen silinecek pozitif bir miktar girin.';
+        return;
+      }
+      try {
+        const res = await fetch('/api/gacha/deduct-primo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, amount })
+        });
+        const data = await res.json();
+        if (data.success) {
+          giftFeedback.style.color = '#ef4444';
+          giftFeedback.textContent = `🔻 @${username} kullanıcısından -${amount} Primogem silindi! (Kalan Bakiye: ${data.user.primogems} 💎)`;
+          loadGachaUsers();
+        } else {
+          giftFeedback.style.color = '#ef4444';
+          giftFeedback.textContent = 'Hata: ' + (data.error || 'İşlem başarısız');
+        }
+      } catch (e) {
+        giftFeedback.style.color = '#ef4444';
+        giftFeedback.textContent = 'Hata: ' + e.message;
+      }
+    });
+  }
+
+  if (btnResetPrimo) {
+    btnResetPrimo.addEventListener('click', async () => {
+      const username = giftUsername.value.trim();
+      if (!username) {
+        giftFeedback.style.color = '#ef4444';
+        giftFeedback.textContent = 'Lütfen kullanıcı adı girin.';
+        return;
+      }
+      if (!confirm(`@${username} kullanıcısının tüm Primogemlerini sıfırlamak (0 yapmak) istediğinize emin misiniz?`)) {
+        return;
+      }
+      try {
+        const res = await fetch('/api/gacha/set-primo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, amount: 0 })
+        });
+        const data = await res.json();
+        if (data.success) {
+          giftFeedback.style.color = '#f59e0b';
+          giftFeedback.textContent = `🗑️ @${username} kullanıcısının Primogem bakiyesi 0 olarak sıfırlandı!`;
+          loadGachaUsers();
+        } else {
+          giftFeedback.style.color = '#ef4444';
+          giftFeedback.textContent = 'Hata: ' + (data.error || 'İşlem başarısız');
+        }
+      } catch (e) {
+        giftFeedback.style.color = '#ef4444';
+        giftFeedback.textContent = 'Hata: ' + e.message;
+      }
+    });
+  }
+
+  // Preset Buttons
+  document.querySelectorAll('.btn-preset-amount').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const amt = btn.getAttribute('data-amount');
+      if (giftAmount) giftAmount.value = amt;
+    });
+  });
+
+  document.querySelectorAll('.btn-preset-deduct').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const amt = btn.getAttribute('data-amount');
+      if (giftAmount) giftAmount.value = amt;
+    });
+  });
 
   if (btnRefreshGachaUsers) {
     btnRefreshGachaUsers.addEventListener('click', loadGachaUsers);

@@ -1182,11 +1182,37 @@ class GachaEngine extends EventEmitter {
   addPrimogems(username, amount, reason = 'MANUAL') {
     const user = this.getOrCreateUser(username);
     if (!user) return null;
-    if (amount > 0 && reason !== 'JACKPOT_CLAIM' && reason !== 'ADMIN_OVERRIDE') {
-      return this.awardEarnedPrimogems(username, amount, reason).user;
+    const num = parseInt(amount, 10) || 0;
+    if (num < 0) {
+      return this.deductPrimogems(username, Math.abs(num), reason);
     }
-    user.primogems = Math.max(0, user.primogems + amount);
+    if (num > 0 && reason !== 'JACKPOT_CLAIM' && reason !== 'ADMIN_OVERRIDE') {
+      return this.awardEarnedPrimogems(username, num, reason).user;
+    }
+    user.primogems = Math.max(0, (user.primogems || 0) + num);
     this.saveUsers();
+    return user;
+  }
+
+  deductPrimogems(username, amount, reason = 'MANUAL_DEDUCT') {
+    const user = this.getOrCreateUser(username);
+    if (!user) return null;
+    const toRemove = Math.abs(parseInt(amount, 10) || 0);
+    const before = user.primogems || 0;
+    user.primogems = Math.max(0, before - toRemove);
+    this.saveUsers();
+    console.log(`[GachaEngine] 🔻 @${user.username} bakiyesinden -${toRemove} Primogem silindi (${before} -> ${user.primogems} 💎) [${reason}]`);
+    return user;
+  }
+
+  setPrimogems(username, amount, reason = 'MANUAL_SET') {
+    const user = this.getOrCreateUser(username);
+    if (!user) return null;
+    const target = Math.max(0, parseInt(amount, 10) || 0);
+    const before = user.primogems || 0;
+    user.primogems = target;
+    this.saveUsers();
+    console.log(`[GachaEngine] ⚙️ @${user.username} bakiyesi ${target} Primogem olarak ayarlandı (Önceki: ${before} 💎) [${reason}]`);
     return user;
   }
 
