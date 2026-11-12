@@ -964,166 +964,272 @@
     </div>
   </div>
 
-  <!-- 15. Ancient Portal Zone & Aion 2 Dungeon Selection Modal -->
+  <!-- 15. Ancient Portal Zone & Dungeon Selection Modal -->
   <div id="modal-portal-zones" class="mmo-modal-overlay hidden">
     <div class="mmo-modal-container portal-zones-container">
-      <div class="mmo-modal-header">
-        <div class="sheet-title-group">
-          <span class="sheet-icon">🌀</span>
-          <div>
-            <h3>Kadim Zindan & Aether Portalı</h3>
-            <span class="sheet-subtitle">Aion 2 Aşamalı Zindan Seferleri veya Açık Avlanma Bölgeleri</span>
+      <!-- Modal Header with Scenic Visual & Portal Details -->
+      <div class="portal-modal-header">
+        <div class="portal-header-content">
+          <div class="portal-header-icon-wrap">
+            <img src="assets/dungeon/portal_vortex_icon.png" alt="Portal" class="portal-vortex-img" />
+          </div>
+          <div class="portal-header-text">
+            <h3 class="portal-title">Kadim Zindan & Aether Portalı</h3>
+            <span class="portal-subtitle">Çok Aşamalı Zindan Seferleri veya Açık Avlanma Bölgeleri</span>
+            <div class="portal-header-meta">
+              <div class="portal-gs-pill">
+                <span class="portal-gs-trophy">🏆</span>
+                <span class="portal-gs-label">Senin GearScore:</span>
+                <strong id="portal-player-gs">0 GS</strong>
+              </div>
+              <button type="button" class="portal-info-circle-btn" title="GearScore Seviyesi Zindan Hasar ve Dayanıklılığını Belirler">?</button>
+            </div>
           </div>
         </div>
-        <div class="sheet-header-actions">
-          <div class="portal-current-gs">
-            <span>Senin GearScore:</span>
-            <strong id="portal-player-gs">0 GS</strong>
-          </div>
-          <button type="button" class="btn-modal-close" data-close="modal-portal-zones">✕</button>
+        <div class="portal-header-art-wrap">
+          <img src="assets/dungeon/portal_header_art.png" alt="Ancient Portal Arch" class="portal-header-art-img" />
+          <button type="button" class="btn-modal-close portal-close-top-btn" data-close="modal-portal-zones" aria-label="Kapat">✕</button>
         </div>
       </div>
 
       <!-- Portal Mode Tabs -->
       <div class="portal-tabs-bar">
         <button type="button" class="btn-portal-tab active" data-portal-tab="dungeons">
-          🪽 Aion 2 Aether Zindanları (3 Aşamalı & S-Rank Sandıklı)
+          <span class="portal-tab-icon">🪽</span>
+          <div class="portal-tab-label-group">
+            <span class="portal-tab-main">Kadim Boyut Zindanları</span>
+            <span class="portal-tab-sub">(3 Aşamalı & S-Rank Sandıklı)</span>
+          </div>
         </button>
         <button type="button" class="btn-portal-tab" data-portal-tab="open_zones">
-          🌲 Açık Avlanma Bölgeleri (Serbest Grind)
+          <span class="portal-tab-icon">🌲</span>
+          <div class="portal-tab-label-group">
+            <span class="portal-tab-main">Açık Avlanma Bölgeleri</span>
+            <span class="portal-tab-sub">(Serbest Grind)</span>
+          </div>
         </button>
       </div>
 
-      <!-- TAB 1: Aion 2 3-Stage Instance Dungeons -->
+      <!-- TAB 1: 3-Stage Instance Dungeons -->
       <div class="portal-zones-body" id="portal-panel-dungeons">
         <!-- Dungeon Tier 1 -->
-        <div class="zone-card dungeon-tier-card" id="card-dungeon-1">
-          <div class="zone-card-badge status-safe" id="badge-dungeon-1">🟢 Güvenli</div>
+        <div class="zone-card dungeon-tier-card theme-purple" id="card-dungeon-1">
+          <div class="zone-card-banner">
+            <img src="assets/dungeon/card_dungeon_1.png" alt="Mühürlü Aether Tapınağı" class="zone-banner-img" />
+            <div class="zone-card-badge status-safe" id="badge-dungeon-1">⚔️ Önerili</div>
+          </div>
           <div class="zone-card-header">
-            <span class="zone-card-icon">🪽</span>
-            <div>
+            <div class="zone-icon-pill icon-purple">🪽</div>
+            <div class="zone-header-info">
               <h4 class="zone-card-title">Mühürlü Aether Tapınağı</h4>
               <span class="zone-card-desc">3 Aşama • Rüzgar Akımı Uçuşu • Aether Muhafızı</span>
             </div>
           </div>
-          <div class="zone-card-meta">
-            <div class="meta-row"><span>Önerilen GearScore:</span> <strong>150 GS</strong></div>
-            <div class="meta-row"><span>Mekanikler:</span> <strong>Mühür Kristali + Kristal Kalkan + Kubbe</strong></div>
-            <div class="meta-row"><span>S-Rank Sandığı:</span> <strong>+60 💎 & 4★ Epik Ekipman</strong></div>
+          <div class="zone-card-stats-box">
+            <div class="card-stat-col">
+              <span class="card-stat-lbl">Önerilen GearScore</span>
+              <strong class="card-stat-gs">150 GS</strong>
+            </div>
+            <div class="card-stat-divider"></div>
+            <div class="card-stat-col">
+              <span class="card-stat-lbl">S-Rank Sandığı</span>
+              <div class="card-stat-reward">
+                <span class="reward-val diamond"><span class="gem-icon">🔷</span> +60</span>
+                <span class="reward-val star"><span class="star-icon">✦</span> 4★ Ekipman</span>
+              </div>
+            </div>
           </div>
           <div class="zone-card-penalty-hint" id="hint-dungeon-1">Ceza Yok (Tam Hasar)</div>
-          <button type="button" class="btn-zone-enter btn-dungeon-enter" data-zone-id="dungeon_tier_1">🪽 Tapınağa Gir (Normal)</button>
+          <button type="button" class="btn-zone-enter btn-portal-action btn-theme-purple" data-zone-id="dungeon_tier_1">
+            <span class="btn-action-left"><span class="btn-action-icon">🪽</span> Tapınağa Gir (Normal)</span>
+            <span class="btn-action-arrow">›</span>
+          </button>
         </div>
 
         <!-- Dungeon Tier 2 -->
-        <div class="zone-card dungeon-tier-card" id="card-dungeon-2">
-          <div class="zone-card-badge status-challenging" id="badge-dungeon-2">🟡 Zorlu</div>
+        <div class="zone-card dungeon-tier-card theme-orange" id="card-dungeon-2">
+          <div class="zone-card-banner">
+            <img src="assets/dungeon/card_dungeon_2.png" alt="Kızıl Aether Kalesi" class="zone-banner-img" />
+            <div class="zone-card-badge status-deadly" id="badge-dungeon-2">⚔️ Ölümcül Risk</div>
+          </div>
           <div class="zone-card-header">
-            <span class="zone-card-icon">🔥</span>
-            <div>
+            <div class="zone-icon-pill icon-orange">🔥</div>
+            <div class="zone-header-info">
               <h4 class="zone-card-title">Kızıl Aether Kalesi</h4>
-              <span class="zone-card-desc">3 Aşama • Daeva Kanat Köprüsü • Kızıl Archon</span>
+              <span class="zone-card-desc">3 Aşama • Devasa Körat Mağarası • Kızıl Archon</span>
             </div>
           </div>
-          <div class="zone-card-meta">
-            <div class="meta-row"><span>Önerilen GearScore:</span> <strong>450 GS</strong></div>
-            <div class="meta-row"><span>Mekanikler:</span> <strong>3x Rezonans Kristali + Kıyamet Dalgası</strong></div>
-            <div class="meta-row"><span>S-Rank Sandığı:</span> <strong>+110 💎 & 4★/5★ Efsanevi Şansı</strong></div>
+          <div class="zone-card-stats-box">
+            <div class="card-stat-col">
+              <span class="card-stat-lbl">Önerilen GearScore</span>
+              <strong class="card-stat-gs">450 GS</strong>
+            </div>
+            <div class="card-stat-divider"></div>
+            <div class="card-stat-col">
+              <span class="card-stat-lbl">S-Rank Sandığı</span>
+              <div class="card-stat-reward">
+                <span class="reward-val diamond"><span class="gem-icon">🔷</span> +110</span>
+                <span class="reward-val star"><span class="star-icon">✦</span> 4★/5★ Efsanevi</span>
+              </div>
+            </div>
           </div>
           <div class="zone-card-penalty-hint" id="hint-dungeon-2">Düşük GS'de hafif hasar cezası</div>
-          <button type="button" class="btn-zone-enter btn-dungeon-enter" data-zone-id="dungeon_tier_2">🔥 Kaleye Gir (Kahraman)</button>
+          <button type="button" class="btn-zone-enter btn-portal-action btn-theme-orange" data-zone-id="dungeon_tier_2">
+            <span class="btn-action-left"><span class="btn-action-icon">🔥</span> Kaleye Gir (Kahraman)</span>
+            <span class="btn-action-arrow">›</span>
+          </button>
         </div>
 
         <!-- Dungeon Tier 3 -->
-        <div class="zone-card dungeon-tier-card" id="card-dungeon-3">
-          <div class="zone-card-badge status-deadly" id="badge-dungeon-3">🔴 Ölümcül Risk</div>
+        <div class="zone-card dungeon-tier-card theme-teal" id="card-dungeon-3">
+          <div class="zone-card-banner">
+            <img src="assets/dungeon/card_dungeon_3.png" alt="Tahobato'nun Uçurum Kabı" class="zone-banner-img" />
+            <div class="zone-card-badge status-deadly" id="badge-dungeon-3">⚔️ Ölümcül Risk</div>
+          </div>
           <div class="zone-card-header">
-            <span class="zone-card-icon">🐉</span>
-            <div>
-              <h4 class="zone-card-title">Tahabata'nın Uçurum Kalbi</h4>
-              <span class="zone-card-desc">3 Aşama • Dark Poeta Zaman Yarışı • Uçurum Hükümdarı</span>
+            <div class="zone-icon-pill icon-teal">🐍</div>
+            <div class="zone-header-info">
+              <h4 class="zone-card-title">Tahobato'nun Uçurum Kabı</h4>
+              <span class="zone-card-desc">3 Aşama • Dark Poeta Zaman Yarığı • Uçurum Hükümdarı</span>
             </div>
           </div>
-          <div class="zone-card-meta">
-            <div class="meta-row"><span>Önerilen GearScore:</span> <strong>800 GS</strong></div>
-            <div class="meta-row"><span>Mekanikler:</span> <strong>Tam Aion 2 Boss Fazları & S-Rank Yarışı</strong></div>
-            <div class="meta-row"><span>S-Rank Sandığı:</span> <strong>+160 💎 (1 Wish) & Garanti 5★ Efsanevi!</strong></div>
+          <div class="zone-card-stats-box">
+            <div class="card-stat-col">
+              <span class="card-stat-lbl">Önerilen GearScore</span>
+              <strong class="card-stat-gs">800 GS</strong>
+            </div>
+            <div class="card-stat-divider"></div>
+            <div class="card-stat-col">
+              <span class="card-stat-lbl">S-Rank Sandığı</span>
+              <div class="card-stat-reward">
+                <span class="reward-val diamond"><span class="gem-icon">🔷</span> +160</span>
+                <span class="reward-val star gold"><span class="star-icon">★</span> 5★ Efsanevi</span>
+              </div>
+            </div>
           </div>
           <div class="zone-card-penalty-hint" id="hint-dungeon-3">Düşük GS'de vuruşlar seker (%35)!</div>
-          <button type="button" class="btn-zone-enter btn-dungeon-enter" data-zone-id="dungeon_tier_3">🐉 Uçurum Kalbine Gir (Abyss)</button>
+          <button type="button" class="btn-zone-enter btn-portal-action btn-theme-teal" data-zone-id="dungeon_tier_3">
+            <span class="btn-action-left"><span class="btn-action-icon">🐍</span> Uçurum Kabine Gir (Abyss)</span>
+            <span class="btn-action-arrow">›</span>
+          </button>
         </div>
       </div>
 
       <!-- TAB 2: Open Grinding Battle Zones -->
       <div class="portal-zones-body hidden" id="portal-panel-open-zones">
         <!-- Zone 1 Card -->
-        <div class="zone-card" id="card-zone-1">
-          <div class="zone-card-badge status-safe" id="badge-zone-1">🟢 Güvenli</div>
+        <div class="zone-card theme-green" id="card-zone-1">
+          <div class="zone-card-banner">
+            <img src="assets/dungeon/card_zone_1.png" alt="Kadim Orman" class="zone-banner-img" />
+            <div class="zone-card-badge status-safe" id="badge-zone-1">⚔️ Önerili</div>
+          </div>
           <div class="zone-card-header">
-            <span class="zone-card-icon">🌲</span>
-            <div>
+            <div class="zone-icon-pill icon-green">🌲</div>
+            <div class="zone-header-info">
               <h4 class="zone-card-title">Kadim Sarmaşıklı Orman</h4>
               <span class="zone-card-desc">Kadim Kökler, Parlayan Mantarlar & Balçıklar</span>
             </div>
           </div>
-          <div class="zone-card-meta">
-            <div class="meta-row"><span>Önerilen GearScore:</span> <strong>100 GS</strong></div>
-            <div class="meta-row"><span>Yaratık Seviyeleri:</span> <strong>Lv.1 - Lv.10</strong></div>
-            <div class="meta-row"><span>Olası Ganimetler:</span> <strong>1★ - 2★ Eşyalar</strong></div>
+          <div class="zone-card-stats-box">
+            <div class="card-stat-col">
+              <span class="card-stat-lbl">Önerilen GearScore</span>
+              <strong class="card-stat-gs">100 GS</strong>
+            </div>
+            <div class="card-stat-divider"></div>
+            <div class="card-stat-col">
+              <span class="card-stat-lbl">Avlanma Ganimeti</span>
+              <div class="card-stat-reward">
+                <span class="reward-val">Lv.1 - Lv.10</span>
+                <span class="reward-val star">✦ 1★ - 2★ Eşyalar</span>
+              </div>
+            </div>
           </div>
           <div class="zone-card-penalty-hint" id="hint-zone-1">Ceza Yok (Tam Hasar)</div>
-          <button type="button" class="btn-zone-enter" data-zone-id="battle_zone_1">⚔️ Ormana Gir</button>
+          <button type="button" class="btn-zone-enter btn-portal-action btn-theme-green" data-zone-id="battle_zone_1">
+            <span class="btn-action-left"><span class="btn-action-icon">⚔️</span> Ormana Gir</span>
+            <span class="btn-action-arrow">›</span>
+          </button>
         </div>
 
         <!-- Zone 2 Card -->
-        <div class="zone-card" id="card-zone-2">
-          <div class="zone-card-badge status-challenging" id="badge-zone-2">🟡 Zorlu</div>
+        <div class="zone-card theme-orange" id="card-zone-2">
+          <div class="zone-card-banner">
+            <img src="assets/dungeon/card_zone_2.png" alt="Kızıl Lav Harabeleri" class="zone-banner-img" />
+            <div class="zone-card-badge status-challenging" id="badge-zone-2">🟡 Zorlu</div>
+          </div>
           <div class="zone-card-header">
-            <span class="zone-card-icon">🌋</span>
-            <div>
+            <div class="zone-icon-pill icon-orange">🌋</div>
+            <div class="zone-header-info">
               <h4 class="zone-card-title">Kızıl Lav Harabeleri</h4>
-              <span class="zone-card-desc">Lav Yarıkları, Yıkık Surlar & Alev Baltalı Mitachurl</span>
+              <span class="zone-card-desc">Lav Yarıkları, Yıkık Surlar & Alev Baltalı Canavarlar</span>
             </div>
           </div>
-          <div class="zone-card-meta">
-            <div class="meta-row"><span>Önerilen GearScore:</span> <strong>350 GS</strong></div>
-            <div class="meta-row"><span>Yaratık Seviyeleri:</span> <strong>Lv.15 - Lv.30</strong></div>
-            <div class="meta-row"><span>Olası Ganimetler:</span> <strong>2★ - 3★ Nadir Eşyalar, 3-5 💎</strong></div>
+          <div class="zone-card-stats-box">
+            <div class="card-stat-col">
+              <span class="card-stat-lbl">Önerilen GearScore</span>
+              <strong class="card-stat-gs">350 GS</strong>
+            </div>
+            <div class="card-stat-divider"></div>
+            <div class="card-stat-col">
+              <span class="card-stat-lbl">Avlanma Ganimeti</span>
+              <div class="card-stat-reward">
+                <span class="reward-val">Lv.15 - Lv.30</span>
+                <span class="reward-val diamond"><span class="gem-icon">🔷</span> 3-5 💎 & 3★</span>
+              </div>
+            </div>
           </div>
           <div class="zone-card-penalty-hint" id="hint-zone-2">Düşük GS'de hafif hasar cezası</div>
-          <button type="button" class="btn-zone-enter" data-zone-id="battle_zone_2">⚔️ Harabelere Gir</button>
+          <button type="button" class="btn-zone-enter btn-portal-action btn-theme-orange" data-zone-id="battle_zone_2">
+            <span class="btn-action-left"><span class="btn-action-icon">⚔️</span> Harabelere Gir</span>
+            <span class="btn-action-arrow">›</span>
+          </button>
         </div>
 
         <!-- Zone 3 Card -->
-        <div class="zone-card" id="card-zone-3">
-          <div class="zone-card-badge status-deadly" id="badge-zone-3">🔴 Ölümcül Risk</div>
+        <div class="zone-card theme-purple" id="card-zone-3">
+          <div class="zone-card-banner">
+            <img src="assets/dungeon/card_zone_3.png" alt="Kadim Uçurum Boşluğu" class="zone-banner-img" />
+            <div class="zone-card-badge status-deadly" id="badge-zone-3">⚔️ Ölümcül Risk</div>
+          </div>
           <div class="zone-card-header">
-            <span class="zone-card-icon">🌌</span>
-            <div>
+            <div class="zone-icon-pill icon-purple">🌌</div>
+            <div class="zone-header-info">
               <h4 class="zone-card-title">Kadim Uçurum Boşluğu</h4>
               <span class="zone-card-desc">Kozmik Uçurumda Yüzen Ada & Antik Yıkım Muhafızı</span>
             </div>
           </div>
-          <div class="zone-card-meta">
-            <div class="meta-row"><span>Önerilen GearScore:</span> <strong>750 GS</strong></div>
-            <div class="meta-row"><span>Yaratık Seviyeleri:</span> <strong>Lv.35 - Lv.50</strong></div>
-            <div class="meta-row"><span>Olası Ganimetler:</span> <strong>3★-5★ Efsanevi Eşyalar, 15-25 💎</strong></div>
+          <div class="zone-card-stats-box">
+            <div class="card-stat-col">
+              <span class="card-stat-lbl">Önerilen GearScore</span>
+              <strong class="card-stat-gs">750 GS</strong>
+            </div>
+            <div class="card-stat-divider"></div>
+            <div class="card-stat-col">
+              <span class="card-stat-lbl">Avlanma Ganimeti</span>
+              <div class="card-stat-reward">
+                <span class="reward-val">Lv.35 - Lv.50</span>
+                <span class="reward-val star gold"><span class="gem-icon">🔷</span> 15-25 💎 & 5★</span>
+              </div>
+            </div>
           </div>
           <div class="zone-card-penalty-hint" id="hint-zone-3">Düşük GS'de vuruşlar seker (%35)!</div>
-          <button type="button" class="btn-zone-enter" data-zone-id="battle_zone_3">⚔️ Boşluğa Gir</button>
+          <button type="button" class="btn-zone-enter btn-portal-action btn-theme-purple" data-zone-id="battle_zone_3">
+            <span class="btn-action-left"><span class="btn-action-icon">⚔️</span> Boşluğa Gir</span>
+            <span class="btn-action-arrow">›</span>
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 15.5 Aion 2 Live Dungeon Scoreboard, Stage Tracker & Mechanic Alert HUD -->
+  <!-- 15.5 Live Dungeon Scoreboard, Stage Tracker & Mechanic Alert HUD -->
   <div id="dungeon-hud" class="dungeon-hud hidden">
     <div class="dungeon-hud-top">
       <span class="dungeon-tier-badge" id="dungeon-hud-tier">🪽 AETHER TAPINAĞI</span>
       <span class="dungeon-rank-badge rank-S" id="dungeon-hud-rank">S</span>
     </div>
     <div class="dungeon-hud-stage" id="dungeon-hud-stage">AŞAMA 1 / 3: Mühürlü Giriş</div>
-    <div class="dungeon-hud-objective" id="dungeon-hud-objective">🎯 2 Aether Mühür Kristalini ve Muhafızları Yok Et (0/6)</div>
+    <div class="dungeon-hud-objective" id="dungeon-hud-objective">🎯 2 Mühür Kristalini ve Muhafızları Yok Et (0/6)</div>
     <div class="dungeon-hud-stats">
       <div class="dh-stat">
         <span>⏱️ Süre</span>
@@ -1139,7 +1245,7 @@
       </div>
     </div>
     <div class="dungeon-hud-buff hidden" id="dungeon-hud-buff">
-      🪽 Kick Aether Kutsaması Aktif (+%25 Hasar & Hız)
+      🪽 Kadim Aether Kutsaması Aktif (+%25 Hasar & Hız)
     </div>
   </div>
 
@@ -1152,12 +1258,12 @@
     </div>
   </div>
 
-  <!-- Aion 2 Dungeon Clear & S/A/B/C Rank Summary Banner -->
+  <!-- Dungeon Clear & S/A/B/C Rank Summary Banner -->
   <div id="dungeon-victory-banner" class="dungeon-victory-banner hidden">
     <div class="dv-rank-circle rank-S" id="dv-rank-circle">S</div>
     <div class="dv-info">
       <div class="dv-tag">🪽 AETHER ZİNDANI TAMAMLANDI!</div>
-      <h3 id="dv-title">Tahabata'nın Uçurum Kalbi Fethedildi!</h3>
+      <h3 id="dv-title">Tahobato'nun Uçurum Kabı Fethedildi!</h3>
       <p id="dv-summary">Süre: 01:42 • Toplam Puan: 4,450 • Sunaktaki Hazine Sandıklarını [E] ile Aç!</p>
     </div>
     <button type="button" class="btn-dv-close" id="btn-dv-close" onclick="document.getElementById('dungeon-victory-banner')?.classList.add('hidden')">Tamam</button>

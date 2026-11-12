@@ -6963,7 +6963,7 @@
         rcModal.classList.remove('hidden');
         const nameEl = document.getElementById('ready-check-dungeon-name');
         const baseTier = getDungeonBaseTier(msg.tierId);
-        if (nameEl) nameEl.textContent = (ZONE_CONFIGS[baseTier] || {}).name || 'Aion 2 Zindanı';
+        if (nameEl) nameEl.textContent = (ZONE_CONFIGS[baseTier] || {}).name || 'Kadim Zindan';
         const subEl = document.getElementById('ready-check-sub');
         if (subEl) subEl.textContent = `@${msg.leaderName} zindan seferini başlatıyor. Hazır mısın? (15s)`;
 
@@ -7119,8 +7119,8 @@
       handleDungeonVictory();
     } else if (msg.type === 'WORLD_DUNGEON_ANNOUNCE') {
       if (msg.username !== myPlayer.username) {
-        const chestType = msg.isBonusChest ? '🌟 Efsanevi S-Rank Abyss Sandığını' : '🎁 Aion Zindan Hazinesini';
-        addChatMessage('👑 ZİNDAN ZAFERİ', `@${msg.username} ${msg.zoneName || 'Aion'} zindanını [${msg.rank}-Rank] dereceyle tamamladı ve ${chestType} açtı!`);
+        const chestType = msg.isBonusChest ? '🌟 Efsanevi S-Rank Abyss Sandığını' : '🎁 Kadim Zindan Hazinesini';
+        addChatMessage('👑 ZİNDAN ZAFERİ', `@${msg.username} ${msg.zoneName || 'Kadim'} zindanını [${msg.rank}-Rank] dereceyle tamamladı ve ${chestType} açtı!`);
       }
     } else if (msg.type === 'PVP_HIT_EFFECT') {
       handlePvPHitEffect(msg);
@@ -7657,7 +7657,7 @@
             nearbyInteractable = { type: 'dungeon_chest', data: ch };
             promptText.textContent = ch.isBonusChest
               ? `[E] 🌟 Efsanevi S-Rank Abyss Sandığını Aç!`
-              : `[E] 🎁 Aion Zindan Hazinesini Aç (${dungeonState.rank}-Rank)`;
+              : `[E] 🎁 Kadim Zindan Hazinesini Aç (${dungeonState.rank}-Rank)`;
             prompt.classList.remove('hidden');
             return;
           }
@@ -15257,14 +15257,14 @@
     const gsEl = document.getElementById('portal-player-gs');
     if (gsEl) gsEl.textContent = `${currentGS} GS`;
 
-    // --- Aion 2 Dungeons Difficulty Badges ---
+    // --- Kadim Dungeons Difficulty Badges ---
     // Dungeon 1: Mühürlü Aether Tapınağı (Req 150 GS)
     const pd1 = getGsDifficultyMultiplier(currentGS, 150);
     const badgeD1 = document.getElementById('badge-dungeon-1');
     const hintD1 = document.getElementById('hint-dungeon-1');
     if (badgeD1) {
       badgeD1.className = `zone-card-badge status-${pd1.status}`;
-      badgeD1.textContent = pd1.status === 'safe' ? '🟢 Güvenli' : (pd1.status === 'challenging' ? '🟡 Zorlu' : '🔴 Ölümcül');
+      badgeD1.textContent = pd1.status === 'safe' ? '⚔️ Önerili' : (pd1.status === 'challenging' ? '🟡 Zorlu' : '⚔️ Ölümcül Risk');
     }
     if (hintD1) {
       hintD1.textContent = pd1.status === 'safe' ? 'Ceza Yok (Tam Hasar) - S-Rank için hazır!' : `Hasar Çarpanı: x${pd1.damageMult}`;
@@ -15276,7 +15276,7 @@
     const hintD2 = document.getElementById('hint-dungeon-2');
     if (badgeD2) {
       badgeD2.className = `zone-card-badge status-${pd2.status}`;
-      badgeD2.textContent = pd2.status === 'safe' ? '🟢 Güvenli' : (pd2.status === 'challenging' ? '🟡 Zorlu' : '🔴 Ölümcül Risk');
+      badgeD2.textContent = pd2.status === 'safe' ? '⚔️ Önerili' : (pd2.status === 'challenging' ? '🟡 Zorlu' : '⚔️ Ölümcül Risk');
     }
     if (hintD2) {
       if (pd2.status === 'safe') hintD2.textContent = 'Ceza Yok (Tam Hasar & Efsanevi Şansı)';
@@ -15290,7 +15290,7 @@
     const hintD3 = document.getElementById('hint-dungeon-3');
     if (badgeD3) {
       badgeD3.className = `zone-card-badge status-${pd3.status}`;
-      badgeD3.textContent = pd3.status === 'safe' ? '🟢 Güvenli' : (pd3.status === 'challenging' ? '🟡 Zorlu' : '🔴 Ölümcül Risk');
+      badgeD3.textContent = pd3.status === 'safe' ? '⚔️ Önerili' : (pd3.status === 'challenging' ? '🟡 Zorlu' : '⚔️ Ölümcül Risk');
     }
     if (hintD3) {
       if (pd3.status === 'safe') hintD3.textContent = 'Hazırsın! Ceza Yok (Garantili 4★/5★ & 1 Dilek!)';
@@ -15305,7 +15305,7 @@
     const hint1 = document.getElementById('hint-zone-1');
     if (badge1) {
       badge1.className = `zone-card-badge status-${p1.status}`;
-      badge1.textContent = p1.status === 'safe' ? '🟢 Güvenli' : (p1.status === 'challenging' ? '🟡 Zorlu' : '🔴 Ölümcül');
+      badge1.textContent = p1.status === 'safe' ? '⚔️ Önerili' : (p1.status === 'challenging' ? '🟡 Zorlu' : '⚔️ Ölümcül Risk');
     }
     if (hint1) {
       hint1.textContent = p1.status === 'safe' ? 'Ceza Yok (Tam Hasar) - Güvenli Bölge' : `Hasar Çarpanı: x${p1.damageMult}`;
@@ -15317,7 +15317,7 @@
     const hint2 = document.getElementById('hint-zone-2');
     if (badge2) {
       badge2.className = `zone-card-badge status-${p2.status}`;
-      badge2.textContent = p2.status === 'safe' ? '🟢 Güvenli' : (p2.status === 'challenging' ? '🟡 Zorlu' : '🔴 Ölümcül Risk');
+      badge2.textContent = p2.status === 'safe' ? '⚔️ Önerili' : (p2.status === 'challenging' ? '🟡 Zorlu' : '⚔️ Ölümcül Risk');
     }
     if (hint2) {
       if (p2.status === 'safe') hint2.textContent = 'Ceza Yok (Tam Hasar & Normal Ganimet)';
@@ -15331,7 +15331,7 @@
     const hint3 = document.getElementById('hint-zone-3');
     if (badge3) {
       badge3.className = `zone-card-badge status-${p3.status}`;
-      badge3.textContent = p3.status === 'safe' ? '🟢 Güvenli' : (p3.status === 'challenging' ? '🟡 Zorlu' : '🔴 Ölümcül Risk');
+      badge3.textContent = p3.status === 'safe' ? '⚔️ Önerili' : (p3.status === 'challenging' ? '🟡 Zorlu' : '⚔️ Ölümcül Risk');
     }
     if (hint3) {
       if (p3.status === 'safe') hint3.textContent = 'Hazırsın! Ceza Yok (Tam Hasar & Efsanevi Ganimet)';
