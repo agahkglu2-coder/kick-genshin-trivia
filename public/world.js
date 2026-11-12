@@ -5485,15 +5485,55 @@
   };
 
   const adventurerBaseTextureCache = {};
+  const adventurerTextureSubscribers = {};
+
   function getAdventurerBaseTexture(url) {
     if (!adventurerBaseTextureCache[url]) {
-      const tex = textureLoader.load(url);
+      adventurerTextureSubscribers[url] = [];
+      const tex = textureLoader.load(url, (loaded) => {
+        loaded.magFilter = THREE.NearestFilter;
+        loaded.minFilter = THREE.NearestFilter;
+        loaded.needsUpdate = true;
+        const subs = adventurerTextureSubscribers[url] || [];
+        for (let i = 0; i < subs.length; i++) {
+          const item = subs[i];
+          if (item && item.cloneTex) {
+            item.cloneTex.image = loaded.image;
+            item.cloneTex.needsUpdate = true;
+            if (item.material) item.material.needsUpdate = true;
+          }
+        }
+        adventurerTextureSubscribers[url] = [];
+      });
       tex.magFilter = THREE.NearestFilter;
       tex.minFilter = THREE.NearestFilter;
       adventurerBaseTextureCache[url] = tex;
     }
     return adventurerBaseTextureCache[url];
   }
+
+  function createAdventurerTextureClone(url, matRef) {
+    const baseTex = getAdventurerBaseTexture(url);
+    const cloneTex = baseTex.clone();
+    cloneTex.magFilter = THREE.NearestFilter;
+    cloneTex.minFilter = THREE.NearestFilter;
+    cloneTex.repeat.set(1 / 8, 1);
+    cloneTex.offset.set(0, 0);
+    if (baseTex.image) {
+      cloneTex.image = baseTex.image;
+      cloneTex.needsUpdate = true;
+      if (matRef) matRef.needsUpdate = true;
+    } else {
+      if (!adventurerTextureSubscribers[url]) adventurerTextureSubscribers[url] = [];
+      adventurerTextureSubscribers[url].push({ cloneTex, material: matRef });
+    }
+    return cloneTex;
+  }
+
+  // Preload adventurer animations in background so they are ready as soon as page loads
+  try {
+    Object.values(ADVENTURER_ANIM_DEFS).forEach(url => getAdventurerBaseTexture(url));
+  } catch (err) {}
 
   function createAdventurerCharacter(avatarIndex = 0) {
     const root = new THREE.Group();
@@ -5515,14 +5555,7 @@
     // 2. Prepare cloned textures for this player's animations
     const animTextures = {};
     for (const [key, url] of Object.entries(ADVENTURER_ANIM_DEFS)) {
-      const baseTex = getAdventurerBaseTexture(url);
-      const cloneTex = baseTex.clone();
-      cloneTex.magFilter = THREE.NearestFilter;
-      cloneTex.minFilter = THREE.NearestFilter;
-      cloneTex.repeat.set(1 / 8, 1);
-      cloneTex.offset.set(0, 0);
-      cloneTex.needsUpdate = true;
-      animTextures[key] = cloneTex;
+      animTextures[key] = createAdventurerTextureClone(url);
     }
 
     // 3. Sprite Mesh Quad (Adventurer proportioned to 1.85m hero height, feet grounded at y=0)
@@ -5539,6 +5572,16 @@
       metalness: 0.05,
       side: THREE.DoubleSide
     });
+
+    // Link material to idle_down so it immediately renders when loaded
+    const idleUrl = ADVENTURER_ANIM_DEFS.idle_down;
+    const idleBase = getAdventurerBaseTexture(idleUrl);
+    if (idleBase.image) {
+      spriteMat.needsUpdate = true;
+    } else {
+      if (!adventurerTextureSubscribers[idleUrl]) adventurerTextureSubscribers[idleUrl] = [];
+      adventurerTextureSubscribers[idleUrl].push({ cloneTex: initialTex, material: spriteMat });
+    }
 
     const spriteMesh = new THREE.Mesh(planeGeo, spriteMat);
     spriteMesh.castShadow = false; // Disable rectangular 3D shadow map projection
@@ -8613,15 +8656,55 @@
   };
 
   const mobBaseTextureCache = {};
+  const mobTextureSubscribers = {};
+
   function getMobBaseTexture(url) {
     if (!mobBaseTextureCache[url]) {
-      const tex = textureLoader.load(url);
+      mobTextureSubscribers[url] = [];
+      const tex = textureLoader.load(url, (loaded) => {
+        loaded.magFilter = THREE.NearestFilter;
+        loaded.minFilter = THREE.NearestFilter;
+        loaded.needsUpdate = true;
+        const subs = mobTextureSubscribers[url] || [];
+        for (let i = 0; i < subs.length; i++) {
+          const item = subs[i];
+          if (item && item.cloneTex) {
+            item.cloneTex.image = loaded.image;
+            item.cloneTex.needsUpdate = true;
+            if (item.material) item.material.needsUpdate = true;
+          }
+        }
+        mobTextureSubscribers[url] = [];
+      });
       tex.magFilter = THREE.NearestFilter;
       tex.minFilter = THREE.NearestFilter;
       mobBaseTextureCache[url] = tex;
     }
     return mobBaseTextureCache[url];
   }
+
+  function createMobTextureClone(url, frames, matRef) {
+    const baseTex = getMobBaseTexture(url);
+    const cloneTex = baseTex.clone();
+    cloneTex.magFilter = THREE.NearestFilter;
+    cloneTex.minFilter = THREE.NearestFilter;
+    cloneTex.repeat.set(1 / frames, 1);
+    cloneTex.offset.set(0, 0);
+    if (baseTex.image) {
+      cloneTex.image = baseTex.image;
+      cloneTex.needsUpdate = true;
+      if (matRef) matRef.needsUpdate = true;
+    } else {
+      if (!mobTextureSubscribers[url]) mobTextureSubscribers[url] = [];
+      mobTextureSubscribers[url].push({ cloneTex, material: matRef });
+    }
+    return cloneTex;
+  }
+
+  // Preload mob idle textures in background
+  try {
+    ['/assets/mobs/orc/Orc_Idle.png', '/assets/mobs/soldier/Soldier_Idle.png'].forEach(url => getMobBaseTexture(url));
+  } catch (err) {}
 
   function createAnimatedSpriteMobMesh(spriteType = 'orc', options = {}) {
     const group = new THREE.Group();
@@ -8644,13 +8727,7 @@
     // Prepare cloned textures for each animation state
     const animTextures = {};
     for (const [animKey, cfg] of Object.entries(defs)) {
-      const baseTex = getMobBaseTexture(cfg.url);
-      const cloneTex = baseTex.clone();
-      cloneTex.magFilter = THREE.NearestFilter;
-      cloneTex.minFilter = THREE.NearestFilter;
-      cloneTex.repeat.set(1 / cfg.frames, 1);
-      cloneTex.offset.set(0, 0);
-      cloneTex.needsUpdate = true;
+      const cloneTex = createMobTextureClone(cfg.url, cfg.frames);
       animTextures[animKey] = {
         texture: cloneTex,
         frames: cfg.frames,
@@ -8675,6 +8752,18 @@
     });
     if (options.tint) {
       spriteMat.color.setHex(options.tint);
+    }
+
+    // Link material to idle texture loader so it displays immediately once downloaded
+    const idleDef = defs.idle || Object.values(defs)[0];
+    if (idleDef) {
+      const idleBase = getMobBaseTexture(idleDef.url);
+      if (idleBase.image) {
+        spriteMat.needsUpdate = true;
+      } else {
+        if (!mobTextureSubscribers[idleDef.url]) mobTextureSubscribers[idleDef.url] = [];
+        mobTextureSubscribers[idleDef.url].push({ cloneTex: initialAnim.texture, material: spriteMat });
+      }
     }
 
     const spriteMesh = new THREE.Mesh(planeGeo, spriteMat);
