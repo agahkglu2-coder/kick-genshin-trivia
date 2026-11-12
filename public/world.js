@@ -22,11 +22,18 @@
   let scene, camera, renderer;
   let socket = null;
   let socketId = null;
+  let savedAvatarIdx = 0;
+  try {
+    savedAvatarIdx = parseInt(localStorage.getItem('mylune_avatar_index') || '0', 10);
+    if (isNaN(savedAvatarIdx)) savedAvatarIdx = 0;
+  } catch (e) {
+    savedAvatarIdx = 0;
+  }
   let myPlayer = {
     id: null,
     username: 'Gezgin_' + Math.floor(1000 + Math.random() * 9000),
     isGuest: true,
-    avatarIndex: 0,
+    avatarIndex: savedAvatarIdx,
     x: 0,
     y: 0,
     z: 4,
@@ -492,6 +499,46 @@
   }
 
   const AVATAR_PRESETS = [
+    {
+      id: 'erkek',
+      name: 'Erkek',
+      gender: 'male',
+      portrait: '/assets/character/erkek/portrait.png',
+      spriteFolder: '/assets/character/erkek',
+      badgeColor: '#f59e0b',
+      element: 'geo',
+      hair: 0x78350f,
+      skin: 0xfed7aa,
+      eyes: '#f59e0b',
+      clothes: 0x1e293b,
+      trim: 0xf59e0b,
+      pants: 0x334155,
+      boots: 0x78350f,
+      cape: 0xffffff,
+      hairStyle: 'short_male',
+      weapon: 'sword',
+      weaponColor: 0xe2e8f0
+    },
+    {
+      id: 'kari',
+      name: 'Karı',
+      gender: 'female',
+      portrait: '/assets/character/kari/portrait.png',
+      spriteFolder: '/assets/character/kari',
+      badgeColor: '#ec4899',
+      element: 'pyro',
+      hair: 0xfde047,
+      skin: 0xfef08a,
+      eyes: '#ec4899',
+      clothes: 0x831843,
+      trim: 0xf472b6,
+      pants: 0x1e293b,
+      boots: 0x3b0764,
+      cape: 0xbe185d,
+      hairStyle: 'female_warrior',
+      weapon: 'sword',
+      weaponColor: 0xf472b6
+    },
     {
       name: 'Gezgin (Aether)',
       hair: 0xf59e0b,
@@ -1016,13 +1063,15 @@
     return tex;
   }
 
-  let adventurerPortraitImg = null;
-  function getAdventurerPortraitImg() {
-    if (!adventurerPortraitImg && typeof Image !== 'undefined') {
-      adventurerPortraitImg = new Image();
-      adventurerPortraitImg.src = '/assets/character/adventurer/idle_down.png';
+  const avatarPortraitCache = {};
+  function getAvatarPortraitImg(src) {
+    if (!src) return null;
+    if (!avatarPortraitCache[src] && typeof Image !== 'undefined') {
+      const img = new Image();
+      img.src = src;
+      avatarPortraitCache[src] = img;
     }
-    return adventurerPortraitImg;
+    return avatarPortraitCache[src];
   }
 
   // Draw 2D Avatar Portrait for HUD profile & Avatar Selection Modal
@@ -1033,8 +1082,11 @@
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, w, h);
 
-    const advImg = getAdventurerPortraitImg();
-    if (advImg && advImg.complete && advImg.naturalWidth > 0) {
+    const portraitSrc = (preset && preset.portrait) || 
+      (preset && (preset.id === 'kari' || preset.name === 'Karı') ? '/assets/character/kari/portrait.png' : '/assets/character/erkek/portrait.png');
+    const pImg = getAvatarPortraitImg(portraitSrc);
+
+    if (pImg && pImg.complete && pImg.naturalWidth > 0) {
       ctx.save();
       ctx.beginPath();
       ctx.arc(w / 2, h / 2, w / 2 - 2, 0, Math.PI * 2);
@@ -1047,17 +1099,18 @@
       ctx.fillRect(0, 0, w, h);
 
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(advImg, 18, 8, 60, 64, 2, 2, w - 4, h - 4);
+      ctx.drawImage(pImg, 0, 0, pImg.naturalWidth, pImg.naturalHeight, 2, 2, w - 4, h - 4);
       ctx.restore();
 
       ctx.lineWidth = 2;
-      ctx.strokeStyle = '#f59e0b';
+      ctx.strokeStyle = (preset && preset.badgeColor) || '#38bdf8';
       ctx.beginPath();
       ctx.arc(w / 2, h / 2, w / 2 - 2, 0, Math.PI * 2);
       ctx.stroke();
       return;
-    } else if (advImg) {
-      advImg.onload = () => drawAvatarPreviewPortrait(canvas, preset);
+    } else if (pImg) {
+      pImg.onload = () => drawAvatarPreviewPortrait(canvas, preset);
+      return;
     }
 
     if (!preset) return;
@@ -1585,7 +1638,7 @@
   function animateRig(rig, isMoving, delta, now) {
     if (!rig) return;
 
-    if (rig.type === 'adventurer_sprite') {
+    if (rig.type === 'pixel_sprite' || rig.type === 'adventurer_sprite') {
       // 1. Determine direction from player rotation or parent mesh rotation
       const rootMesh = rig.mesh ? rig.mesh.parent : null;
       let rot = (rootMesh === myMesh) ? myPlayer.rot : (rootMesh ? rootMesh.rotation.y : 0);
@@ -1595,16 +1648,24 @@
       while (normRot > Math.PI) normRot -= Math.PI * 2;
       while (normRot < -Math.PI) normRot += Math.PI * 2;
 
-      let newFacing = rig.facing || 'down';
+      let newFacing = rig.facing || 'south';
       if (isMoving || rig.combatAction || (activeSkillAimState && rootMesh === myMesh)) {
-        if (normRot > -Math.PI * 0.25 && normRot <= Math.PI * 0.25) {
-          newFacing = 'down';
-        } else if (normRot > Math.PI * 0.25 && normRot <= Math.PI * 0.75) {
-          newFacing = 'right';
-        } else if (normRot > -Math.PI * 0.75 && normRot <= -Math.PI * 0.25) {
-          newFacing = 'left';
+        if (normRot >= -Math.PI * 0.125 && normRot <= Math.PI * 0.125) {
+          newFacing = 'south';
+        } else if (normRot > Math.PI * 0.125 && normRot <= Math.PI * 0.375) {
+          newFacing = 'south-east';
+        } else if (normRot > Math.PI * 0.375 && normRot <= Math.PI * 0.625) {
+          newFacing = 'east';
+        } else if (normRot > Math.PI * 0.625 && normRot <= Math.PI * 0.875) {
+          newFacing = 'north-east';
+        } else if (normRot > -Math.PI * 0.375 && normRot < -Math.PI * 0.125) {
+          newFacing = 'south-west';
+        } else if (normRot >= -Math.PI * 0.625 && normRot <= -Math.PI * 0.375) {
+          newFacing = 'west';
+        } else if (normRot >= -Math.PI * 0.875 && normRot < -Math.PI * 0.625) {
+          newFacing = 'north-west';
         } else {
-          newFacing = 'up';
+          newFacing = 'north';
         }
       }
       rig.facing = newFacing;
@@ -1615,7 +1676,7 @@
         const elapsed = now - rig.combatAction.startTime;
         if (elapsed < rig.combatAction.duration) {
           const act = rig.combatAction.type;
-          action = (act === 'combo2' || act === 'heavy' || act === 'burst') ? 'attack2' : 'attack1';
+          action = (act === 'combo2' || act === 'heavy' || act === 'burst') ? 'attack2' : 'attack';
         } else {
           rig.combatAction = null;
         }
@@ -1624,27 +1685,41 @@
       }
 
       // 3. Switch Texture Strip if Action or Direction Changed
-      const animKey = `${action}_${rig.facing}`;
+      let animKey = `${action}_${rig.facing}`;
+      if (!rig.animTextures[animKey]) {
+        if (rig.facing === 'down' || rig.facing === 'south') animKey = `${action}_south`;
+        else if (rig.facing === 'up' || rig.facing === 'north') animKey = `${action}_north`;
+        else if (rig.facing === 'left' || rig.facing === 'west') animKey = `${action}_west`;
+        else if (rig.facing === 'right' || rig.facing === 'east') animKey = `${action}_east`;
+        else animKey = `${action}_south`;
+      }
+
+      const totalFrames = typeof getCharacterFrameCount === 'function' ? 
+        getCharacterFrameCount(rig.charId || 'erkek', action, rig.facing) : 8;
+
       if (rig.currentKey !== animKey) {
         rig.currentKey = animKey;
         rig.frameIndex = 0;
         rig.frameTimer = 0;
         const tex = rig.animTextures[animKey];
         if (tex) {
+          tex.repeat.set(1 / totalFrames, 1);
+          tex.offset.x = 0;
           rig.material.map = tex;
           rig.material.needsUpdate = true;
         }
       }
 
       // 4. Advance Frame Animation
-      const fps = (action.startsWith('attack') ? 12 : (action === 'run' ? 11 : 8));
+      const fps = (action.startsWith('attack') ? 14 : (action === 'run' ? 12 : 8));
       rig.frameTimer += delta;
       if (rig.frameTimer >= 1 / fps) {
         rig.frameTimer -= 1 / fps;
-        rig.frameIndex = (rig.frameIndex + 1) % 8;
+        rig.frameIndex = (rig.frameIndex + 1) % totalFrames;
         const curTex = rig.animTextures[rig.currentKey];
         if (curTex) {
-          curTex.offset.x = rig.frameIndex / 8;
+          curTex.repeat.set(1 / totalFrames, 1);
+          curTex.offset.x = rig.frameIndex / totalFrames;
         }
       }
 
@@ -5736,41 +5811,46 @@
   }
 
   // =========================================================================
-  // Adventurer 2D Pixel Art Main Character Engine (4-Directional Animated)
+  // Pixel Character 2D Engine (Erkek & Karı 8-Directional Unified System)
   // =========================================================================
-  const ADVENTURER_ANIM_DEFS = {
-    idle_down: '/assets/character/adventurer/idle_down.png',
-    idle_up: '/assets/character/adventurer/idle_up.png',
-    idle_left: '/assets/character/adventurer/idle_left.png',
-    idle_right: '/assets/character/adventurer/idle_right.png',
+  function getCharacterAnimUrl(charId, action, facing) {
+    const folder = (charId === 'kari') ? '/assets/character/kari' : '/assets/character/erkek';
+    return `${folder}/${action}_${facing}.png`;
+  }
 
-    run_down: '/assets/character/adventurer/run_down.png',
-    run_up: '/assets/character/adventurer/run_up.png',
-    run_left: '/assets/character/adventurer/run_left.png',
-    run_right: '/assets/character/adventurer/run_right.png',
+  function getCharacterFrameCount(charId, action, facing) {
+    if (charId === 'kari') {
+      if (action === 'idle') return 8;
+      if (action.startsWith('attack')) return 16;
+      if (action === 'run' || action === 'walk') {
+        if (facing === 'south' || facing === 'north' || facing === 'down' || facing === 'up') return 8;
+        return 11;
+      }
+      return 8;
+    }
+    // erkek
+    if (action === 'idle') return 17;
+    if (action === 'attack2') return 13;
+    if (action.startsWith('attack')) return 17;
+    if (action === 'run') return 8;
+    if (action === 'walk') {
+      if (facing === 'north' || facing === 'south' || facing === 'up' || facing === 'down') return 7;
+      return 8;
+    }
+    return 8;
+  }
 
-    attack1_down: '/assets/character/adventurer/attack1_down.png',
-    attack1_up: '/assets/character/adventurer/attack1_up.png',
-    attack1_left: '/assets/character/adventurer/attack1_left.png',
-    attack1_right: '/assets/character/adventurer/attack1_right.png',
+  const pixelCharTextureCache = {};
+  const pixelCharTextureSubscribers = {};
 
-    attack2_down: '/assets/character/adventurer/attack2_down.png',
-    attack2_up: '/assets/character/adventurer/attack2_up.png',
-    attack2_left: '/assets/character/adventurer/attack2_left.png',
-    attack2_right: '/assets/character/adventurer/attack2_right.png'
-  };
-
-  const adventurerBaseTextureCache = {};
-  const adventurerTextureSubscribers = {};
-
-  function getAdventurerBaseTexture(url) {
-    if (!adventurerBaseTextureCache[url]) {
-      adventurerTextureSubscribers[url] = [];
+  function getPixelCharBaseTexture(url) {
+    if (!pixelCharTextureCache[url]) {
+      pixelCharTextureSubscribers[url] = [];
       const tex = textureLoader.load(url, (loaded) => {
         loaded.magFilter = THREE.NearestFilter;
         loaded.minFilter = THREE.NearestFilter;
         loaded.needsUpdate = true;
-        const subs = adventurerTextureSubscribers[url] || [];
+        const subs = pixelCharTextureSubscribers[url] || [];
         for (let i = 0; i < subs.length; i++) {
           const item = subs[i];
           if (item && item.cloneTex) {
@@ -5779,48 +5859,59 @@
             if (item.material) item.material.needsUpdate = true;
           }
         }
-        adventurerTextureSubscribers[url] = [];
+        pixelCharTextureSubscribers[url] = [];
       });
       tex.magFilter = THREE.NearestFilter;
       tex.minFilter = THREE.NearestFilter;
-      adventurerBaseTextureCache[url] = tex;
+      pixelCharTextureCache[url] = tex;
     }
-    return adventurerBaseTextureCache[url];
+    return pixelCharTextureCache[url];
   }
 
-  function createAdventurerTextureClone(url, matRef) {
-    const baseTex = getAdventurerBaseTexture(url);
+  function createPixelCharTextureClone(url, frames, matRef) {
+    const baseTex = getPixelCharBaseTexture(url);
     const cloneTex = baseTex.clone();
     cloneTex.magFilter = THREE.NearestFilter;
     cloneTex.minFilter = THREE.NearestFilter;
-    cloneTex.repeat.set(1 / 8, 1);
+    const fCount = frames || 8;
+    cloneTex.repeat.set(1 / fCount, 1);
     cloneTex.offset.set(0, 0);
     if (baseTex.image) {
       cloneTex.image = baseTex.image;
       cloneTex.needsUpdate = true;
       if (matRef) matRef.needsUpdate = true;
     } else {
-      if (!adventurerTextureSubscribers[url]) adventurerTextureSubscribers[url] = [];
-      adventurerTextureSubscribers[url].push({ cloneTex, material: matRef });
+      if (!pixelCharTextureSubscribers[url]) pixelCharTextureSubscribers[url] = [];
+      pixelCharTextureSubscribers[url].push({ cloneTex, material: matRef });
     }
     return cloneTex;
   }
 
-  // Preload adventurer animations in background so they are ready as soon as page loads
+  // Preload primary animation sets for both Erkek and Karı
   try {
-    Object.values(ADVENTURER_ANIM_DEFS).forEach(url => getAdventurerBaseTexture(url));
+    const PRE_ACTIONS = ['idle', 'run', 'attack'];
+    const PRE_DIRS = ['south', 'north', 'west', 'east', 'south-east', 'south-west', 'north-east', 'north-west'];
+    ['erkek', 'kari'].forEach(cId => {
+      PRE_ACTIONS.forEach(act => {
+        PRE_DIRS.forEach(dir => {
+          getPixelCharBaseTexture(getCharacterAnimUrl(cId, act, dir));
+        });
+      });
+    });
   } catch (err) {}
 
-  function createAdventurerCharacter(avatarIndex = 0) {
+  function createPixelPlayerCharacter(avatarIndex = 0) {
     const root = new THREE.Group();
+    // 0 = Erkek, 1 = Karı
+    const charId = (Math.abs(avatarIndex) % 2 === 1) ? 'kari' : 'erkek';
 
-    // 1. Soft Ground Contact Shadow (subtle grounded oval directly beneath feet)
-    const shadowGeo = new THREE.CircleGeometry(0.38, 16);
+    // 1. Soft Ground Contact Shadow (grounded oval directly beneath feet)
+    const shadowGeo = new THREE.CircleGeometry(0.42, 16);
     shadowGeo.scale(1.0, 0.6, 1.0);
     const shadowMat = new THREE.MeshBasicMaterial({
       color: 0x000000,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.24,
       depthWrite: false
     });
     const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
@@ -5828,42 +5919,42 @@
     shadowMesh.position.y = 0.02;
     root.add(shadowMesh);
 
-    // 2. Prepare cloned textures for this player's animations
+    // 2. Sprite Mesh Quad (3.6m quad, feet anchored firmly at y = 0.0)
+    // 256x256 frame with baseline feet at Y=210, center at 128:
+    // Offset = (210 - 128) / 256 * 3.6 = 1.153m
+    const planeGeo = new THREE.PlaneGeometry(3.6, 3.6);
+    planeGeo.translate(0, 1.153, 0);
+
     const animTextures = {};
-    for (const [key, url] of Object.entries(ADVENTURER_ANIM_DEFS)) {
-      animTextures[key] = createAdventurerTextureClone(url);
-    }
+    const initialKey = 'idle_south';
+    const initialUrl = getCharacterAnimUrl(charId, 'idle', 'south');
+    const initialFrames = getCharacterFrameCount(charId, 'idle', 'south');
+    const initialTex = createPixelCharTextureClone(initialUrl, initialFrames);
+    animTextures[initialKey] = initialTex;
 
-    // 3. Sprite Mesh Quad (Adventurer proportioned to 1.85m hero height, feet grounded at y=0)
-    // Frame is 96x80 px; character inside is 34 px high, feet are at y=57 (22 px above frame bottom).
-    const planeGeo = new THREE.PlaneGeometry(5.22, 4.35);
-    planeGeo.translate(0, 0.98, 0); // Anchors feet firmly at ground y = 0.0
-
-    const initialTex = animTextures.idle_down;
     const spriteMat = new THREE.MeshStandardMaterial({
       map: initialTex,
       transparent: true,
-      alphaTest: 0.08,
+      alphaTest: 0.05,
       roughness: 0.65,
       metalness: 0.05,
       side: THREE.DoubleSide
     });
 
-    // Link material to idle_down so it immediately renders when loaded
-    const idleUrl = ADVENTURER_ANIM_DEFS.idle_down;
-    const idleBase = getAdventurerBaseTexture(idleUrl);
-    if (idleBase.image) {
+    // Link material to initial texture load
+    const baseInit = getPixelCharBaseTexture(initialUrl);
+    if (baseInit.image) {
       spriteMat.needsUpdate = true;
     } else {
-      if (!adventurerTextureSubscribers[idleUrl]) adventurerTextureSubscribers[idleUrl] = [];
-      adventurerTextureSubscribers[idleUrl].push({ cloneTex: initialTex, material: spriteMat });
+      if (!pixelCharTextureSubscribers[initialUrl]) pixelCharTextureSubscribers[initialUrl] = [];
+      pixelCharTextureSubscribers[initialUrl].push({ cloneTex: initialTex, material: spriteMat });
     }
 
     const spriteMesh = new THREE.Mesh(planeGeo, spriteMat);
-    spriteMesh.castShadow = false; // Disable rectangular 3D shadow map projection
+    spriteMesh.castShadow = false;
     root.add(spriteMesh);
 
-    // 4. Dummy anchors for hooks
+    // Dummy anchors for attachments / weapons
     const weaponHolder = new THREE.Group();
     weaponHolder.position.set(0.5, 1.0, 0.1);
     root.add(weaponHolder);
@@ -5872,14 +5963,28 @@
     rightArmGroup.position.set(0.5, 1.2, 0);
     root.add(rightArmGroup);
 
-    // Rig storage
+    // Populate all directional textures
+    const allActions = ['idle', 'run', 'walk', 'attack', 'attack2'];
+    const allDirs = ['south', 'north', 'west', 'east', 'south-east', 'south-west', 'north-east', 'north-west'];
+    allActions.forEach(act => {
+      allDirs.forEach(dir => {
+        const k = `${act}_${dir}`;
+        if (!animTextures[k]) {
+          const u = getCharacterAnimUrl(charId, act, dir);
+          const f = getCharacterFrameCount(charId, act, dir);
+          animTextures[k] = createPixelCharTextureClone(u, f, spriteMat);
+        }
+      });
+    });
+
     root.userData.rig = {
-      type: 'adventurer_sprite',
+      type: 'pixel_sprite',
+      charId,
       mesh: spriteMesh,
       material: spriteMat,
       animTextures,
-      facing: 'down',
-      currentKey: 'idle_down',
+      facing: 'south',
+      currentKey: initialKey,
       frameIndex: 0,
       frameTimer: 0,
       combatAction: null,
@@ -5889,6 +5994,8 @@
 
     return root;
   }
+
+  const createAdventurerCharacter = createPixelPlayerCharacter;
 
   // --- 6. Character 3D Mesh Creation & Bubbles ---
   function createPlayerMesh(avatarIndex, username, isGuest, primogems, gearScore = 0, level = 1) {
@@ -8695,14 +8802,16 @@
 
   function buildAvatarSelector() {
     const grid = document.getElementById('avatar-grid-select');
+    if (!grid) return;
     grid.innerHTML = '';
 
     AVATAR_PRESETS.forEach((p, idx) => {
       const btn = document.createElement('button');
       btn.className = `avatar-choice-btn ${myPlayer.avatarIndex === idx ? 'selected' : ''}`;
+      
       const avCanvas = document.createElement('canvas');
-      avCanvas.width = 48;
-      avCanvas.height = 48;
+      avCanvas.width = 56;
+      avCanvas.height = 56;
       avCanvas.className = 'avatar-choice-canvas';
       drawAvatarPreviewPortrait(avCanvas, p);
 
@@ -8712,11 +8821,20 @@
       nameSpan.textContent = p.name;
       btn.appendChild(nameSpan);
 
+      if (idx === 0 || idx === 1) {
+        const tagSpan = document.createElement('span');
+        tagSpan.style.cssText = 'font-size: 0.65rem; color: #38bdf8; background: rgba(56,189,248,0.18); padding: 2px 7px; border-radius: 8px; margin-top: 3px; font-weight: 700;';
+        tagSpan.textContent = idx === 0 ? 'Varsayılan (Erkek)' : 'Varsayılan (Karı)';
+        btn.appendChild(tagSpan);
+      }
+
       btn.onclick = () => {
         myPlayer.avatarIndex = idx;
+        try { localStorage.setItem('mylune_avatar_index', idx.toString()); } catch (e) {}
         updateMyMesh();
         updateUIProfile();
         closeModal('modal-avatar');
+        buildAvatarSelector();
         if (socket && socket.readyState === WebSocket.OPEN) {
           socket.send(JSON.stringify({
             type: 'WORLD_JOIN',

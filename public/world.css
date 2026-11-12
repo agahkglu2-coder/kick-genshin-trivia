@@ -844,18 +844,18 @@ html, body {
 /* Avatar Grid */
 .avatar-grid-select {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-  gap: 10px;
-  max-height: 380px;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 12px;
+  max-height: 420px;
   overflow-y: auto;
-  padding: 6px;
+  padding: 8px;
 }
 
 .avatar-choice-btn {
   background: #1e293b;
-  border: 2px solid transparent;
+  border: 2px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  padding: 6px;
+  padding: 8px 6px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -865,13 +865,15 @@ html, body {
 
 .avatar-choice-btn:hover, .avatar-choice-btn.selected {
   border-color: #38bdf8;
-  background: rgba(56, 189, 248, 0.2);
-  transform: scale(1.05);
+  background: rgba(56, 189, 248, 0.22);
+  transform: scale(1.04);
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.25);
 }
 
 .avatar-choice-canvas {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
+  image-rendering: pixelated;
 }
 
 .avatar-choice-name {

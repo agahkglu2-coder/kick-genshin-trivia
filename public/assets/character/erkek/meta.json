@@ -1,0 +1,202 @@
+{
+    "idle_south":  {
+                       "frameHeight":  256,
+                       "frames":  17,
+                       "frameWidth":  256
+                   },
+    "walk_east":  {
+                      "frameHeight":  256,
+                      "frames":  8,
+                      "frameWidth":  256
+                  },
+    "attack_north-west":  {
+                              "frameHeight":  256,
+                              "frames":  17,
+                              "frameWidth":  256
+                          },
+    "attack2_south-west":  {
+                               "frameHeight":  256,
+                               "frames":  13,
+                               "frameWidth":  256
+                           },
+    "walk_north-west":  {
+                            "frameHeight":  256,
+                            "frames":  8,
+                            "frameWidth":  256
+                        },
+    "idle_south-west":  {
+                            "frameHeight":  256,
+                            "frames":  17,
+                            "frameWidth":  256
+                        },
+    "attack_north":  {
+                         "frameHeight":  256,
+                         "frames":  17,
+                         "frameWidth":  256
+                     },
+    "walk_north":  {
+                       "frameHeight":  256,
+                       "frames":  7,
+                       "frameWidth":  256
+                   },
+    "walk_south-west":  {
+                            "frameHeight":  256,
+                            "frames":  8,
+                            "frameWidth":  256
+                        },
+    "attack2_west":  {
+                         "frameHeight":  256,
+                         "frames":  13,
+                         "frameWidth":  256
+                     },
+    "run_east":  {
+                     "frameHeight":  256,
+                     "frames":  8,
+                     "frameWidth":  256
+                 },
+    "idle_west":  {
+                      "frameHeight":  256,
+                      "frames":  17,
+                      "frameWidth":  256
+                  },
+    "attack2_south":  {
+                          "frameHeight":  256,
+                          "frames":  13,
+                          "frameWidth":  256
+                      },
+    "attack2_south-east":  {
+                               "frameHeight":  256,
+                               "frames":  13,
+                               "frameWidth":  256
+                           },
+    "walk_north-east":  {
+                            "frameHeight":  256,
+                            "frames":  8,
+                            "frameWidth":  256
+                        },
+    "run_south-east":  {
+                           "frameHeight":  256,
+                           "frames":  8,
+                           "frameWidth":  256
+                       },
+    "run_north-west":  {
+                           "frameHeight":  256,
+                           "frames":  8,
+                           "frameWidth":  256
+                       },
+    "attack_north-east":  {
+                              "frameHeight":  256,
+                              "frames":  17,
+                              "frameWidth":  256
+                          },
+    "attack_east":  {
+                        "frameHeight":  256,
+                        "frames":  17,
+                        "frameWidth":  256
+                    },
+    "run_north-east":  {
+                           "frameHeight":  256,
+                           "frames":  8,
+                           "frameWidth":  256
+                       },
+    "idle_north":  {
+                       "frameHeight":  256,
+                       "frames":  17,
+                       "frameWidth":  256
+                   },
+    "run_west":  {
+                     "frameHeight":  256,
+                     "frames":  8,
+                     "frameWidth":  256
+                 },
+    "attack2_north-east":  {
+                               "frameHeight":  256,
+                               "frames":  13,
+                               "frameWidth":  256
+                           },
+    "idle_east":  {
+                      "frameHeight":  256,
+                      "frames":  17,
+                      "frameWidth":  256
+                  },
+    "run_north":  {
+                      "frameHeight":  256,
+                      "frames":  8,
+                      "frameWidth":  256
+                  },
+    "idle_south-east":  {
+                            "frameHeight":  256,
+                            "frames":  17,
+                            "frameWidth":  256
+                        },
+    "attack2_north":  {
+                          "frameHeight":  256,
+                          "frames":  13,
+                          "frameWidth":  256
+                      },
+    "idle_north-west":  {
+                            "frameHeight":  256,
+                            "frames":  17,
+                            "frameWidth":  256
+                        },
+    "attack_south-east":  {
+                              "frameHeight":  256,
+                              "frames":  17,
+                              "frameWidth":  256
+                          },
+    "attack_west":  {
+                        "frameHeight":  256,
+                        "frames":  17,
+                        "frameWidth":  256
+                    },
+    "idle_north-east":  {
+                            "frameHeight":  256,
+                            "frames":  17,
+                            "frameWidth":  256
+                        },
+    "walk_south-east":  {
+                            "frameHeight":  256,
+                            "frames":  8,
+                            "frameWidth":  256
+                        },
+    "run_south":  {
+                      "frameHeight":  256,
+                      "frames":  8,
+                      "frameWidth":  256
+                  },
+    "attack_south":  {
+                         "frameHeight":  256,
+                         "frames":  17,
+                         "frameWidth":  256
+                     },
+    "walk_south":  {
+                       "frameHeight":  256,
+                       "frames":  7,
+                       "frameWidth":  256
+                   },
+    "attack_south-west":  {
+                              "frameHeight":  256,
+                              "frames":  17,
+                              "frameWidth":  256
+                          },
+    "attack2_north-west":  {
+                               "frameHeight":  256,
+                               "frames":  13,
+                               "frameWidth":  256
+                           },
+    "attack2_east":  {
+                         "frameHeight":  256,
+                         "frames":  13,
+                         "frameWidth":  256
+                     },
+    "run_south-west":  {
+                           "frameHeight":  256,
+                           "frames":  8,
+                           "frameWidth":  256
+                       },
+    "walk_west":  {
+                      "frameHeight":  256,
+                      "frames":  8,
+                      "frameWidth":  256
+                  }
+}
