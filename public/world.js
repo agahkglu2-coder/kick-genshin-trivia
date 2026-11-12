@@ -2494,20 +2494,20 @@
     if (!scene) return;
     const themes = {
       town: {
-        bg: 0x0ea5e9,
-        fogColor: 0x38bdf8,
-        fogNear: 95,
-        fogFar: 220,
-        skyTop: '#0369a1',
-        skyMid: '#0ea5e9',
-        skyBot: '#7dd3fc',
-        ambColor: 0xffffff,
-        ambInt: 0.78,
-        hemiSky: 0xbae6fd,
-        hemiGround: 0x16a34a,
-        hemiInt: 0.35,
-        sunColor: 0xfffbeb,
-        sunInt: 0.85
+        bg: 0x38bdf8,
+        fogColor: 0xbae6fd,
+        fogNear: 110,
+        fogFar: 260,
+        skyTop: '#0284c7',
+        skyMid: '#38bdf8',
+        skyBot: '#fed7aa',
+        ambColor: 0xffedd5,
+        ambInt: 0.86,
+        hemiSky: 0xfde68a,
+        hemiGround: 0x365314,
+        hemiInt: 0.38,
+        sunColor: 0xfff4db,
+        sunInt: 0.95
       },
       interior: {
         bg: 0x090d16,
@@ -2769,129 +2769,150 @@
     return signSprite;
   }
 
-  // A) Central Fountain (Hollow-Rim Carved Basin - Zero Z-Fighting)
+  // A) Central Landmark Fountain (Human-Scale 5.6m Stylized Landmark with Cascading Basins & Planters)
   function createCentralFountain() {
     const group = new THREE.Group();
 
     const stoneMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
-    const darkStoneMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
+    const darkStoneMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
     const goldMat = new THREE.MeshLambertMaterial({ color: 0xfacc15 });
+    const terracottaMat = new THREE.MeshLambertMaterial({ color: 0xb45309 });
 
-    // 1. Foundation Base Plinth
-    const plinth = new THREE.Mesh(new THREE.CylinderGeometry(5.2, 5.5, 0.25, 28), darkStoneMat);
-    plinth.position.y = 0.125;
+    // 1. Octagonal Limestone Step Plinth (r: 2.85m -> 2.7m, y: 0.11)
+    const plinth = new THREE.Mesh(new THREE.CylinderGeometry(2.7, 2.85, 0.22, 24), darkStoneMat);
+    plinth.position.y = 0.11;
     plinth.receiveShadow = true;
     group.add(plinth);
 
-    // 2. Basin Outer Wall (open-ended cylinder)
-    const outerWall = new THREE.Mesh(new THREE.CylinderGeometry(4.7, 4.9, 0.75, 28, 1, true), stoneMat);
-    outerWall.position.y = 0.50;
+    // 2. Main Basin Outer Wall (r: 2.55m -> 2.65m, y: 0.485)
+    const outerWall = new THREE.Mesh(new THREE.CylinderGeometry(2.55, 2.65, 0.55, 24, 1, true), stoneMat);
+    outerWall.position.y = 0.485;
     outerWall.castShadow = true;
     outerWall.receiveShadow = true;
     group.add(outerWall);
 
-    // Basin Inner Wall (BackSide for interior stone lining)
+    // Basin Inner Wall (BackSide interior lining)
     const innerWall = new THREE.Mesh(
-      new THREE.CylinderGeometry(4.35, 4.5, 0.75, 28, 1, true),
-      new THREE.MeshLambertMaterial({ color: 0x64748b, side: THREE.BackSide })
+      new THREE.CylinderGeometry(2.32, 2.45, 0.55, 24, 1, true),
+      new THREE.MeshLambertMaterial({ color: 0x334155, side: THREE.BackSide })
     );
-    innerWall.position.y = 0.50;
+    innerWall.position.y = 0.485;
     group.add(innerWall);
 
-    // 3. Rounded Stone Basin Rim (Torus placed at y = 0.875)
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(4.52, 0.22, 10, 32), stoneMat);
-    rim.position.y = 0.875;
+    // 3. Rounded Carved Stone Coping Rim (Torus placed at y = 0.76)
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(2.50, 0.14, 8, 32), stoneMat);
+    rim.position.y = 0.76;
     rim.rotation.x = Math.PI / 2;
     rim.castShadow = true;
     rim.receiveShadow = true;
     group.add(rim);
 
-    // 4. Basin Sunken Stone Floor (y = 0.15)
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(4.4, 28), new THREE.MeshLambertMaterial({ color: 0x475569 }));
-    floor.position.y = 0.15;
+    // 4. Basin Sunken Stone Floor (y = 0.18)
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(2.4, 24), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+    floor.position.y = 0.18;
     floor.rotation.x = -Math.PI / 2;
     group.add(floor);
 
-    // 5. Basin Water Surface (at y = 0.65 - safely 0.225 units below rim at 0.875, ZERO Z-fighting!)
+    // 5. Translucent Cyan Water Surface (at y = 0.54 - safely 0.22m below rim, zero clipping)
     const waterMat = new THREE.MeshLambertMaterial({
       color: 0x38bdf8,
       transparent: true,
       opacity: 0.82
     });
-    const water = new THREE.Mesh(new THREE.CircleGeometry(4.3, 32), waterMat);
-    water.position.y = 0.65;
+    const water = new THREE.Mesh(new THREE.CircleGeometry(2.35, 28), waterMat);
+    water.position.y = 0.54;
     water.rotation.x = -Math.PI / 2;
     group.add(water);
 
-    // 6. Tiered Center Monument
-    // Step 1: Base pedestal
-    const p1 = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.9, 0.6, 16), darkStoneMat);
-    p1.position.y = 0.45;
+    // 6. Tiered Central Monument
+    // Step 1: Octagonal Stone Base Pedestal
+    const p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 1.15, 0.55, 8), darkStoneMat);
+    p1.position.y = 0.485;
     p1.castShadow = true;
     group.add(p1);
 
-    // Step 2: Mid column
-    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 1.1, 0.9, 16), stoneMat);
-    col.position.y = 1.05;
+    // Step 2: Fluted Column
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.58, 0.75, 16), stoneMat);
+    col.position.y = 1.125;
     col.castShadow = true;
     group.add(col);
 
-    // Step 3: Mid Water Scallop Catch Basin / Bowl
-    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 1.1, 0.45, 20), stoneMat);
+    // Step 3: Mid Scalloped Water Catch Bowl
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 0.75, 0.35, 20), stoneMat);
     bowl.position.y = 1.65;
     bowl.castShadow = true;
     group.add(bowl);
 
     // Mid Bowl Water disc
-    const midWater = new THREE.Mesh(new THREE.CircleGeometry(1.75, 20), waterMat);
-    midWater.position.y = 1.85;
+    const midWater = new THREE.Mesh(new THREE.CircleGeometry(1.15, 20), waterMat);
+    midWater.position.y = 1.80;
     midWater.rotation.x = -Math.PI / 2;
     group.add(midWater);
 
-    // Step 4: Upper Fluted Pedestal
-    const upperCol = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 0.9, 12), stoneMat);
-    upperCol.position.y = 2.25;
+    // Step 4: Upper Fluted Spire Column
+    const upperCol = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.38, 0.65, 12), stoneMat);
+    upperCol.position.y = 2.15;
     upperCol.castShadow = true;
     group.add(upperCol);
 
-    // Step 5: Golden Urn Fountain Topper with Spout
-    const urnBase = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.25, 0.4, 12), goldMat);
-    urnBase.position.y = 2.85;
-    group.add(urnBase);
+    // Step 5: Mythic Golden Finial & Spout Topper
+    const finialSphere = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 10), goldMat);
+    finialSphere.position.y = 2.62;
+    group.add(finialSphere);
 
-    const urnBody = new THREE.Mesh(new THREE.SphereGeometry(0.48, 12, 10), goldMat);
-    urnBody.position.y = 3.2;
-    group.add(urnBody);
+    const finialSpire = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.22, 0.45, 8), goldMat);
+    finialSpire.position.y = 2.95;
+    group.add(finialSpire);
 
-    const urnSpout = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.35, 0.35, 10), goldMat);
-    urnSpout.position.y = 3.55;
-    group.add(urnSpout);
-
-    // 4 Lion Head / Gargoyle Spouts trickling water into the main basin
-    [-1.2, 1.2].forEach(sx => {
-      const spout = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.4), goldMat);
+    // 4 Lion Head Spouts cascading crystal streams into the main basin
+    [-0.82, 0.82].forEach(sx => {
+      const spout = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 0.26), goldMat);
       spout.position.set(sx, 1.65, 0);
       group.add(spout);
 
       const stream = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.04, 0.08, 1.0, 6),
-        new THREE.MeshBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.7 })
+        new THREE.CylinderGeometry(0.03, 0.06, 0.95, 6),
+        new THREE.MeshBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.75 })
       );
-      stream.position.set(sx * 1.1, 1.15, 0);
+      stream.position.set(sx * 1.15, 1.18, 0);
       group.add(stream);
     });
 
-    [-1.2, 1.2].forEach(sz => {
-      const spout = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.3), goldMat);
+    [-0.82, 0.82].forEach(sz => {
+      const spout = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.16, 0.22), goldMat);
       spout.position.set(0, 1.65, sz);
       group.add(spout);
 
       const stream = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.04, 0.08, 1.0, 6),
-        new THREE.MeshBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.7 })
+        new THREE.CylinderGeometry(0.03, 0.06, 0.95, 6),
+        new THREE.MeshBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.75 })
       );
-      stream.position.set(0, 1.15, sz * 1.1);
+      stream.position.set(0, 1.18, sz * 1.15);
       group.add(stream);
+    });
+
+    // 7. 4 Curved Flower Planter Boxes hugging the fountain perimeter between cardinal routes
+    const planterAngles = [Math.PI * 0.25, Math.PI * 0.75, -Math.PI * 0.25, -Math.PI * 0.75];
+    planterAngles.forEach(ang => {
+      const px = Math.cos(ang) * 2.85;
+      const pz = Math.sin(ang) * 2.85;
+
+      const pBox = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.35, 0.42), terracottaMat);
+      pBox.position.set(px, 0.18, pz);
+      pBox.rotation.y = -ang + Math.PI / 2;
+      pBox.castShadow = true;
+      group.add(pBox);
+
+      // Trailing blooming flowers in planter
+      const flowerColors = [0xa855f7, 0xf59e0b, 0xf472b6];
+      for (let fi = -0.3; fi <= 0.3; fi += 0.25) {
+        const fl = new THREE.Mesh(
+          new THREE.DodecahedronGeometry(0.12),
+          new THREE.MeshBasicMaterial({ color: flowerColors[Math.floor(Math.random() * flowerColors.length)] })
+        );
+        fl.position.set(px + Math.cos(ang) * 0.05 + Math.sin(ang) * fi, 0.38, pz + Math.sin(ang) * 0.05 - Math.cos(ang) * fi);
+        group.add(fl);
+      }
     });
 
     return group;
@@ -3916,6 +3937,311 @@
     return group;
   }
 
+  // --- Handcrafted Village Square Decor Elements ---
+  // 1. Village Directional Signpost with Iron Lantern
+  function createVillageSignpost(x, z, rotY = 0) {
+    const group = new THREE.Group();
+
+    // Weathered Stone Footing
+    const base = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.26, 0.32, 0.22, 10),
+      new THREE.MeshLambertMaterial({ color: 0x64748b })
+    );
+    base.position.y = 0.11;
+    base.receiveShadow = true;
+    group.add(base);
+
+    // Carved Timber Post
+    const postMat = new THREE.MeshLambertMaterial({ color: 0x5c3d1e });
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 3.2, 8), postMat);
+    post.position.y = 1.6;
+    post.castShadow = true;
+    group.add(post);
+
+    // Pointed Timber Cap
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.35, 8), postMat);
+    cap.position.y = 3.35;
+    group.add(cap);
+
+    // Directional Wooden Pointer Boards
+    const signConfigs = [
+      { y: 2.75, rot: 0, textCol: 0xc084fc, name: 'Dilek Tapınağı ⬆️' },
+      { y: 2.40, rot: Math.PI * 0.5, textCol: 0xf59e0b, name: 'Takas Pazarı ⬅️' },
+      { y: 2.05, rot: -Math.PI * 0.5, textCol: 0xef4444, name: 'Cat\'s Tail ➡️' },
+      { y: 1.70, rot: Math.PI, textCol: 0x38bdf8, name: 'Nehir & Zindan ⬇️' }
+    ];
+
+    signConfigs.forEach(cfg => {
+      const sGroup = new THREE.Group();
+      sGroup.position.y = cfg.y;
+      sGroup.rotation.y = cfg.rot;
+
+      // Board
+      const board = new THREE.Mesh(
+        new THREE.BoxGeometry(0.95, 0.22, 0.06),
+        new THREE.MeshLambertMaterial({ color: 0x854d0e })
+      );
+      board.position.set(0.45, 0, 0);
+      board.castShadow = true;
+      sGroup.add(board);
+
+      // Pointed chevron tip
+      const tip = new THREE.Mesh(
+        new THREE.ConeGeometry(0.14, 0.22, 4),
+        new THREE.MeshLambertMaterial({ color: 0x854d0e })
+      );
+      tip.rotation.z = -Math.PI / 2;
+      tip.position.set(0.98, 0, 0);
+      sGroup.add(tip);
+
+      // Text accent strip
+      const strip = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.7, 0.1),
+        new THREE.MeshBasicMaterial({ color: cfg.textCol, side: THREE.DoubleSide })
+      );
+      strip.position.set(0.45, 0, 0.035);
+      sGroup.add(strip);
+
+      group.add(sGroup);
+    });
+
+    // Wrought Iron Lantern Bracket & Hanging Lantern
+    const ironMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+    const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.06, 0.06), ironMat);
+    bracket.position.set(-0.35, 3.0, 0);
+    group.add(bracket);
+
+    const lantern = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.34, 0.24), ironMat);
+    lantern.position.set(-0.6, 2.75, 0);
+    lantern.castShadow = true;
+    group.add(lantern);
+
+    const glass = new THREE.Mesh(
+      new THREE.BoxGeometry(0.18, 0.26, 0.18),
+      new THREE.MeshBasicMaterial({ color: 0xfef08a })
+    );
+    glass.position.set(-0.6, 2.75, 0);
+    group.add(glass);
+
+    // Warm lantern light
+    const lanternLight = new THREE.PointLight(0xffedd5, 0.75, 6.0);
+    lanternLight.position.set(-0.6, 2.75, 0);
+    group.add(lanternLight);
+
+    group.position.set(x, 0, z);
+    group.rotation.y = rotY;
+    return group;
+  }
+
+  // 2. Rustic Wooden Produce Wagon with Harvest Apples, Pumpkins, Sacks & Sleeping Cat
+  function createRusticProduceWagon(x, z, rotY = 0) {
+    const group = new THREE.Group();
+
+    const woodDarkMat = new THREE.MeshLambertMaterial({ color: 0x451a03 });
+    const woodPlankMat = new THREE.MeshLambertMaterial({ color: 0x78350f });
+    const wheelRimMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+    const strawMat = new THREE.MeshLambertMaterial({ color: 0xfef08a });
+    const sackMat = new THREE.MeshLambertMaterial({ color: 0xd97706 });
+
+    // Chassis Long Beams
+    [-0.55, 0.55].forEach(bx => {
+      const beam = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 3.2), woodDarkMat);
+      beam.position.set(bx, 0.55, 0);
+      beam.castShadow = true;
+      group.add(beam);
+    });
+
+    // Axles
+    [-1.0, 1.0].forEach(az => {
+      const axle = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.12, 0.12), wheelRimMat);
+      axle.position.set(0, 0.52, az);
+      group.add(axle);
+    });
+
+    // 4 Spoked Wooden Wheels with Iron Rim
+    [-0.95, 0.95].forEach(wx => {
+      [-1.0, 1.0].forEach(wz => {
+        const wGroup = new THREE.Group();
+        wGroup.position.set(wx, 0.52, wz);
+
+        // Iron Tire Rim
+        const rim = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.05, 6, 18), wheelRimMat);
+        rim.rotation.y = Math.PI / 2;
+        rim.castShadow = true;
+        wGroup.add(rim);
+
+        // Wooden Hub
+        const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.16, 8), woodDarkMat);
+        hub.rotation.z = Math.PI / 2;
+        wGroup.add(hub);
+
+        // Spokes
+        for (let i = 0; i < 4; i++) {
+          const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.9, 0.04), woodPlankMat);
+          spoke.rotation.x = (i * Math.PI) / 4;
+          wGroup.add(spoke);
+        }
+
+        group.add(wGroup);
+      });
+    });
+
+    // Wagon Bed Planks
+    const bed = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.1, 2.7), woodPlankMat);
+    bed.position.set(0, 0.65, 0);
+    bed.castShadow = true;
+    bed.receiveShadow = true;
+    group.add(bed);
+
+    // Wagon Side Slats
+    [-0.78, 0.78].forEach(sx => {
+      const side = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.45, 2.7), woodPlankMat);
+      side.position.set(sx, 0.88, 0);
+      side.castShadow = true;
+      group.add(side);
+    });
+    // Front & Back Slats
+    [-1.35, 1.35].forEach(sz => {
+      const end = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.45, 0.08), woodPlankMat);
+      end.position.set(0, 0.88, sz);
+      end.castShadow = true;
+      group.add(end);
+    });
+
+    // Hitch Pole extending forward
+    const hitch = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 1.8), woodDarkMat);
+    hitch.position.set(0, 0.48, -2.1);
+    hitch.rotation.x = -0.12;
+    group.add(hitch);
+
+    // Straw / Hay Bedding
+    const hay = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.22, 2.4), strawMat);
+    hay.position.set(0, 0.76, 0);
+    group.add(hay);
+
+    // Harvest Crate 1: Shiny Red Apples
+    const crateGeo = new THREE.BoxGeometry(0.55, 0.35, 0.65);
+    const crateMat = new THREE.MeshLambertMaterial({ color: 0x92400e });
+    const crate1 = new THREE.Mesh(crateGeo, crateMat);
+    crate1.position.set(-0.35, 0.98, -0.6);
+    crate1.castShadow = true;
+    group.add(crate1);
+
+    const appleMat = new THREE.MeshLambertMaterial({ color: 0xef4444 });
+    for (let ax = -0.18; ax <= 0.18; ax += 0.18) {
+      for (let az = -0.22; az <= 0.22; az += 0.22) {
+        const apple = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), appleMat);
+        apple.position.set(-0.35 + ax, 1.20, -0.6 + az);
+        group.add(apple);
+      }
+    }
+
+    // Harvest Crate 2: Plump Harvest Pumpkins
+    const crate2 = new THREE.Mesh(crateGeo, crateMat);
+    crate2.position.set(0.35, 0.98, -0.4);
+    crate2.rotation.y = 0.15;
+    crate2.castShadow = true;
+    group.add(crate2);
+
+    const pumpkinMat = new THREE.MeshLambertMaterial({ color: 0xf97316 });
+    [-0.12, 0.12].forEach(px => {
+      const pumpkin = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 8), pumpkinMat);
+      pumpkin.scale.set(1.15, 0.85, 1.15);
+      pumpkin.position.set(0.35 + px, 1.22, -0.4);
+      group.add(pumpkin);
+    });
+
+    // 2 Burlap Grain Sacks in back
+    [-0.32, 0.32].forEach((sx, idx) => {
+      const sack = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.5, 8), sackMat);
+      sack.position.set(sx, 0.98, 0.6 + (idx * 0.1));
+      sack.rotation.z = idx === 0 ? 0.2 : -0.15;
+      sack.castShadow = true;
+      group.add(sack);
+    });
+
+    // Sleeping Calico Cat nestled on the back hay
+    const sleepingCat = new THREE.Mesh(
+      new THREE.SphereGeometry(0.22, 8, 6),
+      new THREE.MeshLambertMaterial({ color: 0xf97316 })
+    );
+    sleepingCat.scale.set(1.2, 0.7, 1.0);
+    sleepingCat.position.set(0, 0.96, 0.1);
+    group.add(sleepingCat);
+
+    const sleepingHead = new THREE.Mesh(
+      new THREE.SphereGeometry(0.14, 6, 6),
+      new THREE.MeshLambertMaterial({ color: 0xffedd5 })
+    );
+    sleepingHead.position.set(0.16, 0.98, 0.12);
+    group.add(sleepingHead);
+
+    group.position.set(x, 0, z);
+    group.rotation.y = rotY;
+    return group;
+  }
+
+  // 3. Flared Terracotta Urn Overflowing with Lavender, Marigolds & Trailing Ivy
+  function createFlowerUrnPlanter(x, z, scale = 1.0) {
+    const group = new THREE.Group();
+    const terraMat = new THREE.MeshLambertMaterial({ color: 0xc2410c });
+    const leafMat = new THREE.MeshLambertMaterial({ color: 0x15803d });
+
+    // Base Plinth
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 0.15, 12), terraMat);
+    base.position.y = 0.075;
+    base.receiveShadow = true;
+    group.add(base);
+
+    // Flared Urn Body
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.22, 0.45, 12), terraMat);
+    body.position.y = 0.36;
+    body.castShadow = true;
+    group.add(body);
+
+    // Rolled Top Lip
+    const lip = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.06, 6, 16), terraMat);
+    lip.rotation.x = Math.PI / 2;
+    lip.position.y = 0.58;
+    group.add(lip);
+
+    // Soil
+    const soil = new THREE.Mesh(
+      new THREE.CircleGeometry(0.36, 12),
+      new THREE.MeshLambertMaterial({ color: 0x3e2723 })
+    );
+    soil.rotation.x = -Math.PI / 2;
+    soil.position.y = 0.56;
+    group.add(soil);
+
+    // Lush Foliage Dome
+    const foliage = new THREE.Mesh(new THREE.DodecahedronGeometry(0.36), leafMat);
+    foliage.position.y = 0.72;
+    group.add(foliage);
+
+    // Blooming Flower Heads
+    const blooms = [
+      { col: 0xa855f7, ox: -0.15, oz: 0.12, oy: 0.90 }, // Lavender
+      { col: 0xa855f7, ox: 0.14, oz: -0.10, oy: 0.92 },
+      { col: 0xf59e0b, ox: 0.12, oz: 0.14, oy: 0.88 },  // Marigold
+      { col: 0xf59e0b, ox: -0.14, oz: -0.12, oy: 0.86 },
+      { col: 0xf472b6, ox: 0.0, oz: 0.0, oy: 0.96 },    // Pink petunia
+      { col: 0xffffff, ox: 0.18, oz: 0.0, oy: 0.84 }     // White blossom
+    ];
+    blooms.forEach(b => {
+      const fl = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(0.09),
+        new THREE.MeshBasicMaterial({ color: b.col })
+      );
+      fl.position.set(b.ox, b.oy, b.oz);
+      group.add(fl);
+    });
+
+    group.position.set(x, 0, z);
+    group.scale.set(scale, scale, scale);
+    return group;
+  }
+
   function createPixelCat(x, z, furColor = 0xf97316) {
     const group = new THREE.Group();
 
@@ -4738,9 +5064,12 @@
       anchor.add(clone);
 
       if (options.animatedWindmill) {
-        const fan = clone.getObjectByName('building_windmill_top_fan_blue') ||
-                    clone.getObjectByName('building_windmill_top_fan_red') ||
-                    clone.getObjectByName('building_windmill_top_fan');
+        let fan = null;
+        clone.traverse(child => {
+          if (!fan && child.name && child.name.toLowerCase().includes('fan')) {
+            fan = child;
+          }
+        });
         if (fan) {
           animatedKayKitProps.push((delta) => {
             fan.rotation.z += delta * 1.5;
@@ -4748,9 +5077,12 @@
         }
       }
       if (options.animatedWatermill) {
-        const wheel = clone.getObjectByName('building_watermill_wheel_blue') ||
-                      clone.getObjectByName('building_watermill_wheel_red') ||
-                      clone.getObjectByName('building_watermill_wheel');
+        let wheel = null;
+        clone.traverse(child => {
+          if (!wheel && child.name && child.name.toLowerCase().includes('wheel')) {
+            wheel = child;
+          }
+        });
         if (wheel) {
           animatedKayKitProps.push((delta) => {
             wheel.rotation.x += delta * 1.8;
@@ -4823,12 +5155,24 @@
 
   function createCentralPlaza() {
     const group = new THREE.Group();
-    const cobbleTex = createProceduralCobbleTexture(4, 4);
+
+    // 1. Soft Warm Loam / Dirt Underlay Ring (Smooth natural transition into grass, r: 7.2m -> 8.2m)
+    const dirtUnderlay = new THREE.Mesh(
+      new THREE.RingGeometry(7.1, 8.2, 36),
+      new THREE.MeshLambertMaterial({ color: 0x634d36, side: THREE.DoubleSide })
+    );
+    dirtUnderlay.rotation.x = -Math.PI / 2;
+    dirtUnderlay.position.y = 0.012;
+    dirtUnderlay.receiveShadow = true;
+    group.add(dirtUnderlay);
+
+    // 2. Cobblestone Plaza Floor (radius 7.5m)
+    const cobbleTex = createProceduralCobbleTexture(5, 5);
     const plazaFloor = new THREE.Mesh(
-      new THREE.CircleGeometry(10.6, 36),
+      new THREE.CircleGeometry(7.5, 36),
       new THREE.MeshLambertMaterial({
         map: cobbleTex,
-        bumpMap: createProceduralCobbleBumpMap(4, 4),
+        bumpMap: createProceduralCobbleBumpMap(5, 5),
         bumpScale: 0.025
       })
     );
@@ -4837,23 +5181,43 @@
     plazaFloor.receiveShadow = true;
     group.add(plazaFloor);
 
-    // Outer carved stone border ring
+    // 3. Outer Carved Stone Curb Ring (r: 7.25m -> 7.65m)
     const outerRim = new THREE.Mesh(
-      new THREE.RingGeometry(10.3, 10.9, 36),
-      new THREE.MeshLambertMaterial({ color: 0x5a5045, side: THREE.DoubleSide })
+      new THREE.RingGeometry(7.25, 7.65, 36),
+      new THREE.MeshLambertMaterial({ color: 0x52483d, side: THREE.DoubleSide })
     );
     outerRim.rotation.x = -Math.PI / 2;
     outerRim.position.y = 0.025;
     group.add(outerRim);
 
-    // Golden compass-rose inlay ring around fountain
+    // 4. Concentric Decorative Accent Ring (r: 4.7m -> 5.15m)
+    const midRing = new THREE.Mesh(
+      new THREE.RingGeometry(4.7, 5.15, 36),
+      new THREE.MeshLambertMaterial({ color: 0x786e63, side: THREE.DoubleSide })
+    );
+    midRing.rotation.x = -Math.PI / 2;
+    midRing.position.y = 0.024;
+    group.add(midRing);
+
+    // 5. Gilded Compass Rose Ring around Landmark Fountain (r: 3.0m -> 3.25m)
     const goldInlay = new THREE.Mesh(
-      new THREE.RingGeometry(6.2, 6.55, 32),
-      new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide, transparent: true, opacity: 0.75 })
+      new THREE.RingGeometry(3.0, 3.25, 32),
+      new THREE.MeshBasicMaterial({ color: 0xd97706, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
     );
     goldInlay.rotation.x = -Math.PI / 2;
-    goldInlay.position.y = 0.026;
+    goldInlay.position.y = 0.027;
     group.add(goldInlay);
+
+    // 6. 8 Radiating Compass Rose Rays connecting inner ring to mid ring
+    const rayMat = new THREE.MeshBasicMaterial({ color: 0xb45309, side: THREE.DoubleSide });
+    for (let r = 0; r < 8; r++) {
+      const ang = (r * Math.PI) / 4;
+      const ray = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 1.6), rayMat);
+      ray.rotation.x = -Math.PI / 2;
+      ray.rotation.z = -ang;
+      ray.position.set(Math.cos(ang) * 3.95, 0.026, Math.sin(ang) * 3.95);
+      group.add(ray);
+    }
 
     return group;
   }
@@ -5016,24 +5380,33 @@
   }
 
   function isValidTownGrassSpot(x, z) {
-    // Skip cobblestone avenues
-    if (Math.abs(x) < 5.2 || Math.abs(z) < 5.2) return false;
-    // Skip central fountain plaza
-    if (Math.hypot(x, z) < 11.4) return false;
+    // Skip central fountain plaza (radius 7.8m)
+    if (Math.hypot(x, z) < 7.8) return false;
+    // Skip North Avenue (Plaza to Cathedral)
+    if (Math.abs(x) < 2.7 && z >= -27.0 && z <= 0) return false;
+    // Skip South Avenue (Plaza to Bridge Ramp)
+    if (Math.abs(x) < 2.7 && z >= 0 && z <= 18.5) return false;
+    // Skip West Avenue (Plaza to Trade Mart & Blacksmith)
+    if (Math.abs(z) < 2.7 && x >= -25.0 && x <= 0) return false;
+    // Skip East Avenue (Plaza to Tavern & Patio)
+    if (Math.abs(z) < 2.7 && x >= 0 && x <= 25.0) return false;
+    // Skip secondary branch paths
+    if (Math.abs(x - (-14)) < 2.0 && z >= 0 && z <= 10) return false;
+    if (Math.abs(x - 14) < 2.0 && z >= 0 && z <= 10) return false;
     // Skip river canal & embankments
-    if (z > 18.8 && z < 29.2) return false;
+    if (z > 19.5 && z < 28.5) return false;
     // Skip Trade Mart & Market Stalls (-24, -14)
-    if (x > -31 && x < -9 && z > -21 && z < -2) return false;
+    if (x > -31 && x < -16 && z > -20 && z < -6) return false;
     // Skip Tavern & Patio (24, -14)
-    if (x > 16 && x < 31 && z > -21 && z < -1) return false;
-    // Skip Shrine (0, -32)
-    if (Math.abs(x) < 11 && z < -23) return false;
+    if (x > 16 && x < 31 && z > -20 && z < -1) return false;
+    // Skip Gacha Cathedral (0, -34)
+    if (Math.abs(x) < 9 && z < -25) return false;
     // Skip Guild (-24, 14)
-    if (x > -32 && x < -14 && z > 6 && z < 20) return false;
+    if (x > -31 && x < -17 && z > 9 && z < 20) return false;
     // Skip Stone Well (-14, 6)
-    if (Math.hypot(x - (-14), z - 6) < 3.2) return false;
+    if (Math.hypot(x - (-14), z - 6) < 2.6) return false;
     // Skip Scenic Gazebo (24, 14)
-    if (Math.hypot(x - 24, z - 14) < 5.5) return false;
+    if (Math.hypot(x - 24, z - 14) < 4.8) return false;
     // Skip Battle Portal landing (0, 32)
     if (Math.hypot(x, z - 32) < 5.5) return false;
     return true;
@@ -5256,51 +5629,151 @@
     grass.receiveShadow = true;
     worldObjects.add(grass);
 
-    // 2. Wide Cobblestone Crossroads (Clean '+' Shaped Grand Avenues)
-    const pathTexX = createProceduralCobbleTexture(2, 11);
-    const pathMatX = new THREE.MeshLambertMaterial({
-      map: pathTexX,
-      bumpMap: createProceduralCobbleBumpMap(2, 11),
+    // 2. Human-Scaled Organic Cobblestone Avenues (4.8m Width with Warm Loam Underlays & Curbs)
+    const roadDirtMat = new THREE.MeshLambertMaterial({ color: 0x634d36 });
+    const roadCurbMat = new THREE.MeshLambertMaterial({ color: 0x52483d });
+
+    // A) North Avenue (Plaza z: -7.0 to Cathedral Steps z: -25.5, length: 18.5m, center z: -16.25)
+    const northDirt = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 18.5), roadDirtMat);
+    northDirt.rotation.x = -Math.PI / 2;
+    northDirt.position.set(0, 0.012, -16.25);
+    northDirt.receiveShadow = true;
+    worldObjects.add(northDirt);
+
+    const northRoadMat = new THREE.MeshLambertMaterial({
+      map: createProceduralCobbleTexture(2, 6),
+      bumpMap: createProceduralCobbleBumpMap(2, 6),
       bumpScale: 0.025
     });
-    const pathX = new THREE.Mesh(new THREE.PlaneGeometry(8, 88), pathMatX);
-    pathX.rotation.x = -Math.PI / 2;
-    pathX.position.y = 0.02;
-    pathX.receiveShadow = true;
-    worldObjects.add(pathX);
+    const northRoad = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 18.5), northRoadMat);
+    northRoad.rotation.x = -Math.PI / 2;
+    northRoad.position.set(0, 0.020, -16.25);
+    northRoad.receiveShadow = true;
+    worldObjects.add(northRoad);
 
-    const pathTexZ = createProceduralCobbleTexture(11, 2);
-    const pathMatZ = new THREE.MeshLambertMaterial({
-      map: pathTexZ,
-      bumpMap: createProceduralCobbleBumpMap(11, 2),
-      bumpScale: 0.025
-    });
-    const pathZ = new THREE.Mesh(new THREE.PlaneGeometry(88, 8), pathMatZ);
-    pathZ.rotation.x = -Math.PI / 2;
-    pathZ.position.y = 0.02;
-    pathZ.receiveShadow = true;
-    worldObjects.add(pathZ);
-
-    // Weathered Stone Curbs along Avenues (frames roads, eliminates raw harsh geometric cuts)
-    const curbMat = new THREE.MeshLambertMaterial({ color: 0x4a4035 });
-    // North-South Avenue Curbs
-    [-4.05, 4.05].forEach(cx => {
-      const curb = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.06, 88), curbMat);
-      curb.position.set(cx, 0.03, 0);
-      curb.receiveShadow = true;
-      worldObjects.add(curb);
-    });
-    // East-West Avenue Curbs
-    [-4.05, 4.05].forEach(cz => {
-      const curb = new THREE.Mesh(new THREE.BoxGeometry(88, 0.06, 0.32), curbMat);
-      curb.position.set(0, 0.03, cz);
+    [-2.45, 2.45].forEach(cx => {
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.06, 18.5), roadCurbMat);
+      curb.position.set(cx, 0.032, -16.25);
       curb.receiveShadow = true;
       worldObjects.add(curb);
     });
 
-    // 3. Central Fountain & Ornate Circular Cobblestone Plaza
+    // B) South River Avenue (Plaza z: 7.0 to Bridge Ramp z: 18.0, length: 11.0m, center z: 12.5)
+    const southDirt = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 11.0), roadDirtMat);
+    southDirt.rotation.x = -Math.PI / 2;
+    southDirt.position.set(0, 0.012, 12.5);
+    southDirt.receiveShadow = true;
+    worldObjects.add(southDirt);
+
+    const southRoadMat = new THREE.MeshLambertMaterial({
+      map: createProceduralCobbleTexture(2, 4),
+      bumpMap: createProceduralCobbleBumpMap(2, 4),
+      bumpScale: 0.025
+    });
+    const southRoad = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 11.0), southRoadMat);
+    southRoad.rotation.x = -Math.PI / 2;
+    southRoad.position.set(0, 0.020, 12.5);
+    southRoad.receiveShadow = true;
+    worldObjects.add(southRoad);
+
+    [-2.45, 2.45].forEach(cx => {
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.06, 11.0), roadCurbMat);
+      curb.position.set(cx, 0.032, 12.5);
+      curb.receiveShadow = true;
+      worldObjects.add(curb);
+    });
+
+    // C) West Avenue (Plaza x: -7.0 to Trade Mart x: -24.0, length: 17.0m, center x: -15.5)
+    const westDirt = new THREE.Mesh(new THREE.PlaneGeometry(17.0, 5.4), roadDirtMat);
+    westDirt.rotation.x = -Math.PI / 2;
+    westDirt.position.set(-15.5, 0.012, 0);
+    westDirt.receiveShadow = true;
+    worldObjects.add(westDirt);
+
+    const westRoadMat = new THREE.MeshLambertMaterial({
+      map: createProceduralCobbleTexture(6, 2),
+      bumpMap: createProceduralCobbleBumpMap(6, 2),
+      bumpScale: 0.025
+    });
+    const westRoad = new THREE.Mesh(new THREE.PlaneGeometry(17.0, 4.8), westRoadMat);
+    westRoad.rotation.x = -Math.PI / 2;
+    westRoad.position.set(-15.5, 0.020, 0);
+    westRoad.receiveShadow = true;
+    worldObjects.add(westRoad);
+
+    [-2.45, 2.45].forEach(cz => {
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(17.0, 0.06, 0.22), roadCurbMat);
+      curb.position.set(-15.5, 0.032, cz);
+      curb.receiveShadow = true;
+      worldObjects.add(curb);
+    });
+
+    // D) East Avenue (Plaza x: 7.0 to Tavern Patio x: 24.0, length: 17.0m, center x: 15.5)
+    const eastDirt = new THREE.Mesh(new THREE.PlaneGeometry(17.0, 5.4), roadDirtMat);
+    eastDirt.rotation.x = -Math.PI / 2;
+    eastDirt.position.set(15.5, 0.012, 0);
+    eastDirt.receiveShadow = true;
+    worldObjects.add(eastDirt);
+
+    const eastRoadMat = new THREE.MeshLambertMaterial({
+      map: createProceduralCobbleTexture(6, 2),
+      bumpMap: createProceduralCobbleBumpMap(6, 2),
+      bumpScale: 0.025
+    });
+    const eastRoad = new THREE.Mesh(new THREE.PlaneGeometry(17.0, 4.8), eastRoadMat);
+    eastRoad.rotation.x = -Math.PI / 2;
+    eastRoad.position.set(15.5, 0.020, 0);
+    eastRoad.receiveShadow = true;
+    worldObjects.add(eastRoad);
+
+    [-2.45, 2.45].forEach(cz => {
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(17.0, 0.06, 0.22), roadCurbMat);
+      curb.position.set(15.5, 0.032, cz);
+      curb.receiveShadow = true;
+      worldObjects.add(curb);
+    });
+
+    // E) Flagstone Stepping Stone Secondary Branch Paths
+    // Branch 1: Toward Guild Hall & Relocated Well (from West Avenue x: -14, z: 2.5 -> 9.5)
+    const stepStoneMat = new THREE.MeshLambertMaterial({ color: 0x78716c });
+    for (let sz = 3.0; sz <= 9.0; sz += 1.5) {
+      const stone = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 0.05, 7), stepStoneMat);
+      stone.position.set(-14.0 + (Math.sin(sz * 2) * 0.15), 0.025, sz);
+      stone.rotation.y = sz * 0.8;
+      stone.receiveShadow = true;
+      worldObjects.add(stone);
+    }
+    // Branch 2: Toward River Watermill & Gazebo (from East Avenue x: 16, z: 2.5 -> 9.5)
+    for (let sz = 3.0; sz <= 9.0; sz += 1.5) {
+      const stone = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 0.05, 7), stepStoneMat);
+      stone.position.set(16.0 + (Math.cos(sz * 2) * 0.15), 0.025, sz);
+      stone.rotation.y = sz * 0.8;
+      stone.receiveShadow = true;
+      worldObjects.add(stone);
+    }
+
+    // 3. Central Plaza & Focal Landmark Fountain
     worldObjects.add(createCentralPlaza());
     worldObjects.add(createCentralFountain());
+
+    // Central Plaza Gathering Vignettes (Avenues 100% clear for player walking)
+    // A) 4 Curved Artisan Wooden Benches in Diagonal Plaza Gathering Nooks (r: 5.2m at ±3.7, ±3.7)
+    worldObjects.add(createBench(-3.7, -3.7, Math.PI * 0.25));
+    worldObjects.add(createBench(3.7, -3.7, -Math.PI * 0.25));
+    worldObjects.add(createBench(-3.7, 3.7, Math.PI * 0.75));
+    worldObjects.add(createBench(3.7, 3.7, -Math.PI * 0.75));
+
+    // B) 4 Terracotta Flower Urns Overflowing with Blooms beside each Bench
+    worldObjects.add(createFlowerUrnPlanter(-4.8, -4.8, 1.05));
+    worldObjects.add(createFlowerUrnPlanter(4.8, -4.8, 1.05));
+    worldObjects.add(createFlowerUrnPlanter(-4.8, 4.8, 1.05));
+    worldObjects.add(createFlowerUrnPlanter(4.8, 4.8, 1.05));
+
+    // C) Handcrafted Village Directional Signpost with Iron Lantern (Plaza North-East nook)
+    worldObjects.add(createVillageSignpost(4.2, -2.6, -0.2));
+
+    // D) Charming Rustic Produce Wagon with Fresh Apples, Pumpkins & Sleeping Cat (Plaza South-West nook)
+    worldObjects.add(createRusticProduceWagon(-4.6, 2.8, 0.35));
 
     // 4. Southern River Canal & Arched Stone Bridge
     // Canal Channel at z = 24 (spans x: -60 to 60)
@@ -5491,14 +5964,14 @@
     // East Side (Right): Gladiator PvP Arena Portal Gate at (6.5, 32)
     worldObjects.add(createPvPArenaPortalGate(6.5, 32));
 
-    // 5. Authentic KayKit 3D Medieval Architectural Buildings & Landmarks (Grand Scaled to 120x120 World)
+    // 5. Authentic KayKit 3D Medieval Architectural Buildings & Landmarks (Varied Stylized Color Palette)
     // A) Takas Pazarı & Demirci Ocağı (Blacksmith & Trade Mart) - North-West Quarter (-24, -14)
     worldObjects.add(createEntrancePortalMat(-24, -10.0, 0x53fc18));
-    spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_blacksmith_blue.gltf', {
+    spawnKayKitModel('/assets/models/kaykit/buildings/yellow/building_blacksmith_yellow.gltf', {
       x: -24, z: -14, scale: 8.2
     });
-    // Medieval Market Stall tucked beside Trade Mart
-    spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_market_blue.gltf', {
+    // Medieval Market Stall tucked beside Trade Mart (Striped Red Canvas)
+    spawnKayKitModel('/assets/models/kaykit/buildings/red/building_market_red.gltf', {
       x: -18.5, z: -7.5, rotY: Math.PI / 2, scale: 6.2
     });
     // Blacksmith & Trade Props against building wall
@@ -5512,10 +5985,10 @@
       x: -19.5, z: -10.5, rotY: -0.4, scale: 3.2
     });
 
-    // B) Cat's Tail Taverna - North-East Quarter (24, -14)
+    // B) Cat's Tail Taverna - North-East Quarter (24, -14) (Warm Terracotta Red Shingles)
     chimneyPos = { x: 26.8, y: 11.5, z: -16.2 };
     worldObjects.add(createEntrancePortalMat(24, -10.0, 0x53fc18));
-    spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_tavern_blue.gltf', {
+    spawnKayKitModel('/assets/models/kaykit/buildings/red/building_tavern_red.gltf', {
       x: 24, z: -14, scale: 8.2
     });
     // Cat's Tail Outdoor Patio with Parasols and Tables (24, -4)
@@ -5534,7 +6007,7 @@
       x: 28.5, y: 1.25, z: -6.0, scale: 2.8
     });
 
-    // C) Dilek Tapınağı (Gacha Cathedral) - Grand North Sanctuary (0, -34)
+    // C) Dilek Tapınağı (Gacha Cathedral) - Grand North Sanctuary (0, -34) (Celestial Blue & Gold)
     worldObjects.add(createEntrancePortalMat(0, -25.5, 0xa855f7));
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_church_blue.gltf', {
       x: 0, z: -34, scale: 10.5
@@ -5578,31 +6051,31 @@
     // E) Scenic Waterside Gazebo & Garden - South-East Quarter (24, 14)
     worldObjects.add(createScenicGazebo(24, 14));
 
-    // F) Yeni Eklenen KayKit 3D Şehir Yapıları ve Anıtları (Büyük Boyut)
-    // 1. Taş Meydan Kuyusu (Central Stone Well) - Neatly relocated to West Courtyard beside Guild
-    spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_well_blue.gltf', {
+    // F) Yeni Eklenen KayKit 3D Şehir Yapıları ve Anıtları (Zengin Renk Paleti)
+    // 1. Taş Meydan Kuyusu (Central Stone Well) - Relocated to West Courtyard beside Guild (Yellow Roof)
+    spawnKayKitModel('/assets/models/kaykit/buildings/yellow/building_well_yellow.gltf', {
       x: -14, z: 6.0, scale: 5.2
     });
-    // 2. Dönen Su Değirmeni (Rotating River Watermill)
-    spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_watermill_blue.gltf', {
+    // 2. Dönen Su Değirmeni (Rotating River Watermill) - Emerald Green Roof by Canal
+    spawnKayKitModel('/assets/models/kaykit/buildings/green/building_watermill_green.gltf', {
       x: 16, z: 19.8, rotY: Math.PI, scale: 7.5, animatedWatermill: true
     });
-    // 3. Tepedeki Dönen Yel Değirmeni (Rotating Hill Windmill)
-    spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_windmill_blue.gltf', {
+    // 3. Tepedeki Dönen Yel Değirmeni (Rotating Hill Windmill) - Golden Amber Yellow Roof
+    spawnKayKitModel('/assets/models/kaykit/buildings/yellow/building_windmill_yellow.gltf', {
       x: 36, z: -26, rotY: -Math.PI * 0.25, scale: 8.5, animatedWindmill: true
     });
     // 4. Kuzeybatı Kalesi & Hisar (North-West Castle Keep)
     spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_castle_blue.gltf', {
       x: -36, z: -34, rotY: Math.PI * 0.25, scale: 8.5
     });
-    // 5. Şirin Ahşap Kasaba Evleri (Residential Houses)
-    spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_home_A_blue.gltf', {
+    // 5. Şirin Ahşap Kasaba Evleri (Residential Houses in Warm Colors)
+    spawnKayKitModel('/assets/models/kaykit/buildings/red/building_home_A_red.gltf', {
       x: 33, z: 0, rotY: -Math.PI / 2, scale: 7.8
     });
-    spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_home_B_blue.gltf', {
+    spawnKayKitModel('/assets/models/kaykit/buildings/yellow/building_home_B_yellow.gltf', {
       x: -33, z: 0, rotY: Math.PI / 2, scale: 7.8
     });
-    spawnKayKitModel('/assets/models/kaykit/buildings/blue/building_home_B_blue.gltf', {
+    spawnKayKitModel('/assets/models/kaykit/buildings/green/building_home_B_green.gltf', {
       x: 27, z: -26, rotY: Math.PI / 4, scale: 7.8
     });
     // 6. Şehir Sınır Gözetleme Kuleleri (Stone Watchtowers)
@@ -5657,36 +6130,31 @@
     spawnKayKitModel('/assets/models/kaykit/decoration/nature/waterplant_A.gltf', { x: -6, y: 0.05, z: 21.0, scale: 3.6 });
     spawnKayKitModel('/assets/models/kaykit/decoration/nature/waterplant_A.gltf', { x: 6, y: 0.05, z: 27.0, scale: 3.6 });
 
-    // 6. Street Lamps neatly positioned along sidewalk curbs (Never blocking avenues)
+    // 9. Street Lamps neatly positioned along sidewalk curbs (Never blocking avenues)
     const lampPositions = [
-      // North Avenue Curbs (x = ±4.6)
-      { x: -4.6, z: -16 }, { x: 4.6, z: -16 },
-      { x: -4.6, z: -26 }, { x: 4.6, z: -26 },
-      // South Avenue Curbs (x = ±4.6)
-      { x: -4.6, z: 13 }, { x: 4.6, z: 13 },
-      // West Avenue Curbs (z = ±4.6)
-      { x: -16, z: -4.6 }, { x: -16, z: 4.6 },
-      { x: -26, z: -4.6 }, { x: -26, z: 4.6 },
-      // East Avenue Curbs (z = ±4.6)
-      { x: 16, z: -4.6 }, { x: 16, z: 4.6 },
-      { x: 26, z: -4.6 }, { x: 26, z: 4.6 }
+      // North Avenue Curbs (x = ±2.85)
+      { x: -2.85, z: -12 }, { x: 2.85, z: -12 },
+      { x: -2.85, z: -22 }, { x: 2.85, z: -22 },
+      // South Avenue Curbs (x = ±2.85)
+      { x: -2.85, z: 11 }, { x: 2.85, z: 11 },
+      // West Avenue Curbs (z = ±2.85)
+      { x: -12, z: -2.85 }, { x: -12, z: 2.85 },
+      { x: -21, z: -2.85 }, { x: -21, z: 2.85 },
+      // East Avenue Curbs (z = ±2.85)
+      { x: 12, z: -2.85 }, { x: 12, z: 2.85 },
+      { x: 21, z: -2.85 }, { x: 21, z: 2.85 }
     ];
     lampPositions.forEach(p => worldObjects.add(createStreetLamp(p.x, p.z)));
 
-    // 7. Stone Benches & Flower Beds (At 4 diagonal corners of fountain plaza - avenues 100% clear)
-    worldObjects.add(createBench(-5.6, -5.6, Math.PI * 0.25));
-    worldObjects.add(createBench(5.6, -5.6, -Math.PI * 0.25));
-    worldObjects.add(createBench(-5.6, 5.6, Math.PI * 0.75));
-    worldObjects.add(createBench(5.6, 5.6, -Math.PI * 0.75));
-
+    // 10. Peripheral Flower Beds beside district entrances
     worldObjects.add(createFlowerBed(-10, 6.5, 4, 2));
     worldObjects.add(createFlowerBed(10, 6.5, 4, 2));
     worldObjects.add(createFlowerBed(-10, -6.5, 4, 2));
     worldObjects.add(createFlowerBed(10, -6.5, 4, 2));
 
-    // 8. Cute Wandering Pixel Cats
+    // 11. Cute Wandering Pixel Cats
     worldObjects.add(createPixelCat(20, -2.5, 0xf97316)); // Ginger tabby near tavern patio
-    worldObjects.add(createPixelCat(-3.5, 2.5, 0x0f172a)); // Calico near fountain
+    worldObjects.add(createPixelCat(-2.5, 2.5, 0x0f172a)); // Calico near fountain
     worldObjects.add(createPixelCat(22, 16, 0xffffff)); // White cat near scenic gazebo
 
     // 9. Welcoming Town NPCs
@@ -6966,9 +7434,11 @@
         }
       }
 
-      // 2. Radial Obstacle Collisions (Fountain, Well, Gazebo, Windmill, Watchtowers)
+      // 2. Radial Obstacle Collisions (Fountain, Produce Wagon, Signpost, Well, Gazebo, Windmill, Watchtowers)
       const circleColliders = [
-        { cx: 0, cz: 0, r: 4.9 },       // Central Fountain
+        { cx: 0, cz: 0, r: 2.85 },      // Central Landmark Fountain
+        { cx: -4.6, cz: 2.8, r: 1.4 },  // Rustic Produce Wagon
+        { cx: 4.2, cz: -2.6, r: 0.5 },  // Village Directional Signpost
         { cx: -14, cz: 6.0, r: 2.2 },   // Relocated Stone Well
         { cx: 24, cz: 14, r: 4.0 },     // Scenic Waterside Gazebo
         { cx: 36, cz: -26, r: 4.6 },    // Hill Windmill
@@ -6985,7 +7455,7 @@
         }
       }
 
-      // 3. Axis-Aligned Bounding Box (AABB) Collisions for All Town Architecture
+      // 3. Axis-Aligned Bounding Box (AABB) Collisions for All Town Architecture & Bridge Barriers
       const buildingColliders = [
         // Gacha Cathedral Sanctuary (0, -34)
         { x1: -7.5, x2: 7.5, z1: -44.0, z2: -26.5 },
@@ -7009,11 +7479,17 @@
         { x1: -37.5, x2: -28.5, z1: -4.5, z2: 4.5 },
         // Residential House North-East (27, -26)
         { x1: 22.5, x2: 31.5, z1: -30.5, z2: -21.5 },
-        // Benches around Central Plaza (diagonal corners)
-        { x1: -6.8, x2: -4.4, z1: -6.8, z2: -4.4 },
-        { x1: 4.4, x2: 6.8, z1: -6.8, z2: -4.4 },
-        { x1: -6.8, x2: -4.4, z1: 4.4, z2: 6.8 },
-        { x1: 4.4, x2: 6.8, z1: 4.4, z2: 6.8 }
+        // Benches around Central Plaza (diagonal corners: ±3.7, ±3.7)
+        { x1: -4.6, x2: -2.8, z1: -4.6, z2: -2.8 },
+        { x1: 2.8, x2: 4.6, z1: -4.6, z2: -2.8 },
+        { x1: -4.6, x2: -2.8, z1: 2.8, z2: 4.6 },
+        { x1: 2.8, x2: 4.6, z1: 2.8, z2: 4.6 },
+        // Bridge Handrails (prevent falling off bridge deck sides)
+        { x1: -3.8, x2: -3.1, z1: 18.0, z2: 30.0 },
+        { x1: 3.1, x2: 3.8, z1: 18.0, z2: 30.0 },
+        // River Canal Embankments (prevent walking into deep water channel outside bridge)
+        { x1: -45.0, x2: -3.3, z1: 20.4, z2: 27.6 },
+        { x1: 3.3, x2: 45.0, z1: 20.4, z2: 27.6 }
       ];
       for (const b of buildingColliders) {
         if (myPlayer.x > b.x1 && myPlayer.x < b.x2 && myPlayer.z > b.z1 && myPlayer.z < b.z2) {
@@ -8386,40 +8862,72 @@
       ctx.fillStyle = '#0284c7';
       ctx.fillRect(0, riverY - 4 * scale, w, 8 * scale);
 
-      // Crossroads Paths
-      ctx.fillStyle = '#475569';
-      // Path X
-      const pathXLeft = cx + (0 - myPlayer.x) * scale - 4 * scale;
-      ctx.fillRect(pathXLeft, 0, 8 * scale, h);
-      // Path Z
-      const pathZTop = cy + (0 - myPlayer.z) * scale - 4 * scale;
-      ctx.fillRect(0, pathZTop, w, 8 * scale);
+      // Organic Cobblestone Avenues (4.8m width)
+      ctx.fillStyle = '#57534e';
+      // North Avenue (z: -25.5 to -7.0)
+      ctx.fillRect(
+        cx + (-2.4 - myPlayer.x) * scale,
+        cy + (-25.5 - myPlayer.z) * scale,
+        4.8 * scale,
+        18.5 * scale
+      );
+      // South Avenue (z: 7.0 to 18.0)
+      ctx.fillRect(
+        cx + (-2.4 - myPlayer.x) * scale,
+        cy + (7.0 - myPlayer.z) * scale,
+        4.8 * scale,
+        11.0 * scale
+      );
+      // West Avenue (x: -24.0 to -7.0)
+      ctx.fillRect(
+        cx + (-24.0 - myPlayer.x) * scale,
+        cy + (-2.4 - myPlayer.z) * scale,
+        17.0 * scale,
+        4.8 * scale
+      );
+      // East Avenue (x: 7.0 to 24.0)
+      ctx.fillRect(
+        cx + (7.0 - myPlayer.x) * scale,
+        cy + (-2.4 - myPlayer.z) * scale,
+        17.0 * scale,
+        4.8 * scale
+      );
 
-      // Secondary Branches
-      ctx.fillRect(cx + (-24 - myPlayer.x) * scale, cy + (-10 - myPlayer.z) * scale - 3 * scale, 18 * scale, 6 * scale);
-      ctx.fillRect(cx + (6 - myPlayer.x) * scale, cy + (-10 - myPlayer.z) * scale - 3 * scale, 18 * scale, 6 * scale);
-      ctx.fillRect(cx + (-24 - myPlayer.x) * scale, cy + (10 - myPlayer.z) * scale - 3 * scale, 18 * scale, 6 * scale);
-      ctx.fillRect(cx + (6 - myPlayer.x) * scale, cy + (10 - myPlayer.z) * scale - 3 * scale, 18 * scale, 6 * scale);
-
-      // Stone Bridge
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillRect(pathXLeft - 0.5 * scale, riverY - 4.2 * scale, 9 * scale, 8.4 * scale);
-
-      // Central Fountain
-      ctx.fillStyle = '#38bdf8';
+      // Central Plaza (radius 7.5m)
+      ctx.fillStyle = '#64748b';
       ctx.beginPath();
-      ctx.arc(cx - myPlayer.x * scale, cy - myPlayer.z * scale, 4.5 * scale, 0, Math.PI * 2);
+      ctx.arc(cx - myPlayer.x * scale, cy - myPlayer.z * scale, 7.5 * scale, 0, Math.PI * 2);
       ctx.fill();
 
+      // Stone Bridge (x: -3.3 to 3.3, z: 18.0 to 30.0)
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(
+        cx + (-3.3 - myPlayer.x) * scale,
+        cy + (18.0 - myPlayer.z) * scale,
+        6.6 * scale,
+        12.0 * scale
+      );
+
+      // Central Landmark Fountain (radius 2.85m)
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(cx - myPlayer.x * scale, cy - myPlayer.z * scale, 2.85 * scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 1.0;
+      ctx.stroke();
+
       // Buildings
-      ctx.fillStyle = '#0284c7';
-      ctx.fillRect(cx + (-24 - myPlayer.x) * scale - 6, cy + (-14 - myPlayer.z) * scale - 6, 12, 12); // Trade Mart
-      ctx.fillStyle = '#b91c1c';
+      ctx.fillStyle = '#eab308';
+      ctx.fillRect(cx + (-24 - myPlayer.x) * scale - 6, cy + (-14 - myPlayer.z) * scale - 6, 12, 12); // Blacksmith / Trade Mart
+      ctx.fillStyle = '#ef4444';
       ctx.fillRect(cx + (24 - myPlayer.x) * scale - 6, cy + (-14 - myPlayer.z) * scale - 6, 12, 12); // Tavern
-      ctx.fillStyle = '#9333ea';
-      ctx.fillRect(cx + (0 - myPlayer.x) * scale - 7, cy + (-32 - myPlayer.z) * scale - 7, 14, 14); // Shrine
-      ctx.fillStyle = '#166534';
+      ctx.fillStyle = '#818cf8';
+      ctx.fillRect(cx + (0 - myPlayer.x) * scale - 7, cy + (-34 - myPlayer.z) * scale - 7, 14, 14); // Gacha Cathedral
+      ctx.fillStyle = '#0284c7';
       ctx.fillRect(cx + (-24 - myPlayer.x) * scale - 6, cy + (14 - myPlayer.z) * scale - 6, 12, 12); // Guild
+      ctx.fillStyle = '#10b981';
+      ctx.fillRect(cx + (16 - myPlayer.x) * scale - 5, cy + (19.8 - myPlayer.z) * scale - 5, 10, 10); // Watermill
       ctx.fillStyle = '#059669';
       ctx.fillRect(cx + (24 - myPlayer.x) * scale - 5, cy + (14 - myPlayer.z) * scale - 5, 10, 10); // Gazebo
 
