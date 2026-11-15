@@ -566,17 +566,6 @@
       </div>
     `;
     }).join('');
-
-      return `
-      <div class="q-item" data-id="${q.id}">
-        <div class="q-item-info">
-          <div class="q-item-title">${modeBadge}#${q.id} ${escapeHtml(q.question)}</div>
-          <div class="q-item-ans">Cevaplar: <strong>${escapeHtml((q.answers || []).join(', '))}</strong></div>
-        </div>
-        <span class="q-item-badge">${escapeHtml(q.category || 'Genel')} - ${escapeHtml(q.difficulty || '')}</span>
-      </div>
-    `;
-    }).join('');
   }
 
   // Question Pool Filter Tabs
