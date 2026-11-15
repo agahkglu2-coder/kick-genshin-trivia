@@ -69,9 +69,9 @@ if (winnerEventFired && winnerData && winnerData.winner.username === 'BilgiKupu'
 // 3. Mixed Mode Test
 console.log('\n--- TEST 3: Karışık (Mixed) Mod Testi ---');
 const mixedRes = engine.setTriviaMode('mixed');
-const expectedTotal = engine.genshinQuestions.length + engine.generalQuestions.length;
+const expectedTotal = engine.genshinQuestions.length + engine.generalQuestions.length + (engine.turkishQuestions ? engine.turkishQuestions.length : 0);
 if (mixedRes.mode === 'mixed' && mixedRes.activeCount === expectedTotal) {
-  console.log(`✅ Karışık moda başarıyla geçildi: Toplam ${mixedRes.activeCount} soru aktif (${engine.genshinQuestions.length} Genshin + ${engine.generalQuestions.length} Genel Kültür)`);
+  console.log(`✅ Karışık moda başarıyla geçildi: Toplam ${mixedRes.activeCount} soru aktif (${engine.genshinQuestions.length} Genshin + ${engine.generalQuestions.length} Genel Kültür + ${engine.turkishQuestions.length} Türkçe)`);
 } else {
   console.error(`❌ Karışık mod soru sayısı hatalı. Beklenen: ${expectedTotal}, Alınan: ${mixedRes.activeCount}`);
   process.exit(1);

@@ -769,9 +769,28 @@ gameEngine.on('winner_declared', (winData) => {
   if (winData.winner && winData.winner.username) {
     const winnerUser = winData.winner.username;
     gachaEngine.awardTriviaWinner(winnerUser, 60);
-    // Announce winner in Kick chat with mode context
-    const modeName = winData.triviaMode === 'general' ? 'Genel Kültür' : 'Genshin';
-    kickBot.sendMessage(`🎉 Tebrikler @${winnerUser}! ${modeName} sorusunu doğru bilerek +60 Primogem kazandın!`);
+
+    const isTurkish = winData.triviaMode === 'turkish' ||
+                      (winData.question && (
+                        winData.question.category === 'Türkçe' ||
+                        winData.question.category === 'Türkçe (Yazım)' ||
+                        winData.question.strictMatch ||
+                        winData.question.poolMode === 'turkish'
+                      ));
+    const isBurak = winnerUser.toLowerCase() === 'burak1206';
+
+    if (isTurkish && isBurak) {
+      kickBot.sendMessage(`😱 NE BURAK TÜRKÇE SORUSU MU BİLDİ, CHATTE ADAM MI YOK?! 🤯🎉 Tebrikler @${winnerUser}! Doğru yazılışı bilerek +60 Primogem kazandın!`);
+      winData.isBurakEasterEgg = true;
+    } else {
+      let modeName = 'Genshin';
+      if (isTurkish || winData.triviaMode === 'turkish') {
+        modeName = 'Türkçe Doğru Yazılış';
+      } else if (winData.triviaMode === 'general') {
+        modeName = 'Genel Kültür';
+      }
+      kickBot.sendMessage(`🎉 Tebrikler @${winnerUser}! ${modeName} sorusunu doğru bilerek +60 Primogem kazandın!`);
+    }
 
     // Record daily quest progress for Trivia win
     try {
@@ -2297,14 +2316,18 @@ app.get('/api/questions', (req, res) => {
     res.json(gameEngine.genshinQuestions);
   } else if (mode === 'general') {
     res.json(gameEngine.generalQuestions);
+  } else if (mode === 'turkish') {
+    res.json(gameEngine.turkishQuestions);
   } else if (mode === 'all') {
     res.json({
       activeMode: gameEngine.config.triviaMode,
       activeCount: gameEngine.questions.length,
       genshinCount: gameEngine.genshinQuestions.length,
       generalCount: gameEngine.generalQuestions.length,
+      turkishCount: gameEngine.turkishQuestions.length,
       genshin: gameEngine.genshinQuestions,
-      general: gameEngine.generalQuestions
+      general: gameEngine.generalQuestions,
+      turkish: gameEngine.turkishQuestions
     });
   } else {
     res.json(gameEngine.questions);

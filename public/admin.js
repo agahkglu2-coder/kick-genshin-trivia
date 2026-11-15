@@ -57,9 +57,11 @@
   const currentModeBadge = document.getElementById('current-mode-badge');
   const btnModeGenshin = document.getElementById('btn-mode-genshin');
   const btnModeGeneral = document.getElementById('btn-mode-general');
+  const btnModeTurkish = document.getElementById('btn-mode-turkish');
   const btnModeMixed = document.getElementById('btn-mode-mixed');
   const countBadgeGenshin = document.getElementById('count-badge-genshin');
   const countBadgeGeneral = document.getElementById('count-badge-general');
+  const countBadgeTurkish = document.getElementById('count-badge-turkish');
   const countBadgeMixed = document.getElementById('count-badge-mixed');
 
   // Questions Management DOM Elements
@@ -67,6 +69,7 @@
   const countPoolAll = document.getElementById('count-pool-all');
   const countPoolGenshin = document.getElementById('count-pool-genshin');
   const countPoolGeneral = document.getElementById('count-pool-general');
+  const countPoolTurkish = document.getElementById('count-pool-turkish');
   const btnToggleAddQ = document.getElementById('btn-toggle-add-q');
   const addQuestionForm = document.getElementById('add-question-form');
   const inputQMode = document.getElementById('input-q-mode');
@@ -407,14 +410,21 @@
   let currentTriviaMode = 'genshin';
   let genshinQuestionsPool = [];
   let generalQuestionsPool = [];
+  let turkishQuestionsPool = [];
   let currentPoolFilter = 'all';
 
   function updateModeButtonsUI(mode) {
     currentTriviaMode = mode || 'genshin';
-    const allBtns = [btnModeGenshin, btnModeGeneral, btnModeMixed];
+    const allBtns = [btnModeGenshin, btnModeGeneral, btnModeTurkish, btnModeMixed];
     allBtns.forEach(b => { if (b) b.classList.remove('active'); });
 
-    if (mode === 'general') {
+    if (mode === 'turkish') {
+      if (btnModeTurkish) btnModeTurkish.classList.add('active');
+      if (currentModeBadge) {
+        currentModeBadge.className = 'badge-mode-pill badge-mode-turkish';
+        currentModeBadge.textContent = '🇹🇷 Türkçe (Yazım)';
+      }
+    } else if (mode === 'general') {
       if (btnModeGeneral) btnModeGeneral.classList.add('active');
       if (currentModeBadge) {
         currentModeBadge.className = 'badge-mode-pill badge-mode-general';
@@ -439,15 +449,18 @@
     if (!stats) return;
     const gCount = stats.genshinCount || 0;
     const genCount = stats.generalCount || 0;
-    const totalCount = gCount + genCount;
+    const turkCount = stats.turkishCount || 0;
+    const totalCount = gCount + genCount + turkCount;
 
     if (countBadgeGenshin) countBadgeGenshin.textContent = gCount;
     if (countBadgeGeneral) countBadgeGeneral.textContent = genCount;
+    if (countBadgeTurkish) countBadgeTurkish.textContent = turkCount;
     if (countBadgeMixed) countBadgeMixed.textContent = totalCount;
 
     if (countPoolAll) countPoolAll.textContent = totalCount;
     if (countPoolGenshin) countPoolGenshin.textContent = gCount;
     if (countPoolGeneral) countPoolGeneral.textContent = genCount;
+    if (countPoolTurkish) countPoolTurkish.textContent = turkCount;
   }
 
   async function setTriviaMode(mode) {
@@ -462,7 +475,8 @@
       if (data.success) {
         let label = '⚔️ Genshin Impact';
         if (mode === 'general') label = '🌍 Genel Kültür';
-        if (mode === 'mixed') label = '🎲 Karışık (Genshin + Genel Kültür)';
+        if (mode === 'turkish') label = '🇹🇷 Türkçe (Yazım)';
+        if (mode === 'mixed') label = '🎲 Karışık (Genshin + Genel Kültür + Türkçe)';
         showToast(`🎯 Trivia Modu: <strong>${label}</strong> olarak ayarlandı! (${data.count} soru aktif)`);
         if (cfgTriviaMode) cfgTriviaMode.value = mode;
         if (data.stats) updateStatsUI(data.stats);
@@ -476,6 +490,7 @@
 
   if (btnModeGenshin) btnModeGenshin.addEventListener('click', () => setTriviaMode('genshin'));
   if (btnModeGeneral) btnModeGeneral.addEventListener('click', () => setTriviaMode('general'));
+  if (btnModeTurkish) btnModeTurkish.addEventListener('click', () => setTriviaMode('turkish'));
   if (btnModeMixed) btnModeMixed.addEventListener('click', () => setTriviaMode('mixed'));
 
   // Load and Render Questions with Mode Filter Support
@@ -487,10 +502,12 @@
       if (data.genshin && data.general) {
         genshinQuestionsPool = data.genshin.map(q => ({ ...q, poolMode: 'genshin' }));
         generalQuestionsPool = data.general.map(q => ({ ...q, poolMode: 'general' }));
-        allQuestions = [...genshinQuestionsPool, ...generalQuestionsPool];
+        turkishQuestionsPool = (data.turkish || []).map(q => ({ ...q, poolMode: 'turkish' }));
+        allQuestions = [...genshinQuestionsPool, ...generalQuestionsPool, ...turkishQuestionsPool];
         updateStatsUI({
           genshinCount: genshinQuestionsPool.length,
-          generalCount: generalQuestionsPool.length
+          generalCount: generalQuestionsPool.length,
+          turkishCount: turkishQuestionsPool.length
         });
       } else if (Array.isArray(data)) {
         allQuestions = data;
@@ -508,6 +525,8 @@
       filtered = allQuestions.filter(q => q.poolMode === 'genshin');
     } else if (currentPoolFilter === 'general') {
       filtered = allQuestions.filter(q => q.poolMode === 'general');
+    } else if (currentPoolFilter === 'turkish') {
+      filtered = allQuestions.filter(q => q.poolMode === 'turkish');
     }
 
     const val = (searchQuestions ? searchQuestions.value : '').toLowerCase().trim();
@@ -530,10 +549,23 @@
     }
 
     questionsList.innerHTML = questions.map((q) => {
-      const isGeneral = q.poolMode === 'general';
-      const modeBadge = isGeneral
-        ? `<span class="badge-mini" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); margin-right: 6px;">🌍 Genel Kültür</span>`
-        : `<span class="badge-mini" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); margin-right: 6px;">⚔️ Genshin</span>`;
+      let modeBadge = `<span class="badge-mini" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); margin-right: 6px;">⚔️ Genshin</span>`;
+      if (q.poolMode === 'turkish') {
+        modeBadge = `<span class="badge-mini" style="background: rgba(225, 29, 72, 0.2); color: #fb7185; border: 1px solid rgba(225, 29, 72, 0.4); margin-right: 6px;">🇹🇷 Türkçe</span>`;
+      } else if (q.poolMode === 'general') {
+        modeBadge = `<span class="badge-mini" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); margin-right: 6px;">🌍 Genel Kültür</span>`;
+      }
+
+      return `
+      <div class="q-item" data-id="${q.id}">
+        <div class="q-item-info">
+          <div class="q-item-title">${modeBadge}#${q.id} ${escapeHtml(q.question)}</div>
+          <div class="q-item-ans">Cevaplar: <strong>${escapeHtml((q.answers || []).join(', '))}</strong></div>
+        </div>
+        <span class="q-item-badge">${escapeHtml(q.category || 'Genel')} - ${escapeHtml(q.difficulty || '')}</span>
+      </div>
+    `;
+    }).join('');
 
       return `
       <div class="q-item" data-id="${q.id}">

@@ -23,6 +23,8 @@
   const winnerAvatar = document.getElementById('winner-avatar');
   const winnerWinsCount = document.getElementById('winner-wins-count');
   const winnerAnswer = document.getElementById('winner-answer');
+  const winnerSpeechBubble = document.getElementById('winner-speech-bubble');
+  const winnerTitleBadge = document.getElementById('winner-title-badge');
 
   const timeoutCard = document.getElementById('timeout-card');
   const timeoutCorrectAnswer = document.getElementById('timeout-correct-answer');
@@ -185,12 +187,31 @@
     "Doğru bilene +60 Primogem var! 💎"
   ];
 
+  const paimonTurkishQuotes = [
+    "TDK imla kuralları devrede! Doğru yazılış ne? 🇹🇷",
+    "Paimon imla kılavuzunu açtı! 📖",
+    "Ayrı mı yazılır, bitişik mi? 🤔",
+    "Bakalım chatte Türkçe ustası kim? ✍️",
+    "Doğru yazılışı bilene +60 Primogem! 💎",
+    "Paimon yazım yanlışı kabul etmez! 🧐"
+  ];
+
   function hideAllCards() {
     if (questionWrapper) {
       questionWrapper.classList.add('hidden');
       questionWrapper.classList.remove('slide-out');
     }
-    if (winnerCard) winnerCard.classList.add('hidden');
+    if (winnerCard) {
+      winnerCard.classList.add('hidden');
+      winnerCard.classList.remove('burak-easter-egg');
+    }
+    if (winnerTitleBadge) {
+      winnerTitleBadge.textContent = 'KAZANAN TEBRİKLER!';
+      winnerTitleBadge.style.background = '';
+    }
+    if (winnerSpeechBubble) {
+      winnerSpeechBubble.textContent = 'Doğru bildin! İşte ödülün! 🏆';
+    }
     if (timeoutCard) timeoutCard.classList.add('hidden');
     if (leaderboardCard) {
       leaderboardCard.classList.add('hidden');
@@ -209,19 +230,29 @@
     questionText.textContent = q.question;
     questionHint.textContent = q.hint ? `İpucu: ${q.hint}` : '';
 
+    const isTurkish = q.triviaMode === 'turkish' || q.category === 'Türkçe' || q.category === 'Türkçe (Yazım)';
     const isGeneral = q.triviaMode === 'general';
-    if (isGeneral) {
+
+    questionCategory.classList.remove('tag-category-general', 'tag-category-turkish');
+    if (isTurkish) {
+      questionCategory.textContent = `🇹🇷 ${q.category || 'Türkçe - Doğru Yazılış'}`;
+      questionCategory.classList.add('tag-category-turkish');
+    } else if (isGeneral) {
       questionCategory.textContent = `🌍 ${q.category || 'Genel Kültür'}`;
       questionCategory.classList.add('tag-category-general');
     } else {
       questionCategory.textContent = `⚔️ ${q.category || 'Genshin'}`;
-      questionCategory.classList.remove('tag-category-general');
     }
     questionDifficulty.textContent = q.difficulty || 'Normal';
 
     // Random Paimon quote
     if (paimonSpeech) {
-      const quotesPool = isGeneral ? paimonGeneralQuotes : paimonQuotes;
+      let quotesPool = paimonQuotes;
+      if (isTurkish) {
+        quotesPool = paimonTurkishQuotes;
+      } else if (isGeneral) {
+        quotesPool = paimonGeneralQuotes;
+      }
       const quote = quotesPool[Math.floor(Math.random() * quotesPool.length)];
       paimonSpeech.innerHTML = `<span class="speech-text">${quote}</span>`;
     }
@@ -262,6 +293,37 @@
       winnerAvatar.src = winData.winner.profilePic;
     } else {
       winnerAvatar.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23223049'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%23e4c47b'/%3E%3Cpath d='M24 82 C24 64 36 58 50 58 C64 58 76 64 76 82 Z' fill='%23e4c47b'/%3E%3C/svg%3E";
+    }
+
+    // Special Easter Egg for Burak1206 on Turkish question
+    const isTurkishQ = winData.triviaMode === 'turkish' ||
+                       (winData.question && (
+                         winData.question.category === 'Türkçe' ||
+                         winData.question.category === 'Türkçe (Yazım)' ||
+                         winData.question.strictMatch ||
+                         winData.question.poolMode === 'turkish'
+                       ));
+    const isBurakUser = winData.winner && winData.winner.username && winData.winner.username.toLowerCase() === 'burak1206';
+    const isBurakEasterEgg = Boolean(winData.isBurakEasterEgg || (isBurakUser && isTurkishQ));
+
+    if (isBurakEasterEgg) {
+      winnerCard.classList.add('burak-easter-egg');
+      if (winnerTitleBadge) {
+        winnerTitleBadge.textContent = '🚨 İNANILMAZ OLAY! 🚨';
+        winnerTitleBadge.style.background = 'linear-gradient(90deg, #e11d48, #f59e0b)';
+      }
+      if (winnerSpeechBubble) {
+        winnerSpeechBubble.innerHTML = '😱 <strong>NE BURAK TÜRKÇE Mİ BİLDİ?!</strong> CHATTE ADAM MI YOK?!';
+      }
+    } else {
+      winnerCard.classList.remove('burak-easter-egg');
+      if (winnerTitleBadge) {
+        winnerTitleBadge.textContent = 'KAZANAN TEBRİKLER!';
+        winnerTitleBadge.style.background = '';
+      }
+      if (winnerSpeechBubble) {
+        winnerSpeechBubble.textContent = 'Doğru bildin! İşte ödülün! 🏆';
+      }
     }
 
     winnerCard.classList.remove('hidden');

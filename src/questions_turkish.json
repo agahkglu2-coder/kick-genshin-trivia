@@ -1,0 +1,1368 @@
+[
+  {
+    "id": 1,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'herkes' mi 'herkez' mi?",
+    "answers": [
+      "herkes"
+    ],
+    "wrongAnswers": [
+      "herkez"
+    ],
+    "strictMatch": true,
+    "hint": "Son harfi 'z' değil..."
+  },
+  {
+    "id": 2,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'yalnız' mı 'yanlız' mı?",
+    "answers": [
+      "yalnız",
+      "yalniz"
+    ],
+    "wrongAnswers": [
+      "yanlız",
+      "yanliz"
+    ],
+    "strictMatch": true,
+    "hint": "'Yalın' kökünden gelir, l önce gelir."
+  },
+  {
+    "id": 3,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'yanlış' mı 'yalnış' mı?",
+    "answers": [
+      "yanlış",
+      "yanlis"
+    ],
+    "wrongAnswers": [
+      "yalnış",
+      "yalnis"
+    ],
+    "strictMatch": true,
+    "hint": "'Yanılmak' kökünden gelir, n önce gelir."
+  },
+  {
+    "id": 4,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'sürpriz' mi 'süpriz' mi?",
+    "answers": [
+      "sürpriz",
+      "surpriz"
+    ],
+    "wrongAnswers": [
+      "süpriz",
+      "supriz"
+    ],
+    "strictMatch": true,
+    "hint": "İlk hecede gizli bir 'r' harfi var."
+  },
+  {
+    "id": 5,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'orijinal' mi 'orjinal' mi?",
+    "answers": [
+      "orijinal"
+    ],
+    "wrongAnswers": [
+      "orjinal"
+    ],
+    "strictMatch": true,
+    "hint": "Ortasında fazladan bir 'i' harfi bulunur."
+  },
+  {
+    "id": 6,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'kravat' mı 'kıravat' mı?",
+    "answers": [
+      "kravat"
+    ],
+    "wrongAnswers": [
+      "kıravat",
+      "kiravat"
+    ],
+    "strictMatch": true,
+    "hint": "Batı kökenli kelimenin başında 'ı' harfi olmaz."
+  },
+  {
+    "id": 7,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'tıraş' mı 'traş' mı?",
+    "answers": [
+      "tıraş",
+      "tiras"
+    ],
+    "wrongAnswers": [
+      "traş",
+      "tras"
+    ],
+    "strictMatch": true,
+    "hint": "Farsça kökenlidir, 'ı' harfi ile yazılır."
+  },
+  {
+    "id": 8,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'egzoz' mu 'eksoz' mu?",
+    "answers": [
+      "egzoz"
+    ],
+    "wrongAnswers": [
+      "eksoz",
+      "egzos",
+      "ekzoz",
+      "egzost",
+      "ekzost"
+    ],
+    "strictMatch": true,
+    "hint": "İlk hece 'eg', ikinci hece 'zoz' ile biter."
+  },
+  {
+    "id": 9,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'laboratuvar' mı 'labaratuvar' mı?",
+    "answers": [
+      "laboratuvar"
+    ],
+    "wrongAnswers": [
+      "labaratuvar",
+      "laboratuar",
+      "labaratuar"
+    ],
+    "strictMatch": true,
+    "hint": "İlk 'o', sonunda 'var' bulunur."
+  },
+  {
+    "id": 10,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'kılavuz' mu 'klavuz' mu?",
+    "answers": [
+      "kılavuz",
+      "kilavuz"
+    ],
+    "wrongAnswers": [
+      "klavuz"
+    ],
+    "strictMatch": true,
+    "hint": "İlk hecede 'ı' harfi yazılır."
+  },
+  {
+    "id": 11,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'makine' mi 'makina' mı?",
+    "answers": [
+      "makine"
+    ],
+    "wrongAnswers": [
+      "makina"
+    ],
+    "strictMatch": true,
+    "hint": "Son harfi 'e' ile biter."
+  },
+  {
+    "id": 12,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'meyve' mi 'meyva' mı?",
+    "answers": [
+      "meyve"
+    ],
+    "wrongAnswers": [
+      "meyva"
+    ],
+    "strictMatch": true,
+    "hint": "Son harfi 'e' ile biter."
+  },
+  {
+    "id": 13,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'şoför' mü 'şöför' mü?",
+    "answers": [
+      "şoför",
+      "sofor"
+    ],
+    "wrongAnswers": [
+      "şöför",
+      "şöfor"
+    ],
+    "strictMatch": true,
+    "hint": "İlk sesli harf 'o', ikinci sesli harf 'ö'dür."
+  },
+  {
+    "id": 14,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'karnabahar' mı 'karnıbahar' mı?",
+    "answers": [
+      "karnabahar"
+    ],
+    "wrongAnswers": [
+      "karnıbahar",
+      "karnibahar"
+    ],
+    "strictMatch": true,
+    "hint": "Ortadaki harf 'ı' değil, 'a' harfidir."
+  },
+  {
+    "id": 15,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'poğaça' mı 'poaça' mı?",
+    "answers": [
+      "poğaça",
+      "pogaca"
+    ],
+    "wrongAnswers": [
+      "poaça",
+      "poaca",
+      "boğaça",
+      "bogaca"
+    ],
+    "strictMatch": true,
+    "hint": "Ortasında yumuşak g (ğ) harfi vardır."
+  },
+  {
+    "id": 16,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'palyaço' mu 'palyanço' mu?",
+    "answers": [
+      "palyaço",
+      "palyaco"
+    ],
+    "wrongAnswers": [
+      "palyanço",
+      "palyanco"
+    ],
+    "strictMatch": true,
+    "hint": "İçinde 'n' harfi bulunmaz."
+  },
+  {
+    "id": 17,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'ritim' mi 'ritm' mi?",
+    "answers": [
+      "ritim"
+    ],
+    "wrongAnswers": [
+      "ritm"
+    ],
+    "strictMatch": true,
+    "hint": "Araya 'i' harfi girer."
+  },
+  {
+    "id": 18,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'şefkat' mı 'şevkat' mı?",
+    "answers": [
+      "şefkat",
+      "sefkat"
+    ],
+    "wrongAnswers": [
+      "şevkat",
+      "sevkat"
+    ],
+    "strictMatch": true,
+    "hint": "'f' harfi ile yazılır, 'v' değil."
+  },
+  {
+    "id": 19,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'muhatap' mı 'muhattap' mı?",
+    "answers": [
+      "muhatap"
+    ],
+    "wrongAnswers": [
+      "muhattap"
+    ],
+    "strictMatch": true,
+    "hint": "Tek 't' harfi ile yazılır."
+  },
+  {
+    "id": 20,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'dinozor' mu 'dinazor' mu?",
+    "answers": [
+      "dinozor"
+    ],
+    "wrongAnswers": [
+      "dinazor"
+    ],
+    "strictMatch": true,
+    "hint": "Ortadaki sesli harf 'a' değil, 'o'dur."
+  },
+  {
+    "id": 21,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'unvan' mı 'ünvan' mı?",
+    "answers": [
+      "unvan"
+    ],
+    "wrongAnswers": [
+      "ünvan"
+    ],
+    "strictMatch": true,
+    "hint": "İlk harfi noktasız 'u' ile başlar."
+  },
+  {
+    "id": 22,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'doküman' mı 'döküman' mı?",
+    "answers": [
+      "doküman",
+      "dokuman"
+    ],
+    "wrongAnswers": [
+      "döküman"
+    ],
+    "strictMatch": true,
+    "hint": "İlk harften sonra 'o' gelir, 'ö' değil."
+  },
+  {
+    "id": 23,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'zarafet' mi 'zerafet' mi?",
+    "answers": [
+      "zarafet"
+    ],
+    "wrongAnswers": [
+      "zerafet"
+    ],
+    "strictMatch": true,
+    "hint": "İkinci harfi 'a'dır: zariften gelir."
+  },
+  {
+    "id": 24,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'tespit' mi 'tesbit' mi?",
+    "answers": [
+      "tespit"
+    ],
+    "wrongAnswers": [
+      "tesbit"
+    ],
+    "strictMatch": true,
+    "hint": "'p' harfi ile yazılır, 'b' değil."
+  },
+  {
+    "id": 25,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'hoparlör' mü 'aparlör' mü?",
+    "answers": [
+      "hoparlör",
+      "hoparlor"
+    ],
+    "wrongAnswers": [
+      "aparlör",
+      "aparlor"
+    ],
+    "strictMatch": true,
+    "hint": "Fransızca haut-parleur kökenlidir, 'h' ile başlar."
+  },
+  {
+    "id": 26,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'vejetaryen' mi 'vejeteryan' mı?",
+    "answers": [
+      "vejetaryen"
+    ],
+    "wrongAnswers": [
+      "vejeteryan"
+    ],
+    "strictMatch": true,
+    "hint": "Son hecelerde 'ar' bulunur, 'er' değil."
+  },
+  {
+    "id": 27,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'kirpik' mi 'kiprik' mi?",
+    "answers": [
+      "kirpik"
+    ],
+    "wrongAnswers": [
+      "kiprik"
+    ],
+    "strictMatch": true,
+    "hint": "'r' harfi 'p' harfinden önce gelir."
+  },
+  {
+    "id": 28,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'kibrit' mi 'kirbit' mi?",
+    "answers": [
+      "kibrit"
+    ],
+    "wrongAnswers": [
+      "kirbit"
+    ],
+    "strictMatch": true,
+    "hint": "'b' harfi önce gelir."
+  },
+  {
+    "id": 29,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'konservatuvar' mı 'konservatuar' mı?",
+    "answers": [
+      "konservatuvar"
+    ],
+    "wrongAnswers": [
+      "konservatuar"
+    ],
+    "strictMatch": true,
+    "hint": "Son hecede 'v' harfi bulunur (var)."
+  },
+  {
+    "id": 30,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'antrenman' mı 'antreman' mı?",
+    "answers": [
+      "antrenman"
+    ],
+    "wrongAnswers": [
+      "antreman"
+    ],
+    "strictMatch": true,
+    "hint": "İçinde 'n' harfi vardır: antren-man."
+  },
+  {
+    "id": 31,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'bisküvi' mi 'bisküvit' mi?",
+    "answers": [
+      "bisküvi",
+      "biskuvi"
+    ],
+    "wrongAnswers": [
+      "bisküvit",
+      "biskuvit",
+      "püsküüt"
+    ],
+    "strictMatch": true,
+    "hint": "Sonunda 't' harfi yoktur."
+  },
+  {
+    "id": 32,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'fantezi' mi 'fantazi' mi?",
+    "answers": [
+      "fantezi"
+    ],
+    "wrongAnswers": [
+      "fantazi"
+    ],
+    "strictMatch": true,
+    "hint": "Ortadaki harf 'e'dir."
+  },
+  {
+    "id": 33,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'illüzyon' mu 'ilüzyon' mu?",
+    "answers": [
+      "illüzyon",
+      "illuzyon"
+    ],
+    "wrongAnswers": [
+      "ilüzyon",
+      "iluzyon"
+    ],
+    "strictMatch": true,
+    "hint": "Çift 'l' harfi ile yazılır."
+  },
+  {
+    "id": 34,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'gardırop' mu 'gardolap' mı?",
+    "answers": [
+      "gardırop",
+      "gardirop"
+    ],
+    "wrongAnswers": [
+      "gardolap"
+    ],
+    "strictMatch": true,
+    "hint": "Fransızca garde-robe kökenlidir, 'rop' ile biter."
+  },
+  {
+    "id": 35,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'röportaj' mı 'roportaj' mı?",
+    "answers": [
+      "röportaj",
+      "roportaj"
+    ],
+    "wrongAnswers": [
+      "raportaj"
+    ],
+    "strictMatch": true,
+    "hint": "'ö' harfi ile başlar."
+  },
+  {
+    "id": 36,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'tabure' mi 'tabura' mı?",
+    "answers": [
+      "tabure"
+    ],
+    "wrongAnswers": [
+      "tabura"
+    ],
+    "strictMatch": true,
+    "hint": "Son harfi 'e'dir."
+  },
+  {
+    "id": 37,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'alüminyum' mu 'alüminyüm' mü?",
+    "answers": [
+      "alüminyum",
+      "aluminyum"
+    ],
+    "wrongAnswers": [
+      "alüminyüm"
+    ],
+    "strictMatch": true,
+    "hint": "Son hecesi 'yum' ile biter, 'yüm' değil."
+  },
+  {
+    "id": 38,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'katalog' mu 'katolog' mu?",
+    "answers": [
+      "katalog"
+    ],
+    "wrongAnswers": [
+      "katolog"
+    ],
+    "strictMatch": true,
+    "hint": "İkinci harfi de 'a'dır: ka-ta-log."
+  },
+  {
+    "id": 39,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'aşçı' mı 'ahçı' mı?",
+    "answers": [
+      "aşçı",
+      "asci"
+    ],
+    "wrongAnswers": [
+      "ahçı",
+      "ahci"
+    ],
+    "strictMatch": true,
+    "hint": "'Aş' (yemek) kökünden gelir, 'ş' ile yazılır."
+  },
+  {
+    "id": 40,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'kurdele' mi 'kurdela' mı?",
+    "answers": [
+      "kurdele"
+    ],
+    "wrongAnswers": [
+      "kurdela"
+    ],
+    "strictMatch": true,
+    "hint": "Son harfi 'e' ile biter."
+  },
+  {
+    "id": 41,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'eşofman' mı 'eşortman' mı?",
+    "answers": [
+      "eşofman",
+      "esofman"
+    ],
+    "wrongAnswers": [
+      "eşortman",
+      "esortman",
+      "aşortman"
+    ],
+    "strictMatch": true,
+    "hint": "Fransızca échauffement kökenlidir, 'f' harfi vardır."
+  },
+  {
+    "id": 42,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'floresan' mı 'florasan' mı?",
+    "answers": [
+      "floresan"
+    ],
+    "wrongAnswers": [
+      "florasan"
+    ],
+    "strictMatch": true,
+    "hint": "İkinci sesli harf 'e'dir."
+  },
+  {
+    "id": 43,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'egzersiz' mi 'ekzersiz' mi?",
+    "answers": [
+      "egzersiz"
+    ],
+    "wrongAnswers": [
+      "ekzersiz"
+    ],
+    "strictMatch": true,
+    "hint": "'g' harfi ile yazılır."
+  },
+  {
+    "id": 44,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'fasulye' mi 'fasülye' mi?",
+    "answers": [
+      "fasulye"
+    ],
+    "wrongAnswers": [
+      "fasülye"
+    ],
+    "strictMatch": true,
+    "hint": "Noktasız 'u' harfi ile yazılır."
+  },
+  {
+    "id": 45,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'mahcup' mı 'mahçup' mı?",
+    "answers": [
+      "mahcup"
+    ],
+    "wrongAnswers": [
+      "mahçup"
+    ],
+    "strictMatch": true,
+    "hint": "'c' harfi ile yazılır, 'ç' değil."
+  },
+  {
+    "id": 46,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'metot' mu 'metod' mu?",
+    "answers": [
+      "metot"
+    ],
+    "wrongAnswers": [
+      "metod"
+    ],
+    "strictMatch": true,
+    "hint": "Yalın halde son harfi sertleşir: 't'."
+  },
+  {
+    "id": 47,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'müracaat' mı 'müraacat' mı?",
+    "answers": [
+      "müracaat",
+      "muracaat"
+    ],
+    "wrongAnswers": [
+      "müraacat",
+      "muraacat"
+    ],
+    "strictMatch": true,
+    "hint": "Çift 'a' sondadır: mü-ra-ca-at."
+  },
+  {
+    "id": 48,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'pardösü' mü 'pardesü' mü?",
+    "answers": [
+      "pardösü",
+      "pardosu"
+    ],
+    "wrongAnswers": [
+      "pardesü",
+      "pardesu"
+    ],
+    "strictMatch": true,
+    "hint": "Ortadaki sesli harf 'ö'dür."
+  },
+  {
+    "id": 49,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'restoran' mı 'restorant' mı?",
+    "answers": [
+      "restoran"
+    ],
+    "wrongAnswers": [
+      "restorant"
+    ],
+    "strictMatch": true,
+    "hint": "Türkçe imlada sonunda 't' harfi bulunmaz."
+  },
+  {
+    "id": 50,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'sandviç' mi 'sandöviç' mi?",
+    "answers": [
+      "sandviç",
+      "sandvic"
+    ],
+    "wrongAnswers": [
+      "sandöviç",
+      "sandovic"
+    ],
+    "strictMatch": true,
+    "hint": "'d' ile 'v' arasında sesli harf yoktur."
+  },
+  {
+    "id": 51,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'seremoni' mi 'seramoni' mi?",
+    "answers": [
+      "seremoni"
+    ],
+    "wrongAnswers": [
+      "seramoni"
+    ],
+    "strictMatch": true,
+    "hint": "İkinci harfi 'e'dir: se-re-mo-ni."
+  },
+  {
+    "id": 52,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'seyahat' mi 'seyehat' mı?",
+    "answers": [
+      "seyahat"
+    ],
+    "wrongAnswers": [
+      "seyehat"
+    ],
+    "strictMatch": true,
+    "hint": "İkinci hecedeki harf 'a'dır."
+  },
+  {
+    "id": 53,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'silahşor' mu 'silahşör' mü?",
+    "answers": [
+      "silahşor",
+      "silahsor"
+    ],
+    "wrongAnswers": [
+      "silahşör"
+    ],
+    "strictMatch": true,
+    "hint": "Son hece noktasız 'o' iledir: -şor."
+  },
+  {
+    "id": 54,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'sprey' mi 'siprey' mi?",
+    "answers": [
+      "sprey"
+    ],
+    "wrongAnswers": [
+      "siprey"
+    ],
+    "strictMatch": true,
+    "hint": "Başında 'i' harfi bulunmaz."
+  },
+  {
+    "id": 55,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'stüdyo' mu 'sitüdyo' mu?",
+    "answers": [
+      "stüdyo",
+      "studyo"
+    ],
+    "wrongAnswers": [
+      "sitüdyo",
+      "situdyo"
+    ],
+    "strictMatch": true,
+    "hint": "Başında 'i' harfi bulunmaz."
+  },
+  {
+    "id": 56,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'şalter' mi 'şartel' mi?",
+    "answers": [
+      "şalter",
+      "salter"
+    ],
+    "wrongAnswers": [
+      "şartel",
+      "sartel"
+    ],
+    "strictMatch": true,
+    "hint": "'l' harfi 't'den önce gelir: şal-ter."
+  },
+  {
+    "id": 57,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'taahhüt' mü 'taahüt' mü?",
+    "answers": [
+      "taahhüt",
+      "taahhut"
+    ],
+    "wrongAnswers": [
+      "taahüt",
+      "taahut"
+    ],
+    "strictMatch": true,
+    "hint": "Ortasında çift 'h' harfi bulunur."
+  },
+  {
+    "id": 58,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'teneffüs' mü 'tenefüs' mü?",
+    "answers": [
+      "teneffüs",
+      "teneffus"
+    ],
+    "wrongAnswers": [
+      "tenefüs",
+      "tenefus"
+    ],
+    "strictMatch": true,
+    "hint": "Çift 'f' harfi ile yazılır."
+  },
+  {
+    "id": 59,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'tribün' mü 'tirbün' mü?",
+    "answers": [
+      "tribün",
+      "tribun"
+    ],
+    "wrongAnswers": [
+      "tirbün",
+      "tirbun"
+    ],
+    "strictMatch": true,
+    "hint": "'r' harfinden önce 'i' gelmez."
+  },
+  {
+    "id": 60,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'zatürre' mi 'zatürree' mi?",
+    "answers": [
+      "zatürre",
+      "zaturre"
+    ],
+    "wrongAnswers": [
+      "zatürree",
+      "zaturree"
+    ],
+    "strictMatch": true,
+    "hint": "Sonunda tek 'e' bulunur."
+  },
+  {
+    "id": 61,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'terk etmek' mi 'terketmek' mi?",
+    "answers": [
+      "terk etmek"
+    ],
+    "wrongAnswers": [
+      "terketmek"
+    ],
+    "strictMatch": true,
+    "hint": "Ses düşmesi veya türemesi olmadığı için ayrı yazılır."
+  },
+  {
+    "id": 62,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'fark etmek' mi 'farketmek' mi?",
+    "answers": [
+      "fark etmek"
+    ],
+    "wrongAnswers": [
+      "farketmek"
+    ],
+    "strictMatch": true,
+    "hint": "Ayrı yazılır."
+  },
+  {
+    "id": 63,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'sağ ol' mu 'sağol' mu?",
+    "answers": [
+      "sağ ol",
+      "sag ol"
+    ],
+    "wrongAnswers": [
+      "sağol",
+      "sagol"
+    ],
+    "strictMatch": true,
+    "hint": "İki kelime ayrı yazılır."
+  },
+  {
+    "id": 64,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'hoşça kal' mı 'hoşçakal' mı?",
+    "answers": [
+      "hoşça kal",
+      "hosca kal"
+    ],
+    "wrongAnswers": [
+      "hoşçakal",
+      "hoscakal"
+    ],
+    "strictMatch": true,
+    "hint": "Ayrı yazılır."
+  },
+  {
+    "id": 65,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'hoş geldin' mi 'hoşgeldin' mi?",
+    "answers": [
+      "hoş geldin",
+      "hos geldin"
+    ],
+    "wrongAnswers": [
+      "hoşgeldin",
+      "hosgeldin"
+    ],
+    "strictMatch": true,
+    "hint": "Ayrı yazılır."
+  },
+  {
+    "id": 66,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'her gün' mü 'hergün' mü?",
+    "answers": [
+      "her gün",
+      "her gun"
+    ],
+    "wrongAnswers": [
+      "hergün",
+      "hergun"
+    ],
+    "strictMatch": true,
+    "hint": "Ayrı yazılır."
+  },
+  {
+    "id": 67,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'bir gün' mü 'birgün' mü?",
+    "answers": [
+      "bir gün",
+      "bir gun"
+    ],
+    "wrongAnswers": [
+      "birgün",
+      "birgun"
+    ],
+    "strictMatch": true,
+    "hint": "Ayrı yazılır."
+  },
+  {
+    "id": 68,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'hiçbir' mi 'hiç bir' mi?",
+    "answers": [
+      "hiçbir",
+      "hicbir"
+    ],
+    "wrongAnswers": [
+      "hiç bir",
+      "hic bir"
+    ],
+    "strictMatch": true,
+    "hint": "Bitişik yazılır."
+  },
+  {
+    "id": 69,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'birçok' mu 'bir çok' mu?",
+    "answers": [
+      "birçok",
+      "bircok"
+    ],
+    "wrongAnswers": [
+      "bir çok",
+      "bir cok"
+    ],
+    "strictMatch": true,
+    "hint": "Bitişik yazılır."
+  },
+  {
+    "id": 70,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'birkaç' mı 'bir kaç' mı?",
+    "answers": [
+      "birkaç",
+      "birkac"
+    ],
+    "wrongAnswers": [
+      "bir kaç",
+      "bir kac"
+    ],
+    "strictMatch": true,
+    "hint": "Bitişik yazılır."
+  },
+  {
+    "id": 71,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'herhangi bir' mi 'herhangibir' mi?",
+    "answers": [
+      "herhangi bir"
+    ],
+    "wrongAnswers": [
+      "herhangibir"
+    ],
+    "strictMatch": true,
+    "hint": "'herhangi' bitişik, ardından gelen 'bir' ayrı yazılır."
+  },
+  {
+    "id": 72,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'sıra dışı' mı 'sıradışı' mı?",
+    "answers": [
+      "sıra dışı",
+      "sira disi"
+    ],
+    "wrongAnswers": [
+      "sıradışı",
+      "siradisi"
+    ],
+    "strictMatch": true,
+    "hint": "'Dışı' sözcüğü ile kurulan birleşik kelimeler ayrı yazılır."
+  },
+  {
+    "id": 73,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'hafta içi' mi 'haftaiçi' mi?",
+    "answers": [
+      "hafta içi",
+      "hafta ici"
+    ],
+    "wrongAnswers": [
+      "haftaiçi",
+      "haftaici"
+    ],
+    "strictMatch": true,
+    "hint": "Ayrı yazılır."
+  },
+  {
+    "id": 74,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'hafta sonu' mu 'haftasonu' mu?",
+    "answers": [
+      "hafta sonu"
+    ],
+    "wrongAnswers": [
+      "haftasonu"
+    ],
+    "strictMatch": true,
+    "hint": "Ayrı yazılır."
+  },
+  {
+    "id": 75,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'yurt dışı' mı 'yurtdışı' mı?",
+    "answers": [
+      "yurt dışı",
+      "yurt disi"
+    ],
+    "wrongAnswers": [
+      "yurtdışı",
+      "yurtdisi"
+    ],
+    "strictMatch": true,
+    "hint": "Ayrı yazılır."
+  },
+  {
+    "id": 76,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'yurt içi' mi 'yurtiçi' mi?",
+    "answers": [
+      "yurt içi",
+      "yurt ici"
+    ],
+    "wrongAnswers": [
+      "yurtiçi",
+      "yurtici"
+    ],
+    "strictMatch": true,
+    "hint": "Ayrı yazılır."
+  },
+  {
+    "id": 77,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'art arda' mı 'artarda' mı?",
+    "answers": [
+      "art arda"
+    ],
+    "wrongAnswers": [
+      "artarda",
+      "ard arda",
+      "ardarda"
+    ],
+    "strictMatch": true,
+    "hint": "İlk kelime 'art', ikincisi 'arda' ve ayrı yazılır."
+  },
+  {
+    "id": 78,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'yan yana' mı 'yanyana' mı?",
+    "answers": [
+      "yan yana"
+    ],
+    "wrongAnswers": [
+      "yanyana"
+    ],
+    "strictMatch": true,
+    "hint": "İkilemeler ayrı yazılır."
+  },
+  {
+    "id": 79,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'peş peşe' mi 'peşpeşe' mi?",
+    "answers": [
+      "peş peşe",
+      "pes pese"
+    ],
+    "wrongAnswers": [
+      "peşpeşe",
+      "pespese"
+    ],
+    "strictMatch": true,
+    "hint": "İkilemeler ayrı yazılır."
+  },
+  {
+    "id": 80,
+    "category": "Türkçe",
+    "difficulty": "Kolay",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'el ele' mi 'elele' mi?",
+    "answers": [
+      "el ele"
+    ],
+    "wrongAnswers": [
+      "elele"
+    ],
+    "strictMatch": true,
+    "hint": "İkilemeler ayrı yazılır."
+  },
+  {
+    "id": 81,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'gitgide' mi 'git gide' mi?",
+    "answers": [
+      "gitgide"
+    ],
+    "wrongAnswers": [
+      "git gide"
+    ],
+    "strictMatch": true,
+    "hint": "Kalıplaşmış bir zarf-fiil birleşimidir, bitişik yazılır."
+  },
+  {
+    "id": 82,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'birdenbire' mi 'birden bire' mi?",
+    "answers": [
+      "birdenbire"
+    ],
+    "wrongAnswers": [
+      "birden bire"
+    ],
+    "strictMatch": true,
+    "hint": "Bitişik yazılır."
+  },
+  {
+    "id": 83,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'akşamüstü' mü 'akşam üstü' mü?",
+    "answers": [
+      "akşamüstü",
+      "aksamustu"
+    ],
+    "wrongAnswers": [
+      "akşam üstü",
+      "aksam ustu"
+    ],
+    "strictMatch": true,
+    "hint": "Somut bir yer bildirmeyen 'üstü' kelimeleri bitişik yazılır."
+  },
+  {
+    "id": 84,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'suçüstü' mü 'suç üstü' mü?",
+    "answers": [
+      "suçüstü",
+      "sucustu"
+    ],
+    "wrongAnswers": [
+      "suç üstü",
+      "suc ustu"
+    ],
+    "strictMatch": true,
+    "hint": "Bitişik yazılır."
+  },
+  {
+    "id": 85,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'olağanüstü' mü 'olağan üstü' mü?",
+    "answers": [
+      "olağanüstü",
+      "olaganustu"
+    ],
+    "wrongAnswers": [
+      "olağan üstü",
+      "olagan ustu"
+    ],
+    "strictMatch": true,
+    "hint": "Bitişik yazılır."
+  },
+  {
+    "id": 86,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'bilinçaltı' mı 'bilinç altı' mı?",
+    "answers": [
+      "bilinçaltı",
+      "bilincalti"
+    ],
+    "wrongAnswers": [
+      "bilinç altı",
+      "bilinc alti"
+    ],
+    "strictMatch": true,
+    "hint": "Somut bir yer bildirmediği için bitişik yazılır."
+  },
+  {
+    "id": 87,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'gözlemevi' mi 'gözlem evi' mi?",
+    "answers": [
+      "gözlemevi",
+      "gozlemevi"
+    ],
+    "wrongAnswers": [
+      "gözlem evi",
+      "gozlem evi"
+    ],
+    "strictMatch": true,
+    "hint": "'Ev' sözcüğü ile kurulan birleşik kelimeler bitişik yazılır."
+  },
+  {
+    "id": 88,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'öğretmenevi' mi 'öğretmen evi' mi?",
+    "answers": [
+      "öğretmenevi",
+      "ogretmenevi"
+    ],
+    "wrongAnswers": [
+      "öğretmen evi",
+      "ogretmen evi"
+    ],
+    "strictMatch": true,
+    "hint": "'Ev' sözcüğü ile kurulan kurum isimleri bitişik yazılır."
+  },
+  {
+    "id": 89,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'bilim insanı' mı 'biliminsanı' mı?",
+    "answers": [
+      "bilim insanı",
+      "bilim insani"
+    ],
+    "wrongAnswers": [
+      "biliminsanı",
+      "biliminsani"
+    ],
+    "strictMatch": true,
+    "hint": "Ayrı yazılır."
+  },
+  {
+    "id": 90,
+    "category": "Türkçe",
+    "difficulty": "Orta",
+    "question": "TDK'ye göre bu ifadenin doğru yazılışı nedir: 'iş birliği' mi 'işbirliği' mi?",
+    "answers": [
+      "iş birliği",
+      "is birligi"
+    ],
+    "wrongAnswers": [
+      "işbirliği",
+      "isbirligi"
+    ],
+    "strictMatch": true,
+    "hint": "Ayrı yazılır."
+  }
+]

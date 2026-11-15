@@ -141,12 +141,17 @@
               <button type="button" id="btn-mode-general" class="btn btn-mode-toggle" data-mode="general" title="Tarih, Coğrafya, Bilim, Sinema, Müzik, Spor genel kültür soruları">
                 <span class="mode-emoji">🌍</span>
                 <span class="mode-text">Genel Kültür</span>
-                <span class="mode-badge-count" id="count-badge-general">120</span>
+                <span class="mode-badge-count" id="count-badge-general">200</span>
               </button>
-              <button type="button" id="btn-mode-mixed" class="btn btn-mode-toggle" data-mode="mixed" title="Hem Genshin hem Genel Kültür soruları karışık sorulur">
+              <button type="button" id="btn-mode-turkish" class="btn btn-mode-toggle" data-mode="turkish" title="TDK imla ve doğru yazılış soruları">
+                <span class="mode-emoji">🇹🇷</span>
+                <span class="mode-text">Türkçe (Yazım)</span>
+                <span class="mode-badge-count" id="count-badge-turkish">90</span>
+              </button>
+              <button type="button" id="btn-mode-mixed" class="btn btn-mode-toggle" data-mode="mixed" title="Genshin, Genel Kültür ve Türkçe soruları karışık sorulur">
                 <span class="mode-emoji">🎲</span>
                 <span class="mode-text">Karışık Mod</span>
-                <span class="mode-badge-count" id="count-badge-mixed">370</span>
+                <span class="mode-badge-count" id="count-badge-mixed">540</span>
               </button>
             </div>
           </div>
@@ -211,6 +216,7 @@
             <button type="button" class="btn btn-xs q-tab-btn active" data-pool="all">Tüm Sorular (<span id="count-pool-all">0</span>)</button>
             <button type="button" class="btn btn-xs q-tab-btn" data-pool="genshin">⚔️ Genshin (<span id="count-pool-genshin">0</span>)</button>
             <button type="button" class="btn btn-xs q-tab-btn" data-pool="general">🌍 Genel Kültür (<span id="count-pool-general">0</span>)</button>
+            <button type="button" class="btn btn-xs q-tab-btn" data-pool="turkish">🇹🇷 Türkçe (<span id="count-pool-turkish">0</span>)</button>
           </div>
 
           <!-- Add Question Form (Collapsible) -->
@@ -222,6 +228,7 @@
                 <select id="input-q-mode">
                   <option value="genshin">⚔️ Genshin Impact Sorusu</option>
                   <option value="general">🌍 Genel Kültür Sorusu</option>
+                  <option value="turkish">🇹🇷 Türkçe (Yazım) Sorusu</option>
                 </select>
               </div>
               <div class="form-group full-width">
@@ -236,6 +243,7 @@
                 <label>Kategori</label>
                 <select id="input-q-category">
                   <!-- Dynamically populated or default options -->
+                  <option value="Türkçe">Türkçe (Doğru Yazılış)</option>
                   <option value="Genel Kültür">Genel Kültür</option>
                   <option value="Tarih">Tarih</option>
                   <option value="Coğrafya">Coğrafya</option>
@@ -1119,6 +1127,7 @@
                 <select id="cfg-trivia-mode">
                   <option value="genshin">⚔️ Genshin Impact</option>
                   <option value="general">🌍 Genel Kültür</option>
+                  <option value="turkish">🇹🇷 Türkçe (Yazım)</option>
                   <option value="mixed">🎲 Karışık Mod</option>
                 </select>
               </div>

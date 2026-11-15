@@ -4,6 +4,7 @@ const path = require('path');
 
 const QUESTIONS_GENSHIN_FILE = path.join(__dirname, 'questions.json');
 const QUESTIONS_GENERAL_FILE = path.join(__dirname, 'questions_general.json');
+const QUESTIONS_TURKISH_FILE = path.join(__dirname, 'questions_turkish.json');
 
 function levenshtein(a, b) {
   if (a === b) return 0;
@@ -60,6 +61,24 @@ function normalizeText(str) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9\s]/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeTurkishStrict(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/\[emote:\d+:[^\]]+\]/gi, ' ')
+    .replace(/\[emoji:[^\]]+\]/gi, ' ')
+    .replace(/\[mention:\d+:([^\]]+)\]/gi, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/@[a-zA-Z0-9_\u00C0-\u017F]+/g, ' ')
+    .toLocaleLowerCase('tr-TR')
+    .replace(/[^a-zçğıiöşü0-9\s]/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -135,6 +154,7 @@ class GameEngine extends EventEmitter {
 
     this.genshinQuestions = [];
     this.generalQuestions = [];
+    this.turkishQuestions = [];
     this.questions = [];
 
     this.loadQuestions();
@@ -167,20 +187,36 @@ class GameEngine extends EventEmitter {
       this.generalQuestions = [];
     }
 
+    // 3. Load Turkish Spelling Questions
+    try {
+      if (fs.existsSync(QUESTIONS_TURKISH_FILE)) {
+        const data = fs.readFileSync(QUESTIONS_TURKISH_FILE, 'utf-8');
+        this.turkishQuestions = JSON.parse(data);
+      } else {
+        this.turkishQuestions = [];
+      }
+    } catch (e) {
+      console.error('[GameEngine] Türkçe soru listesi yüklenemedi:', e);
+      this.turkishQuestions = [];
+    }
+
     this.refreshActivePool();
 
-    console.log(`[GameEngine] Yüklendi -> Genshin: ${this.genshinQuestions.length}, Genel Kültür: ${this.generalQuestions.length}. Aktif Mod: "${this.config.triviaMode}" (${this.questions.length} soru aktif).`);
+    console.log(`[GameEngine] Yüklendi -> Genshin: ${this.genshinQuestions.length}, Genel Kültür: ${this.generalQuestions.length}, Türkçe: ${this.turkishQuestions.length}. Aktif Mod: "${this.config.triviaMode}" (${this.questions.length} soru aktif).`);
   }
 
   refreshActivePool() {
     const mode = this.config.triviaMode || 'genshin';
-    if (mode === 'general') {
+    if (mode === 'turkish') {
+      this.questions = this.turkishQuestions;
+    } else if (mode === 'general') {
       this.questions = this.generalQuestions;
     } else if (mode === 'mixed') {
       // Mark origins for mixed mode
       const gMarked = this.genshinQuestions.map(q => ({ ...q, poolMode: 'genshin' }));
       const genMarked = this.generalQuestions.map(q => ({ ...q, poolMode: 'general' }));
-      this.questions = [...gMarked, ...genMarked];
+      const turkMarked = this.turkishQuestions.map(q => ({ ...q, poolMode: 'turkish' }));
+      this.questions = [...gMarked, ...genMarked, ...turkMarked];
     } else {
       // default: genshin
       this.questions = this.genshinQuestions;
@@ -188,8 +224,8 @@ class GameEngine extends EventEmitter {
   }
 
   setTriviaMode(mode) {
-    if (!['genshin', 'general', 'mixed'].includes(mode)) {
-      throw new Error(`Geçersiz trivia modu: ${mode}. Geçerli modlar: genshin, general, mixed.`);
+    if (!['genshin', 'general', 'turkish', 'mixed'].includes(mode)) {
+      throw new Error(`Geçersiz trivia modu: ${mode}. Geçerli modlar: genshin, general, turkish, mixed.`);
     }
 
     const previousMode = this.config.triviaMode;
@@ -204,27 +240,32 @@ class GameEngine extends EventEmitter {
       previousMode,
       activeCount: this.questions.length,
       genshinCount: this.genshinQuestions.length,
-      generalCount: this.generalQuestions.length
+      generalCount: this.generalQuestions.length,
+      turkishCount: this.turkishQuestions.length
     });
 
     this.emitState();
     return {
       success: true,
       mode: this.config.triviaMode,
-      activeCount: this.questions.length
+      activeCount: this.questions.length,
+      turkishCount: this.turkishQuestions.length
     };
   }
 
   saveQuestions(targetMode = null) {
     try {
       const mode = targetMode || this.config.triviaMode;
-      if (mode === 'general') {
+      if (mode === 'turkish') {
+        fs.writeFileSync(QUESTIONS_TURKISH_FILE, JSON.stringify(this.turkishQuestions, null, 2), 'utf-8');
+      } else if (mode === 'general') {
         fs.writeFileSync(QUESTIONS_GENERAL_FILE, JSON.stringify(this.generalQuestions, null, 2), 'utf-8');
       } else if (mode === 'genshin') {
         fs.writeFileSync(QUESTIONS_GENSHIN_FILE, JSON.stringify(this.genshinQuestions, null, 2), 'utf-8');
       } else {
         fs.writeFileSync(QUESTIONS_GENSHIN_FILE, JSON.stringify(this.genshinQuestions, null, 2), 'utf-8');
         fs.writeFileSync(QUESTIONS_GENERAL_FILE, JSON.stringify(this.generalQuestions, null, 2), 'utf-8');
+        fs.writeFileSync(QUESTIONS_TURKISH_FILE, JSON.stringify(this.turkishQuestions, null, 2), 'utf-8');
       }
     } catch (e) {
       console.error('[GameEngine] Soru listesi kaydedilemedi:', e);
@@ -312,7 +353,7 @@ class GameEngine extends EventEmitter {
     this.correctParticipants = [];
 
     const effectiveMode = question.poolMode || this.config.triviaMode || 'genshin';
-    const modeBadge = effectiveMode === 'general' ? '🌍 Genel Kültür' : '⚔️ Genshin Impact';
+    const modeBadge = effectiveMode === 'turkish' ? '🇹🇷 Türkçe (Yazım)' : (effectiveMode === 'general' ? '🌍 Genel Kültür' : '⚔️ Genshin Impact');
 
     console.log(`[GameEngine] 🔔 Soru soruldu (#${question.id}) [${modeBadge}]: "${question.question}"`);
 
@@ -345,80 +386,157 @@ class GameEngine extends EventEmitter {
     this.emitState();
   }
 
-  isAnswerCorrect(userMsg, acceptableAnswers) {
+  isAnswerCorrect(userMsg, acceptableAnswers, question = null) {
     if (!userMsg || !Array.isArray(acceptableAnswers) || acceptableAnswers.length === 0) return false;
+
+    const isStrict = Boolean(
+      question && (
+        question.strictMatch ||
+        question.category === 'Türkçe' ||
+        question.category === 'Türkçe (Yazım)' ||
+        question.poolMode === 'turkish' ||
+        (Array.isArray(question.wrongAnswers) && question.wrongAnswers.length > 0)
+      )
+    );
+
+    // 1. If strict mode, check wrongAnswers first to reject incorrect variants immediately
+    if (isStrict && question && Array.isArray(question.wrongAnswers) && question.wrongAnswers.length > 0) {
+      const normStrictMsg = normalizeTurkishStrict(userMsg);
+      const normStdMsg = normalizeText(userMsg);
+      const strictTokens = normStrictMsg.split(' ').filter(Boolean);
+      const stdTokens = normStdMsg.split(' ').filter(Boolean);
+
+      for (const wrong of question.wrongAnswers) {
+        if (!wrong) continue;
+        const normWrongStrict = normalizeTurkishStrict(wrong);
+        const normWrongStd = normalizeText(wrong);
+
+        // Exact match against wrong answer
+        if (normStrictMsg === normWrongStrict || normStdMsg === normWrongStd) {
+          return false;
+        }
+
+        // Single-word wrong answer in message
+        if (!normWrongStrict.includes(' ')) {
+          if (strictTokens.includes(normWrongStrict) || stdTokens.includes(normWrongStd)) {
+            return false;
+          }
+          // Suffix on wrong answer (e.g. "herkezdir")
+          for (const token of strictTokens) {
+            if (token.startsWith(normWrongStrict)) {
+              const suff = token.slice(normWrongStrict.length);
+              if (TURKISH_SUFFIX_REGEX.test(suff) || UNIT_SUFFIX_REGEX.test(suff)) {
+                return false;
+              }
+            }
+          }
+        } else {
+          // Multi-word wrong answer in message (e.g. "bence ard arda")
+          if (normStrictMsg.includes(normWrongStrict) || normStdMsg.includes(normWrongStd)) {
+            return false;
+          }
+        }
+      }
+    }
+
     const normMsg = normalizeText(userMsg);
     if (!normMsg) return false;
     const cleanMsgNoSpaces = normMsg.replace(/\s+/g, '');
     const wordsInMsg = normMsg.split(' ').filter(Boolean);
 
-    // Expand acceptable answers with number equivalents
+    const normStrictMsg = normalizeTurkishStrict(userMsg);
+    const strictWordsInMsg = normStrictMsg.split(' ').filter(Boolean);
+
+    // Expand acceptable answers with number equivalents (only for non-strict questions)
     const expandedAnswers = [];
     for (const a of acceptableAnswers) {
       if (!a) continue;
       expandedAnswers.push(a);
-      const normA = normalizeText(a);
-      if (NUMBER_MAP[normA]) {
-        expandedAnswers.push(...NUMBER_MAP[normA]);
-      }
-      if (NUMBER_MAP_REVERSE[normA]) {
-        expandedAnswers.push(NUMBER_MAP_REVERSE[normA]);
-      }
-      const cleanANoSpaces = normA.replace(/\s+/g, '');
-      if (NUMBER_MAP_REVERSE[cleanANoSpaces]) {
-        expandedAnswers.push(NUMBER_MAP_REVERSE[cleanANoSpaces]);
+      if (!isStrict) {
+        const normA = normalizeText(a);
+        if (NUMBER_MAP[normA]) {
+          expandedAnswers.push(...NUMBER_MAP[normA]);
+        }
+        if (NUMBER_MAP_REVERSE[normA]) {
+          expandedAnswers.push(NUMBER_MAP_REVERSE[normA]);
+        }
+        const cleanANoSpaces = normA.replace(/\s+/g, '');
+        if (NUMBER_MAP_REVERSE[cleanANoSpaces]) {
+          expandedAnswers.push(NUMBER_MAP_REVERSE[cleanANoSpaces]);
+        }
       }
     }
 
     for (const ans of expandedAnswers) {
       const normAns = normalizeText(ans);
       if (!normAns) continue;
+      const normStrictAns = normalizeTurkishStrict(ans);
       const cleanAnsNoSpaces = normAns.replace(/\s+/g, '');
 
-      // 1. Exact match
-      if (normMsg === normAns) return true;
+      // 1. Exact match (strict or standard)
+      if (normStrictMsg === normStrictAns || normMsg === normAns) return true;
 
-      // 2. Space-agnostic exact match (e.g. 'hutao' === 'hu tao', 'davinci' === 'da vinci')
-      if (cleanMsgNoSpaces === cleanAnsNoSpaces) return true;
+      // 2. Space-agnostic exact match (only for non-strict or when space counts match)
+      if (!isStrict && cleanMsgNoSpaces === cleanAnsNoSpaces) return true;
+      if (isStrict && cleanMsgNoSpaces === cleanAnsNoSpaces && normAns.includes(' ') === normMsg.includes(' ')) {
+        return true;
+      }
 
       const isSingleWordAns = !normAns.includes(' ');
 
       if (isSingleWordAns) {
-        for (const w of wordsInMsg) {
-          // Direct token match (even if 1-2 chars, e.g. '4', 'ei', 'oz')
-          if (w === normAns) return true;
+        // Direct token match
+        if (strictWordsInMsg.includes(normStrictAns)) return true;
+        if (wordsInMsg.includes(normAns)) return true;
 
-          // Turkish suffix or attached unit check (e.g. 'ventidir', '1923te', 'diluctur', '160primo')
-          if (w.startsWith(normAns)) {
-            const suffix = w.slice(normAns.length);
+        // Turkish suffix on valid answer (e.g. 'herkestir', 'yalnızdır', 'ventidir')
+        for (const w of strictWordsInMsg) {
+          if (w.startsWith(normStrictAns)) {
+            const suffix = w.slice(normStrictAns.length);
             if (TURKISH_SUFFIX_REGEX.test(suffix) || UNIT_SUFFIX_REGEX.test(suffix)) {
               return true;
             }
           }
+        }
 
-          // Fuzzy match: 1-character typo tolerance for words with length >= 5
-          if (normAns.length >= 5 && Math.abs(w.length - normAns.length) <= 1) {
-            if (levenshtein(w, normAns) <= 1) return true;
+        // Fuzzy match: 1-character typo tolerance for words with length >= 5 (NON-STRICT ONLY)
+        if (!isStrict) {
+          for (const w of wordsInMsg) {
+            if (w.startsWith(normAns)) {
+              const suffix = w.slice(normAns.length);
+              if (TURKISH_SUFFIX_REGEX.test(suffix) || UNIT_SUFFIX_REGEX.test(suffix)) {
+                return true;
+              }
+            }
+            if (normAns.length >= 5 && Math.abs(w.length - normAns.length) <= 1) {
+              if (levenshtein(w, normAns) <= 1) return true;
+            }
           }
         }
       } else {
-        // Multi-word answer in sentence (e.g. 'bence hu tao kesin')
+        // Multi-word answer in sentence (e.g. 'bence hu tao kesin' or 'bence art arda kesin')
         const escaped = normAns.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(`(^|\\s)${escaped}(?=$|\\s)`, 'i');
         if (regex.test(normMsg)) return true;
 
-        // Space-stripped multi-word match in sentence (e.g. 'bence hutao bence')
-        for (const w of wordsInMsg) {
-          if (w === cleanAnsNoSpaces) return true;
-          if (w.startsWith(cleanAnsNoSpaces)) {
-            const suffix = w.slice(cleanAnsNoSpaces.length);
-            if (TURKISH_SUFFIX_REGEX.test(suffix)) return true;
-          }
-        }
+        const escapedStrict = normStrictAns.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regexStrict = new RegExp(`(^|\\s)${escapedStrict}(?=$|\\s)`, 'i');
+        if (regexStrict.test(normStrictMsg)) return true;
 
-        // Fuzzy multi-word match when comparing full space-stripped strings
-        if (cleanAnsNoSpaces.length >= 6 && cleanMsgNoSpaces.length >= 5) {
-          if (levenshtein(cleanMsgNoSpaces, cleanAnsNoSpaces) <= 1) return true;
+        if (!isStrict) {
+          // Space-stripped multi-word match in sentence
+          for (const w of wordsInMsg) {
+            if (w === cleanAnsNoSpaces) return true;
+            if (w.startsWith(cleanAnsNoSpaces)) {
+              const suffix = w.slice(cleanAnsNoSpaces.length);
+              if (TURKISH_SUFFIX_REGEX.test(suffix)) return true;
+            }
+          }
+
+          // Fuzzy multi-word match when comparing full space-stripped strings
+          if (cleanAnsNoSpaces.length >= 6 && cleanMsgNoSpaces.length >= 5) {
+            if (levenshtein(cleanMsgNoSpaces, cleanAnsNoSpaces) <= 1) return true;
+          }
         }
       }
     }
@@ -483,7 +601,7 @@ class GameEngine extends EventEmitter {
     // 2. Check Answer for Active Question
     if (this.state !== 'ACTIVE' || !this.currentQuestion) return;
 
-    const isCorrect = this.isAnswerCorrect(content, this.currentQuestion.answers);
+    const isCorrect = this.isAnswerCorrect(content, this.currentQuestion.answers, this.currentQuestion);
     if (!isCorrect) return;
 
     console.log(`[GameEngine] 🎉 Doğru cevap tespit edildi! Kullanıcı: ${sender.username} - Cevap: "${content}"`);
@@ -599,24 +717,47 @@ class GameEngine extends EventEmitter {
 
   // Trigger preview test for OBS configuration
   triggerTestPreview() {
-    const isGeneral = this.config.triviaMode === 'general';
+    const mode = this.config.triviaMode || 'genshin';
+    const isTurkish = mode === 'turkish';
+    const isGeneral = mode === 'general';
+
+    let cat = 'Test Kategorisi';
+    let qText = "Genshin Impact'te Paimon'un meşhur takma adı nedir?";
+    let hintText = 'Acil durum yemeği!';
+    let mockAns = 'Acil durum yemeği';
+    let mockUser = 'GenshinGezgini';
+
+    if (isTurkish) {
+      cat = 'Türkçe (Yazım)';
+      qText = "TDK'ye göre bu kelimenin doğru yazılışı nedir: 'herkes' mi 'herkez' mi?";
+      hintText = "Son harfi 's' ile biter.";
+      mockAns = 'herkes';
+      mockUser = 'DilUstasi';
+    } else if (isGeneral) {
+      cat = 'Coğrafya';
+      qText = "Türkiye'nin başkenti neresidir?";
+      hintText = "İç Anadolu'da yer alır.";
+      mockAns = 'Ankara';
+      mockUser = 'BilgiAvcisi';
+    }
+
     this.emit('test_preview', {
       question: {
         id: 999,
-        category: isGeneral ? "Coğrafya" : "Test Kategorisi",
-        difficulty: "Kolay",
-        question: isGeneral ? "Türkiye'nin başkenti neresidir?" : "Genshin Impact'te Paimon'un meşhur takma adı nedir?",
-        hint: isGeneral ? "İç Anadolu'da yer alır." : "Acil durum yemeği!",
-        triviaMode: this.config.triviaMode
+        category: cat,
+        difficulty: 'Kolay',
+        question: qText,
+        hint: hintText,
+        triviaMode: mode
       },
       duration: 10,
       mockWinner: {
-        username: isGeneral ? "BilgiAvcisi" : "GenshinGezgini",
+        username: mockUser,
         profilePic: null,
-        answerGiven: isGeneral ? "Ankara" : "Acil durum yemeği",
+        answerGiven: mockAns,
         winsCount: 3
       },
-      triviaMode: this.config.triviaMode
+      triviaMode: mode
     });
   }
 
@@ -642,6 +783,7 @@ class GameEngine extends EventEmitter {
       stats: {
         genshinCount: (this.genshinQuestions || []).length,
         generalCount: (this.generalQuestions || []).length,
+        turkishCount: (this.turkishQuestions || []).length,
         activeCount: (this.questions || []).length
       },
       recentWinners: this.recentWinners,
@@ -669,17 +811,29 @@ class GameEngine extends EventEmitter {
     }
 
     const mode = targetMode || q.mode || this.config.triviaMode || 'genshin';
-    const targetPool = (mode === 'general') ? this.generalQuestions : this.genshinQuestions;
+    let targetPool = this.genshinQuestions;
+    if (mode === 'turkish') {
+      targetPool = this.turkishQuestions;
+    } else if (mode === 'general') {
+      targetPool = this.generalQuestions;
+    }
 
     const newId = targetPool.length > 0 ? Math.max(...targetPool.map(x => x.id || 0)) + 1 : 1;
+    const isTurkMode = mode === 'turkish';
     const newQ = {
       id: newId,
-      category: q.category || (mode === 'general' ? 'Genel Kültür' : 'Genel'),
+      category: q.category || (isTurkMode ? 'Türkçe' : (mode === 'general' ? 'Genel Kültür' : 'Genel')),
       difficulty: q.difficulty || 'Orta',
       question: q.question.trim(),
       answers: Array.isArray(q.answers) ? q.answers.map(a => a.trim()).filter(Boolean) : [q.answers.trim()],
       hint: (q.hint || '').trim()
     };
+    if (isTurkMode || q.strictMatch) {
+      newQ.strictMatch = true;
+      if (q.wrongAnswers) {
+        newQ.wrongAnswers = Array.isArray(q.wrongAnswers) ? q.wrongAnswers.map(a => a.trim()).filter(Boolean) : [q.wrongAnswers.trim()];
+      }
+    }
 
     targetPool.push(newQ);
     this.saveQuestions(mode);
@@ -689,4 +843,4 @@ class GameEngine extends EventEmitter {
   }
 }
 
-module.exports = { GameEngine, normalizeText };
+module.exports = { GameEngine, normalizeText, normalizeTurkishStrict };
